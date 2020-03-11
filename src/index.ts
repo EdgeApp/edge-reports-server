@@ -1,8 +1,7 @@
 import CONFIG from '../config.json'
+import './types.ts'
+import fakePartnerPlugin from './fake'
 
-function foo(): void {
-  console.log('Hello, world')
-  console.log('apiKey:', CONFIG.apiKey)
-}
 
-foo()
+
+
