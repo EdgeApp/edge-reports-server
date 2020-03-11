@@ -1,6 +1,7 @@
 import './types.ts'
 
 function queryFake (settings: PluginSettings): PluginResult {
+  const offset = settings.settings + 1
   const fakeResult = {
     transactions: [{
       inputTXID: 'inputTXID',
@@ -13,7 +14,7 @@ function queryFake (settings: PluginSettings): PluginResult {
       isoDate: 'isoDate',
       outputAmount: 'outputAmount'
   }],
-    settings: {offset: 5}
+    settings: offset
   }
   return fakeResult
 } 
