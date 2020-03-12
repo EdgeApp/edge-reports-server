@@ -1,7 +1,7 @@
 import { bns } from 'biggystring'
+import fetch from 'node-fetch'
 
-import { PartnerPlugin, PluginResult, StandardTx } from '../types'
-import config from './../../config.json'
+import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
 const div: { [key: string]: string } = {
   BTC: '100000000',
@@ -11,13 +11,23 @@ const div: { [key: string]: string } = {
   DOGE: '100000000'
 }
 
-export async function queryBitrefill(): Promise<PluginResult> {
+export async function queryBitrefill(
+  pluginParams: PluginParams
+): Promise<PluginResult> {
   const MAX_ITERATIONS = 20
   let username = ''
   let password = ''
-  if (typeof config.bitrefillCredentials === 'object') {
-    username = config.bitrefillCredentials.apiKey
-    password = config.bitrefillCredentials.apiSecret
+  if (
+    typeof pluginParams.apiKeys.apiKey === 'string' &&
+    typeof pluginParams.apiKeys.apiSecret === 'string'
+  ) {
+    username = pluginParams.apiKeys.apiKey
+    password = pluginParams.apiKeys.apiSecret
+  } else {
+    return {
+      settings: {},
+      transactions: []
+    }
   }
   const headers = {
     Authorization:
@@ -64,6 +74,7 @@ export async function queryBitrefill(): Promise<PluginResult> {
         }
         if (typeof inputCurrency === 'string' && inputCurrency !== 'BTC') {
           inputAmountNum = tx.receivedPaymentAltcoin
+          console.log('found altcoin', inputAmountNum)
         }
         const inputAmount = bns.div(
           inputAmountNum.toString(),
@@ -83,7 +94,7 @@ export async function queryBitrefill(): Promise<PluginResult> {
           outputCurrency: 'USD',
           outputAmount: tx.usdPrice.toString(),
           timestamp,
-          isoDate: new Date(timestamp).toISOString()
+          isoDate: new Date(tx.invoiceTime).toISOString()
         }
         ssFormatTxs.push(ssTx)
       }

@@ -1,5 +1,6 @@
-export interface PluginSettings {
+export interface PluginParams {
   settings: any
+  apiKeys: any
 }
 export interface PluginResult {
   // copy the type from standardtx from reports
@@ -8,7 +9,7 @@ export interface PluginResult {
 }
 export interface PartnerPlugin {
   // queryFunc will take PluginSettings as arg and return PluginResult
-  queryFunc: (param: PluginSettings) => Promise<PluginResult>
+  queryFunc: (param: PluginParams) => Promise<PluginResult>
   pluginName: string
   pluginId: string
 }
