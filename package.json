@@ -55,5 +55,8 @@
     "react-dom": "^16.12.0",
     "sucrase": "^3.12.1",
     "typescript": "^3.8.2"
+  },
+  "dependencies": {
+    "biggystring": "^3.0.2"
   }
 }
