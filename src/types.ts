@@ -1,26 +1,27 @@
-interface PluginSettings {
+export interface PluginSettings {
   settings: any
 }
-interface PluginResult {
-  //copy the type from standardtx from reports
+export interface PluginResult {
+  // copy the type from standardtx from reports
   transactions: StandardTx[]
   settings: any
 }
-interface PartnerPlugin {
+export interface PartnerPlugin {
   // queryFunc will take PluginSettings as arg and return PluginResult
-  queryFunc: (param: PluginSettings) => PluginResult
+  queryFunc: (param: PluginSettings) => Promise<PluginResult>
   pluginName: string
   pluginId: string
 }
 
-interface StandardTx {
-    inputTXID: string
-    inputAddress: string
-    inputCurrency: string
-    inputAmount: string
-    outputAddress: string
-    outputCurrency: string
-    status: string
-    isoDate: string
-    outputAmount: string
+export interface StandardTx {
+  inputTXID: string
+  inputAddress?: string
+  inputCurrency: string
+  inputAmount: string
+  outputAddress?: string
+  outputCurrency: string
+  status: string
+  isoDate: string
+  timestamp: number
+  outputAmount: string
 }
