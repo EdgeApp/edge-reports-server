@@ -1,3 +1,5 @@
+import { asArray, asNumber, asObject, asOptional, asString } from 'cleaners'
+
 export interface PluginParams {
   settings: any
   apiKeys: any
@@ -14,15 +16,17 @@ export interface PartnerPlugin {
   pluginId: string
 }
 
-export interface StandardTx {
-  inputTXID: string
-  inputAddress?: string
-  inputCurrency: string
-  inputAmount: string
-  outputAddress?: string
-  outputCurrency: string
-  status: string
-  isoDate: string
-  timestamp: number
-  outputAmount: string
-}
+export const asStandardTx = asObject({
+  inputTXID: asString,
+  inputAddress: asOptional(asString),
+  inputCurrency: asString,
+  inputAmount: asString,
+  outputAddress: asOptional(asString),
+  outputCurrency: asString,
+  status: asString,
+  isoDate: asString,
+  timestamp: asNumber,
+  outputAmount: asString
+})
+
+export type StandardTx = ReturnType<typeof asStandardTx>

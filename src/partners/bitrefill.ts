@@ -1,7 +1,32 @@
 import { bns } from 'biggystring'
+import {
+  asArray,
+  asBoolean,
+  asNumber,
+  asObject,
+  asOptional,
+  asString
+} from 'cleaners'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+
+const asBitrefillTx = asObject({
+  paymentReceived: asBoolean,
+  expired: asBoolean,
+  sent: asBoolean,
+  invoiceTime: asNumber,
+  satoshiPrice: asOptional(asNumber),
+  coinCurrency: asString,
+  receivedPaymentAltcoin: asOptional(asNumber),
+  orderId: asString,
+  usdPrice: asNumber
+})
+
+const asBitrefillResult = asObject({
+  nextUrl: asOptional(asString),
+  orders: asArray(asBitrefillTx)
+})
 
 const div: { [key: string]: string } = {
   BTC: '100000000',
@@ -41,23 +66,19 @@ export async function queryBitrefill(
     // console.log(`Querying url ${url}`)
     // console.log(`Querying lastTxid ${lastTxid}`)
     // const limit = 100
-    let jsonObj
-    let txs
+    let jsonObj: ReturnType<typeof asBitrefillResult>
     try {
       const result = await fetch(url, {
         method: 'GET',
         headers
       })
-      jsonObj = await result.json()
-      txs =
-        jsonObj != null && jsonObj.orders != null && jsonObj.orders.length > 0
-          ? jsonObj.orders
-          : []
+      jsonObj = asBitrefillResult(await result.json())
       // console.log(`Bitrefill: count:${count} count:${txs.length}`)
     } catch (e) {
       console.log(e)
       break
     }
+    const txs = jsonObj.orders
     for (const tx of txs) {
       if (
         tx.paymentReceived === true &&
@@ -74,23 +95,22 @@ export async function queryBitrefill(
         }
         if (typeof inputCurrency === 'string' && inputCurrency !== 'BTC') {
           inputAmountNum = tx.receivedPaymentAltcoin
-          console.log('found altcoin', inputAmountNum)
+        }
+        if (inputAmountNum == null) {
+          break
         }
         const inputAmount = bns.div(
           inputAmountNum.toString(),
           div[inputCurrency],
           8
         )
-        let inputAddress
-        if (tx.payment != null && typeof tx.payment.address === 'string') {
-          inputAddress = tx.payment.address
-        }
         const ssTx: StandardTx = {
           status: 'complete',
           inputTXID: tx.orderId,
-          inputAddress,
+          inputAddress: undefined,
           inputCurrency,
           inputAmount,
+          outputAddress: undefined,
           outputCurrency: 'USD',
           outputAmount: tx.usdPrice.toString(),
           timestamp,
