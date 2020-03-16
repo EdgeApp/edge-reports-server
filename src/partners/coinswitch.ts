@@ -57,10 +57,10 @@ export async function queryCoinSwitch(
         inputTXID: tx.inputTransactionHash,
         inputAddress: tx.exchangeAddress.address,
         inputCurrency: tx.depositCoin.toUpperCase(),
-        inputAmount: tx.depositCoinAmount.toString(),
+        inputAmount: tx.depositCoinAmount,
         outputAddress: tx.destinationAddress.address,
         outputCurrency: tx.destinationCoin.toUpperCase(),
-        outputAmount: tx.destinationCoinAmount.toString(),
+        outputAmount: tx.destinationCoinAmount,
         timestamp: tx.createdAt / 1000,
         isoDate: new Date(tx.createdAt).toISOString()
       }

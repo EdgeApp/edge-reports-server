@@ -60,10 +60,10 @@ export async function queryChangeNow(
           inputTXID: tx.payinHash,
           inputAddress: tx.payinAddress,
           inputCurrency: tx.fromCurrency.toUpperCase(),
-          inputAmount: tx.amountSend.toString(),
+          inputAmount: tx.amountSend,
           outputAddress: tx.payoutAddress,
           outputCurrency: tx.toCurrency.toUpperCase(),
-          outputAmount: tx.amountReceive.toString(),
+          outputAmount: tx.amountReceive,
           timestamp,
           isoDate: new Date(tx.updatedAt).toISOString()
         }

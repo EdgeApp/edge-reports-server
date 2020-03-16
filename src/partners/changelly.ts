@@ -85,10 +85,10 @@ export async function queryChangelly(
           inputTXID: tx.payinHash,
           inputAddress: tx.payinAddress,
           inputCurrency: tx.currencyFrom.toUpperCase(),
-          inputAmount: tx.amountExpectedFrom,
+          inputAmount: parseFloat(tx.amountExpectedFrom),
           outputAddress: tx.payoutAddress,
           outputCurrency: tx.currencyTo.toUpperCase(),
-          outputAmount: tx.amountExpectedTo,
+          outputAmount: parseFloat(tx.amountExpectedTo),
           timestamp: tx.createdAt,
           isoDate: new Date(tx.createdAt * 1000).toISOString()
         }

@@ -66,10 +66,10 @@ export async function queryFaast(
           inputTXID: tx.transaction_id,
           inputAddress: tx.deposit_address,
           inputCurrency: tx.deposit_currency.toUpperCase(),
-          inputAmount: tx.amount_deposited.toString(),
+          inputAmount: tx.amount_deposited,
           outputAddress: tx.withdrawal_address,
           outputCurrency: tx.withdrawal_currency.toUpperCase(),
-          outputAmount: tx.amount_withdrawn.toString(),
+          outputAmount: tx.amount_withdrawn,
           timestamp,
           isoDate: tx.updated_at
         }
