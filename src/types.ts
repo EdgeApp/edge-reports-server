@@ -1,9 +1,9 @@
-import { asArray, asNumber, asObject, asOptional, asString } from 'cleaners'
+import { asMap, asNumber, asObject, asOptional, asString } from 'cleaners'
 
-export interface PluginParams {
-  settings: any
-  apiKeys: any
-}
+export const asPluginParams = asObject({
+  settings: asMap((raw: any): any => raw),
+  apiKeys: asMap((raw: any): any => raw)
+})
 export interface PluginResult {
   // copy the type from standardtx from reports
   transactions: StandardTx[]
@@ -15,8 +15,7 @@ export interface PartnerPlugin {
   pluginName: string
   pluginId: string
 }
-
-export const asStandardTx = asObject({
+const standardTxFields = {
   inputTXID: asString,
   inputAddress: asOptional(asString),
   inputCurrency: asString,
@@ -28,6 +27,18 @@ export const asStandardTx = asObject({
   timestamp: asNumber,
   outputAmount: asNumber
 }
+export const asDbTx = asObject({
+  ...standardTxFields,
+  _id: asOptional(asString),
+  _rev: asOptional(asString)
+})
+export const asStandardTx = asObject(standardTxFields)
+
+export const asDbSettings = asObject({
+  _id: asOptional(asString),
+  _rev: asOptional(asString),
+  settings: asMap((raw: any): any => raw)
 })
 
 export type StandardTx = ReturnType<typeof asStandardTx>
+export type PluginParams = ReturnType<typeof asPluginParams>
