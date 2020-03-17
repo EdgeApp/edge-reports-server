@@ -20,13 +20,14 @@ export const asStandardTx = asObject({
   inputTXID: asString,
   inputAddress: asOptional(asString),
   inputCurrency: asString,
-  inputAmount: asString,
+  inputAmount: asNumber,
   outputAddress: asOptional(asString),
   outputCurrency: asString,
   status: asString,
   isoDate: asString,
   timestamp: asNumber,
-  outputAmount: asString
+  outputAmount: asNumber
+}
 })
 
 export type StandardTx = ReturnType<typeof asStandardTx>

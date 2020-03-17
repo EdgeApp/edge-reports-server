@@ -87,32 +87,30 @@ export async function queryBitrefill(
       ) {
         const timestamp = tx.invoiceTime / 1000
 
-        let inputAmountNum = tx.satoshiPrice
+        let inputAmountStr = tx.satoshiPrice?.toString()
         const inputCurrency: string = tx.coinCurrency.toUpperCase()
         if (typeof div[inputCurrency] !== 'string') {
           console.log(inputCurrency + ' has no div')
           break
         }
         if (typeof inputCurrency === 'string' && inputCurrency !== 'BTC') {
-          inputAmountNum = tx.receivedPaymentAltcoin
+          inputAmountStr = tx.receivedPaymentAltcoin?.toString()
         }
-        if (inputAmountNum == null) {
+        if (inputAmountStr == null) {
           break
         }
-        const inputAmount = bns.div(
-          inputAmountNum.toString(),
-          div[inputCurrency],
-          8
+        const inputAmountNum = parseFloat(
+          bns.div(inputAmountStr, div[inputCurrency], 8)
         )
         const ssTx: StandardTx = {
           status: 'complete',
           inputTXID: tx.orderId,
           inputAddress: undefined,
           inputCurrency,
-          inputAmount,
+          inputAmount: inputAmountNum,
           outputAddress: undefined,
           outputCurrency: 'USD',
-          outputAmount: tx.usdPrice.toString(),
+          outputAmount: tx.usdPrice,
           timestamp,
           isoDate: new Date(tx.invoiceTime).toISOString()
         }
