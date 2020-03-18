@@ -8,13 +8,22 @@ import { changenow } from './partners/changenow'
 import { coinswitch } from './partners/coinswitch'
 // import { faast } from './partners/faast'
 // Cleaners
-import { asDbSettings, StandardTx } from './types'
+import { asDbSettings, DbTx, StandardTx } from './types'
+
+// Need to learn how to change global object in typescript
+const datelog = function(...args: any): void {
+  const date = new Date().toISOString()
+  console.log(date, ...args)
+}
 
 const nanoDb = nano(config.couchDbFullpath)
-const DB_NAMES = ['db_settings', 'db_transactions']
+const DB_NAMES = [
+  { name: 'db_settings' },
+  { name: 'db_transactions', options: { partitioned: true } }
+]
 const partners = [changelly, changenow, coinswitch]
 const partnerKeys = config.apiKeys
-const QUERY_FREQ_MS = 300000
+const QUERY_FREQ_MS = 180000
 const snooze: Function = async (ms: number) =>
   new Promise((resolve: Function) => setTimeout(resolve, ms))
 const PARTNER_SETTINGS = 'partnerSettings'
@@ -22,32 +31,30 @@ const PARTNER_SETTINGS = 'partnerSettings'
 // Need to surround this in a try catch that alerts slack
 export async function queryEngine(): Promise<void> {
   const result = await nanoDb.db.list()
-  console.log(result)
+  datelog(result)
   for (const dbName of DB_NAMES) {
-    if (!result.includes(dbName)) {
-      if (dbName === 'db_transactions') {
-        await nanoDb.db.create(dbName, { partitioned: true })
-      } else {
-        await nanoDb.db.create(dbName)
-      }
+    if (!result.includes(dbName.name)) {
+      await nanoDb.db.create(dbName.name, dbName.options)
     }
   }
   const dbSettings = nanoDb.db.use('db_settings')
   while (true) {
-    const out = await dbSettings.get(PARTNER_SETTINGS).catch(e => {
-      if (e.error != null && e.error === 'not_found') {
-        return { settings: {} }
-      } else {
-        throw e
-      }
-    })
-    let partnerSettings: ReturnType<typeof asDbSettings>
-    try {
-      partnerSettings = asDbSettings(out)
-    } catch {
-      partnerSettings = { settings: {}, _id: undefined, _rev: undefined }
-    }
     for (const partner of partners) {
+      datelog('Starting with partner:', partner.pluginName)
+      const out = await dbSettings.get(PARTNER_SETTINGS).catch(e => {
+        if (e.error != null && e.error === 'not_found') {
+          datelog('Settings document not found, creating document')
+          return { settings: {} }
+        } else {
+          throw e
+        }
+      })
+      let partnerSettings: ReturnType<typeof asDbSettings>
+      try {
+        partnerSettings = asDbSettings(out)
+      } catch (e) {
+        partnerSettings = { settings: {}, _id: undefined, _rev: undefined }
+      }
       const apiKeys =
         partnerKeys[partner.pluginId] != null
           ? partnerKeys[partner.pluginId]
@@ -56,37 +63,57 @@ export async function queryEngine(): Promise<void> {
         partnerSettings.settings[partner.pluginId] != null
           ? partnerSettings.settings[partner.pluginId]
           : {}
-      console.log('Querying partner:', partner.pluginName)
-      const result = await partner.queryFunc({
-        apiKeys,
-        settings
-      })
-      for (const transaction of result.transactions) {
-        insertTransaction(transaction, partner.pluginId).catch(e => {
-          console.log(e)
+      datelog('Querying partner:', partner.pluginName)
+      try {
+        const result = await partner.queryFunc({
+          apiKeys,
+          settings
         })
+        partnerSettings.settings[partner.pluginId] = result.settings
+        datelog(
+          'Updating database with transactions and settings for partner:',
+          partner.pluginName
+        )
+        await insertTransactions(result.transactions, partner.pluginId)
+        await dbSettings.insert(partnerSettings, PARTNER_SETTINGS)
+        datelog(
+          'Finished updating database with transactions and settings for partner:',
+          partner.pluginName
+        )
+      } catch (e) {
+        datelog(`Error updating partner ${partner.pluginName}`, e)
       }
-      console.log('Finished querying partner:', partner.pluginName)
-      partnerSettings.settings[partner.pluginId] = result.settings
     }
-    await dbSettings.insert(partnerSettings, PARTNER_SETTINGS)
+    datelog(`Snoozing for ${QUERY_FREQ_MS} milliseconds`)
     await snooze(QUERY_FREQ_MS)
   }
 }
 
-async function insertTransaction(
-  transaction: StandardTx,
+async function insertTransactions(
+  transactions: StandardTx[],
   pluginId: string
 ): Promise<any> {
-  const dbTransactions: nano.DocumentScope<StandardTx> = nanoDb.db.use(
+  const dbTransactions: nano.DocumentScope<DbTx> = nanoDb.db.use(
     'db_transactions'
   )
-  const key = pluginId + ':' + transaction.inputTXID
-  const result = await dbTransactions.get(key)
-  if (result != null) {
-    const newObj = { ...result, ...transaction }
-    await dbTransactions.insert(newObj)
-  } else {
-    await dbTransactions.insert(transaction, key)
+  const transactionsArray: StandardTx[] = []
+  for (const transaction of transactions) {
+    // TODO: Add batching for more than 500 transactions
+    const key = pluginId + ':' + transaction.inputTXID
+    const result = await dbTransactions.get(key).catch(e => {
+      if (e.error != null && e.error === 'not_found') {
+        return { _id: undefined, _rev: undefined }
+      } else {
+        throw e
+      }
+    })
+    const newObj = { ...result, ...transaction, _id: key }
+    transactionsArray.push(newObj)
+  }
+  try {
+    await dbTransactions.bulk({ docs: transactionsArray })
+  } catch (e) {
+    datelog('Error doing bulk transaction insert', e)
+    throw e
   }
 }
