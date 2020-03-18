@@ -21,61 +21,56 @@ const PARTNER_SETTINGS = 'partnerSettings'
 
 // Need to surround this in a try catch that alerts slack
 export async function queryEngine(): Promise<void> {
-  try {
-    const result = await nanoDb.db.list()
-    console.log(result)
-    for (const dbName of DB_NAMES) {
-      if (!result.includes(dbName)) {
-        if (dbName === 'db_transactions') {
-          await nanoDb.db.create(dbName, { partitioned: true })
-        } else {
-          await nanoDb.db.create(dbName)
-        }
+  const result = await nanoDb.db.list()
+  console.log(result)
+  for (const dbName of DB_NAMES) {
+    if (!result.includes(dbName)) {
+      if (dbName === 'db_transactions') {
+        await nanoDb.db.create(dbName, { partitioned: true })
+      } else {
+        await nanoDb.db.create(dbName)
       }
     }
-    const dbSettings = nanoDb.db.use('db_settings')
-    while (true) {
-      const out = await dbSettings.get(PARTNER_SETTINGS).catch(e => {
-        if (e.error != null && e.error === 'not_found') {
-          return { settings: {} }
-        } else {
-          throw e
-        }
+  }
+  const dbSettings = nanoDb.db.use('db_settings')
+  while (true) {
+    const out = await dbSettings.get(PARTNER_SETTINGS).catch(e => {
+      if (e.error != null && e.error === 'not_found') {
+        return { settings: {} }
+      } else {
+        throw e
+      }
+    })
+    let partnerSettings: ReturnType<typeof asDbSettings>
+    try {
+      partnerSettings = asDbSettings(out)
+    } catch {
+      partnerSettings = { settings: {}, _id: undefined, _rev: undefined }
+    }
+    for (const partner of partners) {
+      const apiKeys =
+        partnerKeys[partner.pluginId] != null
+          ? partnerKeys[partner.pluginId]
+          : {}
+      const settings =
+        partnerSettings.settings[partner.pluginId] != null
+          ? partnerSettings.settings[partner.pluginId]
+          : {}
+      console.log('Querying partner:', partner.pluginName)
+      const result = await partner.queryFunc({
+        apiKeys,
+        settings
       })
-      let partnerSettings: ReturnType<typeof asDbSettings>
-      try {
-        partnerSettings = asDbSettings(out)
-      } catch {
-        partnerSettings = { settings: {}, _id: undefined, _rev: undefined }
-      }
-      for (const partner of partners) {
-        const apiKeys =
-          partnerKeys[partner.pluginId] != null
-            ? partnerKeys[partner.pluginId]
-            : {}
-        const settings =
-          partnerSettings.settings[partner.pluginId] != null
-            ? partnerSettings.settings[partner.pluginId]
-            : {}
-        console.log('Querying partner:', partner.pluginName)
-        const result = await partner.queryFunc({
-          apiKeys,
-          settings
+      for (const transaction of result.transactions) {
+        insertTransaction(transaction, partner.pluginId).catch(e => {
+          console.log(e)
         })
-        for (const transaction of result.transactions) {
-          insertTransaction(transaction, partner.pluginId).catch(e => {
-            console.log(e)
-            throw e
-          })
-        }
-        console.log('Finished querying partner:', partner.pluginName)
-        partnerSettings.settings[partner.pluginId] = result.settings
       }
-      await dbSettings.insert(partnerSettings, PARTNER_SETTINGS)
-      await snooze(QUERY_FREQ_MS)
+      console.log('Finished querying partner:', partner.pluginName)
+      partnerSettings.settings[partner.pluginId] = result.settings
     }
-  } catch (e) {
-    await postErrorToSlack(e)
+    await dbSettings.insert(partnerSettings, PARTNER_SETTINGS)
+    await snooze(QUERY_FREQ_MS)
   }
 }
 
@@ -94,19 +89,4 @@ async function insertTransaction(
   } else {
     await dbTransactions.insert(transaction, key)
   }
-}
-
-async function postErrorToSlack(text: any): Promise<void> {
-  await fetch(
-    'https://hooks.slack.com/services/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',
-    {
-      body: JSON.stringify({
-        text: `Reporting Tool ${Date.now()} ${JSON.stringify(text)}`
-      }),
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      method: 'POST'
-    }
-  )
 }
