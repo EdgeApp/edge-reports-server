@@ -6,7 +6,7 @@ import config from '../config.json'
 import { changelly } from './partners/changelly'
 import { changenow } from './partners/changenow'
 import { coinswitch } from './partners/coinswitch'
-// import { faast } from './partners/faast'
+import { faast } from './partners/faast'
 // Cleaners
 import { asDbSettings, DbTx, StandardTx } from './types'
 
@@ -21,9 +21,9 @@ const DB_NAMES = [
   { name: 'db_settings' },
   { name: 'db_transactions', options: { partitioned: true } }
 ]
-const partners = [changelly, changenow, coinswitch]
+const partners = [changelly, changenow, coinswitch, faast]
 const partnerKeys = config.apiKeys
-const QUERY_FREQ_MS = 180000
+const QUERY_FREQ_MS = 1800000
 const snooze: Function = async (ms: number) =>
   new Promise((resolve: Function) => setTimeout(resolve, ms))
 const PARTNER_SETTINGS = 'partnerSettings'
@@ -102,7 +102,7 @@ async function insertTransactions(
     const key = pluginId + ':' + transaction.inputTXID
     const result = await dbTransactions.get(key).catch(e => {
       if (e.error != null && e.error === 'not_found') {
-        return { _id: undefined, _rev: undefined }
+        return {}
       } else {
         throw e
       }
