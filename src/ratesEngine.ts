@@ -10,6 +10,7 @@ const datelog = function(...args: any): void {
 }
 const nanoDb = nano(config.couchDbFullpath)
 const QUERY_FREQ_MS = 1800000
+const QUERY_LIMIT = 5000
 const snooze: Function = async (ms: number) =>
   new Promise((resolve: Function) => setTimeout(resolve, ms))
 
@@ -42,7 +43,7 @@ export async function ratesEngine(): Promise<void> {
         'isoDate',
         'usdValue'
       ],
-      limit: 500
+      limit: QUERY_LIMIT
     }
     const result = await dbTransactions.find(query)
     asDbQueryResult(result)
