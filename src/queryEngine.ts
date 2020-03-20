@@ -99,7 +99,7 @@ async function insertTransactions(
     // TODO: Add batching for more than 500 transactions
     const key = pluginId + ':' + transaction.inputTXID
     const result = await dbTransactions.get(key).catch(e => {
-      if (e.error != null && e.error === 'not_found') {
+      if (e != null && e.error === 'not_found') {
         return {}
       } else {
         throw e
@@ -109,7 +109,13 @@ async function insertTransactions(
     transactionsArray.push(newObj)
   }
   try {
-    await dbTransactions.bulk({ docs: transactionsArray })
+    const docs = await dbTransactions.bulk({ docs: transactionsArray })
+    for (const doc of docs) {
+      if (doc.error != null) {
+        datelog(`There was an error in the batch ${doc.error}`)
+        throw new Error(`There was an error in the batch ${doc.error}`)
+      }
+    }
   } catch (e) {
     datelog('Error doing bulk transaction insert', e)
     throw e
