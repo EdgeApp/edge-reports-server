@@ -9,7 +9,7 @@ const datelog = function(...args: any): void {
   console.log(date, ...args)
 }
 const nanoDb = nano(config.couchDbFullpath)
-const QUERY_FREQ_MS = 31 * 60 * 60 * 1000
+const QUERY_FREQ_MS = 31 * 60 * 1000
 const QUERY_LIMIT = 5000
 const snooze: Function = async (ms: number) =>
   new Promise((resolve: Function) => setTimeout(resolve, ms))
