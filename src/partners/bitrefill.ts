@@ -63,9 +63,6 @@ export async function queryBitrefill(
   let url = `https://api.bitrefill.com/v1/orders/`
   let count = 0
   while (true) {
-    // console.log(`Querying url ${url}`)
-    // console.log(`Querying lastTxid ${lastTxid}`)
-    // const limit = 100
     let jsonObj: ReturnType<typeof asBitrefillResult>
     try {
       const result = await fetch(url, {
@@ -73,7 +70,6 @@ export async function queryBitrefill(
         headers
       })
       jsonObj = asBitrefillResult(await result.json())
-      // console.log(`Bitrefill: count:${count} count:${txs.length}`)
     } catch (e) {
       console.log(e)
       break
@@ -119,11 +115,9 @@ export async function queryBitrefill(
     }
 
     if (count > MAX_ITERATIONS) {
-      // console.log('count > 9999')
       break
     }
 
-    // console.log(`Bitrefill completed: ${ssFormatTxs.length}`)
     if (jsonObj.nextUrl != null && typeof jsonObj.nextUrl === 'string') {
       url = jsonObj.nextUrl
     } else {

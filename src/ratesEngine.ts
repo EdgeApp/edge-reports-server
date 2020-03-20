@@ -9,7 +9,7 @@ const datelog = function(...args: any): void {
   console.log(date, ...args)
 }
 const nanoDb = nano(config.couchDbFullpath)
-const QUERY_FREQ_MS = 1800000
+const QUERY_FREQ_MS = 31 * 60 * 60 * 1000
 const QUERY_LIMIT = 5000
 const snooze: Function = async (ms: number) =>
   new Promise((resolve: Function) => setTimeout(resolve, ms))
@@ -58,9 +58,12 @@ export async function ratesEngine(): Promise<void> {
     datelog(
       'Finished updating all usdValues, bulk writing back to the database'
     )
-    dbTransactions.bulk({ docs: result.docs }).catch(e => {
-      datelog('writing to the databse failed', e)
-    })
+    try {
+      await dbTransactions.bulk({ docs: result.docs })
+    } catch (e) {
+      datelog('Error doing bulk usdValue insert', e)
+      throw e
+    }
     datelog(`Snoozing for ${QUERY_FREQ_MS} milliseconds`)
     await snooze(QUERY_FREQ_MS)
   }
