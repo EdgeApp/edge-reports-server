@@ -1,13 +1,10 @@
-import CONFIG from '../config.json'
-import './types.ts'
-import fakePartnerPlugin from './fake'
+import { queryEngine } from './queryEngine'
+import { ratesEngine } from './ratesEngine'
 
-function getData {
-  // Loop over each partner:
-  // get settings for partner from database
-  // send settings to partner plugin
-  // send returned settings from partner plugin to database
-  // send returned transactions to database
-}
+queryEngine().catch(e => {
+  console.log(e)
+})
 
-getData()
+ratesEngine().catch(e => {
+  console.log(e)
+})
