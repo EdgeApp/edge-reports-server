@@ -22,7 +22,7 @@ const DB_NAMES = [
 ]
 const partners = [bitrefill, changelly, changenow, coinswitch, faast]
 const partnerKeys = config.apiKeys
-const QUERY_FREQ_MS = 29 * 60 * 60 * 1000
+const QUERY_FREQ_MS = 29 * 60 * 1000
 const snooze: Function = async (ms: number) =>
   new Promise((resolve: Function) => setTimeout(resolve, ms))
 const PARTNER_SETTINGS = 'partnerSettings'
