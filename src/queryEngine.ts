@@ -2,7 +2,7 @@ import nano from 'nano'
 
 import config from '../config.json'
 // Query Partner Functions
-// import { bitrefill } from './partners/bitrefill'
+import { bitrefill } from './partners/bitrefill'
 import { changelly } from './partners/changelly'
 import { changenow } from './partners/changenow'
 import { coinswitch } from './partners/coinswitch'
@@ -10,7 +10,6 @@ import { faast } from './partners/faast'
 // Cleaners
 import { asDbSettings, DbTx, StandardTx } from './types'
 
-// Need to learn how to change global object in typescript
 const datelog = function(...args: any): void {
   const date = new Date().toISOString()
   console.log(date, ...args)
@@ -21,14 +20,13 @@ const DB_NAMES = [
   { name: 'db_settings' },
   { name: 'db_transactions', options: { partitioned: true } }
 ]
-const partners = [changelly, changenow, coinswitch, faast]
+const partners = [bitrefill, changelly, changenow, coinswitch, faast]
 const partnerKeys = config.apiKeys
-const QUERY_FREQ_MS = 1800000
+const QUERY_FREQ_MS = 29 * 60 * 60 * 1000
 const snooze: Function = async (ms: number) =>
   new Promise((resolve: Function) => setTimeout(resolve, ms))
 const PARTNER_SETTINGS = 'partnerSettings'
 
-// Need to surround this in a try catch that alerts slack
 export async function queryEngine(): Promise<void> {
   const result = await nanoDb.db.list()
   datelog(result)
