@@ -20,7 +20,7 @@ const asChangellyResult = asObject({
 })
 
 const LIMIT = 100
-const MAX_QUERY_SIZE = 1000
+const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
 
 async function getTransactionsPromised(
   changellySDK: any,
@@ -69,7 +69,11 @@ export async function queryChangelly(
 
   let offset = 0
   const ssFormatTxs: StandardTx[] = []
-  while (true) {
+  const { latestTimeStamp = 0 } = pluginParams.settings
+  let newLatestTimeStamp = latestTimeStamp
+  let done = false
+  while (!done) {
+    console.log(`Query changelly offset: ${offset}`)
     const result = await getTransactionsPromised(
       changellySDK,
       LIMIT,
@@ -93,18 +97,21 @@ export async function queryChangelly(
           isoDate: new Date(tx.createdAt * 1000).toISOString()
         }
         ssFormatTxs.push(ssTx)
+        if (tx.createdAt > newLatestTimeStamp) {
+          newLatestTimeStamp = tx.createdAt
+        }
+        if (tx.createdAt < latestTimeStamp - QUERY_LOOKBACK) {
+          done = true
+        }
       }
     }
     if (result.result.length < LIMIT) {
       break
     }
-    if (offset > MAX_QUERY_SIZE) {
-      break
-    }
     offset += LIMIT
   }
   const out = {
-    settings: {},
+    settings: { latestTimeStamp: newLatestTimeStamp },
     transactions: ssFormatTxs
   }
   return out

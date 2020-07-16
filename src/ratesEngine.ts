@@ -9,8 +9,8 @@ const datelog = function(...args: any): void {
   console.log(date, ...args)
 }
 const nanoDb = nano(config.couchDbFullpath)
-const QUERY_FREQ_MS = 31 * 60 * 1000
-const QUERY_LIMIT = 5000
+const QUERY_FREQ_MS = 1000
+const QUERY_LIMIT = 50
 const snooze: Function = async (ms: number) =>
   new Promise((resolve: Function) => setTimeout(resolve, ms))
 
@@ -24,9 +24,7 @@ export async function ratesEngine(): Promise<void> {
   while (true) {
     const query = {
       selector: {
-        usdValue: {
-          $exists: false
-        }
+        $or: [{ usdValue: { $exists: false } }, { usdValue: { $eq: null } }]
       },
       fields: [
         '_id',
@@ -50,6 +48,7 @@ export async function ratesEngine(): Promise<void> {
     datelog(
       'Finished query for empty usdValue fields, adding usdValues to each field'
     )
+    datelog(`${result.docs.length} docs to update`)
     for (const doc of result.docs) {
       await updateTxUsdValue(doc).catch(e => {
         datelog('updateTx failed', e)
@@ -82,6 +81,8 @@ export async function updateTxUsdValue(transaction: DbTx): Promise<void> {
         date
       const result = await fetch(url, { method: 'GET' })
       jsonObj = await result.json()
+      const exchangeRate = parseFloat(jsonObj.exchangeRate)
+      transaction.usdValue = transaction.inputAmount * exchangeRate
     } catch {
       url =
         'https://info1.edgesecure.co:8444/v1/exchangeRate?currency_pair=' +
@@ -90,9 +91,9 @@ export async function updateTxUsdValue(transaction: DbTx): Promise<void> {
         date
       const result = await fetch(url, { method: 'GET' })
       jsonObj = await result.json()
+      const exchangeRate = parseFloat(jsonObj.exchangeRate)
+      transaction.usdValue = transaction.outputAmount * exchangeRate
     }
-    const exchangeRate = parseFloat(jsonObj.exchangeRate)
-    transaction.usdValue = transaction.inputAmount * exchangeRate
   } catch (e) {
     datelog('Could not not get exchange rate', e)
     transaction.usdValue = undefined
