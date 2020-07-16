@@ -1,3 +1,4 @@
 {
-  "apiKey": "your-key-here"
+  "couchDbFullpath": "http://admin:admin@localhost:5984",
+  "apiKeys": {}
 }
