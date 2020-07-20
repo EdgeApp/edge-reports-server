@@ -75,7 +75,7 @@ export async function updateTxUsdValue(transaction: DbTx): Promise<void> {
   try {
     try {
       url =
-        'https://info1.edgesecure.co:8444/v1/exchangeRate?currency_pair=' +
+        'https://rates1.edge.app/v1/exchangeRate?currency_pair=' +
         transaction.inputCurrency +
         '_USD&date=' +
         date
@@ -85,7 +85,7 @@ export async function updateTxUsdValue(transaction: DbTx): Promise<void> {
       transaction.usdValue = transaction.inputAmount * exchangeRate
     } catch {
       url =
-        'https://info1.edgesecure.co:8444/v1/exchangeRate?currency_pair=' +
+        'https://rates1.edge.app/v1/exchangeRate?currency_pair=' +
         transaction.outputCurrency +
         '_USD&date=' +
         date

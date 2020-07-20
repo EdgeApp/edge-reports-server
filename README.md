@@ -1,27 +1,55 @@
-# edge-rest-wallet
+# edge-reports-server
 
-> A REST API for storing & sending money, powered by Edge
+> Reporting tools and GUI for partner revenue share
 
-This repository implements a simple API for accessing a wallet on a web server. This can be useful for automated payouts, promotions, e-commerce, and various similar things.
+## Installation
 
-We make this code available for free, but it does require an Edge SDK API key. Please copy `config.sample.json` to `config.json` and add your API key in there.
+```sh
+# Install Yarn
 
-## REST API
+    https://linuxize.com/post/how-to-install-yarn-on-ubuntu-18-04/
 
-To launch the REST API, just type `yarn start`.
+# Install Node
+
+    curl -sL https://deb.nodesource.com/setup_10.x -o nodesource_setup.sh
+    sudo bash nodesource_setup.sh
+
+# Run Yarn
+
+    yarn
+
+# Install CouchDB v3.1
+
+    sudo apt-get install -y apt-transport-https gnupg ca-certificates
+    echo "deb https://apache.bintray.com/couchdb-deb bionic main" \
+    | sudo tee -a /etc/apt/sources.list.d/couchdb.list
+
+    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 8756C4F765C9AC3CB6B85D62379CE192D401AB61
+    sudo apt update
+    sudo apt-get install couchdb=3.1.0~bionic
+    # install standalone
+    # bind address = 127.0.0.1
+
+    # Test that couch is running
+    curl http://localhost:5984/
+```
+
+## Reporting Server
+
+To launch the reports server, just type `yarn start`.
 
 You can also build the server code by running `yarn build`, which puts its output in the `lib` folder. You can then use `forever-service` or similar tools to install the software on your server machine.
 
 ```sh
 # install:
-sudo forever-service install wallet --script lib/index.js --start
+sudo forever-service install reportsServer --script lib/index.js --start
 
 # manage:
-sudo service wallet restart
-sudo service wallet stop
+sudo service reportsServer restart
+sudo service reportsServer stop
 
 # uninstall:
-sudo forever-service delete wallet
+sudo forever-service delete reportsServer
 ```
 
 ## Demo app

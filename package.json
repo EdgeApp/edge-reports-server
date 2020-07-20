@@ -1,9 +1,9 @@
 {
-  "name": "edge-rest-wallet",
+  "name": "edge-reports-server",
   "version": "0.1.0",
   "private": true,
-  "description": "A REST API for storing & sending money, powered by Edge",
-  "repository": "https://github.app/EdgeApp/edge-rest-wallet",
+  "description": "Reporting tools and GUI for partner revenue share",
+  "repository": "https://github.com/EdgeApp/edge-reports-server",
   "license": "MIT",
   "author": "Airbitz, Inc.",
   "main": "lib/index.js",
