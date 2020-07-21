@@ -39,7 +39,8 @@ export const asStandardTx = asObject(standardTxFields)
 export const asDbSettings = asObject({
   _id: asOptional(asString),
   _rev: asOptional(asString),
-  settings: asMap((raw: any): any => raw)
+  settings: asMap((raw: any): any => raw),
+  apiKeys: asMap((raw: any): any => raw)
 })
 
 export type DbTx = ReturnType<typeof asDbTx>

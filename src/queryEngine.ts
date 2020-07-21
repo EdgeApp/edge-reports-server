@@ -10,7 +10,7 @@ import { faast } from './partners/faast'
 // Cleaners
 import { asDbSettings, DbTx, StandardTx } from './types'
 
-const datelog = function(...args: any): void {
+const datelog = function (...args: any): void {
   const date = new Date().toISOString()
   console.log(date, ...args)
 }
@@ -21,7 +21,6 @@ const DB_NAMES = [
   { name: 'db_transactions', options: { partitioned: true } }
 ]
 const partners = [bitrefill, changelly, changenow, coinswitch, faast]
-const partnerKeys = config.apiKeys
 const QUERY_FREQ_MS = 29 * 60 * 1000
 const snooze: Function = async (ms: number) =>
   new Promise((resolve: Function) => setTimeout(resolve, ms))
@@ -51,11 +50,11 @@ export async function queryEngine(): Promise<void> {
       try {
         partnerSettings = asDbSettings(out)
       } catch (e) {
-        partnerSettings = { settings: {}, _id: undefined, _rev: undefined }
+        partnerSettings = { apiKeys: {}, settings: {}, _id: undefined, _rev: undefined }
       }
       const apiKeys =
-        partnerKeys[partner.pluginId] != null
-          ? partnerKeys[partner.pluginId]
+        partnerSettings.apiKeys[partner.pluginId] != null
+          ? partnerSettings.apiKeys[partner.pluginId]
           : {}
       const settings =
         partnerSettings.settings[partner.pluginId] != null
