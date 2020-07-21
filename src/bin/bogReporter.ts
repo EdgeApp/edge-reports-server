@@ -15,7 +15,7 @@ async function queryBog(): Promise<void> {
     process.exit()
   }
 
-  const totals = { USD: 0, BTC: 0 }
+  const totals = { 'Total fees (USD)': 0, 'Total fees (BTC)': 0 }
   const orderTypes = { sells: 0, orders: 0 }
   for (const type in orderTypes) {
     // Fetch data
@@ -29,26 +29,19 @@ async function queryBog(): Promise<void> {
     try {
       let txCount = 0
       for (const tx of txs.data) {
-        const {
-          fiat_type: fiatCode,
-          coin_type: cryptoCode,
-          timestamp,
-          fee
-        } = tx.attributes
+        const { fiat_type: fiatCode, timestamp, fee } = tx.attributes
         const dateString = new Date(timestamp).toISOString()
 
         if (!(fiatCode in totals)) {
           totals[fiatCode] = 0
         }
-        if (!(cryptoCode in totals)) {
-          totals[cryptoCode] = 0
-        }
 
         totals[fiatCode] += fee
         const fiatToUSD = await queryFiatRate(fiatCode, dateString)
         const feeInUSD = fiatToUSD * fee
-        totals.USD += feeInUSD
-        totals.BTC += feeInUSD / (await queryCryptoRate(cryptoCode, dateString))
+        totals['Total fees (USD)'] += feeInUSD
+        totals['Total fees (BTC)'] +=
+          feeInUSD / (await queryCryptoRate('BTC', dateString))
 
         // Display progress
         txCount++
