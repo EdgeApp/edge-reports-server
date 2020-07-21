@@ -21,7 +21,7 @@ const asCoinSwitchResult = asObject({
   })
 })
 const COUNT = 25
-const LIMIT = 100
+const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
 
 export async function queryCoinSwitch(
   pluginParams: PluginParams
@@ -41,7 +41,11 @@ export async function queryCoinSwitch(
   const headers = {
     'x-api-key': apiKey
   }
-  while (true) {
+
+  const { latestTimeStamp = 0 } = pluginParams.settings
+  let newLatestTimeStamp = latestTimeStamp
+  let done = false
+  while (!done) {
     let jsonObj: ReturnType<typeof asCoinSwitchResult>
     try {
       const result = await fetch(url, { method: 'GET', headers: headers })
@@ -65,9 +69,12 @@ export async function queryCoinSwitch(
         isoDate: new Date(tx.createdAt).toISOString()
       }
       ssFormatTxs.push(ssTx)
-    }
-    if (start > LIMIT) {
-      break
+      if (tx.createdAt > newLatestTimeStamp) {
+        newLatestTimeStamp = tx.createdAt
+      }
+      if (tx.createdAt < latestTimeStamp - QUERY_LOOKBACK) {
+        done = true
+      }
     }
     if (txs.length < COUNT) {
       break
@@ -76,7 +83,7 @@ export async function queryCoinSwitch(
     url = `https://api.coinswitch.co/v2/orders?start=${start}&count=${COUNT}&status=complete`
   }
   const out: PluginResult = {
-    settings: {},
+    settings: { latestTimeStamp: newLatestTimeStamp },
     transactions: ssFormatTxs
   }
   return out
