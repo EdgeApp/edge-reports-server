@@ -17,50 +17,47 @@ async function queryBog(): Promise<void> {
     process.exit()
   }
 
-  // Fetch data
-  const url = `http://webapi.bitsofgold.co.il/v1/sells/by_provider/?provider=${BITS_OF_GOLD_API_KEY}&filter%5Bcreated_at_gteq%5D=%27${startDate}%27&filter%5Bcreated_at_lt%5D=%27${endDate}`
-  const result = await fetch(url, {
-    method: 'GET'
-  })
-  const txs = await result.json()
+  const totals = { 'Total fees (USD)': 0, 'Total fees (BTC)': 0 }
+  const orderTypes = { sells: 0, orders: 0 }
+  for (const type in orderTypes) {
+    // Fetch data
+    const url = `http://webapi.bitsofgold.co.il/v1/${type}/by_provider/?provider=${BITS_OF_GOLD_API_KEY}&filter%5Bcreated_at_gteq%5D=%27${startDate}%27&filter%5Bcreated_at_lt%5D=%27${endDate}`
+    const result = await fetch(url, {
+      method: 'GET'
+    })
+    const txs = await result.json()
 
-  // Fetch exchange rates and totals
-  const totals = { USD: 0, BTC: 0 }
-  try {
-    let txCount = 0
-    for (const tx of txs.data) {
-      const {
-        fiat_type: fiatCode,
-        coin_type: cryptoCode,
-        timestamp,
-        fee
-      } = tx.attributes
-      const dateString = new Date(timestamp).toISOString()
+    // Fetch exchange rates and totals
+    try {
+      let txCount = 0
+      for (const tx of txs.data) {
+        const { fiat_type: fiatCode, timestamp, fee } = tx.attributes
+        const dateString = new Date(timestamp).toISOString()
 
-      if (!(fiatCode in totals)) {
-        totals[fiatCode] = 0
+        if (!(fiatCode in totals)) {
+          totals[fiatCode] = 0
+        }
+
+        totals[fiatCode] += fee
+        const fiatToUSD = await queryFiatRate(fiatCode, dateString)
+        const feeInUSD = fiatToUSD * fee
+        totals['Total fees (USD)'] += feeInUSD
+        totals['Total fees (BTC)'] +=
+          feeInUSD / (await queryCryptoRate('BTC', dateString))
+
+        // Display progress
+        txCount++
+        orderTypes[type] = (txCount / txs.data.length) * 50
+        process.stdout.write(
+          `\rProgress: ${(orderTypes.sells + orderTypes.orders).toFixed(0)}%`
+        )
       }
-      if (!(cryptoCode in totals)) {
-        totals[cryptoCode] = 0
-      }
-
-      totals[fiatCode] += fee
-      const fiatToUSD = await queryFiatRate(fiatCode, dateString)
-      const feeInUSD = fiatToUSD * fee
-      totals.USD += feeInUSD
-      totals.BTC += feeInUSD / (await queryCryptoRate(cryptoCode, dateString))
-
-      // Display progress
-      txCount++
-      const progress = (txCount / txs.data.length) * 100
-      process.stdout.write(`\rProgress: ${progress.toFixed(0)}%`)
+    } catch (e) {
+      console.log(e.message)
     }
-
-    // Print totals
-    console.log(`\n*** GRAND TOTAL ***\n${JSON.stringify(totals)}`)
-  } catch (e) {
-    console.log(e.message)
   }
+  // Print totals
+  console.log(`\n*** GRAND TOTAL ***\n${JSON.stringify(totals)}`)
   process.exit()
 }
 
