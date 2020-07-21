@@ -2,7 +2,9 @@ import fetch from 'node-fetch'
 
 import CONFIG from '../../config.json'
 
+//@ts-ignore
 const BITS_OF_GOLD_API_KEY = CONFIG.bog.apiKey
+
 const dateRegex = RegExp(/([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))/)
 
 async function queryBog(): Promise<void> {
