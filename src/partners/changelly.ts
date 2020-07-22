@@ -62,7 +62,7 @@ export async function queryChangelly(
     )
   } else {
     return {
-      settings: {},
+      settings: { latestTimeStamp: pluginParams.settings.latestTimeStamp ? pluginParams.settings.latestTimeStamp : 0 },
       transactions: []
     }
   }

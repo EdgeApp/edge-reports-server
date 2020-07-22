@@ -37,7 +37,7 @@ export async function queryFaast(
       .digest('hex')
   } else {
     return {
-      settings: {},
+      settings: {latestTimeStamp: pluginParams.settings.latestTimeStamp ? pluginParams.settings.latestTimeStamp : 0 },
       transactions: []
     }
   }
