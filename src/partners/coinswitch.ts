@@ -33,7 +33,7 @@ export async function queryCoinSwitch(
     apiKey = pluginParams.apiKeys.apiKey
   } else {
     return {
-      settings: {},
+      settings: { latestTimeStamp: pluginParams.settings.latestTimeStamp ? pluginParams.settings.latestTimeStamp : 0 },
       transactions: []
     }
   }
