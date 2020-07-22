@@ -104,17 +104,21 @@ async function insertTransactions(
         throw e
       }
     })
-    const newObj = { ...result, ...transaction, _id: key }
+    const newObj = { _rev: undefined, ...result, ...transaction, _id: key }
+    datelog(`id: ${newObj._id}. revision: ${newObj._rev}`)
     transactionsArray.push(newObj)
   }
   try {
     const docs = await dbTransactions.bulk({ docs: transactionsArray })
+    let numErrors = 0;
     for (const doc of docs) {
       if (doc.error != null) {
-        datelog(`There was an error in the batch ${doc.error}`)
-        throw new Error(`There was an error in the batch ${doc.error}`)
+        datelog(`There was an error in the batch ${doc.error}.  id: ${doc.id}. revision: ${doc.rev}`)
+        numErrors++
+        // throw new Error(`There was an error in the batch ${doc.error}`)
       }
     }
+    datelog(`total errors: ${numErrors}`)
   } catch (e) {
     datelog('Error doing bulk transaction insert', e)
     throw e
