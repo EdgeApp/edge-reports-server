@@ -1,4 +1,4 @@
-import { asArray, asNumber, asObject, asString } from 'cleaners'
+import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import crypto from 'crypto'
 import fetch from 'node-fetch'
 
@@ -17,11 +17,11 @@ const asFaastTx = asObject({
 })
 
 const asFaastResult = asObject({
-  orders: asArray(asFaastTx)
+  orders: asArray(asUnknown)
 })
 
 const PAGE_LIMIT = 50
-const SS_QUERY_PAGES = 3
+const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
 
 export async function queryFaast(
   pluginParams: PluginParams
@@ -47,17 +47,29 @@ export async function queryFaast(
     nonce,
     signature
   }
-  while (true) {
+  const { latestTimeStamp = 0 } = pluginParams.settings
+  let newLatestTimeStamp = latestTimeStamp
+  let done = false
+  while (!done) {
     let jsonObj: ReturnType<typeof asFaastResult>
+    let resultJSON;
     try {
       const result = await fetch(url, { method: 'GET', headers: headers })
-      jsonObj = asFaastResult(await result.json())
+      resultJSON = await result.json()
+      jsonObj = asFaastResult(resultJSON)
     } catch (e) {
       console.log(e)
       break
     }
     const txs = jsonObj.orders
-    for (const tx of txs) {
+    for (const rawtx of txs) {
+      let tx
+      try {
+        tx = asFaastTx(rawtx)
+      } catch(e) {
+        console.log(e)
+        continue
+      } 
       if (tx.status === 'complete') {
         const date = new Date(tx.updated_at)
         const timestamp = date.getTime() / 1000
@@ -74,18 +86,21 @@ export async function queryFaast(
           isoDate: tx.updated_at
         }
         ssFormatTxs.push(ssTx)
+        if (timestamp > newLatestTimeStamp) {
+          newLatestTimeStamp = timestamp
+        }
+        if (timestamp < latestTimeStamp - QUERY_LOOKBACK) {
+          done = true
+        }
       }
     }
     if (txs.length < PAGE_LIMIT) {
       break
     }
     page++
-    if (page > SS_QUERY_PAGES) {
-      break
-    }
   }
   const out: PluginResult = {
-    settings: {},
+    settings: { latestTimeStamp: newLatestTimeStamp},
     transactions: ssFormatTxs
   }
   return out
