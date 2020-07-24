@@ -51,6 +51,9 @@ export async function queryFox(
     let txs: ReturnType<typeof asFoxTxs>
     txs = { data: { items: []}}
     try {
+        //Limit is the amount of things fetched per call.
+        //Offset is how far forward you want to look into the database for results.
+        //the closer an offset is to 0, the more recent it is
         const res = await fetch(`https://fox.exchange/api/cs/orders?count=${LIMIT}&start=${offset}`, {
             headers: {
             'x-api-key': apiKey,
@@ -80,15 +83,16 @@ export async function queryFox(
         }
         ssFormatTxs.push(ssTx)
         if (tx.createdAt > newestTimestamp) {
-        newestTimestamp = tx.createdAt
+            newestTimestamp = tx.createdAt
         }
         if (lastCheckedTimestamp > tx.createdAt) {
-        done = true;
+            done = true;
         }
     }
 
-    offset += 100  
+    offset += LIMIT  
 
+    //this is if the end of the database is reached
     if (txs.data.items.length < 100) {
         done = true
     }
