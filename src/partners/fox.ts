@@ -70,7 +70,7 @@ export async function queryFox(
       }
     } catch (e) {
       console.log(e)
-      break
+      throw e
     }
 
     for (const rawtx of txs.data.items) {
@@ -79,7 +79,7 @@ export async function queryFox(
         tx = asFoxTx(rawtx)
       } catch (e) {
         console.log(e)
-        continue
+        throw e
       }
       const ssTx: StandardTx = {
         status: 'complete',
