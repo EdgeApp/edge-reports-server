@@ -3,6 +3,7 @@ import nano from 'nano'
 import config from '../config.json'
 // Query Partner Functions
 import { bitsofgold } from './partners/bitsofgold'
+import { bity } from './partners/bity'
 import { bitrefill } from './partners/bitrefill'
 import { changelly } from './partners/changelly'
 import { changenow } from './partners/changenow'
@@ -21,7 +22,7 @@ const DB_NAMES = [
   { name: 'db_settings' },
   { name: 'db_transactions', options: { partitioned: true } }
 ]
-const partners = [bitsofgold, bitrefill, changelly, changenow, coinswitch, faast]
+const partners = [bitsofgold, bity, bitrefill, changelly, changenow, coinswitch, faast]
 const QUERY_FREQ_MS = 29 * 60 * 1000
 const snooze: Function = async (ms: number) =>
   new Promise((resolve: Function) => setTimeout(resolve, ms))
