@@ -9,6 +9,7 @@ import { changelly } from './partners/changelly'
 import { changenow } from './partners/changenow'
 import { coinswitch } from './partners/coinswitch'
 import { faast } from './partners/faast'
+import { fox } from './partners/fox'
 // Cleaners
 import { asDbSettings, DbTx, StandardTx } from './types'
 
@@ -22,7 +23,7 @@ const DB_NAMES = [
   { name: 'db_settings' },
   { name: 'db_transactions', options: { partitioned: true } }
 ]
-const partners = [bitsofgold, bity, bitrefill, changelly, changenow, coinswitch, faast]
+const partners = [bitsofgold, bity, bitrefill, changelly, changenow, coinswitch, faast, fox]
 const QUERY_FREQ_MS = 29 * 60 * 1000
 const snooze: Function = async (ms: number) =>
   new Promise((resolve: Function) => setTimeout(resolve, ms))
