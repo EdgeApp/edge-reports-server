@@ -1,26 +1,26 @@
 import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
+
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
 const asFoxTx = asObject({
-    orderId: asString,
-    depositCoin: asString,
-    depositCoinAmount: asNumber,
-    exchangeAddress: asObject({ address: asString }),
-    destinationCoin: asString,
-    destinationCoinAmount: asNumber,
-    destinationAddress: asObject({ address: asString }),
-    createdAt: asNumber
+  orderId: asString,
+  depositCoin: asString,
+  depositCoinAmount: asNumber,
+  exchangeAddress: asObject({ address: asString }),
+  destinationCoin: asString,
+  destinationCoinAmount: asNumber,
+  destinationAddress: asObject({ address: asString }),
+  createdAt: asNumber
 })
 
 const asFoxTxs = asObject({
-    data: asObject({
-        items: asArray(asFoxTx)
-    })
-})  
+  data: asObject({
+    items: asArray(asUnknown)
+  })
+})
 
 const LIMIT = 100
-const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 
 export async function queryFox(
   pluginParams: PluginParams
@@ -29,12 +29,15 @@ export async function queryFox(
   let apiKey
   let secretToken
   let lastCheckedTimestamp
-  if (typeof pluginParams.settings.offset !== 'number') {
-    lastCheckedTimestamp = Date.now() - QUERY_LOOKBACK 
+  if (typeof pluginParams.settings.lastCheckedTimestamp !== 'number') {
+    lastCheckedTimestamp = 0
   } else {
     lastCheckedTimestamp = pluginParams.settings.lastCheckedTimestamp
   }
-  if (typeof pluginParams.apiKeys.apiKey === 'string' && typeof pluginParams.apiKeys.secretToken === 'string') {
+  if (
+    typeof pluginParams.apiKeys.apiKey === 'string' &&
+    typeof pluginParams.apiKeys.secretToken === 'string'
+  ) {
     apiKey = pluginParams.apiKeys.apiKey
     secretToken = pluginParams.apiKeys.secretToken
   } else {
@@ -43,33 +46,42 @@ export async function queryFox(
       transactions: []
     }
   }
-  
+
   let done = false
   let newestTimestamp = 0
   let offset = 0
   while (!done) {
-    let txs: ReturnType<typeof asFoxTxs>
-    txs = { data: { items: []}}
+    let txs
     try {
-        //Limit is the amount of things fetched per call.
-        //Offset is how far forward you want to look into the database for results.
-        //the closer an offset is to 0, the more recent it is
-        const res = await fetch(`https://fox.exchange/api/cs/orders?count=${LIMIT}&start=${offset}`, {
-            headers: {
+      // Limit is the amount of things fetched per call.
+      // Offset is how far forward you want to look into the database for results.
+      // the closer an offset is to 0, the more recent it is
+      const res = await fetch(
+        `https://fox.exchange/api/cs/orders?count=${LIMIT}&start=${offset}`,
+        {
+          headers: {
             'x-api-key': apiKey,
             'x-secret-token': secretToken
-            }
-        })
-        if (res.ok) {
-            txs = asFoxTxs(await res.json()) 
+          }
         }
+      )
+      if (res.ok) {
+        txs = asFoxTxs(await res.json())
+      }
     } catch (e) {
-        console.log(e)
-        break
-    }    
+      console.log(e)
+      break
+    }
 
-    for (const tx of txs.data.items) {       
-        const ssTx: StandardTx = {
+    for (const rawtx of txs.data.items) {
+      let tx
+      try {
+        tx = asFoxTx(rawtx)
+      } catch (e) {
+        console.log(e)
+        continue
+      }
+      const ssTx: StandardTx = {
         status: 'complete',
         inputTXID: tx.orderId,
         inputAddress: tx.exchangeAddress.address,
@@ -79,22 +91,22 @@ export async function queryFox(
         outputCurrency: tx.destinationCoin.toUpperCase(),
         outputAmount: tx.destinationCoinAmount,
         timestamp: tx.createdAt / 1000,
-        isoDate: (new Date(tx.createdAt)).toISOString()
-        }
-        ssFormatTxs.push(ssTx)
-        if (tx.createdAt > newestTimestamp) {
-            newestTimestamp = tx.createdAt
-        }
-        if (lastCheckedTimestamp > tx.createdAt) {
-            done = true;
-        }
+        isoDate: new Date(tx.createdAt).toISOString()
+      }
+      ssFormatTxs.push(ssTx)
+      if (tx.createdAt > newestTimestamp) {
+        newestTimestamp = tx.createdAt
+      }
+      if (lastCheckedTimestamp > tx.createdAt) {
+        done = true
+      }
     }
 
-    offset += LIMIT  
+    offset += LIMIT
 
-    //this is if the end of the database is reached
+    // this is if the end of the database is reached
     if (txs.data.items.length < 100) {
-        done = true
+      done = true
     }
   }
 
