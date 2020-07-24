@@ -1,9 +1,20 @@
 import { asArray, asNumber, asObject, asString } from 'cleaners'
 import fetch from 'node-fetch'
-
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
-const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 30 // 30 days
+const asBityTx = asObject({
+  id: asString,
+  customer_trading_fee: asObject, 
+  input: asObject({currency: asString, amount: asString}),
+  output: asObject({currency: asString, amount: asString}),
+  partner_fee: asObject,
+  profit_sharing: asObject,
+  "non-verified_fee": asObject,
+  timestamp_created: asString,
+  timestamp_executed: asString
+})
+
+const asBityResult = asArray(asBityTx)
 const BITY_TOKEN_URL = 'https://connect.bity.com/oauth2/token'
 const BITY_API_URL = 'https://reporting.api.bity.com/exchange/v1/summary/monthly/'
 const PAGE_SIZE = 100
@@ -11,18 +22,15 @@ const PAGE_SIZE = 100
 export async function queryBity(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+
   const ssFormatTxs: StandardTx[] = []
   let tokenParams
   let credentials
   let authToken
-  let queryYear
-  let queryMonth
+  let queryYear = pluginParams.settings.lastCheckedYear ? pluginParams.settings.lastCheckedYear : "2020"
+  let queryMonth = pluginParams.settings.lastCheckedMonth ? pluginParams.settings.lastCheckedMonth : "01"
  
   if (typeof pluginParams.apiKeys.clientId === 'string' && typeof pluginParams.apiKeys.clientSecret === 'string') {
-
-    queryYear = pluginParams.settings.offset.lastCheckedYear ? pluginParams.settings.offset.lastCheckedYear : "2019"
-    queryMonth = pluginParams.settings.offset.lastCheckedMonth ? pluginParams.settings.offset.lastCheckedMonth : "01"
-
     credentials = {
         'grant_type': 'client_credentials',
         scope: 'https://auth.bity.com/scopes/reporting.exchange',
@@ -46,28 +54,77 @@ export async function queryBity(
 
   } else {
     return {
-      settings: { offset: {lastCheckedMonth: "01", lastCheckedYear: "2019"} },
+      settings: { lastCheckedMonth: queryMonth, lastCheckedYear: queryYear },
       transactions: []
     }
   }
 
-  let page = 1
-
-  const monthlyResponse = await fetch(`${BITY_API_URL}${queryYear}-${queryMonth}/orders?page=${page}`,
-        {
-          method: 'GET',
-          headers: { Authorization: `Bearer ${authToken}` }
+  let beforeCurrentMonth = true;
+  let currentDate = new Date(Date.now())
+  let currentMonth = (currentDate.getMonth() + 1).toString()
+  currentMonth = currentMonth.length === 1 ? 0 + currentMonth : currentMonth
+  let currentYear = (currentDate.getFullYear()).toString()
+  while (beforeCurrentMonth) {
+    if (queryMonth === currentMonth && queryYear === currentYear) {
+      beforeCurrentMonth = false;
+    }
+    let moreCurrentMonthsTransactions = true
+    let page = 1
+    while(moreCurrentMonthsTransactions) {
+      let monthlyTxs: ReturnType<typeof asBityResult>
+      monthlyTxs = []
+      try {
+        const monthlyResponse = await fetch(`${BITY_API_URL}${queryYear}-${queryMonth}/orders?page=${page}`,
+          {
+            method: 'GET',
+            headers: { Authorization: `Bearer ${authToken}` }
+          })
+      
+        if (monthlyResponse.ok) {
+          monthlyTxs = asBityResult(await monthlyResponse.json().catch(e => []))
         }
-      )
-      let monthlyTxs = []
-      if (monthlyResponse.ok) {
-        monthlyTxs = await monthlyResponse.json().catch(e => [])
+      } catch (e) {
+        console.log(e)
+        break
       }
 
+      for (const tx of monthlyTxs) {
+        const ssTx: StandardTx = {
+          status: 'complete',
+          inputTXID: tx.id,
+          inputAddress: '',
+          inputCurrency: tx.input.currency.toUpperCase(),
+          inputAmount: parseFloat(tx.input.amount),
+          outputAddress: '',
+          outputCurrency: tx.output.currency.toUpperCase(),
+          outputAmount: parseFloat(tx.output.amount),
+          timestamp: Date.parse(tx.timestamp_executed.concat('Z')) / 1000,
+          isoDate: tx.timestamp_executed
+        }
+        ssFormatTxs.push(ssTx)
+      }
+      moreCurrentMonthsTransactions = monthlyTxs.length === PAGE_SIZE ? true : false
+      page++;
+    } 
+
+    queryMonth = (parseInt(queryMonth) + 1).toString()
+    queryMonth = queryMonth.length === 1 ? 0 + queryMonth : queryMonth
+    if (queryMonth === "13") {
+      queryMonth = "01"
+      queryYear = (parseInt(queryYear) + 1).toString()
+    }
+  }   
+
+  currentMonth = (parseInt(currentMonth) - 1).toString()
+  currentMonth = currentMonth.length === 1 ? 0 + currentMonth : currentMonth
+  if (queryMonth === "00") {
+    currentMonth = "12"
+    currentYear = (parseInt(currentYear) - 1).toString()
+  }
 
   return {
-    settings: { offset: {lastCheckedMonth: "01", lastCheckedYear: "2019"} },
-    transactions: []
+    settings: { lastCheckedMonth: currentMonth, lastCheckedYear: currentYear },
+    transactions: ssFormatTxs
   }
 }
 
