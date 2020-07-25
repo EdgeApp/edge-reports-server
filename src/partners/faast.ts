@@ -59,7 +59,7 @@ export async function queryFaast(
       jsonObj = asFaastResult(resultJSON)
     } catch (e) {
       console.log(e)
-      break
+      throw(e)
     }
     const txs = jsonObj.orders
     for (const rawtx of txs) {
@@ -68,7 +68,7 @@ export async function queryFaast(
         tx = asFaastTx(rawtx)
       } catch(e) {
         console.log(e)
-        continue
+        throw(e)
       } 
       if (tx.status === 'complete') {
         const date = new Date(tx.updated_at)
