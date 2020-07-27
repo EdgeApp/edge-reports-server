@@ -21,6 +21,7 @@ const asFoxTxs = asObject({
 })
 
 const LIMIT = 100
+const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 3 // 3 days ago
 
 export async function queryFox(
   pluginParams: PluginParams
@@ -50,6 +51,7 @@ export async function queryFox(
   let done = false
   let newestTimestamp = 0
   let offset = 0
+  lastCheckedTimestamp -= QUERY_LOOKBACK
   while (!done) {
     let txs
     try {
