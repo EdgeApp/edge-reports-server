@@ -137,8 +137,8 @@ export async function queryBity(
   }
 
   currentMonth = (parseInt(currentMonth) - 1).toString()
-  currentMonth = currentMonth.length === 1 ? `0${queryMonth}` : currentMonth
-  if (queryMonth === '00') {
+  currentMonth = currentMonth.length === 1 ? `0${currentMonth}` : currentMonth
+  if (currentMonth === '00') {
     currentMonth = '12'
     currentYear = (parseInt(currentYear) - 1).toString()
   }
