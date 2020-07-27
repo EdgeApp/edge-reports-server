@@ -101,13 +101,7 @@ export async function queryBity(
       }
 
       for (const rawtx of monthlyTxs) {
-        let tx
-        try {
-          tx = asBityTx(rawtx)
-        } catch (e) {
-          console.log(e)
-          throw e
-        }
+        let tx = asBityTx(rawtx)
         const ssTx: StandardTx = {
           status: 'complete',
           inputTXID: tx.id,
