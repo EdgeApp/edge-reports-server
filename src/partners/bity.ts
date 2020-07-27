@@ -94,10 +94,18 @@ export async function queryBity(
             headers: { Authorization: `Bearer ${authToken}` }
           }
         )
-        monthlyTxs = asBityResult(await monthlyResponse.json().catch(e => []))
+        // june 2020 has exactly 300 transactions and it gives
+        // status: 404
+        // statusText: "Not Found"
+        // on page 4
+        if (monthlyResponse.ok) {
+          monthlyTxs = asBityResult(await monthlyResponse.json())
+        } else if (monthlyResponse.status === 404) {
+          break
+        } 
       } catch (e) {
         console.log(e)
-        break
+        throw e
       }
 
       for (const rawtx of monthlyTxs) {
