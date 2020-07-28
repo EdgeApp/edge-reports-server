@@ -34,7 +34,7 @@ export async function queryLibertyx(
   }
 
   for (const tx of result.stats) {
-    if (!tx.all_transactions_usd_sum) {
+    if (tx.all_transactions_usd_sum === null) {
       continue
     }
     const date = new Date(tx.date_us_eastern)
