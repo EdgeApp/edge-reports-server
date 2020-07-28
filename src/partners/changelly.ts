@@ -52,6 +52,10 @@ export async function queryChangelly(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
   let changellySDK
+  let latestTimeStamp = 0
+  if (typeof pluginParams.settings.latestTimeStamp === 'number') {
+    latestTimeStamp = pluginParams.settings.latestTimeStamp
+  }
   if (
     typeof pluginParams.apiKeys.changellyApiKey === 'string' &&
     typeof pluginParams.apiKeys.changellyApiSecret === 'string'
@@ -62,14 +66,15 @@ export async function queryChangelly(
     )
   } else {
     return {
-      settings: { latestTimeStamp: pluginParams.settings.latestTimeStamp ? pluginParams.settings.latestTimeStamp : 0 },
+      settings: {
+        latestTimeStamp: latestTimeStamp
+      },
       transactions: []
     }
   }
 
   let offset = 0
   const ssFormatTxs: StandardTx[] = []
-  const { latestTimeStamp = 0 } = pluginParams.settings
   let newLatestTimeStamp = latestTimeStamp
   let done = false
   while (!done) {

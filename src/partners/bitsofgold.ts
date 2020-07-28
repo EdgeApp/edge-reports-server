@@ -1,4 +1,4 @@
-import { asArray, asNumber, asObject, asString } from 'cleaners'
+// import { asArray, asNumber, asObject, asString } from 'cleaners'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
@@ -10,22 +10,30 @@ export async function queryBitsOfGold(
 ): Promise<PluginResult> {
   const ssFormatTxs: StandardTx[] = []
   let apiKey = ''
+  let previousDate = '2019-01-01T00:00:00.000Z'
+  if (typeof pluginParams.settings.previousSearchedDate === 'string') {
+    previousDate = pluginParams.settings.previousSearchedDate
+  }
   if (typeof pluginParams.apiKeys.apiKey === 'string') {
     apiKey = pluginParams.apiKeys.apiKey
   } else {
     return {
-      settings: { previousSearchedDate: pluginParams.settings.previousSearchedDate ? pluginParams.settings.previousSearchedDate : new Date('2019-01-01') },
+      settings: {
+        previousSearchedDate: previousDate
+      },
       transactions: []
     }
   }
 
-  let previousDate = pluginParams.settings.previousSearchedDate ? pluginParams.settings.previousSearchedDate : new Date('2019-01-01')
-  let millisecondPreviousSearchedDate = new Date(previousDate).getTime() - QUERY_LOOKBACK 
-  let startDate = new Date(millisecondPreviousSearchedDate)
-  let endDate = new Date(Date.now())
-  let formattedStartDate = `${startDate.getDate()}-${startDate.getMonth() + 1}-${startDate.getFullYear()}`
-  let formattedEndDate = `${endDate.getDate()}-${endDate.getMonth() + 1}-${endDate.getFullYear()}`
-  let url = `http://webapi.bitsofgold.co.il/v1/sells/by_provider/?provider=${pluginParams.apiKeys.apiKey}&filter%5Bcreated_at_gteq%5D=%27${formattedStartDate}%27&filter%5Bcreated_at_lt%5D=%27${formattedEndDate}`
+  const millisecondPreviousSearchedDate =
+    new Date(previousDate).getTime() - QUERY_LOOKBACK
+  const startDate = new Date(millisecondPreviousSearchedDate)
+  const endDate = new Date(Date.now())
+  const formattedStartDate = `${startDate.getDate()}-${startDate.getMonth() +
+    1}-${startDate.getFullYear()}`
+  const formattedEndDate = `${endDate.getDate()}-${endDate.getMonth() +
+    1}-${endDate.getFullYear()}`
+  const url = `http://webapi.bitsofgold.co.il/v1/sells/by_provider/?provider=${pluginParams.apiKeys.apiKey}&filter%5Bcreated_at_gteq%5D=%27${formattedStartDate}%27&filter%5Bcreated_at_lt%5D=%27${formattedEndDate}`
   const headers = {
     'x-api-key': apiKey
   }
@@ -42,7 +50,7 @@ export async function queryBitsOfGold(
   for (const tx of txs) {
     const data = tx.attributes
     const date = new Date(data.timestamp)
-    const timestamp = date.getTime() 
+    const timestamp = date.getTime()
 
     const ssTx: StandardTx = {
       status: 'complete',
