@@ -1,4 +1,4 @@
-import { asArray, asObject, asString } from 'cleaners'
+import { asArray, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
@@ -15,7 +15,7 @@ const asBityTx = asObject({
   timestamp_executed: asString
 })
 
-const asBityResult = asArray(asBityTx)
+const asBityResult = asArray(asUnknown)
 const BITY_TOKEN_URL = 'https://connect.bity.com/oauth2/token'
 const BITY_API_URL =
   'https://reporting.api.bity.com/exchange/v1/summary/monthly/'
@@ -28,14 +28,16 @@ export async function queryBity(
   let tokenParams
   let credentials
   let authToken
-  let queryYear =
-    typeof pluginParams.settings.lastCheckedYear === 'string'
-      ? pluginParams.settings.lastCheckedYear
-      : '2020'
-  let queryMonth =
-    typeof pluginParams.settings.lastCheckedMonth === 'string'
-      ? pluginParams.settings.lastCheckedMonth
-      : '01'
+
+  let queryYear = '2020'
+  let queryMonth = '01'
+
+  if (typeof pluginParams.settings.lastCheckedYear === 'string') {
+    queryYear = pluginParams.settings.lastCheckedYear
+  }
+  if (typeof pluginParams.settings.lastCheckedMonth === 'string') {
+    queryMonth = pluginParams.settings.lastCheckedMonth
+  }
 
   if (
     typeof pluginParams.apiKeys.clientId === 'string' &&
@@ -75,7 +77,7 @@ export async function queryBity(
   let beforeCurrentMonth = true
   const currentDate = new Date(Date.now())
   let currentMonth = (currentDate.getMonth() + 1).toString()
-  currentMonth = currentMonth.length === 1 ? '0' + currentMonth : currentMonth
+  currentMonth = currentMonth.length === 1 ? `0${currentMonth}` : currentMonth
   let currentYear = currentDate.getFullYear().toString()
   while (beforeCurrentMonth) {
     if (queryMonth === currentMonth && queryYear === currentYear) {
@@ -84,8 +86,8 @@ export async function queryBity(
     let moreCurrentMonthsTransactions = true
     let page = 1
     while (moreCurrentMonthsTransactions) {
-      let monthlyTxs: ReturnType<typeof asBityResult>
-      monthlyTxs = []
+      let monthlyTxs
+
       try {
         const monthlyResponse = await fetch(
           `${BITY_API_URL}${queryYear}-${queryMonth}/orders?page=${page}`,
@@ -95,15 +97,25 @@ export async function queryBity(
           }
         )
 
+        // june 2020 has exactly 300 transactions and it gives
+        // status: 404
+        // statusText: "Not Found"
+        // on page 4
         if (monthlyResponse.ok === true) {
-          monthlyTxs = asBityResult(await monthlyResponse.json().catch(e => []))
+          monthlyTxs = asBityResult(await monthlyResponse.json())
+        } else if (
+          monthlyResponse.status === 404 &&
+          monthlyResponse.statusText === 'Not Found'
+        ) {
+          break
         }
       } catch (e) {
         console.log(e)
-        break
+        throw e
       }
 
-      for (const tx of monthlyTxs) {
+      for (const rawtx of monthlyTxs) {
+        const tx = asBityTx(rawtx)
         const ssTx: StandardTx = {
           status: 'complete',
           inputTXID: tx.id,
@@ -123,7 +135,9 @@ export async function queryBity(
     }
 
     queryMonth = (parseInt(queryMonth) + 1).toString()
-    queryMonth = queryMonth.length === 1 ? '0' + queryMonth : queryMonth
+
+    queryMonth = queryMonth.length === 1 ? `0${queryMonth}` : queryMonth
+
     if (queryMonth === '13') {
       queryMonth = '01'
       queryYear = (parseInt(queryYear) + 1).toString()
@@ -131,8 +145,9 @@ export async function queryBity(
   }
 
   currentMonth = (parseInt(currentMonth) - 1).toString()
-  currentMonth = currentMonth.length === 1 ? '0' + currentMonth : currentMonth
-  if (queryMonth === '00') {
+
+  currentMonth = currentMonth.length === 1 ? `0${currentMonth}` : currentMonth
+  if (currentMonth === '00') {
     currentMonth = '12'
     currentYear = (parseInt(currentYear) - 1).toString()
   }
