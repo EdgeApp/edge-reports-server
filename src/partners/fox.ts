@@ -67,7 +67,7 @@ export async function queryFox(
           }
         }
       )
-      if (res.ok) {
+      if (res.ok === true) {
         txs = asFoxTxs(await res.json())
       }
     } catch (e) {
@@ -107,7 +107,7 @@ export async function queryFox(
     offset += LIMIT
 
     // this is if the end of the database is reached
-    if (txs.data.items.length < 100) {
+    if (txs.data.items.length < LIMIT) {
       done = true
     }
   }

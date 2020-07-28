@@ -1,10 +1,10 @@
 import nano from 'nano'
 
 import config from '../config.json'
+import { bitrefill } from './partners/bitrefill'
 // Query Partner Functions
 import { bitsofgold } from './partners/bitsofgold'
 import { bity } from './partners/bity'
-import { bitrefill } from './partners/bitrefill'
 import { changelly } from './partners/changelly'
 import { changenow } from './partners/changenow'
 import { coinswitch } from './partners/coinswitch'
@@ -13,7 +13,7 @@ import { fox } from './partners/fox'
 // Cleaners
 import { asDbSettings, DbTx, StandardTx } from './types'
 
-const datelog = function (...args: any): void {
+const datelog = function(...args: any): void {
   const date = new Date().toISOString()
   console.log(date, ...args)
 }
@@ -23,7 +23,16 @@ const DB_NAMES = [
   { name: 'db_settings' },
   { name: 'db_transactions', options: { partitioned: true } }
 ]
-const partners = [bitsofgold, bity, bitrefill, changelly, changenow, coinswitch, faast, fox]
+const partners = [
+  bitsofgold,
+  bity,
+  bitrefill,
+  changelly,
+  changenow,
+  coinswitch,
+  faast,
+  fox
+]
 const QUERY_FREQ_MS = 29 * 60 * 1000
 const snooze: Function = async (ms: number) =>
   new Promise((resolve: Function) => setTimeout(resolve, ms))
@@ -53,7 +62,12 @@ export async function queryEngine(): Promise<void> {
       try {
         partnerSettings = asDbSettings(out)
       } catch (e) {
-        partnerSettings = { apiKeys: {}, settings: {}, _id: undefined, _rev: undefined }
+        partnerSettings = {
+          apiKeys: {},
+          settings: {},
+          _id: undefined,
+          _rev: undefined
+        }
       }
       const apiKeys =
         partnerSettings.apiKeys[partner.pluginId] != null
@@ -113,10 +127,12 @@ async function insertTransactions(
   }
   try {
     const docs = await dbTransactions.bulk({ docs: transactionsArray })
-    let numErrors = 0;
+    let numErrors = 0
     for (const doc of docs) {
       if (doc.error != null) {
-        datelog(`There was an error in the batch ${doc.error}.  id: ${doc.id}. revision: ${doc.rev}`)
+        datelog(
+          `There was an error in the batch ${doc.error}.  id: ${doc.id}. revision: ${doc.rev}`
+        )
         numErrors++
         // throw new Error(`There was an error in the batch ${doc.error}`)
       }
