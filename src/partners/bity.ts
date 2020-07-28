@@ -1,57 +1,70 @@
-import { asArray, asNumber, asObject, asString } from 'cleaners'
+import { asArray, asObject, asString } from 'cleaners'
 import fetch from 'node-fetch'
+
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
 const asBityTx = asObject({
   id: asString,
-  customer_trading_fee: asObject, 
-  input: asObject({currency: asString, amount: asString}),
-  output: asObject({currency: asString, amount: asString}),
+  customer_trading_fee: asObject,
+  input: asObject({ currency: asString, amount: asString }),
+  output: asObject({ currency: asString, amount: asString }),
   partner_fee: asObject,
   profit_sharing: asObject,
-  "non-verified_fee": asObject,
+  'non-verified_fee': asObject,
   timestamp_created: asString,
   timestamp_executed: asString
 })
 
 const asBityResult = asArray(asBityTx)
 const BITY_TOKEN_URL = 'https://connect.bity.com/oauth2/token'
-const BITY_API_URL = 'https://reporting.api.bity.com/exchange/v1/summary/monthly/'
+const BITY_API_URL =
+  'https://reporting.api.bity.com/exchange/v1/summary/monthly/'
 const PAGE_SIZE = 100
 
 export async function queryBity(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
-
   const ssFormatTxs: StandardTx[] = []
   let tokenParams
   let credentials
   let authToken
-  let queryYear = pluginParams.settings.lastCheckedYear ? pluginParams.settings.lastCheckedYear : "2020"
-  let queryMonth = pluginParams.settings.lastCheckedMonth ? pluginParams.settings.lastCheckedMonth : "01"
- 
-  if (typeof pluginParams.apiKeys.clientId === 'string' && typeof pluginParams.apiKeys.clientSecret === 'string') {
+  let queryYear =
+    typeof pluginParams.settings.lastCheckedYear === 'string'
+      ? pluginParams.settings.lastCheckedYear
+      : '2020'
+  let queryMonth =
+    typeof pluginParams.settings.lastCheckedMonth === 'string'
+      ? pluginParams.settings.lastCheckedMonth
+      : '01'
+
+  if (
+    typeof pluginParams.apiKeys.clientId === 'string' &&
+    typeof pluginParams.apiKeys.clientSecret === 'string'
+  ) {
     credentials = {
-        'grant_type': 'client_credentials',
-        scope: 'https://auth.bity.com/scopes/reporting.exchange',
-        client_id: pluginParams.apiKeys.clientId,
-        client_secret: pluginParams.apiKeys.clientSecret
-      }
+      grant_type: 'client_credentials',
+      scope: 'https://auth.bity.com/scopes/reporting.exchange',
+      client_id: pluginParams.apiKeys.clientId,
+      client_secret: pluginParams.apiKeys.clientSecret
+    }
 
-    tokenParams = Object.keys(credentials).map((key) => {
-        return encodeURIComponent(key) + '=' + encodeURIComponent(credentials[key])
-    }).join('&')
+    tokenParams = Object.keys(credentials)
+      .map(key => {
+        return (
+          encodeURIComponent(key) + '=' + encodeURIComponent(credentials[key])
+        )
+      })
+      .join('&')
 
-        const tokenResponse = await fetch(BITY_TOKEN_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          },
-          body: tokenParams
-        })
-        const tokenReply = await tokenResponse.json()
-        authToken = tokenReply.access_token
-
+    const tokenResponse = await fetch(BITY_TOKEN_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: tokenParams
+    })
+    const tokenReply = await tokenResponse.json()
+    authToken = tokenReply.access_token
   } else {
     return {
       settings: { lastCheckedMonth: queryMonth, lastCheckedYear: queryYear },
@@ -59,28 +72,30 @@ export async function queryBity(
     }
   }
 
-  let beforeCurrentMonth = true;
-  let currentDate = new Date(Date.now())
+  let beforeCurrentMonth = true
+  const currentDate = new Date(Date.now())
   let currentMonth = (currentDate.getMonth() + 1).toString()
-  currentMonth = currentMonth.length === 1 ? 0 + currentMonth : currentMonth
-  let currentYear = (currentDate.getFullYear()).toString()
+  currentMonth = currentMonth.length === 1 ? '0' + currentMonth : currentMonth
+  let currentYear = currentDate.getFullYear().toString()
   while (beforeCurrentMonth) {
     if (queryMonth === currentMonth && queryYear === currentYear) {
-      beforeCurrentMonth = false;
+      beforeCurrentMonth = false
     }
     let moreCurrentMonthsTransactions = true
     let page = 1
-    while(moreCurrentMonthsTransactions) {
+    while (moreCurrentMonthsTransactions) {
       let monthlyTxs: ReturnType<typeof asBityResult>
       monthlyTxs = []
       try {
-        const monthlyResponse = await fetch(`${BITY_API_URL}${queryYear}-${queryMonth}/orders?page=${page}`,
+        const monthlyResponse = await fetch(
+          `${BITY_API_URL}${queryYear}-${queryMonth}/orders?page=${page}`,
           {
             method: 'GET',
             headers: { Authorization: `Bearer ${authToken}` }
-          })
-      
-        if (monthlyResponse.ok) {
+          }
+        )
+
+        if (monthlyResponse.ok === true) {
           monthlyTxs = asBityResult(await monthlyResponse.json().catch(e => []))
         }
       } catch (e) {
@@ -103,22 +118,22 @@ export async function queryBity(
         }
         ssFormatTxs.push(ssTx)
       }
-      moreCurrentMonthsTransactions = monthlyTxs.length === PAGE_SIZE ? true : false
-      page++;
-    } 
+      moreCurrentMonthsTransactions = monthlyTxs.length === PAGE_SIZE
+      page++
+    }
 
     queryMonth = (parseInt(queryMonth) + 1).toString()
-    queryMonth = queryMonth.length === 1 ? 0 + queryMonth : queryMonth
-    if (queryMonth === "13") {
-      queryMonth = "01"
+    queryMonth = queryMonth.length === 1 ? '0' + queryMonth : queryMonth
+    if (queryMonth === '13') {
+      queryMonth = '01'
       queryYear = (parseInt(queryYear) + 1).toString()
     }
-  }   
+  }
 
   currentMonth = (parseInt(currentMonth) - 1).toString()
-  currentMonth = currentMonth.length === 1 ? 0 + currentMonth : currentMonth
-  if (queryMonth === "00") {
-    currentMonth = "12"
+  currentMonth = currentMonth.length === 1 ? '0' + currentMonth : currentMonth
+  if (queryMonth === '00') {
+    currentMonth = '12'
     currentYear = (parseInt(currentYear) - 1).toString()
   }
 

@@ -29,11 +29,17 @@ export async function queryCoinSwitch(
   const ssFormatTxs: StandardTx[] = []
   let start = 0
   let apiKey = ''
+  let latestTimeStamp = 0
+  if (typeof pluginParams.settings.latestTimeStamp === 'number') {
+    latestTimeStamp = pluginParams.settings.latestTimeStamp
+  }
   if (typeof pluginParams.apiKeys.apiKey === 'string') {
     apiKey = pluginParams.apiKeys.apiKey
   } else {
     return {
-      settings: { latestTimeStamp: pluginParams.settings.latestTimeStamp ? pluginParams.settings.latestTimeStamp : 0 },
+      settings: {
+        latestTimeStamp: latestTimeStamp
+      },
       transactions: []
     }
   }
@@ -42,7 +48,6 @@ export async function queryCoinSwitch(
     'x-api-key': apiKey
   }
 
-  const { latestTimeStamp = 0 } = pluginParams.settings
   let newLatestTimeStamp = latestTimeStamp
   let done = false
   while (!done) {

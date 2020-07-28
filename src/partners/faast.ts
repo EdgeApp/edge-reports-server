@@ -29,6 +29,10 @@ export async function queryFaast(
   let page = 1
   const ssFormatTxs: StandardTx[] = []
   let signature = ''
+  let latestTimeStamp = 0
+  if (typeof pluginParams.settings.latestTimeStamp === 'number') {
+    latestTimeStamp = pluginParams.settings.latestTimeStamp
+  }
   const nonce = String(Date.now())
   if (typeof pluginParams.apiKeys.faastSecret === 'string') {
     signature = crypto
@@ -37,7 +41,9 @@ export async function queryFaast(
       .digest('hex')
   } else {
     return {
-      settings: {latestTimeStamp: pluginParams.settings.latestTimeStamp ? pluginParams.settings.latestTimeStamp : 0 },
+      settings: {
+        latestTimeStamp: latestTimeStamp
+      },
       transactions: []
     }
   }
@@ -47,29 +53,28 @@ export async function queryFaast(
     nonce,
     signature
   }
-  const { latestTimeStamp = 0 } = pluginParams.settings
   let newLatestTimeStamp = latestTimeStamp
   let done = false
   while (!done) {
     let jsonObj: ReturnType<typeof asFaastResult>
-    let resultJSON;
+    let resultJSON
     try {
       const result = await fetch(url, { method: 'GET', headers: headers })
       resultJSON = await result.json()
       jsonObj = asFaastResult(resultJSON)
     } catch (e) {
       console.log(e)
-      throw(e)
+      throw e
     }
     const txs = jsonObj.orders
     for (const rawtx of txs) {
       let tx
       try {
         tx = asFaastTx(rawtx)
-      } catch(e) {
+      } catch (e) {
         console.log(e)
-        throw(e)
-      } 
+        throw e
+      }
       if (tx.status === 'complete') {
         const date = new Date(tx.updated_at)
         const timestamp = date.getTime() / 1000
@@ -100,7 +105,7 @@ export async function queryFaast(
     page++
   }
   const out: PluginResult = {
-    settings: { latestTimeStamp: newLatestTimeStamp},
+    settings: { latestTimeStamp: newLatestTimeStamp },
     transactions: ssFormatTxs
   }
   return out
