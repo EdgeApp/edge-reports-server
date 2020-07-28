@@ -3,14 +3,27 @@ import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
+const asSafelloTx = asObject({
+  completedDate: asString,
+  id: asString,
+  currency: asString,
+  amount: asNumber,
+  cryptoCurrency: asString
+})
+
+const asSafelloResult = asObject({ orders: asArray(asUnknown) })
 const PER_REQUEST_LIMIT = 100
+const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 
 export async function querySafello(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
   const ssFormatTxs: StandardTx[] = []
   let headers
-  const latestTimestamp = Date.now() - 1000 * 60 * 60 * 24 * 5
+  let latestTimestamp = Date.now()
+  if (typeof pluginParams.settings.lastCheckedTimestamp === 'number') {
+    latestTimestamp = pluginParams.settings.lastCheckedTimestamp
+  }
 
   if (typeof pluginParams.apiKeys.apiKey === 'string') {
     headers = {
@@ -18,24 +31,29 @@ export async function querySafello(
     }
   } else {
     return {
-      settings: {},
+      settings: { lastCheckedTimestamp: latestTimestamp },
       transactions: []
     }
   }
 
+  if (latestTimestamp > QUERY_LOOKBACK) {
+    latestTimestamp -= QUERY_LOOKBACK
+  }
   let done = false
   let offset = 0
-  const newestTimestamp = 0
+  let newestTimestamp = latestTimestamp
   while (!done) {
     const url = `https://app.safello.com/v1/partner/get-orders?offset=${offset}`
     const result = await fetch(url, {
       method: 'GET',
       headers
     })
-    const txs = await result.json()
+    const txs = asSafelloResult(await result.json())
 
-    for (const tx of txs) {
+    for (const rawtx of txs.orders) {
+      const tx = asSafelloTx(rawtx)
       const date = new Date(tx.completedDate)
+      const timestamp = date.getTime()
       const ssTx = {
         status: 'complete',
         inputTXID: tx.id,
@@ -45,20 +63,23 @@ export async function querySafello(
         outputAddress: '',
         outputCurrency: tx.cryptoCurrency,
         outputAmount: 0,
-        timestamp: date.getTime() / 1000,
+        timestamp: timestamp,
         isoDate: date.toISOString()
       }
       ssFormatTxs.push(ssTx)
+      if (timestamp > newestTimestamp) {
+        newestTimestamp = timestamp
+      }
+      if (latestTimestamp > timestamp) {
+        done = true
+      }
     }
 
     offset += PER_REQUEST_LIMIT
-    if (offset === 500) {
-      done = true
-    }
   }
 
   const out: PluginResult = {
-    settings: {},
+    settings: { lastCheckedTimestamp: newestTimestamp },
     transactions: ssFormatTxs
   }
   return out
