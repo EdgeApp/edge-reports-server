@@ -17,14 +17,13 @@ const asGodexTx = asObject({
 })
 
 const asGodexResult = asArray(asUnknown)
-
-const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 20 // 20 days
+const LIMIT = 100
+const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 
 export async function queryGodex(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
   const ssFormatTxs: StandardTx[] = []
-  const limit = 100
   let apiKey
   let offset = 0
   let lastCheckedTimestamp
@@ -48,7 +47,7 @@ export async function queryGodex(
   let newestTimestamp = 0
   while (!done) {
     let resultJSON = {}
-    const url = `https://api.godex.io/api/v1/affiliate/history?limit=${limit}&offset=${offset}`
+    const url = `https://api.godex.io/api/v1/affiliate/history?limit=${LIMIT}&offset=${offset}`
     const headers = {
       Authorization: apiKey
     }
@@ -70,7 +69,7 @@ export async function queryGodex(
         throw e
       }
       if (tx.status === 'success') {
-        const timestamp = parseInt(tx.created_at) * 1000
+        const timestamp = parseInt(tx.created_at)
         const ssTx = {
           status: 'complete',
           inputTXID: tx.hash_in,
@@ -81,7 +80,7 @@ export async function queryGodex(
           outputCurrency: tx.coin_to.toUpperCase(),
           outputAmount: parseFloat(tx.withdrawal_amount),
           timestamp: timestamp,
-          isoDate: new Date(timestamp).toISOString()
+          isoDate: new Date(timestamp * 1000).toISOString()
         }
         ssFormatTxs.push(ssTx)
         if (timestamp > newestTimestamp) {
@@ -93,7 +92,7 @@ export async function queryGodex(
       }
     }
 
-    offset += limit
+    offset += LIMIT
     // this is if the end of the database is reached
     if (txs.length < 100) {
       done = true
