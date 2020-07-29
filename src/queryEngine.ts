@@ -9,6 +9,7 @@ import { changelly } from './partners/changelly'
 import { changenow } from './partners/changenow'
 import { coinswitch } from './partners/coinswitch'
 import { faast } from './partners/faast'
+import { fox } from './partners/fox'
 import { godex } from './partners/godex'
 // Cleaners
 import { asDbSettings, DbTx, StandardTx } from './types'
@@ -32,7 +33,8 @@ const partners = [
   changenow,
   coinswitch,
   faast,
-  godex
+  godex,
+  fox
 ]
 const QUERY_FREQ_MS = 29 * 60 * 1000
 const snooze: Function = async (ms: number) =>
