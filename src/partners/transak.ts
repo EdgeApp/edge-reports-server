@@ -90,7 +90,6 @@ export async function queryTransak(
     offset += txs.length
   }
 
-  offset = Math.floor(offset / 100) * 100
   const out: PluginResult = {
     settings: { offset: offset },
     transactions: ssFormatTxs
