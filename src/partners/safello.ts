@@ -76,6 +76,11 @@ export async function querySafello(
     }
 
     offset += PER_REQUEST_LIMIT
+
+    // reached end of database
+    if (txs.orders.length < PER_REQUEST_LIMIT) {
+      done = true
+    }
   }
 
   const out: PluginResult = {
