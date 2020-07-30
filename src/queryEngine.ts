@@ -17,6 +17,7 @@ import { safello } from './partners/safello'
 import { simplex } from './partners/simplex'
 import { switchain } from './partners/switchain'
 import { totle } from './partners/totle'
+import { transak } from './partners/transak'
 import { wyre } from './partners/wyre'
 // Cleaners
 import { asDbSettings, DbTx, StandardTx } from './types'
@@ -47,6 +48,7 @@ const partners = [
   safello,
   switchain,
   totle,
+  transak,
   simplex,
   wyre
 ]
