@@ -19,17 +19,12 @@ export async function querySafello(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
   const ssFormatTxs: StandardTx[] = []
-  let headers
   let latestTimestamp = 0
   if (typeof pluginParams.settings.lastCheckedTimestamp === 'number') {
     latestTimestamp = pluginParams.settings.lastCheckedTimestamp
   }
 
-  if (typeof pluginParams.apiKeys.apiKey === 'string') {
-    headers = {
-      'secret-key': pluginParams.apiKeys.apiKey
-    }
-  } else {
+  if (typeof pluginParams.apiKeys.apiKey !== 'string') {
     return {
       settings: { lastCheckedTimestamp: latestTimestamp },
       transactions: []
@@ -44,6 +39,9 @@ export async function querySafello(
   let newestTimestamp = latestTimestamp
   while (!done) {
     const url = `https://app.safello.com/v1/partner/get-orders?offset=${offset}`
+    const headers = {
+      'secret-key': pluginParams.apiKeys.apiKey
+    }
     const result = await fetch(url, {
       method: 'GET',
       headers
