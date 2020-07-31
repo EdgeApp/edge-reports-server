@@ -41,7 +41,6 @@ export async function querySwitchain(
     }
   }
 
-  latestTimestamp -= QUERY_LOOKBACK
   let done = false
   let newestTimestamp = 0
   let page = 1
@@ -83,7 +82,7 @@ export async function querySwitchain(
           isoDate: tx.createdAt
         }
         ssFormatTxs.push(ssTx)
-        if (latestTimestamp > timestamp) {
+        if (latestTimestamp - QUERY_LOOKBACK > timestamp) {
           done = true
         }
         if (timestamp > newestTimestamp) {
