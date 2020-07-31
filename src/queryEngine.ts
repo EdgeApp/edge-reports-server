@@ -12,6 +12,7 @@ import { faast } from './partners/faast'
 import { fox } from './partners/fox'
 import { godex } from './partners/godex'
 import { moonpay } from './partners/moonpay'
+import { safello } from './partners/safello'
 import { switchain } from './partners/switchain'
 // Cleaners
 import { asDbSettings, DbTx, StandardTx } from './types'
@@ -38,6 +39,7 @@ const partners = [
   godex,
   fox,
   moonpay,
+  safello,
   switchain
 ]
 const QUERY_FREQ_MS = 29 * 60 * 1000
