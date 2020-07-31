@@ -31,9 +31,6 @@ export async function querySafello(
     }
   }
 
-  if (latestTimestamp > QUERY_LOOKBACK) {
-    latestTimestamp -= QUERY_LOOKBACK
-  }
   let done = false
   let offset = 0
   let newestTimestamp = latestTimestamp
@@ -68,7 +65,7 @@ export async function querySafello(
       if (timestamp > newestTimestamp) {
         newestTimestamp = timestamp
       }
-      if (latestTimestamp > timestamp) {
+      if (latestTimestamp - QUERY_LOOKBACK > timestamp) {
         done = true
       }
     }
