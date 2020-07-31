@@ -1,7 +1,19 @@
-import { asArray, asObject, asUnknown } from 'cleaners'
+import {
+  asArray,
+  asNumber,
+  asObject,
+  asOptional,
+  asString,
+  asUnknown
+} from 'cleaners'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+
+const asLibertyxTx = asObject({
+  all_transactions_usd_sum: asOptional(asNumber),
+  date_us_eastern: asString
+})
 
 const asLibertyxResult = asObject({ stats: asArray(asUnknown) })
 
@@ -33,7 +45,8 @@ export async function queryLibertyx(
     }
   }
 
-  for (const tx of result.stats) {
+  for (const rawtx of result.stats) {
+    const tx = asLibertyxTx(rawtx)
     if (typeof tx.all_transactions_usd_sum !== 'number') {
       continue
     }
