@@ -18,7 +18,7 @@ const asBogResult = asObject({
   data: asArray(asUnknown)
 })
 
-const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 30 // 30 days
+const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 
 export async function queryBitsOfGold(
   pluginParams: PluginParams
