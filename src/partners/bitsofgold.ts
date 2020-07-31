@@ -1,7 +1,22 @@
-// import { asArray, asNumber, asObject, asString } from 'cleaners'
+import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+
+const asBogTx = asObject({
+  attributes: asObject({
+    coin_type: asString,
+    coin_amount: asNumber,
+    fiat_type: asString,
+    fiat_amount: asNumber,
+    timestamp: asString
+  }),
+  id: asString
+})
+
+const asBogResult = asObject({
+  data: asArray(asUnknown)
+})
 
 const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 30 // 30 days
 
@@ -41,13 +56,15 @@ export async function queryBitsOfGold(
   let resultJSON
   try {
     const result = await fetch(url, { method: 'GET', headers: headers })
-    resultJSON = await result.json()
+    resultJSON = asBogResult(await result.json())
   } catch (e) {
     console.log(e)
+    throw e
   }
   const txs = resultJSON.data
   let latestTimeStamp = startDate.getTime()
-  for (const tx of txs) {
+  for (const rawtx of txs) {
+    const tx = asBogTx(rawtx)
     const data = tx.attributes
     const date = new Date(data.timestamp)
     const timestamp = date.getTime()
