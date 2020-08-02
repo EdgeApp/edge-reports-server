@@ -42,6 +42,10 @@ const asSwapEventsResult = asArray(
   })
 )
 
+const asBlockTimestampResult = asObject({
+  timestamp: asNumber
+})
+
 const PRIMARY_ABI: any = [
   {
     constant: true,
@@ -361,12 +365,10 @@ export async function queryTotle(
           )
             continue
 
-          // timestamp is of type (string || number) and got error, made code to always make it number
-          const { timestamp } = await web3.eth.getBlock(swapEvent.blockNumber)
-          if (typeof timestamp === 'string') {
-            parseFloat(timestamp)
-          }
-          const trueTimestamp = asNumber(timestamp)
+          // finding timestamp based on blockNumber
+          const { timestamp } = asBlockTimestampResult(
+            await web3.eth.getBlock(swapEvent.blockNumber)
+          )
 
           const receipt = await web3.eth.getTransactionReceipt(
             swapEvent.transactionHash
@@ -391,8 +393,8 @@ export async function queryTotle(
                 (10 ** destinationToken.decimals).toString()
               )
             ),
-            timestamp: trueTimestamp,
-            isoDate: new Date(trueTimestamp * 1000).toISOString()
+            timestamp: timestamp,
+            isoDate: new Date(timestamp * 1000).toISOString()
           }
           ssFormatTxs.push(ssTx)
         }
