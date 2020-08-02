@@ -16,6 +16,15 @@ const asTokenResult = asObject({
   )
 })
 
+const asContractResult = asObject({
+  contracts: asArray(
+    asObject({
+      type: asNumber,
+      address: asString
+    })
+  )
+})
+
 const PRIMARY_ABI: any = [
   {
     constant: true,
@@ -284,9 +293,9 @@ export async function queryTotle(
       await fetch('https://api.totle.com/tokens').then(res => res.json())
     )
 
-    const { contracts } = await fetch(
-      'https://api.totle.com/contracts'
-    ).then(res => res.json())
+    const { contracts } = asContractResult(
+      await fetch('https://api.totle.com/contracts').then(res => res.json())
+    )
 
     const primaries = contracts.filter(({ type }) => type === 1)
 
