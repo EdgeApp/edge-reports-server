@@ -367,7 +367,7 @@ export async function queryTotle(
             t => t.address.toLowerCase() === destinationAsset.toLowerCase()
           )
 
-          // Cannot find token
+          // if the token on the transaction doesnt exist within the list of recognized tokens
           if (
             typeof sourceToken === 'undefined' ||
             typeof destinationToken === 'undefined'
