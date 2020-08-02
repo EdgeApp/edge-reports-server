@@ -6,6 +6,8 @@ import Web3 from 'web3'
 // import { AbiItem } from 'web3-utils'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
+const asCurrentBlockResult = asNumber
+
 const asTokenResult = asObject({
   tokens: asArray(
     asObject({
@@ -303,6 +305,7 @@ export async function queryTotle(
   const ssFormatTxs: StandardTx[] = []
   let partnerContractAddress
   let offset = 7000000
+  const currentBlock = asCurrentBlockResult(await web3.eth.getBlockNumber())
   if (typeof pluginParams.settings.offset === 'number') {
     offset = pluginParams.settings.offset
   }
@@ -412,7 +415,7 @@ export async function queryTotle(
   }
 
   const out: PluginResult = {
-    settings: { offset: await web3.eth.getBlockNumber() },
+    settings: { offset: currentBlock },
     transactions: ssFormatTxs
   }
   return out
