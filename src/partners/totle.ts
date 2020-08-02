@@ -29,6 +29,19 @@ const asSwapCollectionResult = asArray(
   asObject({ returnValues: asObject({ id: asString }) })
 )
 
+const asSwapEventsResult = asArray(
+  asObject({
+    returnValues: asObject({
+      sourceAsset: asString,
+      destinationAsset: asString,
+      sourceAmount: asString,
+      destinationAmount: asString
+    }),
+    blockNumber: asNumber,
+    transactionHash: asString
+  })
+)
+
 const PRIMARY_ABI: any = [
   {
     constant: true,
@@ -319,11 +332,13 @@ export async function queryTotle(
         .filter((id, i, self) => self.indexOf(id) === i)
       for (const id of payloadIds) {
         // returns all events involving this specific transaction id
-        const swapEvents = await primary.getPastEvents('LogSwap', {
-          filter: { id },
-          fromBlock: offset,
-          toBlock: 'latest'
-        })
+        const swapEvents = asSwapEventsResult(
+          await primary.getPastEvents('LogSwap', {
+            filter: { id },
+            fromBlock: offset,
+            toBlock: 'latest'
+          })
+        )
         for (const swapEvent of swapEvents) {
           const {
             sourceAsset,
