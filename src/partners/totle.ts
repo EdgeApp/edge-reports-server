@@ -1,11 +1,20 @@
-// import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import { bns } from 'biggystring'
-import { asNumber } from 'cleaners'
+import { asArray, asNumber, asObject, asString } from 'cleaners'
 import fetch from 'node-fetch'
 import Web3 from 'web3'
 
 // import { AbiItem } from 'web3-utils'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+
+const asTokenResult = asObject({
+  tokens: asArray(
+    asObject({
+      decimals: asNumber,
+      symbol: asString,
+      address: asString
+    })
+  )
+})
 
 const PRIMARY_ABI: any = [
   {
@@ -271,8 +280,8 @@ export async function queryTotle(
   }
 
   try {
-    const { tokens } = await fetch('https://api.totle.com/tokens').then(res =>
-      res.json()
+    const { tokens } = asTokenResult(
+      await fetch('https://api.totle.com/tokens').then(res => res.json())
     )
 
     const { contracts } = await fetch(
