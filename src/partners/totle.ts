@@ -46,6 +46,12 @@ const asBlockTimestampResult = asObject({
   timestamp: asNumber
 })
 
+const asRecieptResult = asObject({
+  transactionHash: asString,
+  from: asString,
+  to: asString
+})
+
 const PRIMARY_ABI: any = [
   {
     constant: true,
@@ -370,8 +376,9 @@ export async function queryTotle(
             await web3.eth.getBlock(swapEvent.blockNumber)
           )
 
-          const receipt = await web3.eth.getTransactionReceipt(
-            swapEvent.transactionHash
+          // get the source and destination from the transaction hash
+          const receipt = asRecieptResult(
+            await web3.eth.getTransactionReceipt(swapEvent.transactionHash)
           )
 
           const ssTx = {
@@ -385,7 +392,7 @@ export async function queryTotle(
                 (10 ** sourceToken.decimals).toString()
               )
             ),
-            outputAddress: receipt.from,
+            outputAddress: receipt.to,
             outputCurrency: destinationToken.symbol,
             outputAmount: parseFloat(
               bns.div(
