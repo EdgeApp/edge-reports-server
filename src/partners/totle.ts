@@ -25,6 +25,10 @@ const asContractResult = asObject({
   )
 })
 
+const asSwapCollectionResult = asArray(
+  asObject({ returnValues: asObject({ id: asString }) })
+)
+
 const PRIMARY_ABI: any = [
   {
     constant: true,
@@ -302,13 +306,12 @@ export async function queryTotle(
     for (const { address: primaryAddress } of primaries) {
       const primary = new web3.eth.Contract(PRIMARY_ABI, primaryAddress)
       // returns all events that used our apikey
-      const swapCollectionEvents = await primary.getPastEvents(
-        'LogSwapCollection',
-        {
+      const swapCollectionEvents = asSwapCollectionResult(
+        await primary.getPastEvents('LogSwapCollection', {
           filter: { partnerContract: partnerContractAddress },
           fromBlock: offset,
           toBlock: 'latest'
-        }
+        })
       )
       // .map returns just transactions ids from event object, .filter removes duplicates
       const payloadIds = swapCollectionEvents
