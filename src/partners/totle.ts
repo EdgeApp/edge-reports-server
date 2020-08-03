@@ -313,7 +313,7 @@ export async function queryTotle(
     partnerContractAddress = pluginParams.apiKeys.partnerContractAddress
   } else {
     return {
-      settings: { offset: offset },
+      settings: { offset },
       transactions: []
     }
   }
