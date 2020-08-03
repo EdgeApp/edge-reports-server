@@ -14,6 +14,7 @@ import { godex } from './partners/godex'
 import { moonpay } from './partners/moonpay'
 import { safello } from './partners/safello'
 import { switchain } from './partners/switchain'
+import { totle } from './partners/totle'
 // Cleaners
 import { asDbSettings, DbTx, StandardTx } from './types'
 
@@ -40,7 +41,8 @@ const partners = [
   fox,
   moonpay,
   safello,
-  switchain
+  switchain,
+  totle
 ]
 const QUERY_FREQ_MS = 29 * 60 * 1000
 const snooze: Function = async (ms: number) =>

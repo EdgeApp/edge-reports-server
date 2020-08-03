@@ -63,6 +63,7 @@
     "biggystring": "^3.0.2",
     "cleaners": "^0.2.1",
     "nano": "^8.2.2",
-    "node-fetch": "^2.6.0"
+    "node-fetch": "^2.6.0",
+    "web3": "^1.2.11"
   }
 }
