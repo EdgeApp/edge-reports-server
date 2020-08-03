@@ -6,7 +6,7 @@
   "repository": "https://github.com/EdgeApp/edge-reports-server",
   "license": "MIT",
   "author": "Airbitz, Inc.",
-  "main": "lib/index.js",
+  "main": "lib/indexEngine.js",
   "scripts": {
     "build.lib": "sucrase -q -t typescript,imports,jsx -d ./lib ./src",
     "build.types": "tsc",
@@ -14,7 +14,8 @@
     "fix": "npm run lint -- --fix",
     "precommit": "lint-staged && npm run prepare",
     "prepare": "npm-run-all clean -p build.*",
-    "start": "node -r sucrase/register src/index.ts",
+    "start": "node -r sucrase/register src/indexEngine.ts",
+    "start:api": "node -r sucrase/register src/indexApi.ts",
     "test": "mocha -r sucrase/register 'test/**/*.test.ts'",
     "demo": "parcel serve src/demo/index.html --open",
     "lint": "eslint --ext .js,.jsx,.ts,.tsx ."
@@ -62,7 +63,10 @@
     "api-changelly": "git://github.com/changelly/api-changelly.git#8e350f3",
     "axios": "^0.19.2",
     "biggystring": "^3.0.2",
+    "body-parser": "^1.19.0",
     "cleaners": "^0.2.1",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
     "nano": "^8.2.2",
     "node-fetch": "^2.6.0",
     "web3": "^1.2.11"
