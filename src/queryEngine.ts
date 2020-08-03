@@ -14,6 +14,7 @@ import { godex } from './partners/godex'
 import { libertyx } from './partners/libertyx'
 import { moonpay } from './partners/moonpay'
 import { safello } from './partners/safello'
+import { simplex } from './partners/simplex'
 import { switchain } from './partners/switchain'
 import { totle } from './partners/totle'
 // Cleaners
@@ -44,7 +45,8 @@ const partners = [
   moonpay,
   safello,
   switchain,
-  totle
+  totle,
+  simplex
 ]
 const QUERY_FREQ_MS = 29 * 60 * 1000
 const snooze: Function = async (ms: number) =>

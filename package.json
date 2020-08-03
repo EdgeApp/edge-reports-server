@@ -60,6 +60,7 @@
   "dependencies": {
     "@types/node": "^14.0.22",
     "api-changelly": "git://github.com/changelly/api-changelly.git#8e350f3",
+    "axios": "^0.19.2",
     "biggystring": "^3.0.2",
     "cleaners": "^0.2.1",
     "nano": "^8.2.2",
