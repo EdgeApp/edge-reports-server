@@ -17,6 +17,7 @@ import { safello } from './partners/safello'
 import { simplex } from './partners/simplex'
 import { switchain } from './partners/switchain'
 import { totle } from './partners/totle'
+import { wyre } from './partners/wyre'
 // Cleaners
 import { asDbSettings, DbTx, StandardTx } from './types'
 
@@ -46,7 +47,8 @@ const partners = [
   safello,
   switchain,
   totle,
-  simplex
+  simplex,
+  wyre
 ]
 const QUERY_FREQ_MS = 29 * 60 * 1000
 const snooze: Function = async (ms: number) =>
