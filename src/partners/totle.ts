@@ -309,8 +309,8 @@ export async function queryTotle(
   if (typeof pluginParams.settings.offset === 'number') {
     offset = pluginParams.settings.offset
   }
-  if (typeof pluginParams.apiKeys.apiKey === 'string') {
-    partnerContractAddress = pluginParams.apiKeys.apiKey
+  if (typeof pluginParams.apiKeys.partnerContractAddress === 'string') {
+    partnerContractAddress = pluginParams.apiKeys.partnerContractAddress
   } else {
     return {
       settings: { offset: offset },
