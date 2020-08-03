@@ -1,5 +1,5 @@
 import { bns } from 'biggystring'
-import { asArray, asNumber, asObject, asString } from 'cleaners'
+import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
 import Web3 from 'web3'
 
@@ -31,18 +31,18 @@ const asSwapCollectionResult = asArray(
   asObject({ returnValues: asObject({ id: asString }) })
 )
 
-const asSwapEventsResult = asArray(
-  asObject({
-    returnValues: asObject({
-      sourceAsset: asString,
-      destinationAsset: asString,
-      sourceAmount: asString,
-      destinationAmount: asString
-    }),
-    blockNumber: asNumber,
-    transactionHash: asString
-  })
-)
+const asSwapEventsResult = asArray(asUnknown)
+
+const asSingleSwapEvent = asObject({
+  returnValues: asObject({
+    sourceAsset: asString,
+    destinationAsset: asString,
+    sourceAmount: asString,
+    destinationAmount: asString
+  }),
+  blockNumber: asNumber,
+  transactionHash: asString
+})
 
 const asBlockTimestampResult = asObject({
   timestamp: asNumber
@@ -352,7 +352,8 @@ export async function queryTotle(
             toBlock: 'latest'
           })
         )
-        for (const swapEvent of swapEvents) {
+        for (const rawSwapEvent of swapEvents) {
+          const swapEvent = asSingleSwapEvent(rawSwapEvent)
           const {
             sourceAsset,
             destinationAsset,
