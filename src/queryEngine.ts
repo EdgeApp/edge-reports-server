@@ -130,7 +130,8 @@ async function insertTransactions(
   const transactionsArray: StandardTx[] = []
   for (const transaction of transactions) {
     // TODO: Add batching for more than 500 transactions
-    const key = pluginId + ':' + transaction.inputTXID
+    transaction.inputTXID = transaction.inputTXID.toLowerCase()
+    const key = (pluginId + ':' + transaction.inputTXID).toLowerCase()
     const result = await dbTransactions.get(key).catch(e => {
       if (e != null && e.error === 'not_found') {
         return {}
