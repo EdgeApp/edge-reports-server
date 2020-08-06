@@ -393,7 +393,9 @@ export async function queryTotle(
             inputAmount: parseFloat(
               bns.div(
                 sourceAmount.toString(),
-                (10 ** sourceToken.decimals).toString()
+                (10 ** sourceToken.decimals).toString(),
+                10,
+                10
               )
             ),
             outputAddress: receipt.to,
@@ -401,7 +403,9 @@ export async function queryTotle(
             outputAmount: parseFloat(
               bns.div(
                 destinationAmount.toString(),
-                (10 ** destinationToken.decimals).toString()
+                (10 ** destinationToken.decimals).toString(),
+                10,
+                10
               )
             ),
             timestamp: timestamp,
