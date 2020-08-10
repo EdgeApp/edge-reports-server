@@ -36,8 +36,24 @@ async function main(): Promise<void> {
   app.use(cors())
 
   app.get(`/v1/analytics/`, async function(req, res) {
+    const timeperiod: string = req.query.timePeriod.toLowerCase()
     const start = parseInt(req.query.start)
     const end = parseInt(req.query.end)
+    if (
+      isNaN(start) ||
+      isNaN(end) ||
+      req.query.pluginId.length === 0 ||
+      (!timeperiod.includes('month') &&
+        !timeperiod.includes('day') &&
+        !timeperiod.includes('hour'))
+    ) {
+      res.status(400).send(`Bad Request Fields`)
+      return
+    }
+    if (start > end) {
+      res.status(400).send(`Start must be less than End`)
+      return
+    }
     const query = {
       selector: {
         usdValue: { $gte: 0 },
@@ -64,7 +80,7 @@ async function main(): Promise<void> {
       start,
       end,
       req.query.pluginId,
-      req.query.timePeriod
+      timeperiod
     )
     res.json(answer)
   })
