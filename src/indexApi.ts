@@ -8,6 +8,13 @@ import config from '../config.json'
 import { getAnalytics } from './apiAnalytics'
 import { asDbTx } from './types'
 
+const asAnalyticsReq = asObject({
+  start: asString,
+  end: asString,
+  pluginId: asString,
+  timePeriod: asString
+})
+
 const asCheckTxReq = asObject({
   pluginId: asString,
   orderId: asString
@@ -36,28 +43,39 @@ async function main(): Promise<void> {
   app.use(cors())
 
   app.get(`/v1/analytics/`, async function(req, res) {
-    const timeperiod: string = req.query.timePeriod.toLowerCase()
-    const start = parseInt(req.query.start)
-    const end = parseInt(req.query.end)
+    let start: string, end: string, pluginId: string, timePeriod: string
+    try {
+      const analyticsQuery = asAnalyticsReq(req.query)
+      start = analyticsQuery.start
+      end = analyticsQuery.end
+      pluginId = analyticsQuery.pluginId
+      timePeriod = analyticsQuery.timePeriod
+    } catch {
+      res.status(400).send(`Missing Request Fields`)
+      return
+    }
+
+    timePeriod = timePeriod.toLowerCase()
+    const queryStart = parseInt(start)
+    const queryEnd = parseInt(end)
     if (
-      isNaN(start) ||
-      isNaN(end) ||
-      req.query.pluginId.length === 0 ||
-      (!timeperiod.includes('month') &&
-        !timeperiod.includes('day') &&
-        !timeperiod.includes('hour'))
+      !(queryStart > 0) ||
+      !(queryEnd > 0) ||
+      (!timePeriod.includes('month') &&
+        !timePeriod.includes('day') &&
+        !timePeriod.includes('hour'))
     ) {
       res.status(400).send(`Bad Request Fields`)
       return
     }
-    if (start > end) {
+    if (queryStart > queryEnd) {
       res.status(400).send(`Start must be less than End`)
       return
     }
     const query = {
       selector: {
         usdValue: { $gte: 0 },
-        timestamp: { $gte: start, $lte: end }
+        timestamp: { $gte: queryStart, $lt: queryEnd }
       },
       fields: [
         'inputTXID',
@@ -66,10 +84,11 @@ async function main(): Promise<void> {
         'timestamp',
         'usdValue'
       ],
+      // proper api arcitechture should page forward instead of all in 1 chunk
       limit: 1000000
     }
     const result = asDbReq(
-      await dbTransactions.partitionedFind(req.query.pluginId, query)
+      await dbTransactions.partitionedFind(pluginId, query)
     )
     // TODO: put the sort within the query, need to add default indexs in the database.
     const sortedTxs = result.docs.sort(function(a, b) {
@@ -77,10 +96,10 @@ async function main(): Promise<void> {
     })
     const answer = getAnalytics(
       sortedTxs,
-      start,
-      end,
-      req.query.pluginId,
-      timeperiod
+      queryStart,
+      queryEnd,
+      pluginId,
+      timePeriod
     )
     res.json(answer)
   })
