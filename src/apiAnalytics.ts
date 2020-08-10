@@ -159,20 +159,22 @@ const bucketScroller = (
 
 const bucketAdder = (bucket: Bucket, tx: DbTx): void => {
   // usdValue
-  bucket.usdValue += tx.usdValue
+  bucket.usdValue += tx.usdValue != null ? tx.usdValue : 0
   // currencyCode
   if (bucket.currencyCodes[tx.inputCurrency] == null) {
     bucket.currencyCodes[tx.inputCurrency] = 0
   }
-  bucket.currencyCodes[tx.inputCurrency] += tx.usdValue / 2
+  bucket.currencyCodes[tx.inputCurrency] +=
+    tx.usdValue != null ? tx.usdValue / 2 : 0
   if (bucket.currencyCodes[tx.outputCurrency] == null) {
     bucket.currencyCodes[tx.outputCurrency] = 0
   }
-  bucket.currencyCodes[tx.outputCurrency] += tx.usdValue / 2
+  bucket.currencyCodes[tx.outputCurrency] +=
+    tx.usdValue != null ? tx.usdValue / 2 : 0
   // currencyPair
   const currencyPair = `${tx.inputCurrency}-${tx.outputCurrency}`
   if (bucket.currencyPairs[currencyPair] == null) {
     bucket.currencyPairs[currencyPair] = 0
   }
-  bucket.currencyPairs[currencyPair] += tx.usdValue
+  bucket.currencyPairs[currencyPair] += tx.usdValue != null ? tx.usdValue : 0
 }
