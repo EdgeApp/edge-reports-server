@@ -21,7 +21,7 @@ import { totle } from './partners/totle'
 import { transak } from './partners/transak'
 import { wyre } from './partners/wyre'
 // Cleaners
-import { asDbSettings, DbTx, StandardTx } from './types'
+import { asProgressSettings, DbTx, StandardTx } from './types'
 
 const datelog = function(...args: any): void {
   const date = new Date().toISOString()
@@ -30,8 +30,9 @@ const datelog = function(...args: any): void {
 
 const nanoDb = nano(config.couchDbFullpath)
 const DB_NAMES = [
-  { name: 'db_settings' },
-  { name: 'db_transactions', options: { partitioned: true } }
+  { name: 'reports_apps' },
+  { name: 'reports_transactions', options: { partitioned: true } },
+  { name: 'reports_progresscache', options: { partitioned: true } }
 ]
 
 const partners = [
@@ -57,66 +58,98 @@ const partners = [
 const QUERY_FREQ_MS = 29 * 60 * 1000
 const snooze: Function = async (ms: number) =>
   new Promise((resolve: Function) => setTimeout(resolve, ms))
-const PARTNER_SETTINGS = 'partnerSettings'
 
 export async function queryEngine(): Promise<void> {
+  // get a list of all databases within couchdb
   const result = await nanoDb.db.list()
   datelog(result)
+  // if database does not exist, create it
   for (const dbName of DB_NAMES) {
     if (!result.includes(dbName.name)) {
       await nanoDb.db.create(dbName.name, dbName.options)
     }
   }
-  const dbSettings = nanoDb.db.use('db_settings')
+  const dbProgress = nanoDb.db.use('reports_progresscache')
+  const dbApps = nanoDb.db.use('reports_apps')
   while (true) {
-    for (const partner of partners) {
-      datelog('Starting with partner:', partner.pluginName)
-      const out = await dbSettings.get(PARTNER_SETTINGS).catch(e => {
-        if (e.error != null && e.error === 'not_found') {
-          datelog('Settings document not found, creating document')
-          return { settings: {} }
-        } else {
-          throw e
-        }
+    // get the contents of all reports_apps docs
+    const appDocIds: any = []
+    const apps: any = []
+    await dbApps.list().then(body => {
+      body.rows.forEach(doc => {
+        appDocIds.push(doc.id)
       })
-      let partnerSettings: ReturnType<typeof asDbSettings>
-      try {
-        partnerSettings = asDbSettings(out)
-      } catch (e) {
-        partnerSettings = {
-          apiKeys: {},
-          settings: {},
-          _id: undefined,
-          _rev: undefined
+    })
+    for (const appId of appDocIds) {
+      await dbApps.get(appId).then(body => {
+        apps.push(body)
+      })
+    }
+    // loop over every app
+    for (const app of apps) {
+      // loop over every pluginId that app uses
+      for (const pluginId in app.pluginIds) {
+        // obtains function that corresponds to current pluginId
+        const pluginFunction = partners.find(func => func.pluginId === pluginId)
+        // if current plugin is not within the list of partners skip to next
+        if (pluginFunction === undefined) {
+          datelog(`Plugin Name '${pluginId}' not found`)
+          continue
         }
-      }
-      const apiKeys =
-        partnerSettings.apiKeys[partner.pluginId] != null
-          ? partnerSettings.apiKeys[partner.pluginId]
-          : {}
-      const settings =
-        partnerSettings.settings[partner.pluginId] != null
-          ? partnerSettings.settings[partner.pluginId]
-          : {}
-      datelog('Querying partner:', partner.pluginName)
-      try {
-        const result = await partner.queryFunc({
-          apiKeys,
-          settings
+
+        // get progress cache to see where previous query ended
+        datelog(`Starting with partner: ${pluginId}, app: ${app.appId}`)
+        const progressCacheFileName = `${app.appId.toLowerCase()}:${pluginId}`
+        const out = await dbProgress.get(progressCacheFileName).catch(e => {
+          if (e.error != null && e.error === 'not_found') {
+            datelog('Previous Progress Record Not Found')
+            return {}
+          } else {
+            throw e
+          }
         })
-        partnerSettings.settings[partner.pluginId] = result.settings
-        datelog(
-          'Updating database with transactions and settings for partner:',
-          partner.pluginName
-        )
-        await insertTransactions(result.transactions, partner.pluginId)
-        await dbSettings.insert(partnerSettings, PARTNER_SETTINGS)
-        datelog(
-          'Finished updating database with transactions and settings for partner:',
-          partner.pluginName
-        )
-      } catch (e) {
-        datelog(`Error updating partner ${partner.pluginName}`, e)
+
+        // initialize progress settings if unrecognized format
+        let progressSettings: ReturnType<typeof asProgressSettings>
+        try {
+          progressSettings = asProgressSettings(out)
+        } catch (e) {
+          progressSettings = {
+            progressCache: {},
+            _id: undefined,
+            _rev: undefined
+          }
+        }
+
+        // set apiKeys and settings for use in partner's function
+        const apiKeys =
+          Object.keys(app.pluginIds[pluginId]).length !== 0
+            ? app.pluginIds[pluginId]
+            : {}
+        const settings = progressSettings.progressCache
+        datelog(`Querying partner: ${pluginId}, app: ${app.appId}`)
+        try {
+          // run the plugin function
+          const result = await pluginFunction.queryFunc({
+            apiKeys,
+            settings
+          })
+          datelog(
+            `Updating database with transactions and settings for partner: ${pluginId}, app: ${app.appId}`
+          )
+          await insertTransactions(
+            result.transactions,
+            `${app.appId}_${pluginId}`
+          )
+          progressSettings.progressCache = result.settings
+          progressSettings._id = progressCacheFileName
+          await dbProgress.insert(progressSettings)
+          datelog(
+            `Finished updating database with transactions and settings for partner: ${pluginId}, app: ${app.appId}`
+          )
+        } catch (e) {
+          datelog(`Error updating partner: ${pluginId}, app: ${app.appId}`, e)
+        }
       }
     }
     datelog(`Snoozing for ${QUERY_FREQ_MS} milliseconds`)
@@ -129,7 +162,7 @@ async function insertTransactions(
   pluginId: string
 ): Promise<any> {
   const dbTransactions: nano.DocumentScope<DbTx> = nanoDb.db.use(
-    'db_transactions'
+    'reports_transactions'
   )
   const transactionsArray: StandardTx[] = []
   for (const transaction of transactions) {

@@ -36,11 +36,10 @@ export const asDbTx = asObject({
 })
 export const asStandardTx = asObject(standardTxFields)
 
-export const asDbSettings = asObject({
+export const asProgressSettings = asObject({
   _id: asOptional(asString),
   _rev: asOptional(asString),
-  settings: asMap((raw: any): any => raw),
-  apiKeys: asMap((raw: any): any => raw)
+  progressCache: asMap((raw: any): any => raw)
 })
 
 export type DbTx = ReturnType<typeof asDbTx>
