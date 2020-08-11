@@ -11,8 +11,10 @@ const asPaytrieTx = asObject({
   outputAddress: asString,
   outputCurrency: asString,
   outputAmount: asNumber,
-  timestamp: asNumber
+  timestamp: asString
 })
+
+const asPaytrieTxs = asArray(asUnknown)
 
 export async function queryPaytrie(
   pluginParams: PluginParams
@@ -26,8 +28,8 @@ export async function queryPaytrie(
   }
 
   if (
-    typeof pluginParams.apiKeys.apiKey !== 'string' &&
-    typeof pluginParams.apiKeys.secretToken !== 'string'
+    typeof pluginParams.apiKeys.apiKey === 'string' &&
+    typeof pluginParams.apiKeys.secretToken === 'string'
   ) {
     apiKey = pluginParams.apiKeys.apiKey
     secretToken = pluginParams.apiKeys.secretToken
@@ -49,13 +51,10 @@ export async function queryPaytrie(
     }
   ).catch(err => console.error(err))
 
-  const orders = await apiResponse.json()
+  const orders = asPaytrieTxs(await apiResponse.json())
 
-  console.log(orders)
-
-  for (const order of orders) {
-    const date = new Date(order.timestamp)
-    const timestamp = date.getTime() / 1000
+  for (const rawOrder of orders) {
+    const order = asPaytrieTx(rawOrder)
     const ssTx: StandardTx = {
       status: 'complete',
       inputTXID: order.inputTXID,
@@ -64,9 +63,9 @@ export async function queryPaytrie(
       inputAmount: order.inputAmount,
       outputAddress: order.outputAddress,
       outputCurrency: order.outputCurrency,
-      outputAmount: order.outputAmount.toString(),
-      timestamp,
-      isoDate: date.toISOString()
+      outputAmount: order.outputAmount,
+      timestamp: new Date(order.timestamp).getTime() / 1000,
+      isoDate: order.timestamp
     }
     ssFormatTxs.push(ssTx)
   }
