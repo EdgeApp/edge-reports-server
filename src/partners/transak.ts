@@ -11,7 +11,8 @@ import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
-const pageLimit = 100
+const PAGE_LIMIT = 100
+const OFFSET_ROLLBACK = 500
 
 const asTransakOrder = asObject({
   status: asString,
@@ -44,7 +45,7 @@ export async function queryTransak(
     apiKey = pluginParams.apiKeys.transak_api_secret
   } else {
     return {
-      settings: { offset: offset },
+      settings: { offset },
       transactions: []
     }
   }
@@ -53,7 +54,7 @@ export async function queryTransak(
   let done = false
 
   while (!done) {
-    const url = `https://api.transak.com/api/v1/partners/orders/?partnerAPISecret=${apiKey}&limit=${pageLimit}&skip=${offset}`
+    const url = `https://api.transak.com/api/v1/partners/orders/?partnerAPISecret=${apiKey}&limit=${PAGE_LIMIT}&skip=${offset}`
     try {
       const result = await fetch(url)
       resultJSON = asTransakResult(await result.json())
@@ -84,14 +85,16 @@ export async function queryTransak(
         ssFormatTxs.push(ssTx)
       }
     }
-    if (txs.length < pageLimit) {
+    if (txs.length < PAGE_LIMIT) {
       done = true
     }
     offset += txs.length
   }
+  offset -= OFFSET_ROLLBACK
+  offset = offset > 0 ? offset : 0
 
   const out: PluginResult = {
-    settings: { offset: offset },
+    settings: { offset },
     transactions: ssFormatTxs
   }
   return out
