@@ -54,25 +54,25 @@ export async function queryTransak(
 
   while (!done) {
     const url = `https://api.transak.com/api/v1/partners/orders/?partnerAPISecret=${apiKey}&limit=${pageLimit}&skip=${offset}`
-    let jsonObj
     try {
       const result = await fetch(url)
-      resultJSON = await result.json()
-      jsonObj = asTransakResult(resultJSON)
+      resultJSON = asTransakResult(await result.json())
     } catch (e) {
       console.log(e)
       break
     }
-    const txs = jsonObj
+    const txs = resultJSON.response
 
     for (const rawtx of txs) {
       if (asRawTxOrder(rawtx).status === 'COMPLETED') {
         const tx = asTransakOrder(rawtx)
         const date = new Date(tx.completedAt)
+        const inputAddress =
+          typeof tx.fromWalletAddress === 'string' ? tx.fromWalletAddress : ''
         const ssTx: StandardTx = {
           status: 'complete',
           inputTXID: tx.id,
-          inputAddress: tx.fromWalletAddress.toString(),
+          inputAddress,
           inputCurrency: tx.fiatCurrency,
           inputAmount: tx.fiatAmount,
           outputAddress: tx.walletAddress,
