@@ -1,3 +1,4 @@
+import { asArray, asMap, asObject, asString } from 'cleaners'
 import nano from 'nano'
 
 import config from '../config.json'
@@ -22,6 +23,12 @@ import { transak } from './partners/transak'
 import { wyre } from './partners/wyre'
 // Cleaners
 import { asProgressSettings, DbTx, StandardTx } from './types'
+
+const asApp = asObject({
+  appId: asString,
+  pluginIds: asMap(asMap(asString))
+})
+const asApps = asArray(asApp)
 
 const datelog = function(...args: any): void {
   const date = new Date().toISOString()
@@ -73,18 +80,15 @@ export async function queryEngine(): Promise<void> {
   const dbApps = nanoDb.db.use('reports_apps')
   while (true) {
     // get the contents of all reports_apps docs
-    const appDocIds: any = []
-    const apps: any = []
-    await dbApps.list().then(body => {
-      body.rows.forEach(doc => {
-        appDocIds.push(doc.id)
-      })
-    })
-    for (const appId of appDocIds) {
-      await dbApps.get(appId).then(body => {
-        apps.push(body)
-      })
+    const query = {
+      selector: {
+        appId: { $exists: true }
+      },
+      fields: ['appId', 'pluginIds'],
+      limit: 1000000
     }
+    const rawApps = await dbApps.find(query)
+    const apps = asApps(rawApps.docs)
     // loop over every app
     for (const app of apps) {
       // loop over every pluginId that app uses
