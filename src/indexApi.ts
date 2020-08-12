@@ -43,18 +43,14 @@ async function main(): Promise<void> {
   app.use(cors())
 
   app.get(`/v1/analytics/`, async function(req, res) {
-    let start: string, end: string, pluginId: string, timePeriod: string
+    let analyticsQuery: ReturnType<typeof asAnalyticsReq>
     try {
-      const analyticsQuery = asAnalyticsReq(req.query)
-      start = analyticsQuery.start
-      end = analyticsQuery.end
-      pluginId = analyticsQuery.pluginId
-      timePeriod = analyticsQuery.timePeriod
+      analyticsQuery = asAnalyticsReq(req.query)
     } catch {
       res.status(400).send(`Missing Request Fields`)
       return
     }
-
+    let { start, end, pluginId, timePeriod } = analyticsQuery
     timePeriod = timePeriod.toLowerCase()
     const queryStart = parseInt(start)
     const queryEnd = parseInt(end)
