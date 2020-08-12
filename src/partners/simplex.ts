@@ -13,11 +13,10 @@ import {
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
 const asSimplexTx = asObject({
-  fiat_total_amount: asString,
+  amount_usd: asString,
   amount_crypto: asString,
   created_at: asNumber,
   order_id: asString,
-  currency: asString,
   crypto_currency: asString
 })
 
@@ -96,16 +95,14 @@ export async function querySimplex(
         status: 'complete',
         inputTXID: uniqueIdentifier,
         inputAddress: '',
-        inputCurrency: tx.currency,
-        inputAmount: parseFloat(
-          tx.fiat_total_amount.replace('$', '').replace(',', '')
-        ),
+        inputCurrency: 'USD',
+        inputAmount: parseFloat(tx.amount_usd),
         outputAddress: '',
         outputCurrency: tx.crypto_currency,
         outputAmount: parseFloat(tx.amount_crypto),
         timestamp,
         isoDate: new Date(timestamp * 1000).toISOString(),
-        usdValue: undefined,
+        usdValue: parseFloat(tx.amount_usd),
         rawTx: rawtx
       }
       ssFormatTxs.push(ssTx)
