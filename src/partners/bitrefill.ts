@@ -5,7 +5,8 @@ import {
   asNumber,
   asObject,
   asOptional,
-  asString
+  asString,
+  asUnknown
 } from 'cleaners'
 import fetch from 'node-fetch'
 
@@ -25,7 +26,7 @@ const asBitrefillTx = asObject({
 
 const asBitrefillResult = asObject({
   nextUrl: asOptional(asString),
-  orders: asArray(asBitrefillTx)
+  orders: asArray(asUnknown)
 })
 
 const div: { [key: string]: string } = {
@@ -75,7 +76,8 @@ export async function queryBitrefill(
       break
     }
     const txs = jsonObj.orders
-    for (const tx of txs) {
+    for (const rawtx of txs) {
+      const tx = asBitrefillTx(rawtx)
       if (
         tx.paymentReceived === true &&
         tx.expired === false &&
@@ -110,7 +112,7 @@ export async function queryBitrefill(
           timestamp,
           isoDate: new Date(tx.invoiceTime).toISOString(),
           usdValue: tx.usdPrice,
-          rawTx: tx
+          rawTx: rawtx
         }
         ssFormatTxs.push(ssTx)
       }
