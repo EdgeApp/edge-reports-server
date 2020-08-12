@@ -16,6 +16,7 @@ const asAnalyticsReq = asObject({
 })
 
 const asCheckTxReq = asObject({
+  appId: asString,
   pluginId: asString,
   orderId: asString
 })
@@ -37,7 +38,7 @@ const nanoDb = nano(config.couchDbFullpath)
 async function main(): Promise<void> {
   // start express and couch db server
   const app = express()
-  const dbTransactions = nanoDb.use('db_transactions')
+  const reportsTransactions = nanoDb.use('reports_transactions')
 
   app.use(bodyParser.json({ limit: '1mb' }))
   app.use(cors())
@@ -84,7 +85,7 @@ async function main(): Promise<void> {
       limit: 1000000
     }
     const result = asDbReq(
-      await dbTransactions.partitionedFind(pluginId, query)
+      await reportsTransactions.partitionedFind(pluginId, query)
     )
     // TODO: put the sort within the query, need to add default indexs in the database.
     const sortedTxs = result.docs.sort(function(a, b) {
@@ -101,7 +102,6 @@ async function main(): Promise<void> {
   })
 
   app.get('/v1/checkTx/', async function(req, res) {
-    console.log('req.query', req.query)
     let queryResult
     try {
       queryResult = asCheckTxReq(req.query)
@@ -111,13 +111,16 @@ async function main(): Promise<void> {
     }
     let result
     try {
-      const query = `${queryResult.pluginId}:${queryResult.orderId}`
-      const dbResult = await dbTransactions.get(query.toLowerCase())
+      const query = `${queryResult.appId}_${queryResult.pluginId}:${queryResult.orderId}`
+      const dbResult = await reportsTransactions.get(query.toLowerCase())
       result = asDbTx(dbResult)
     } catch (e) {
       console.log(e)
+      res.status(404).send('Could not find Transaction.')
+      return
     }
     const out = {
+      appId: queryResult.appId,
       pluginId: queryResult.pluginId,
       orderId: queryResult.orderId,
       usdValue: undefined
@@ -128,7 +131,7 @@ async function main(): Promise<void> {
     res.json(out)
   })
 
-  const result = await dbTransactions.get('bitsofgold:02de0a67ed')
+  const result = await reportsTransactions.get('edge2_bitsofgold:1038e2465a')
   console.log('result', result)
 
   app.listen(3000, function() {
