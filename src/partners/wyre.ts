@@ -75,7 +75,8 @@ export async function queryWyre(
         outputAmount: parseFloat(tx.destAmount),
         timestamp: date.getTime() / 1000,
         isoDate: date.toISOString(),
-        usdValue: null
+        usdValue: null,
+        rawTx: txStr
       }
       ssFormatTxs.push(ssTx)
     }

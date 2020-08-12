@@ -109,7 +109,8 @@ export async function queryBitrefill(
           outputAmount: tx.usdPrice,
           timestamp,
           isoDate: new Date(tx.invoiceTime).toISOString(),
-          usdValue: null
+          usdValue: tx.usdPrice,
+          rawTx: tx
         }
         ssFormatTxs.push(ssTx)
       }

@@ -80,7 +80,8 @@ export async function querySwitchain(
           outputAmount: parseFloat(tx.rate),
           timestamp: timestamp / 1000,
           isoDate: tx.createdAt,
-          usdValue: null
+          usdValue: null,
+          rawTx: rawtx
         }
         ssFormatTxs.push(ssTx)
         if (latestTimestamp - QUERY_LOOKBACK > timestamp) {

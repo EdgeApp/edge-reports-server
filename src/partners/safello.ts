@@ -60,7 +60,8 @@ export async function querySafello(
         outputAmount: tx.amount,
         timestamp: timestamp / 1000,
         isoDate: date.toISOString(),
-        usdValue: null
+        usdValue: null,
+        rawTx: rawtx
       }
       ssFormatTxs.push(ssTx)
       if (timestamp > newestTimestamp) {

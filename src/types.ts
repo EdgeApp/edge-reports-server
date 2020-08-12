@@ -5,7 +5,8 @@ import {
   asNumber,
   asObject,
   asOptional,
-  asString
+  asString,
+  asUnknown
 } from 'cleaners'
 
 export const asPluginParams = asObject({
@@ -35,7 +36,8 @@ const standardTxFields = {
   isoDate: asString,
   timestamp: asNumber,
   outputAmount: asNumber,
-  usdValue: asEither(asNumber, asNull)
+  usdValue: asEither(asNumber, asNull),
+  rawTx: asUnknown
 }
 export const asDbTx = asObject({
   ...standardTxFields,

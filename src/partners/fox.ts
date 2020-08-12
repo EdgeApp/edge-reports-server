@@ -94,7 +94,8 @@ export async function queryFox(
         outputAmount: tx.destinationCoinAmount,
         timestamp: tx.createdAt / 1000,
         isoDate: new Date(tx.createdAt).toISOString(),
-        usdValue: null
+        usdValue: null,
+        rawTx: rawtx
       }
       ssFormatTxs.push(ssTx)
       if (tx.createdAt > newestTimestamp) {

@@ -72,7 +72,8 @@ export async function queryCoinSwitch(
         outputAmount: tx.destinationCoinAmount,
         timestamp: tx.createdAt / 1000,
         isoDate: new Date(tx.createdAt).toISOString(),
-        usdValue: null
+        usdValue: null,
+        rawTx: tx
       }
       ssFormatTxs.push(ssTx)
       if (tx.createdAt > newLatestTimeStamp) {
