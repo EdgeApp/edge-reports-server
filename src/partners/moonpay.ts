@@ -111,7 +111,7 @@ export async function queryMoonpay(
           outputAmount: tx.quoteCurrencyAmount,
           timestamp: timestamp / 1000,
           isoDate: date.toISOString(),
-          usdValue: null,
+          usdValue: undefined,
           rawTx: rawtx
         }
         ssFormatTxs.push(ssTx)

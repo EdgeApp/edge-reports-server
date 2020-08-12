@@ -410,7 +410,7 @@ export async function queryTotle(
             ),
             timestamp: timestamp,
             isoDate: new Date(timestamp * 1000).toISOString(),
-            usdValue: null,
+            usdValue: undefined,
             rawTx: rawSwapEvent
           }
           ssFormatTxs.push(ssTx)

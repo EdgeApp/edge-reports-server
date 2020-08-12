@@ -81,7 +81,7 @@ export async function queryGodex(
           outputAmount: parseFloat(tx.withdrawal_amount),
           timestamp: timestamp,
           isoDate: new Date(timestamp * 1000).toISOString(),
-          usdValue: null,
+          usdValue: undefined,
           rawTx: rawtx
         }
         ssFormatTxs.push(ssTx)

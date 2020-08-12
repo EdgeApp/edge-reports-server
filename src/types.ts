@@ -1,7 +1,5 @@
 import {
-  asEither,
   asMap,
-  asNull,
   asNumber,
   asObject,
   asOptional,
@@ -36,7 +34,7 @@ const standardTxFields = {
   isoDate: asString,
   timestamp: asNumber,
   outputAmount: asNumber,
-  usdValue: asEither(asNumber, asNull),
+  usdValue: asOptional(asNumber),
   rawTx: asUnknown
 }
 export const asDbTx = asObject({

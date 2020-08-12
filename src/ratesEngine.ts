@@ -96,6 +96,6 @@ export async function updateTxUsdValue(transaction: DbTx): Promise<void> {
     }
   } catch (e) {
     datelog('Could not not get exchange rate', e)
-    transaction.usdValue = null
+    transaction.usdValue = undefined
   }
 }

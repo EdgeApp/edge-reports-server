@@ -66,7 +66,7 @@ export async function queryChangeNow(
           outputAmount: tx.amountReceive,
           timestamp,
           isoDate: new Date(tx.updatedAt).toISOString(),
-          usdValue: null,
+          usdValue: undefined,
           rawTx: tx
         }
         ssFormatTxs.push(ssTx)

@@ -100,7 +100,7 @@ export async function queryChangelly(
           outputAmount: parseFloat(tx.amountExpectedTo),
           timestamp: tx.createdAt,
           isoDate: new Date(tx.createdAt * 1000).toISOString(),
-          usdValue: null,
+          usdValue: undefined,
           rawTx: tx
         }
         ssFormatTxs.push(ssTx)

@@ -80,7 +80,7 @@ export async function queryBitsOfGold(
       outputAmount: data.fiat_amount,
       timestamp: timestamp / 1000,
       isoDate: data.timestamp,
-      usdValue: null,
+      usdValue: undefined,
       rawTx: rawtx
     }
     latestTimeStamp = latestTimeStamp > timestamp ? latestTimeStamp : timestamp

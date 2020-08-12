@@ -105,7 +105,7 @@ export async function querySimplex(
         outputAmount: parseFloat(tx.amount_crypto),
         timestamp,
         isoDate: new Date(timestamp * 1000).toISOString(),
-        usdValue: null,
+        usdValue: undefined,
         rawTx: rawtx
       }
       ssFormatTxs.push(ssTx)

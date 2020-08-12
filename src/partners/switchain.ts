@@ -80,7 +80,7 @@ export async function querySwitchain(
           outputAmount: parseFloat(tx.rate),
           timestamp: timestamp / 1000,
           isoDate: tx.createdAt,
-          usdValue: null,
+          usdValue: undefined,
           rawTx: rawtx
         }
         ssFormatTxs.push(ssTx)

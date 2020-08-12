@@ -89,7 +89,7 @@ export async function queryFaast(
           outputAmount: tx.amount_withdrawn,
           timestamp,
           isoDate: tx.updated_at,
-          usdValue: null,
+          usdValue: undefined,
           rawTx: rawtx
         }
         ssFormatTxs.push(ssTx)
