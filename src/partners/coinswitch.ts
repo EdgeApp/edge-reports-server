@@ -1,11 +1,20 @@
-import { asArray, asNumber, asObject, asString } from 'cleaners'
+import {
+  asArray,
+  asEither,
+  asNull,
+  asNumber,
+  asObject,
+  asString,
+  asUnknown
+} from 'cleaners'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
-const asCoinSwitchTx = asObject({
+const asCoinswitchTx = asObject({
   status: asString,
-  inputTransactionHash: asString,
+  orderId: asString,
+  inputTransactionHash: asEither(asString, asNull),
   exchangeAddress: asObject({ address: asString }),
   depositCoin: asString,
   depositCoinAmount: asNumber,
@@ -17,7 +26,7 @@ const asCoinSwitchTx = asObject({
 
 const asCoinSwitchResult = asObject({
   data: asObject({
-    items: asArray(asCoinSwitchTx)
+    items: asArray(asUnknown)
   })
 })
 const COUNT = 25
@@ -60,10 +69,16 @@ export async function queryCoinSwitch(
       break
     }
     const txs = jsonObj.data.items
-    for (const tx of txs) {
+    for (const rawtx of txs) {
+      const tx = asCoinswitchTx(rawtx)
+      if (tx.inputTransactionHash === null) {
+        console.log('Missing Input Transaction Hash:')
+        console.log(rawtx)
+        continue
+      }
       const ssTx: StandardTx = {
         status: 'complete',
-        inputTXID: tx.inputTransactionHash,
+        inputTXID: tx.orderId,
         inputAddress: tx.exchangeAddress.address,
         inputCurrency: tx.depositCoin.toUpperCase(),
         inputAmount: tx.depositCoinAmount,
@@ -73,7 +88,7 @@ export async function queryCoinSwitch(
         timestamp: tx.createdAt / 1000,
         isoDate: new Date(tx.createdAt).toISOString(),
         usdValue: undefined,
-        rawTx: tx
+        rawTx: rawtx
       }
       ssFormatTxs.push(ssTx)
       if (tx.createdAt > newLatestTimeStamp) {
