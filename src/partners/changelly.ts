@@ -1,10 +1,9 @@
 import Changelly from 'api-changelly/lib.js'
-import { asArray, asNumber, asObject, asString } from 'cleaners'
+import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
 const asChangellyTx = asObject({
-  status: asString,
   payinHash: asString,
   payinAddress: asString,
   currencyFrom: asString,
@@ -15,8 +14,12 @@ const asChangellyTx = asObject({
   createdAt: asNumber
 })
 
+const asChangellyRawTx = asObject({
+  status: asString
+})
+
 const asChangellyResult = asObject({
-  result: asArray(asChangellyTx)
+  result: asArray(asUnknown)
 })
 
 const LIMIT = 100
@@ -87,8 +90,9 @@ export async function queryChangelly(
       undefined,
       undefined
     )
-    for (const tx of result.result) {
-      if (tx.status === 'finished') {
+    for (const rawtx of result.result) {
+      if (asChangellyRawTx(rawtx).status === 'finished') {
+        const tx = asChangellyTx(rawtx)
         const ssTx: StandardTx = {
           status: 'complete',
           inputTXID: tx.payinHash,
@@ -101,7 +105,7 @@ export async function queryChangelly(
           timestamp: tx.createdAt,
           isoDate: new Date(tx.createdAt * 1000).toISOString(),
           usdValue: undefined,
-          rawTx: tx
+          rawTx: rawtx
         }
         ssFormatTxs.push(ssTx)
         if (tx.createdAt > newLatestTimeStamp) {
