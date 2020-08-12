@@ -99,7 +99,8 @@ export async function queryChangelly(
           outputCurrency: tx.currencyTo.toUpperCase(),
           outputAmount: parseFloat(tx.amountExpectedTo),
           timestamp: tx.createdAt,
-          isoDate: new Date(tx.createdAt * 1000).toISOString()
+          isoDate: new Date(tx.createdAt * 1000).toISOString(),
+          usdValue: null
         }
         ssFormatTxs.push(ssTx)
         if (tx.createdAt > newLatestTimeStamp) {

@@ -79,7 +79,8 @@ export async function querySwitchain(
           outputCurrency: pair[1].toUpperCase(),
           outputAmount: parseFloat(tx.rate),
           timestamp: timestamp / 1000,
-          isoDate: tx.createdAt
+          isoDate: tx.createdAt,
+          usdValue: null
         }
         ssFormatTxs.push(ssTx)
         if (latestTimestamp - QUERY_LOOKBACK > timestamp) {

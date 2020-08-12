@@ -88,7 +88,8 @@ export async function queryFaast(
           outputCurrency: tx.withdrawal_currency.toUpperCase(),
           outputAmount: tx.amount_withdrawn,
           timestamp,
-          isoDate: tx.updated_at
+          isoDate: tx.updated_at,
+          usdValue: null
         }
         ssFormatTxs.push(ssTx)
         if (timestamp > newLatestTimeStamp) {

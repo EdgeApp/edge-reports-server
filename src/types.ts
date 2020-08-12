@@ -1,4 +1,12 @@
-import { asMap, asNumber, asObject, asOptional, asString } from 'cleaners'
+import {
+  asEither,
+  asMap,
+  asNull,
+  asNumber,
+  asObject,
+  asOptional,
+  asString
+} from 'cleaners'
 
 export const asPluginParams = asObject({
   settings: asMap((raw: any): any => raw),
@@ -26,11 +34,11 @@ const standardTxFields = {
   status: asString,
   isoDate: asString,
   timestamp: asNumber,
-  outputAmount: asNumber
+  outputAmount: asNumber,
+  usdValue: asEither(asNumber, asNull)
 }
 export const asDbTx = asObject({
   ...standardTxFields,
-  usdValue: asOptional(asNumber),
   _id: asOptional(asString),
   _rev: asOptional(asString)
 })

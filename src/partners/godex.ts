@@ -80,7 +80,8 @@ export async function queryGodex(
           outputCurrency: tx.coin_to.toUpperCase(),
           outputAmount: parseFloat(tx.withdrawal_amount),
           timestamp: timestamp,
-          isoDate: new Date(timestamp * 1000).toISOString()
+          isoDate: new Date(timestamp * 1000).toISOString(),
+          usdValue: null
         }
         ssFormatTxs.push(ssTx)
         if (timestamp > newestTimestamp) {

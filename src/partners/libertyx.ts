@@ -62,7 +62,8 @@ export async function queryLibertyx(
       outputCurrency: 'USD',
       outputAmount: tx.all_transactions_usd_sum,
       timestamp: timestamp,
-      isoDate: tx.date_us_eastern
+      isoDate: tx.date_us_eastern,
+      usdValue: null
     }
     ssFormatTxs.push(ssTx)
   }

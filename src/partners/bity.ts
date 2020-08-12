@@ -126,7 +126,8 @@ export async function queryBity(
           outputCurrency: tx.output.currency.toUpperCase(),
           outputAmount: parseFloat(tx.output.amount),
           timestamp: Date.parse(tx.timestamp_executed.concat('Z')) / 1000,
-          isoDate: tx.timestamp_executed
+          isoDate: tx.timestamp_executed,
+          usdValue: null
         }
         ssFormatTxs.push(ssTx)
       }

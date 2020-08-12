@@ -59,7 +59,8 @@ export async function querySafello(
         outputCurrency: tx.cryptoCurrency,
         outputAmount: tx.amount,
         timestamp: timestamp / 1000,
-        isoDate: date.toISOString()
+        isoDate: date.toISOString(),
+        usdValue: null
       }
       ssFormatTxs.push(ssTx)
       if (timestamp > newestTimestamp) {
