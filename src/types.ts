@@ -24,16 +24,18 @@ export interface PartnerPlugin {
   pluginId: string
 }
 const standardTxFields = {
-  inputTXID: asString,
-  inputAddress: asOptional(asString),
-  inputCurrency: asString,
-  inputAmount: asNumber,
-  outputAddress: asOptional(asString),
-  outputCurrency: asString,
+  orderId: asString,
+  depositTxid: asOptional(asString),
+  depositAddress: asOptional(asString),
+  depositCurrency: asString,
+  depositAmount: asNumber,
+  payoutTxid: asOptional(asString),
+  payoutAddress: asOptional(asString),
+  payoutCurrency: asString,
+  payoutAmount: asNumber,
   status: asString,
   isoDate: asString,
   timestamp: asNumber,
-  outputAmount: asNumber,
   usdValue: asOptional(asNumber),
   rawTx: asUnknown
 }

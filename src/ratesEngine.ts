@@ -29,17 +29,20 @@ export async function ratesEngine(): Promise<void> {
       fields: [
         '_id',
         '_rev',
-        'inputTXID',
-        'inputAddress',
-        'inputAmount',
-        'inputCurrency',
-        'outputAddress',
-        'outputAmount',
-        'outputCurrency',
+        'orderId',
+        'depositTxid',
+        'depositAddress',
+        'depositAmount',
+        'depositCurrency',
+        'payoutTxid',
+        'payoutAddress',
+        'payoutAmount',
+        'payoutCurrency',
         'status',
         'timestamp',
         'isoDate',
-        'usdValue'
+        'usdValue',
+        'rawTx'
       ],
       limit: QUERY_LIMIT
     }
@@ -76,23 +79,23 @@ export async function updateTxUsdValue(transaction: DbTx): Promise<void> {
     try {
       url =
         'https://rates1.edge.app/v1/exchangeRate?currency_pair=' +
-        transaction.inputCurrency +
+        transaction.depositCurrency +
         '_USD&date=' +
         date
       const result = await fetch(url, { method: 'GET' })
       jsonObj = await result.json()
       const exchangeRate = parseFloat(jsonObj.exchangeRate)
-      transaction.usdValue = transaction.inputAmount * exchangeRate
+      transaction.usdValue = transaction.depositAmount * exchangeRate
     } catch {
       url =
         'https://rates1.edge.app/v1/exchangeRate?currency_pair=' +
-        transaction.outputCurrency +
+        transaction.payoutCurrency +
         '_USD&date=' +
         date
       const result = await fetch(url, { method: 'GET' })
       jsonObj = await result.json()
       const exchangeRate = parseFloat(jsonObj.exchangeRate)
-      transaction.usdValue = transaction.outputAmount * exchangeRate
+      transaction.usdValue = transaction.payoutAmount * exchangeRate
     }
   } catch (e) {
     datelog('Could not not get exchange rate', e)

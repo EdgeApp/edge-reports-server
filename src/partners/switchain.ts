@@ -71,18 +71,21 @@ export async function querySwitchain(
         const pair = tx.pair.split('-')
         const ssTx: StandardTx = {
           status: 'complete',
-          inputTXID: tx.depositTxId,
-          inputAddress: tx.depositAddress,
-          inputCurrency: pair[0].toUpperCase(),
-          inputAmount: parseFloat(tx.amountFrom),
-          outputAddress: tx.withdrawAddress,
-          outputCurrency: pair[1].toUpperCase(),
-          outputAmount: parseFloat(tx.rate),
+          orderId: tx.depositTxId,
+          depositTxid: '',
+          depositAddress: tx.depositAddress,
+          depositCurrency: pair[0].toUpperCase(),
+          depositAmount: parseFloat(tx.amountFrom),
+          payoutTxid: '',
+          payoutAddress: tx.withdrawAddress,
+          payoutCurrency: pair[1].toUpperCase(),
+          payoutAmount: parseFloat(tx.rate),
           timestamp: timestamp / 1000,
           isoDate: tx.createdAt,
           usdValue: undefined,
           rawTx: rawtx
         }
+
         ssFormatTxs.push(ssTx)
         if (latestTimestamp - QUERY_LOOKBACK > timestamp) {
           done = true
