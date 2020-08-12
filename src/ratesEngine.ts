@@ -19,7 +19,7 @@ const asDbQueryResult = asObject({ docs: asArray(asDbTx) })
 export async function ratesEngine(): Promise<void> {
   datelog('Starting ratesEngine query')
   const dbTransactions: nano.DocumentScope<DbTx> = nanoDb.db.use(
-    'db_transactions'
+    'reports_transactions'
   )
   while (true) {
     const query = {
