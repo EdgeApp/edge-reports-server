@@ -24,7 +24,11 @@ export async function ratesEngine(): Promise<void> {
   while (true) {
     const query = {
       selector: {
-        $or: [{ usdValue: { $exists: false } }, { usdValue: { $eq: null } }]
+        $or: [
+          { usdValue: { $exists: false } },
+          { usdValue: { $eq: null } },
+          { payoutAmount: { $eq: 0 } }
+        ]
       },
       fields: [
         '_id',
@@ -75,6 +79,25 @@ export async function updateTxUsdValue(transaction: DbTx): Promise<void> {
   const date: string = transaction.isoDate
   let url = ''
   let jsonObj: { exchangeRate: string } = { exchangeRate: '' }
+
+  if (transaction.payoutAmount === 0) {
+    try {
+      url =
+        'https://rates1.edge.app/v1/exchangeRate?currency_pair=' +
+        transaction.depositCurrency +
+        '_' +
+        transaction.payoutCurrency +
+        '&date=' +
+        date
+      const result = await fetch(url, { method: 'GET' })
+      jsonObj = await result.json()
+      const exchangeRate = parseFloat(jsonObj.exchangeRate)
+      transaction.payoutAmount = transaction.depositAmount * exchangeRate
+    } catch (e) {
+      datelog('Could not not get exchange rate for payoutAmount', e)
+      transaction.payoutAmount = 0
+    }
+  }
   try {
     try {
       url =
@@ -98,7 +121,7 @@ export async function updateTxUsdValue(transaction: DbTx): Promise<void> {
       transaction.usdValue = transaction.payoutAmount * exchangeRate
     }
   } catch (e) {
-    datelog('Could not not get exchange rate', e)
+    datelog('Could not not get exchange rate for usdValue', e)
     transaction.usdValue = undefined
   }
 }
