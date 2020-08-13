@@ -299,6 +299,16 @@ const rawTxs = {
     state: 'LA',
     externalCustomerId: null
   },
+  paytrie: {
+    inputAddress: '0x0000000000000000000000000000000000000000',
+    inputAmount: 99,
+    inputCurrency: 'USDT',
+    inputTXID: '82485b03-72c8-454b-ad68-06235f3eb2e6',
+    outputAddress: '0x0000000000000000000000000000000000000000',
+    outputAmount: 73.55,
+    outputCurrency: 'CAD',
+    timestamp: '2020-06-10T21:45:29.573Z'
+  },
   safello: {
     id: 'B2SG4QH',
     amount: 1200,
@@ -379,6 +389,48 @@ const rawTxs = {
         '0xbf9d515e7a6e4aae9d5b3f3194357ff3df319b042a8e4b8780d592a46e43b4b1'
       ]
     }
+  },
+  transak: {
+    addressAdditionalData: {
+      name: 'dest_tag',
+      display_name: 'Destination Tag',
+      shapeshift_name: 'destTag',
+      okex_tag_name: 'tag',
+      value: ''
+    },
+    amountPaid: 2996,
+    autoExpiresAt: '2020-06-28T08:58:02+00:00',
+    completedAt: '2020-06-28T08:59:10.436Z',
+    conversionPrice: 0.07145002100579088,
+    createdAt: '2020-06-28T08:28:02.066Z',
+    cryptoAmount: 212.590249,
+    cryptocurrency: 'XRP',
+    fiatAmount: 2996,
+    fiatCurrency: 'INR',
+    fromWalletAddress: false,
+    id: '005d4082-005c-4f1a-9f38-769d94716c5c',
+    isBuyOrSell: 'BUY',
+    network: false,
+    paymentOption: [],
+    paymentOptionId: 'upi',
+    referenceCode: 992266,
+    status: 'COMPLETED',
+    totalFeeInCrypto: 1.4825918891855807,
+    0: { currency: 'INR', provider: 'upi', name: 'UPI', fields: Array(2) },
+    1: {
+      currency: 'INR',
+      provider: 'bankaccount',
+      name: 'Bank Transfer',
+      fields: Array(5)
+    },
+    length: 2,
+    totalFeeInFiat: 20.63,
+    transactionHash:
+      '6D8C23029788B6099F88D4742E1FAB02669F6E647471D920F3A55ABC13758B5C',
+    transactionLink: false,
+    updatedAt: '2020-06-28T08:30:56.350Z',
+    walletAddress: 'rfLWQuNNn529xZdimkUoHeAhzYcQiCFMCA',
+    walletLink: false
   },
   wyre:
     'TF-28U43F9F6LX,account:AC-WDLVTD8WZJZ,COMPLETED,2019-01-27 19:27:02,2019-02-05 01:52:37,100.00000000000000000000,USD,0.02769469000000000000,BTC,'
