@@ -11,6 +11,7 @@ const asBogTx = asObject({
     fiat_amount: asNumber,
     timestamp: asString
   }),
+  type: asString,
   id: asString
 })
 
@@ -68,16 +69,28 @@ export async function queryBitsOfGold(
     const data = tx.attributes
     const date = new Date(data.timestamp)
     const timestamp = date.getTime()
+    if (tx.type.toLowerCase() === 'buy') {
+      const [a, b, c, d] = [
+        data.coin_type,
+        data.coin_amount,
+        data.fiat_type,
+        data.fiat_amount
+      ]
+      data.coin_type = c
+      data.coin_amount = d
+      data.fiat_type = a
+      data.fiat_amount = b
+    }
 
     const ssTx: StandardTx = {
       status: 'complete',
       orderId: tx.id,
-      depositTxid: '',
-      depositAddress: '',
+      depositTxid: undefined,
+      depositAddress: undefined,
       depositCurrency: data.coin_type,
       depositAmount: data.coin_amount,
-      payoutTxid: '',
-      payoutAddress: '',
+      payoutTxid: undefined,
+      payoutAddress: undefined,
       payoutCurrency: data.fiat_type,
       payoutAmount: data.fiat_amount,
       timestamp: timestamp / 1000,
