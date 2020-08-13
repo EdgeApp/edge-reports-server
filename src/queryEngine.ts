@@ -13,6 +13,7 @@ import { fox } from './partners/fox'
 import { godex } from './partners/godex'
 import { libertyx } from './partners/libertyx'
 import { moonpay } from './partners/moonpay'
+import { paytrie } from './partners/paytrie'
 import { safello } from './partners/safello'
 import { simplex } from './partners/simplex'
 import { switchain } from './partners/switchain'
@@ -45,6 +46,7 @@ const partners = [
   godex,
   libertyx,
   moonpay,
+  paytrie,
   safello,
   switchain,
   totle,
