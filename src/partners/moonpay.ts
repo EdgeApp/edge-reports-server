@@ -107,12 +107,12 @@ export async function queryMoonpay(
           depositAddress: '',
           depositCurrency: baseCurrency.code.toUpperCase(),
           depositAmount: tx.baseCurrencyAmount,
-          payoutTxid: '',
+          payoutTxid: tx.cryptoTransactionId,
           payoutAddress: tx.walletAddress,
           payoutCurrency: outputCurrency.code.toUpperCase(),
           payoutAmount: tx.quoteCurrencyAmount,
           timestamp: timestamp / 1000,
-          isoDate: date.toISOString(),
+          isoDate: tx.createdAt,
           usdValue: undefined,
           rawTx: rawtx
         }

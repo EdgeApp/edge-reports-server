@@ -107,7 +107,7 @@ export async function queryBitrefill(
           depositAddress: undefined,
           depositCurrency: inputCurrency,
           depositAmount: inputAmountNum,
-          payoutTxid: '',
+          payoutTxid: undefined,
           payoutAddress: undefined,
           payoutCurrency: 'USD',
           payoutAmount: tx.usdPrice,

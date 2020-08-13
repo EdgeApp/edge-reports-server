@@ -388,7 +388,7 @@ export async function queryTotle(
           const ssTx = {
             status: 'complete',
             orderId: receipt.transactionHash,
-            depositTxid: '',
+            depositTxid: receipt.transactionHash,
             depositAddress: receipt.from,
             depositCurrency: sourceToken.symbol,
             depositAmount: parseFloat(
@@ -399,7 +399,7 @@ export async function queryTotle(
                 10
               )
             ),
-            payoutTxid: '',
+            payoutTxid: receipt.transactionHash,
             payoutAddress: receipt.to,
             payoutCurrency: destinationToken.symbol,
             payoutAmount: parseFloat(

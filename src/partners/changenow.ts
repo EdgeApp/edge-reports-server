@@ -13,6 +13,7 @@ import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 const asChangeNowTx = asObject({
   updatedAt: asString,
   payinHash: asString,
+  payoutHash: asString,
   payinAddress: asString,
   fromCurrency: asString,
   amountSend: asNumber,
@@ -73,16 +74,16 @@ export async function queryChangeNow(
         const ssTx: StandardTx = {
           status: 'complete',
           orderId: tx.payinHash,
-          depositTxid: '',
+          depositTxid: tx.payinHash,
           depositAddress: tx.payinAddress,
           depositCurrency: tx.fromCurrency.toUpperCase(),
           depositAmount: tx.amountSend,
-          payoutTxid: '',
+          payoutTxid: tx.payoutHash,
           payoutAddress: tx.payoutAddress,
           payoutCurrency: tx.toCurrency.toUpperCase(),
           payoutAmount: tx.amountReceive,
           timestamp,
-          isoDate: new Date(tx.updatedAt).toISOString(),
+          isoDate: tx.updatedAt,
           usdValue: undefined,
           rawTx: rawtx
         }

@@ -5,6 +5,7 @@ import fetch from 'node-fetch'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
 const asFaastTx = asObject({
+  order_id: asString,
   transaction_id: asString,
   deposit_address: asString,
   deposit_currency: asString,
@@ -12,7 +13,7 @@ const asFaastTx = asObject({
   withdrawal_address: asString,
   withdrawal_currency: asString,
   amount_withdrawn: asNumber,
-  updated_at: asString
+  created_at: asString
 })
 
 const asRawFaastTx = asObject({
@@ -73,21 +74,21 @@ export async function queryFaast(
     for (const rawtx of txs) {
       if (asRawFaastTx(rawtx).status === 'complete') {
         const tx = asFaastTx(rawtx)
-        const date = new Date(tx.updated_at)
+        const date = new Date(tx.created_at)
         const timestamp = date.getTime() / 1000
         const ssTx: StandardTx = {
           status: 'complete',
-          orderId: tx.transaction_id,
-          depositTxid: '',
+          orderId: tx.order_id,
+          depositTxid: undefined,
           depositAddress: tx.deposit_address,
           depositCurrency: tx.deposit_currency.toUpperCase(),
           depositAmount: tx.amount_deposited,
-          payoutTxid: '',
+          payoutTxid: tx.transaction_id,
           payoutAddress: tx.withdrawal_address,
           payoutCurrency: tx.withdrawal_currency.toUpperCase(),
           payoutAmount: tx.amount_withdrawn,
           timestamp,
-          isoDate: tx.updated_at,
+          isoDate: tx.created_at,
           usdValue: undefined,
           rawTx: rawtx
         }

@@ -61,11 +61,11 @@ export async function queryLibertyx(
       depositAmount: tx.all_transactions_usd_sum,
       payoutTxid: '',
       payoutAddress: '',
-      payoutCurrency: 'USD',
-      payoutAmount: tx.all_transactions_usd_sum,
+      payoutCurrency: 'BTC',
+      payoutAmount: 0,
       timestamp: timestamp,
-      isoDate: tx.date_us_eastern,
-      usdValue: undefined,
+      isoDate: date.toISOString(),
+      usdValue: tx.all_transactions_usd_sum,
       rawTx: rawtx
     }
     ssFormatTxs.push(ssTx)

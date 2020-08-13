@@ -15,9 +15,11 @@ import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 const asSimplexTx = asObject({
   amount_usd: asString,
   amount_crypto: asString,
+  fiat_total_amount: asString,
   created_at: asNumber,
   order_id: asString,
-  crypto_currency: asString
+  crypto_currency: asString,
+  currency: asString
 })
 
 const asSimplexResult = asObject({
@@ -90,14 +92,13 @@ export async function querySimplex(
     for (const rawtx of txs) {
       const tx = asSimplexTx(rawtx)
       const timestamp = tx.created_at
-      const uniqueIdentifier = tx.order_id
       const ssTx = {
         status: 'complete',
-        orderId: uniqueIdentifier,
+        orderId: tx.order_id,
         depositTxid: '',
         depositAddress: '',
-        depositCurrency: 'USD',
-        depositAmount: parseFloat(tx.amount_usd),
+        depositCurrency: tx.currency,
+        depositAmount: parseFloat(tx.fiat_total_amount),
         payoutTxid: '',
         payoutAddress: '',
         payoutCurrency: tx.crypto_currency,

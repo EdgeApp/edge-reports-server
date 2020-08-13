@@ -86,11 +86,11 @@ export async function queryFox(
       const ssTx: StandardTx = {
         status: 'complete',
         orderId: tx.orderId,
-        depositTxid: '',
+        depositTxid: undefined,
         depositAddress: tx.exchangeAddress.address,
         depositCurrency: tx.depositCoin.toUpperCase(),
         depositAmount: tx.depositCoinAmount,
-        payoutTxid: '',
+        payoutTxid: tx.outputTransactionHash,
         payoutAddress: tx.destinationAddress.address,
         payoutCurrency: tx.destinationCoin.toUpperCase(),
         payoutAmount: tx.destinationCoinAmount,

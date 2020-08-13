@@ -73,11 +73,11 @@ export async function queryGodex(
         const ssTx = {
           status: 'complete',
           orderId: tx.hash_in,
-          depositTxid: '',
+          depositTxid: tx.hash_in,
           depositAddress: tx.deposit,
           depositCurrency: tx.coin_from.toUpperCase(),
           depositAmount: parseFloat(tx.deposit_amount),
-          payoutTxid: '',
+          payoutTxid: undefined,
           payoutAddress: tx.withdrawal,
           payoutCurrency: tx.coin_to.toUpperCase(),
           payoutAmount: parseFloat(tx.withdrawal_amount),

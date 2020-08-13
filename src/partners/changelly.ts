@@ -5,12 +5,13 @@ import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
 const asChangellyTx = asObject({
   payinHash: asString,
+  payoutHash: asString,
   payinAddress: asString,
   currencyFrom: asString,
-  amountExpectedFrom: asString,
+  amountFrom: asString,
   payoutAddress: asString,
   currencyTo: asString,
-  amountExpectedTo: asString,
+  amountTo: asString,
   createdAt: asNumber
 })
 
@@ -96,14 +97,14 @@ export async function queryChangelly(
         const ssTx: StandardTx = {
           status: 'complete',
           orderId: tx.payinHash,
-          depositTxid: '',
+          depositTxid: tx.payinHash,
           depositAddress: tx.payinAddress,
           depositCurrency: tx.currencyFrom.toUpperCase(),
-          depositAmount: parseFloat(tx.amountExpectedFrom),
-          payoutTxid: '',
+          depositAmount: parseFloat(tx.amountFrom),
+          payoutTxid: tx.payoutHash,
           payoutAddress: tx.payoutAddress,
           payoutCurrency: tx.currencyTo.toUpperCase(),
-          payoutAmount: parseFloat(tx.amountExpectedTo),
+          payoutAmount: parseFloat(tx.amountTo),
           timestamp: tx.createdAt,
           isoDate: new Date(tx.createdAt * 1000).toISOString(),
           usdValue: undefined,

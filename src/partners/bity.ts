@@ -127,8 +127,8 @@ export async function queryBity(
           payoutAddress: '',
           payoutCurrency: tx.output.currency.toUpperCase(),
           payoutAmount: parseFloat(tx.output.amount),
-          timestamp: Date.parse(tx.timestamp_executed.concat('Z')) / 1000,
-          isoDate: tx.timestamp_executed,
+          timestamp: Date.parse(tx.timestamp_created.concat('Z')) / 1000,
+          isoDate: new Date(tx.timestamp_created.concat('Z')).toISOString(),
           usdValue: undefined,
           rawTx: rawtx
         }

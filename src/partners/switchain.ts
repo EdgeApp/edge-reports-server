@@ -11,6 +11,7 @@ const asSwitchainTx = asObject({
   depositTxId: asString,
   depositAddress: asString,
   amountFrom: asString,
+  withdrawTxId: asString,
   withdrawAddress: asString,
   rate: asString
 })
@@ -72,11 +73,11 @@ export async function querySwitchain(
         const ssTx: StandardTx = {
           status: 'complete',
           orderId: tx.depositTxId,
-          depositTxid: '',
+          depositTxid: tx.depositTxId,
           depositAddress: tx.depositAddress,
           depositCurrency: pair[0].toUpperCase(),
           depositAmount: parseFloat(tx.amountFrom),
-          payoutTxid: '',
+          payoutTxid: tx.withdrawTxId,
           payoutAddress: tx.withdrawAddress,
           payoutCurrency: pair[1].toUpperCase(),
           payoutAmount: parseFloat(tx.rate),

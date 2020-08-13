@@ -59,7 +59,7 @@ export async function querySafello(
         payoutTxid: '',
         payoutAddress: '',
         payoutCurrency: tx.cryptoCurrency,
-        payoutAmount: tx.amount,
+        payoutAmount: 0,
         timestamp: timestamp / 1000,
         isoDate: date.toISOString(),
         usdValue: undefined,

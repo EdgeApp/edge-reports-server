@@ -15,6 +15,7 @@ const asCoinswitchTx = asObject({
   status: asString,
   orderId: asString,
   inputTransactionHash: asEither(asString, asNull),
+  outputTransactionHash: asEither(asString, asNull),
   exchangeAddress: asObject({ address: asString }),
   depositCoin: asString,
   depositCoinAmount: asNumber,
@@ -71,19 +72,22 @@ export async function queryCoinSwitch(
     const txs = jsonObj.data.items
     for (const rawtx of txs) {
       const tx = asCoinswitchTx(rawtx)
-      if (tx.inputTransactionHash === null) {
-        console.log('Missing Input Transaction Hash:')
+      if (
+        tx.inputTransactionHash === null ||
+        tx.outputTransactionHash === null
+      ) {
+        console.log('Missing Transaction Hash:')
         console.log(rawtx)
         continue
       }
       const ssTx: StandardTx = {
         status: 'complete',
-        orderId: tx.orderId,
-        depositTxid: '',
+        orderId: tx.inputTransactionHash,
+        depositTxid: tx.inputTransactionHash,
         depositAddress: tx.exchangeAddress.address,
         depositCurrency: tx.depositCoin.toUpperCase(),
         depositAmount: tx.depositCoinAmount,
-        payoutTxid: '',
+        payoutTxid: tx.outputTransactionHash,
         payoutAddress: tx.destinationAddress.address,
         payoutCurrency: tx.destinationCoin.toUpperCase(),
         payoutAmount: tx.destinationCoinAmount,
