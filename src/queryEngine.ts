@@ -181,6 +181,33 @@ async function insertTransactions(
       }
     })
     const newObj = { _rev: undefined, ...result, ...transaction, _id: key }
+
+    if (
+      newObj.depositCurrency === 'USDT20' ||
+      newObj.depositCurrency === 'USDTERC20'
+    ) {
+      newObj.depositCurrency = 'USDT'
+    }
+    if (newObj.depositCurrency === 'BCHABC') {
+      newObj.depositCurrency = 'BCH'
+    }
+    if (newObj.depositCurrency === 'BCHSV') {
+      newObj.depositCurrency = 'BSV'
+    }
+
+    if (
+      newObj.payoutCurrency === 'USDT20' ||
+      newObj.payoutCurrency === 'USDTERC20'
+    ) {
+      newObj.payoutCurrency = 'USDT'
+    }
+    if (newObj.payoutCurrency === 'BCHABC') {
+      newObj.payoutCurrency = 'BCH'
+    }
+    if (newObj.payoutCurrency === 'BCHSV') {
+      newObj.payoutCurrency = 'BSV'
+    }
+
     datelog(`id: ${newObj._id}. revision: ${newObj._rev}`)
     transactionsArray.push(newObj)
   }
