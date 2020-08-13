@@ -5,7 +5,6 @@ import fetch from 'node-fetch'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
 const asFaastTx = asObject({
-  status: asString,
   transaction_id: asString,
   deposit_address: asString,
   deposit_currency: asString,
@@ -14,6 +13,10 @@ const asFaastTx = asObject({
   withdrawal_currency: asString,
   amount_withdrawn: asNumber,
   updated_at: asString
+})
+
+const asRawFaastTx = asObject({
+  status: asString
 })
 
 const asFaastResult = asObject({
@@ -47,15 +50,15 @@ export async function queryFaast(
       transactions: []
     }
   }
-  const url = `https://api.faa.st/api/v2/public/affiliate/swaps?limit=${PAGE_LIMIT}&page=${page}`
-  const headers = {
-    'affiliate-id': `${pluginParams.apiKeys.faastAffiliateId}`,
-    nonce,
-    signature
-  }
   let newLatestTimeStamp = latestTimeStamp
   let done = false
   while (!done) {
+    const url = `https://api.faa.st/api/v2/public/affiliate/swaps?limit=${PAGE_LIMIT}&page=${page}`
+    const headers = {
+      'affiliate-id': `${pluginParams.apiKeys.faastAffiliateId}`,
+      nonce,
+      signature
+    }
     let jsonObj: ReturnType<typeof asFaastResult>
     let resultJSON
     try {
@@ -68,14 +71,8 @@ export async function queryFaast(
     }
     const txs = jsonObj.orders
     for (const rawtx of txs) {
-      let tx
-      try {
-        tx = asFaastTx(rawtx)
-      } catch (e) {
-        console.log(e)
-        throw e
-      }
-      if (tx.status === 'complete') {
+      if (asRawFaastTx(rawtx).status === 'complete') {
+        const tx = asFaastTx(rawtx)
         const date = new Date(tx.updated_at)
         const timestamp = date.getTime() / 1000
         const ssTx: StandardTx = {
