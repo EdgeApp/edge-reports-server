@@ -103,8 +103,8 @@ export async function queryMoonpay(
         const ssTx = {
           status: 'complete',
           orderId: tx.id,
-          depositTxid: '',
-          depositAddress: '',
+          depositTxid: undefined,
+          depositAddress: undefined,
           depositCurrency: baseCurrency.code.toUpperCase(),
           depositAmount: tx.baseCurrencyAmount,
           payoutTxid: tx.cryptoTransactionId,

@@ -103,7 +103,7 @@ export async function queryBitrefill(
         const ssTx: StandardTx = {
           status: 'complete',
           orderId: tx.orderId,
-          depositTxid: '',
+          depositTxid: undefined,
           depositAddress: undefined,
           depositCurrency: inputCurrency,
           depositAmount: inputAmountNum,
