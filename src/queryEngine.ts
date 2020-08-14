@@ -36,6 +36,12 @@ const datelog = function(...args: any): void {
 }
 
 const nanoDb = nano(config.couchDbFullpath)
+const STANDARD_NAMES = [
+  { badName: 'USDT20', goodName: 'USDT' },
+  { badName: 'USDTERC20', goodName: 'USDT' },
+  { badName: 'BCHABC', goodName: 'BCH' },
+  { badName: 'BCHSV', goodName: 'BSV' }
+]
 const DB_NAMES = [
   { name: 'reports_apps' },
   { name: 'reports_transactions', options: { partitioned: true } },
@@ -135,31 +141,9 @@ async function insertTransactions(
     }
     const newObj = { _rev: undefined, ...result, ...transaction, _id: key }
 
-    if (
-      newObj.depositCurrency === 'USDT20' ||
-      newObj.depositCurrency === 'USDTERC20'
-    ) {
-      newObj.depositCurrency = 'USDT'
-    }
-    if (newObj.depositCurrency === 'BCHABC') {
-      newObj.depositCurrency = 'BCH'
-    }
-    if (newObj.depositCurrency === 'BCHSV') {
-      newObj.depositCurrency = 'BSV'
-    }
-
-    if (
-      newObj.payoutCurrency === 'USDT20' ||
-      newObj.payoutCurrency === 'USDTERC20'
-    ) {
-      newObj.payoutCurrency = 'USDT'
-    }
-    if (newObj.payoutCurrency === 'BCHABC') {
-      newObj.payoutCurrency = 'BCH'
-    }
-    if (newObj.payoutCurrency === 'BCHSV') {
-      newObj.payoutCurrency = 'BSV'
-    }
+    // replace all fields with non-standard names
+    standardizeNames(newObj.depositCurrency)
+    standardizeNames(newObj.payoutCurrency)
 
     datelog(`id: ${newObj._id}. revision: ${newObj._rev}`)
     transactionsArray.push(newObj)
@@ -258,4 +242,9 @@ async function runPlugin(
     datelog(errorText)
     return errorText
   }
+}
+
+const standardizeNames = (field: string): void => {
+  const foundIndex = STANDARD_NAMES.findIndex(x => x.badName === field)
+  field = foundIndex !== -1 ? STANDARD_NAMES[foundIndex].goodName : field
 }
