@@ -284,6 +284,16 @@
     "state": "LA",
     "externalCustomerId": null
   },
+  "paytrie": {
+    "inputAddress": "0x0000000000000000000000000000000000000000",
+    "inputAmount": 99,
+    "inputCurrency": "USDT",
+    "inputTXID": "82485b03-72c8-454b-ad68-06235f3eb2e6",
+    "outputAddress": "0x0000000000000000000000000000000000000000",
+    "outputAmount": 73.55,
+    "outputCurrency": "CAD",
+    "timestamp": "2020-06-10T21:45:29.573Z"
+  },
   "safello": {
     "id": "B2SG4QH",
     "amount": 1200,
@@ -291,6 +301,43 @@
     "cryptoCurrency": "BTC",
     "currency": "SEK",
     "completedDate": "2019-10-06T21:36:37+0000"
+  },
+  "shapeshift": {
+    "apiKey": null,
+    "clientId": "3a49c306-8c52-42a2-b7cf-bda4e4aa6d7d",
+    "customerRate": "0.005424494647968590",
+    "foxBack": "8.495636796136773800",
+    "foxBalance": null,
+    "foxUsed": "0E-18",
+    "freeRate": "0.005451753415043809",
+    "hasConfirmations": true,
+    "inputAddress": "MEMzQ1tBKpBWmEh4RL6Lqjv3DCr2JNWmVu",
+    "inputAmount": 35.123,
+    "inputCurrency": "LTC",
+    "inputTXID": "c1ee666969b4373fb51663428487ce132f6016a9611f0533305684a85b2a4143",
+    "links": {
+      "inputAddress": "https://chainz.cryptoid.info/ltc/address.dws?MEMzQ1tBKpBWmEh4RL6Lqjv3DCr2JNWmVu",
+      "outputAddress": "https://blockchain.info/address/3Lio47Zp319iAxKwBLtsh3jLXTN2jVq2zS",
+      "inputTXID": "https://chainz.cryptoid.info/ltc/tx.dws?c1e…3428487ce132f6016a9611f0533305684a85b2a4143",
+      "outputTXID": "https://blockchain.info/tx/e8f092a3f5f2c8b2…e7f68b7ea9d150f11805297787bb54c86073a856f3"
+    },
+    "minerFee": 0.000285,
+    "orderId": "00edbf23-927a-4ebc-a4b1-5c6d527391c6",
+    "outputAddress": "3Lio47Zp319iAxKwBLtsh3jLXTN2jVq2zS",
+    "outputAmount": "0.19023953",
+    "outputCurrency": "BTC",
+    "outputTXID": "e8f092a3f5f2c8b2114012e7f68b7ea9d150f11805297787bb54c86073a856f3",
+    "retailRate": "0.005424494647968590",
+    "shiftRate": "0.00542449",
+    "ssTXID": "5eadc7f476c36500223a7ed4",
+    "status": "complete",
+    "thenUSD": {
+      "BTC": "8870.65",
+      "LTC": "48.376487180120000"
+    },
+    "timestamp": 1588447220.978,
+    "type": "PRECISE",
+    "userId": "e274af63-2a26-45bb-b6a6-202332dd9a2c"
   },
   "simplex": {
     "transaction_id": "f64b5e50-d935-11ea-b358-ed6259933d55",
@@ -358,6 +405,61 @@
         "0xbf9d515e7a6e4aae9d5b3f3194357ff3df319b042a8e4b8780d592a46e43b4b1"
       ]
     }
+  },
+  "transak": {
+    "0": {
+      "currency": "INR",
+      "provider": "upi",
+      "name": "UPI",
+      "fields": [
+        null,
+        null
+      ]
+    },
+    "1": {
+      "currency": "INR",
+      "provider": "bankaccount",
+      "name": "Bank Transfer",
+      "fields": [
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    "addressAdditionalData": {
+      "name": "dest_tag",
+      "display_name": "Destination Tag",
+      "shapeshift_name": "destTag",
+      "okex_tag_name": "tag",
+      "value": ""
+    },
+    "amountPaid": 2996,
+    "autoExpiresAt": "2020-06-28T08:58:02+00:00",
+    "completedAt": "2020-06-28T08:59:10.436Z",
+    "conversionPrice": 0.07145002100579088,
+    "createdAt": "2020-06-28T08:28:02.066Z",
+    "cryptoAmount": 212.590249,
+    "cryptocurrency": "XRP",
+    "fiatAmount": 2996,
+    "fiatCurrency": "INR",
+    "fromWalletAddress": false,
+    "id": "005d4082-005c-4f1a-9f38-769d94716c5c",
+    "isBuyOrSell": "BUY",
+    "network": false,
+    "paymentOption": [],
+    "paymentOptionId": "upi",
+    "referenceCode": 992266,
+    "status": "COMPLETED",
+    "totalFeeInCrypto": 1.4825918891855807,
+    "length": 2,
+    "totalFeeInFiat": 20.63,
+    "transactionHash": "6D8C23029788B6099F88D4742E1FAB02669F6E647471D920F3A55ABC13758B5C",
+    "transactionLink": false,
+    "updatedAt": "2020-06-28T08:30:56.350Z",
+    "walletAddress": "rfLWQuNNn529xZdimkUoHeAhzYcQiCFMCA",
+    "walletLink": false
   },
   "wyre": "TF-28U43F9F6LX,account:AC-WDLVTD8WZJZ,COMPLETED,2019-01-27 19:27:02,2019-02-05 01:52:37,100.00000000000000000000,USD,0.02769469000000000000,BTC,"
 }

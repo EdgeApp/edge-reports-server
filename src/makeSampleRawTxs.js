@@ -317,6 +317,46 @@ const rawTxs = {
     currency: 'SEK',
     completedDate: '2019-10-06T21:36:37+0000'
   },
+  shapeshift: {
+    apiKey: null,
+    clientId: '3a49c306-8c52-42a2-b7cf-bda4e4aa6d7d',
+    customerRate: '0.005424494647968590',
+    foxBack: '8.495636796136773800',
+    foxBalance: null,
+    foxUsed: '0E-18',
+    freeRate: '0.005451753415043809',
+    hasConfirmations: true,
+    inputAddress: 'MEMzQ1tBKpBWmEh4RL6Lqjv3DCr2JNWmVu',
+    inputAmount: 35.123,
+    inputCurrency: 'LTC',
+    inputTXID:
+      'c1ee666969b4373fb51663428487ce132f6016a9611f0533305684a85b2a4143',
+    links: {
+      inputAddress:
+        'https://chainz.cryptoid.info/ltc/address.dws?MEMzQ1tBKpBWmEh4RL6Lqjv3DCr2JNWmVu',
+      outputAddress:
+        'https://blockchain.info/address/3Lio47Zp319iAxKwBLtsh3jLXTN2jVq2zS',
+      inputTXID:
+        'https://chainz.cryptoid.info/ltc/tx.dws?c1e…3428487ce132f6016a9611f0533305684a85b2a4143',
+      outputTXID:
+        'https://blockchain.info/tx/e8f092a3f5f2c8b2…e7f68b7ea9d150f11805297787bb54c86073a856f3'
+    },
+    minerFee: 0.000285,
+    orderId: '00edbf23-927a-4ebc-a4b1-5c6d527391c6',
+    outputAddress: '3Lio47Zp319iAxKwBLtsh3jLXTN2jVq2zS',
+    outputAmount: '0.19023953',
+    outputCurrency: 'BTC',
+    outputTXID:
+      'e8f092a3f5f2c8b2114012e7f68b7ea9d150f11805297787bb54c86073a856f3',
+    retailRate: '0.005424494647968590',
+    shiftRate: '0.00542449',
+    ssTXID: '5eadc7f476c36500223a7ed4',
+    status: 'complete',
+    thenUSD: { BTC: '8870.65', LTC: '48.376487180120000' },
+    timestamp: 1588447220.978,
+    type: 'PRECISE',
+    userId: 'e274af63-2a26-45bb-b6a6-202332dd9a2c'
+  },
   simplex: {
     transaction_id: 'f64b5e50-d935-11ea-b358-ed6259933d55',
     created_at: 1596863644.775,
