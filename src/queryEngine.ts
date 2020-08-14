@@ -89,73 +89,22 @@ export async function queryEngine(): Promise<void> {
     }
     const rawApps = await dbApps.find(query)
     const apps = asApps(rawApps.docs)
+    const appAndPluginId: any = []
     // loop over every app
     for (const app of apps) {
       // loop over every pluginId that app uses
       for (const pluginId in app.pluginIds) {
-        // obtains function that corresponds to current pluginId
-        const pluginFunction = partners.find(func => func.pluginId === pluginId)
-        // if current plugin is not within the list of partners skip to next
-        if (pluginFunction === undefined) {
-          datelog(`Plugin Name '${pluginId}' not found`)
-          continue
-        }
-
-        // get progress cache to see where previous query ended
-        datelog(`Starting with partner: ${pluginId}, app: ${app.appId}`)
-        const progressCacheFileName = `${app.appId.toLowerCase()}:${pluginId}`
-        const out = await dbProgress.get(progressCacheFileName).catch(e => {
-          if (e.error != null && e.error === 'not_found') {
-            datelog('Previous Progress Record Not Found')
-            return {}
-          } else {
-            throw e
-          }
-        })
-
-        // initialize progress settings if unrecognized format
-        let progressSettings: ReturnType<typeof asProgressSettings>
-        try {
-          progressSettings = asProgressSettings(out)
-        } catch (e) {
-          progressSettings = {
-            progressCache: {},
-            _id: undefined,
-            _rev: undefined
-          }
-        }
-
-        // set apiKeys and settings for use in partner's function
-        const apiKeys =
-          Object.keys(app.pluginIds[pluginId]).length !== 0
-            ? app.pluginIds[pluginId]
-            : {}
-        const settings = progressSettings.progressCache
-        datelog(`Querying partner: ${pluginId}, app: ${app.appId}`)
-        try {
-          // run the plugin function
-          const result = await pluginFunction.queryFunc({
-            apiKeys,
-            settings
-          })
-          datelog(
-            `Updating database with transactions and settings for partner: ${pluginId}, app: ${app.appId}`
-          )
-          await insertTransactions(
-            result.transactions,
-            `${app.appId}_${pluginId}`
-          )
-          progressSettings.progressCache = result.settings
-          progressSettings._id = progressCacheFileName
-          await dbProgress.insert(progressSettings)
-          datelog(
-            `Finished updating database with transactions and settings for partner: ${pluginId}, app: ${app.appId}`
-          )
-        } catch (e) {
-          datelog(`Error updating partner: ${pluginId}, app: ${app.appId}`, e)
-        }
+        appAndPluginId.push([app, pluginId])
       }
     }
+    // every app + plugin combo is run simultaneously
+    const partnerStatus = await Promise.all(
+      appAndPluginId.map(async array =>
+        runPlugin(array[0], array[1], dbProgress)
+      )
+    )
+    // log how long every app + plugin took to run
+    datelog(partnerStatus)
     datelog(`Snoozing for ${QUERY_FREQ_MS} milliseconds`)
     await snooze(QUERY_FREQ_MS)
   }
@@ -172,7 +121,7 @@ async function insertTransactions(
   for (const transaction of transactions) {
     // TODO: Add batching for more than 500 transactions
     transaction.orderId = transaction.orderId.toLowerCase()
-    const key = (pluginId + ':' + transaction.orderId).toLowerCase()
+    const key = `${pluginId}:${transaction.orderId}`.toLowerCase()
     const result = await dbTransactions.get(key).catch(e => {
       if (e != null && e.error === 'not_found') {
         return {}
@@ -180,6 +129,10 @@ async function insertTransactions(
         throw e
       }
     })
+    // no duplicate transactions
+    if (Object.keys(result).length > 0) {
+      continue
+    }
     const newObj = { _rev: undefined, ...result, ...transaction, _id: key }
 
     if (
@@ -220,12 +173,89 @@ async function insertTransactions(
           `There was an error in the batch ${doc.error}.  id: ${doc.id}. revision: ${doc.rev}`
         )
         numErrors++
-        // throw new Error(`There was an error in the batch ${doc.error}`)
       }
     }
     datelog(`total errors: ${numErrors}`)
   } catch (e) {
     datelog('Error doing bulk transaction insert', e)
     throw e
+  }
+}
+
+async function runPlugin(
+  app: ReturnType<typeof asApp>,
+  pluginId: string,
+  dbProgress: nano.DocumentScope<unknown>
+): Promise<string> {
+  const start = Date.now()
+  let errorText = ''
+  try {
+    // obtains function that corresponds to current pluginId
+    const pluginFunction = partners.find(func => func.pluginId === pluginId)
+    // if current plugin is not within the list of partners skip to next
+    if (pluginFunction === undefined) {
+      errorText = `Plugin Name '${pluginId}' not found`
+      datelog(errorText)
+      return errorText
+    }
+
+    // get progress cache to see where previous query ended
+    datelog(`Starting with partner: ${pluginId}, app: ${app.appId}`)
+    const progressCacheFileName = `${app.appId.toLowerCase()}:${pluginId}`
+    const out = await dbProgress.get(progressCacheFileName).catch(e => {
+      if (e.error != null && e.error === 'not_found') {
+        datelog('Previous Progress Record Not Found')
+        return {}
+      } else {
+        console.log(e)
+      }
+    })
+
+    // initialize progress settings if unrecognized format
+    let progressSettings: ReturnType<typeof asProgressSettings>
+    try {
+      progressSettings = asProgressSettings(out)
+    } catch (e) {
+      progressSettings = {
+        progressCache: {},
+        _id: undefined,
+        _rev: undefined
+      }
+    }
+
+    // set apiKeys and settings for use in partner's function
+    const apiKeys =
+      Object.keys(app.pluginIds[pluginId]).length !== 0
+        ? app.pluginIds[pluginId]
+        : {}
+    const settings = progressSettings.progressCache
+    datelog(`Querying partner: ${pluginId}, app: ${app.appId}`)
+    try {
+      // run the plugin function
+      const result = await pluginFunction.queryFunc({
+        apiKeys,
+        settings
+      })
+      datelog(
+        `Updating database with transactions and settings for partner: ${pluginId}, app: ${app.appId}`
+      )
+      await insertTransactions(result.transactions, `${app.appId}_${pluginId}`)
+      progressSettings.progressCache = result.settings
+      progressSettings._id = progressCacheFileName
+      await dbProgress.insert(progressSettings)
+      // Returning a successful completion message
+      const completionTime = (Date.now() - start) / 1000
+      const successfulCompletionMessage = `Finished updating database with transactions and settings for partner: ${pluginId}, app: ${app.appId} in ${completionTime} seconds.`
+      datelog(successfulCompletionMessage)
+      return successfulCompletionMessage
+    } catch (e) {
+      errorText = `Error updating partner: ${pluginId}, app: ${app.appId}.  Error message: ${e}`
+      datelog(errorText)
+      return errorText
+    }
+  } catch (e) {
+    errorText = `Error running partner: ${pluginId}, app: ${app.appId}.  Error message: ${e}`
+    datelog(errorText)
+    return errorText
   }
 }
