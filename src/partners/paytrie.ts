@@ -57,15 +57,19 @@ export async function queryPaytrie(
     const order = asPaytrieTx(rawOrder)
     const ssTx: StandardTx = {
       status: 'complete',
-      inputTXID: order.inputTXID,
-      inputAddress: order.inputAddress,
-      inputCurrency: order.inputCurrency,
-      inputAmount: order.inputAmount,
-      outputAddress: order.outputAddress,
-      outputCurrency: order.outputCurrency,
-      outputAmount: order.outputAmount,
+      orderId: order.inputTXID,
+      depositTxid: order.inputTXID,
+      depositAddress: order.inputAddress,
+      depositCurrency: order.inputCurrency,
+      depositAmount: order.inputAmount,
+      payoutTxid: undefined,
+      payoutAddress: order.outputAddress,
+      payoutCurrency: order.outputCurrency,
+      payoutAmount: order.outputAmount,
       timestamp: new Date(order.timestamp).getTime() / 1000,
-      isoDate: order.timestamp
+      isoDate: order.timestamp,
+      usdValue: undefined,
+      rawTx: rawOrder
     }
     ssFormatTxs.push(ssTx)
   }
