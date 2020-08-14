@@ -68,19 +68,25 @@ export async function queryTransak(
       if (asRawTxOrder(rawtx).status === 'COMPLETED') {
         const tx = asTransakOrder(rawtx)
         const date = new Date(tx.completedAt)
-        const inputAddress =
-          typeof tx.fromWalletAddress === 'string' ? tx.fromWalletAddress : ''
+        const depositAddress =
+          typeof tx.fromWalletAddress === 'string'
+            ? tx.fromWalletAddress
+            : undefined
         const ssTx: StandardTx = {
           status: 'complete',
-          inputTXID: tx.id,
-          inputAddress,
-          inputCurrency: tx.fiatCurrency,
-          inputAmount: tx.fiatAmount,
-          outputAddress: tx.walletAddress,
-          outputCurrency: tx.cryptocurrency,
-          outputAmount: tx.cryptoAmount,
+          orderId: tx.id,
+          depositTxid: undefined,
+          depositAddress,
+          depositCurrency: tx.fiatCurrency,
+          depositAmount: tx.fiatAmount,
+          payoutTxid: undefined,
+          payoutAddress: tx.walletAddress,
+          payoutCurrency: tx.cryptocurrency,
+          payoutAmount: tx.cryptoAmount,
           timestamp: date.getTime() / 1000,
-          isoDate: date.toISOString()
+          isoDate: date.toISOString(),
+          usdValue: undefined,
+          rawTx: rawtx
         }
         ssFormatTxs.push(ssTx)
       }
