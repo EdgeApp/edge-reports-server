@@ -1,6 +1,17 @@
-import React from 'react'
-import ReactDOM from 'react-dom'
+import React, { Component } from 'react'
 
-console.log('Hello from tsx!')
+class App extends Component {
+  constructor(props) {
+    super(props)
+    this.state = {}
+  }
 
-ReactDOM.render(<p>Hello</p>, document.getElementById('root'))
+  render(): JSX.Element {
+    return (
+      <>
+        <p>Hellooooo</p>
+      </>
+    )
+  }
+}
+export default App
