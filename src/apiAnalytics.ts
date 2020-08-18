@@ -6,9 +6,9 @@ interface UtcValues {
 }
 
 interface DbTx {
-  inputTXID: string
-  inputCurrency: string
-  outputCurrency: string
+  orderId: string
+  depositCurrency: string
+  payoutCurrency: string
   timestamp: number
   usdValue: number
 }
@@ -27,7 +27,7 @@ interface AnalyticsResult {
     day: Bucket[]
     month: Bucket[]
   }
-  pluginId: string
+  appAndPluginId: string
   start: number
   end: number
 }
@@ -36,7 +36,7 @@ export const getAnalytics = (
   txs: DbTx[],
   start: number,
   end: number,
-  pluginId: string,
+  appAndPluginId: string,
   timePeriod: string
 ): AnalyticsResult => {
   // the creation of buckets
@@ -125,7 +125,7 @@ export const getAnalytics = (
       day: dayArray,
       hour: hourArray
     },
-    pluginId: pluginId,
+    appAndPluginId: appAndPluginId,
     start: start,
     end: end
   }
@@ -161,18 +161,18 @@ const bucketAdder = (bucket: Bucket, tx: DbTx): void => {
   // usdValue
   bucket.usdValue += tx.usdValue != null ? tx.usdValue : 0
   // currencyCode
-  if (bucket.currencyCodes[tx.inputCurrency] == null) {
-    bucket.currencyCodes[tx.inputCurrency] = 0
+  if (bucket.currencyCodes[tx.depositCurrency] == null) {
+    bucket.currencyCodes[tx.depositCurrency] = 0
   }
-  bucket.currencyCodes[tx.inputCurrency] +=
+  bucket.currencyCodes[tx.depositCurrency] +=
     tx.usdValue != null ? tx.usdValue / 2 : 0
-  if (bucket.currencyCodes[tx.outputCurrency] == null) {
-    bucket.currencyCodes[tx.outputCurrency] = 0
+  if (bucket.currencyCodes[tx.payoutCurrency] == null) {
+    bucket.currencyCodes[tx.payoutCurrency] = 0
   }
-  bucket.currencyCodes[tx.outputCurrency] +=
+  bucket.currencyCodes[tx.payoutCurrency] +=
     tx.usdValue != null ? tx.usdValue / 2 : 0
   // currencyPair
-  const currencyPair = `${tx.inputCurrency}-${tx.outputCurrency}`
+  const currencyPair = `${tx.depositCurrency}-${tx.payoutCurrency}`
   if (bucket.currencyPairs[currencyPair] == null) {
     bucket.currencyPairs[currencyPair] = 0
   }

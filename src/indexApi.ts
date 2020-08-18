@@ -11,6 +11,7 @@ import { asDbTx } from './types'
 const asAnalyticsReq = asObject({
   start: asString,
   end: asString,
+  appId: asString,
   pluginId: asString,
   timePeriod: asString
 })
@@ -24,9 +25,9 @@ const asCheckTxReq = asObject({
 const asDbReq = asObject({
   docs: asArray(
     asObject({
-      inputTXID: asString,
-      inputCurrency: asString,
-      outputCurrency: asString,
+      orderId: asString,
+      depositCurrency: asString,
+      payoutCurrency: asString,
       timestamp: asNumber,
       usdValue: asNumber
     })
@@ -51,7 +52,7 @@ async function main(): Promise<void> {
       res.status(400).send(`Missing Request Fields`)
       return
     }
-    let { start, end, pluginId, timePeriod } = analyticsQuery
+    let { start, end, appId, pluginId, timePeriod } = analyticsQuery
     timePeriod = timePeriod.toLowerCase()
     const queryStart = parseInt(start)
     const queryEnd = parseInt(end)
@@ -69,15 +70,16 @@ async function main(): Promise<void> {
       res.status(400).send(`Start must be less than End`)
       return
     }
+    const appAndPluginId = `${appId}_${pluginId}`
     const query = {
       selector: {
         usdValue: { $gte: 0 },
         timestamp: { $gte: queryStart, $lt: queryEnd }
       },
       fields: [
-        'inputTXID',
-        'inputCurrency',
-        'outputCurrency',
+        'orderId',
+        'depositCurrency',
+        'payoutCurrency',
         'timestamp',
         'usdValue'
       ],
@@ -85,7 +87,7 @@ async function main(): Promise<void> {
       limit: 1000000
     }
     const result = asDbReq(
-      await reportsTransactions.partitionedFind(pluginId, query)
+      await reportsTransactions.partitionedFind(appAndPluginId, query)
     )
     // TODO: put the sort within the query, need to add default indexs in the database.
     const sortedTxs = result.docs.sort(function(a, b) {
@@ -95,7 +97,7 @@ async function main(): Promise<void> {
       sortedTxs,
       queryStart,
       queryEnd,
-      pluginId,
+      appAndPluginId,
       timePeriod
     )
     res.json(answer)
@@ -131,7 +133,9 @@ async function main(): Promise<void> {
     res.json(out)
   })
 
-  const result = await reportsTransactions.get('edge2_bitsofgold:1038e2465a')
+  const result = await reportsTransactions.get(
+    'edge_bitrefill:5f1fa3a729733f0004b8b9ee'
+  )
   console.log('result', result)
 
   app.listen(3000, function() {
