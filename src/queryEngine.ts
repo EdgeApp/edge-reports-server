@@ -100,15 +100,11 @@ export async function queryEngine(): Promise<void> {
     for (const app of apps) {
       // loop over every pluginId that app uses
       for (const pluginId in app.pluginIds) {
-        appAndPluginId.push([app, pluginId])
+        appAndPluginId.push(runPlugin(app, pluginId, dbProgress))
       }
     }
-    // every app + plugin combo is run simultaneously
-    const partnerStatus = await Promise.all(
-      appAndPluginId.map(async array =>
-        runPlugin(array[0], array[1], dbProgress)
-      )
-    )
+    // await the conclusion of every app + plugin combo created above.
+    const partnerStatus = await Promise.all(appAndPluginId)
     // log how long every app + plugin took to run
     datelog(partnerStatus)
     datelog(`Snoozing for ${QUERY_FREQ_MS} milliseconds`)
@@ -178,7 +174,7 @@ async function runPlugin(
     const pluginFunction = partners.find(func => func.pluginId === pluginId)
     // if current plugin is not within the list of partners skip to next
     if (pluginFunction === undefined) {
-      errorText = `Plugin Name '${pluginId}' not found`
+      errorText = `Plugin Name ${pluginId} for app: ${app.appId}not found`
       datelog(errorText)
       return errorText
     }
