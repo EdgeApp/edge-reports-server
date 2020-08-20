@@ -101,7 +101,7 @@ export async function queryEngine(): Promise<void> {
     }
     const rawApps = await dbApps.find(query)
     const apps = asApps(rawApps.docs)
-    const appAndPluginId: any = []
+    const appAndPluginId: Array<Promise<string>> = []
     // loop over every app
     for (const app of apps) {
       // loop over every pluginId that app uses
