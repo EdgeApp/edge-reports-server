@@ -30,12 +30,18 @@ const asApp = asObject({
 })
 const asApps = asArray(asApp)
 
-const datelog = function(...args: any): void {
+const datelog = function (...args: any): void {
   const date = new Date().toISOString()
   console.log(date, ...args)
 }
 
 const nanoDb = nano(config.couchDbFullpath)
+const CURRENCY_CONVERSION = {
+  USDT20: 'USDT',
+  USDTERC20: 'USDT',
+  BCHABC: 'BCH',
+  BCHSV: 'BSV'
+}
 const STANDARD_NAMES = [
   { badName: 'USDT20', goodName: 'USDT' },
   { badName: 'USDTERC20', goodName: 'USDT' },
@@ -138,8 +144,8 @@ async function insertTransactions(
     const newObj = { _rev: undefined, ...result, ...transaction, _id: key }
 
     // replace all fields with non-standard names
-    standardizeNames(newObj.depositCurrency)
-    standardizeNames(newObj.payoutCurrency)
+    newObj.depositCurrency = standardizeNames(newObj.depositCurrency)
+    newObj.payoutCurrency = standardizeNames(newObj.payoutCurrency)
 
     datelog(`id: ${newObj._id}. revision: ${newObj._rev}`)
     transactionsArray.push(newObj)
@@ -240,7 +246,9 @@ async function runPlugin(
   }
 }
 
-const standardizeNames = (field: string): void => {
-  const foundIndex = STANDARD_NAMES.findIndex(x => x.badName === field)
-  field = foundIndex !== -1 ? STANDARD_NAMES[foundIndex].goodName : field
+const standardizeNames = (field: string): string => {
+  if (CURRENCY_CONVERSION[field] !== undefined) {
+    return CURRENCY_CONVERSION[field]
+  }
+  return field
 }
