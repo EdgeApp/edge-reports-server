@@ -27,7 +27,8 @@ interface AnalyticsResult {
     day: Bucket[]
     month: Bucket[]
   }
-  appAndPluginId: string
+  app: string
+  pluginId: string
   start: number
   end: number
 }
@@ -36,7 +37,8 @@ export const getAnalytics = (
   txs: DbTx[],
   start: number,
   end: number,
-  appAndPluginId: string,
+  app: string,
+  pluginId: string,
   timePeriod: string
 ): AnalyticsResult => {
   // the creation of buckets
@@ -125,7 +127,8 @@ export const getAnalytics = (
       day: dayArray,
       hour: hourArray
     },
-    appAndPluginId: appAndPluginId,
+    app,
+    pluginId,
     start: start,
     end: end
   }

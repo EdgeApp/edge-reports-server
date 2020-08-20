@@ -97,7 +97,8 @@ async function main(): Promise<void> {
       sortedTxs,
       queryStart,
       queryEnd,
-      appAndPluginId,
+      appId,
+      pluginId,
       timePeriod
     )
     res.json(answer)
