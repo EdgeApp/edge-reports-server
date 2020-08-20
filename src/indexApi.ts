@@ -1,5 +1,5 @@
 import bodyParser from 'body-parser'
-import { asArray, asNumber, asObject, asString } from 'cleaners'
+import { asArray, asMap, asNumber, asObject, asString } from 'cleaners'
 import cors from 'cors'
 import express from 'express'
 import nano from 'nano'
@@ -39,6 +39,14 @@ const asApp = asObject({
   appId: asString
 })
 const asApps = asArray(asApp)
+
+const asPluginIdsReq = asObject({
+  appId: asString
+})
+
+const asPluginIdsDbReq = asObject({
+  pluginIds: asMap(asMap(asString))
+})
 
 const nanoDb = nano(config.couchDbFullpath)
 
@@ -167,6 +175,27 @@ async function main(): Promise<void> {
       out.usdValue = result.usdValue
     }
     res.json(out)
+  })
+
+  app.get('/v1/getPluginIds/', async function(req, res) {
+    let queryResult
+    try {
+      queryResult = asPluginIdsReq(req.query)
+    } catch (e) {
+      res.status(400).send(`Missing Request fields.`)
+      return
+    }
+    const query = {
+      selector: {
+        appId: { $eq: queryResult.appId.toLowerCase() }
+      },
+      fields: ['pluginIds'],
+      limit: 1
+    }
+    const rawApp = await reportsApps.find(query)
+    const app = asPluginIdsDbReq(rawApp.docs[0])
+    const pluginNames = Object.keys(app.pluginIds)
+    res.json(pluginNames)
   })
 
   app.listen(config.httpPort, function() {
