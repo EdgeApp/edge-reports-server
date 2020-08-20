@@ -36,7 +36,7 @@ const asDbReq = asObject({
 
 const nanoDb = nano(config.couchDbFullpath)
 
-async function main(): Promise<void> {
+function main(): void {
   // start express and couch db server
   const app = express()
   const reportsTransactions = nanoDb.use('reports_transactions')
@@ -134,13 +134,8 @@ async function main(): Promise<void> {
     res.json(out)
   })
 
-  const result = await reportsTransactions.get(
-    'edge_bitrefill:5f1fa3a729733f0004b8b9ee'
-  )
-  console.log('result', result)
-
   app.listen(3000, function() {
     console.log('Server started on Port 3000')
   })
 }
-main().catch(e => console.log(e))
+main()
