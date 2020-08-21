@@ -69,17 +69,18 @@ export async function queryBitsOfGold(
     const data = tx.attributes
     const date = new Date(data.timestamp)
     const timestamp = date.getTime()
+
+    let [depositCurrency, depositAmount, payoutCurrency, payoutAmount] = [
+      data.coin_type,
+      data.coin_amount,
+      data.fiat_type,
+      data.fiat_amount
+    ]
     if (tx.type.toLowerCase() === 'buy') {
-      const [a, b, c, d] = [
-        data.coin_type,
-        data.coin_amount,
-        data.fiat_type,
-        data.fiat_amount
-      ]
-      data.coin_type = c
-      data.coin_amount = d
-      data.fiat_type = a
-      data.fiat_amount = b
+      depositCurrency = data.fiat_type
+      depositAmount = data.fiat_amount
+      payoutCurrency = data.coin_type
+      payoutAmount = data.fiat_amount
     }
 
     const ssTx: StandardTx = {
@@ -87,14 +88,14 @@ export async function queryBitsOfGold(
       orderId: tx.id,
       depositTxid: undefined,
       depositAddress: undefined,
-      depositCurrency: data.coin_type,
-      depositAmount: data.coin_amount,
+      depositCurrency,
+      depositAmount,
       payoutTxid: undefined,
       payoutAddress: undefined,
-      payoutCurrency: data.fiat_type,
-      payoutAmount: data.fiat_amount,
+      payoutCurrency,
+      payoutAmount,
       timestamp: timestamp / 1000,
-      isoDate: data.timestamp,
+      isoDate: date.toISOString(),
       usdValue: undefined,
       rawTx: rawtx
     }
