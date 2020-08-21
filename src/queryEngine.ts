@@ -2,8 +2,8 @@ import { asArray, asMap, asObject, asString } from 'cleaners'
 import nano from 'nano'
 
 import config from '../config.json'
+import { banxa } from './partners/banxa'
 import { bitrefill } from './partners/bitrefill'
-// Query Partner Functions
 import { bitsofgold } from './partners/bitsofgold'
 import { bity } from './partners/bity'
 import { changelly } from './partners/changelly'
@@ -49,6 +49,7 @@ const DB_NAMES = [
 ]
 
 const partners = [
+  banxa,
   bitsofgold,
   bity,
   bitrefill,
