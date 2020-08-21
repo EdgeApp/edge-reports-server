@@ -77,51 +77,50 @@ export async function ratesEngine(): Promise<void> {
 
 export async function updateTxUsdValue(transaction: DbTx): Promise<void> {
   const date: string = transaction.isoDate
-  let url = ''
-  let jsonObj: { exchangeRate: string } = { exchangeRate: '' }
-
   if (transaction.payoutAmount === 0) {
-    try {
-      url =
-        'https://rates1.edge.app/v1/exchangeRate?currency_pair=' +
-        transaction.depositCurrency +
-        '_' +
-        transaction.payoutCurrency +
-        '&date=' +
+    const exchangeRate = await getExchangeRate(
+      transaction.depositCurrency,
+      transaction.payoutCurrency,
+      date
+    )
+    transaction.payoutAmount = transaction.depositAmount * exchangeRate
+  }
+  if (transaction.usdValue == null) {
+    const exchangeRate = await getExchangeRate(
+      transaction.depositCurrency,
+      'USD',
+      date
+    )
+    if (exchangeRate > 0) {
+      transaction.usdValue = transaction.depositAmount * exchangeRate
+    } else {
+      const exchangeRate = await getExchangeRate(
+        transaction.payoutCurrency,
+        'USD',
         date
-      const result = await fetch(url, { method: 'GET' })
-      jsonObj = await result.json()
-      const exchangeRate = parseFloat(jsonObj.exchangeRate)
-      transaction.payoutAmount = transaction.depositAmount * exchangeRate
-    } catch (e) {
-      datelog('Could not not get exchange rate for payoutAmount', e)
-      transaction.payoutAmount = 0
+      )
+      if (exchangeRate > 0) {
+        transaction.usdValue = transaction.payoutAmount * exchangeRate
+      }
     }
   }
+}
+
+async function getExchangeRate(
+  currencyA: string,
+  currencyB: string,
+  date: string
+): Promise<number> {
+  const url = `https://rates1.edge.app/v1/exchangeRate?currency_pair=${currencyA}_${currencyB}&date=${date}`
   try {
-    try {
-      url =
-        'https://rates1.edge.app/v1/exchangeRate?currency_pair=' +
-        transaction.depositCurrency +
-        '_USD&date=' +
-        date
-      const result = await fetch(url, { method: 'GET' })
-      jsonObj = await result.json()
-      const exchangeRate = parseFloat(jsonObj.exchangeRate)
-      transaction.usdValue = transaction.depositAmount * exchangeRate
-    } catch {
-      url =
-        'https://rates1.edge.app/v1/exchangeRate?currency_pair=' +
-        transaction.payoutCurrency +
-        '_USD&date=' +
-        date
-      const result = await fetch(url, { method: 'GET' })
-      jsonObj = await result.json()
-      const exchangeRate = parseFloat(jsonObj.exchangeRate)
-      transaction.usdValue = transaction.payoutAmount * exchangeRate
-    }
+    const result = await fetch(url, { method: 'GET' })
+    const jsonObj = await result.json()
+    return parseFloat(jsonObj.exchangeRate)
   } catch (e) {
-    datelog('Could not not get exchange rate for usdValue', e)
-    transaction.usdValue = undefined
+    datelog(
+      `Could not not get exchange rate for ${currencyA} and ${currencyB} at ${date}.`,
+      e
+    )
+    return 0
   }
 }
