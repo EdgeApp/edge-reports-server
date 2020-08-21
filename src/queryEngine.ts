@@ -30,7 +30,7 @@ const asApp = asObject({
 })
 const asApps = asArray(asApp)
 
-const datelog = function (...args: any): void {
+const datelog = function(...args: any): void {
   const date = new Date().toISOString()
   console.log(date, ...args)
 }
@@ -42,12 +42,6 @@ const CURRENCY_CONVERSION = {
   BCHABC: 'BCH',
   BCHSV: 'BSV'
 }
-const STANDARD_NAMES = [
-  { badName: 'USDT20', goodName: 'USDT' },
-  { badName: 'USDTERC20', goodName: 'USDT' },
-  { badName: 'BCHABC', goodName: 'BCH' },
-  { badName: 'BCHSV', goodName: 'BSV' }
-]
 const DB_NAMES = [
   { name: 'reports_apps' },
   { name: 'reports_transactions', options: { partitioned: true } },
@@ -177,9 +171,9 @@ async function runPlugin(
   let errorText = ''
   try {
     // obtains function that corresponds to current pluginId
-    const pluginFunction = partners.find(func => func.pluginId === pluginId)
+    const plugin = partners.find(partner => partner.pluginId === pluginId)
     // if current plugin is not within the list of partners skip to next
-    if (pluginFunction === undefined) {
+    if (plugin === undefined) {
       errorText = `Plugin Name ${pluginId} for app: ${app.appId}not found`
       datelog(errorText)
       return errorText
