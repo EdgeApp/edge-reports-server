@@ -1,6 +1,34 @@
 const fs = require('fs')
 
 const rawTxs = {
+  banxa: {
+    account_id: 'bf14184a13e6634ca1cf13e5ab81bf31',
+    account_reference: 'bb01658f-3aad-4259-8055-5ac9af56400c',
+    coin_amount: 0.01814859,
+    coin_code: 'BTC',
+    commission: 0,
+    country: 'AU',
+    created_at: '26-Aug-2019 11:04:36',
+    created_date: '26-Aug-2019',
+    fee: 0,
+    fee_tax: 0,
+    fiat_amount: 300,
+    fiat_code: 'AUD',
+    id: '99564de7ee841c67eac10485eaa84e0e',
+    merchant_commission: 0.02,
+    merchant_fee: 5.6899999999999995,
+    meta_data: null,
+    order_type: 'CRYPTO-BUY',
+    payment_fee: 9.59,
+    payment_fee_tax: 0,
+    payment_type: 'Blueshyft Online',
+    ref: 347810,
+    status: 'expired',
+    tx_confirms: 0,
+    tx_hash: null,
+    wallet_address: '3MdZFWVnafQT5RadRh1aEWweEr7pMqNub2',
+    wallet_address_tag: null
+  },
   bitrefill: {
     id: '5f1b703424c92700046f5053',
     orderId: '5f1b703424c92700046f5053',
