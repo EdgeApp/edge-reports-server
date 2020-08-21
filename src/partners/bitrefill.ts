@@ -5,7 +5,8 @@ import {
   asNumber,
   asObject,
   asOptional,
-  asString
+  asString,
+  asUnknown
 } from 'cleaners'
 import fetch from 'node-fetch'
 
@@ -17,6 +18,8 @@ const asBitrefillTx = asObject({
   sent: asBoolean,
   invoiceTime: asNumber,
   satoshiPrice: asOptional(asNumber),
+  value: asString,
+  currency: asString,
   coinCurrency: asString,
   receivedPaymentAltcoin: asOptional(asNumber),
   orderId: asString,
@@ -25,7 +28,7 @@ const asBitrefillTx = asObject({
 
 const asBitrefillResult = asObject({
   nextUrl: asOptional(asString),
-  orders: asArray(asBitrefillTx)
+  orders: asArray(asUnknown)
 })
 
 const div: { [key: string]: string } = {
@@ -75,7 +78,8 @@ export async function queryBitrefill(
       break
     }
     const txs = jsonObj.orders
-    for (const tx of txs) {
+    for (const rawtx of txs) {
+      const tx = asBitrefillTx(rawtx)
       if (
         tx.paymentReceived === true &&
         tx.expired === false &&
@@ -100,15 +104,19 @@ export async function queryBitrefill(
         )
         const ssTx: StandardTx = {
           status: 'complete',
-          inputTXID: tx.orderId,
-          inputAddress: undefined,
-          inputCurrency,
-          inputAmount: inputAmountNum,
-          outputAddress: undefined,
-          outputCurrency: 'USD',
-          outputAmount: tx.usdPrice,
+          orderId: tx.orderId,
+          depositTxid: undefined,
+          depositAddress: undefined,
+          depositCurrency: inputCurrency,
+          depositAmount: inputAmountNum,
+          payoutTxid: undefined,
+          payoutAddress: undefined,
+          payoutCurrency: tx.currency,
+          payoutAmount: parseInt(tx.value),
           timestamp,
-          isoDate: new Date(tx.invoiceTime).toISOString()
+          isoDate: new Date(tx.invoiceTime).toISOString(),
+          usdValue: tx.usdPrice,
+          rawTx: rawtx
         }
         ssFormatTxs.push(ssTx)
       }

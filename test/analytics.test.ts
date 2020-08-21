@@ -17,7 +17,14 @@ describe('apiAnalytics function tests', function() {
   it('A Real Coinswitch Query for Month of July 2020', function() {
     expect(
       JSON.stringify(
-        getAnalytics(inputOne, 1594023608, 1596055300, 'coinswitch', 'month')
+        getAnalytics(
+          inputOne,
+          1594023608,
+          1596055300,
+          'edge',
+          'coinswitch',
+          'month'
+        )
       )
     ).equals(JSON.stringify(outputOne))
   })
@@ -28,7 +35,8 @@ describe('apiAnalytics function tests', function() {
           inputTwo,
           1300000000,
           1300070000,
-          'dummy',
+          'app-dummy',
+          'partner-dummy',
           'month|day|hour'
         )
       )
@@ -37,14 +45,28 @@ describe('apiAnalytics function tests', function() {
   it('Leap Year Test', function() {
     expect(
       JSON.stringify(
-        getAnalytics(inputThree, 1708992000, 1709424000, 'dummy', 'day|hour')
+        getAnalytics(
+          inputThree,
+          1708992000,
+          1709424000,
+          'app-dummy',
+          'partner-dummy',
+          'day|hour'
+        )
       )
     ).equals(JSON.stringify(outputThree))
   })
   it('Year Rollover', function() {
     expect(
       JSON.stringify(
-        getAnalytics(inputFour, 1672444800, 1706918400, 'dummy', 'month')
+        getAnalytics(
+          inputFour,
+          1672444800,
+          1706918400,
+          'app-dummy',
+          'partner-dummy',
+          'month'
+        )
       )
     ).equals(JSON.stringify(outputFour))
   })

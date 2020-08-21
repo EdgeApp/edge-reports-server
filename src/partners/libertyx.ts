@@ -54,15 +54,19 @@ export async function queryLibertyx(
     const timestamp = date.getTime() / 1000
     const ssTx = {
       status: 'complete',
-      inputTXID: tx.date_us_eastern,
-      inputAddress: '',
-      inputCurrency: 'USD',
-      inputAmount: tx.all_transactions_usd_sum,
-      outputAddress: '',
-      outputCurrency: 'USD',
-      outputAmount: tx.all_transactions_usd_sum,
+      orderId: tx.date_us_eastern,
+      depositTxid: undefined,
+      depositAddress: undefined,
+      depositCurrency: 'USD',
+      depositAmount: tx.all_transactions_usd_sum,
+      payoutTxid: undefined,
+      payoutAddress: undefined,
+      payoutCurrency: 'BTC',
+      payoutAmount: 0,
       timestamp: timestamp,
-      isoDate: tx.date_us_eastern
+      isoDate: date.toISOString(),
+      usdValue: tx.all_transactions_usd_sum,
+      rawTx: rawtx
     }
     ssFormatTxs.push(ssTx)
   }

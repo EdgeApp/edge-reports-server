@@ -1,11 +1,21 @@
-import { asArray, asNumber, asObject, asString } from 'cleaners'
+import {
+  asArray,
+  asEither,
+  asNull,
+  asNumber,
+  asObject,
+  asString,
+  asUnknown
+} from 'cleaners'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
-const asCoinSwitchTx = asObject({
+const asCoinswitchTx = asObject({
   status: asString,
-  inputTransactionHash: asString,
+  orderId: asString,
+  inputTransactionHash: asEither(asString, asNull),
+  outputTransactionHash: asEither(asString, asNull),
   exchangeAddress: asObject({ address: asString }),
   depositCoin: asString,
   depositCoinAmount: asNumber,
@@ -17,7 +27,7 @@ const asCoinSwitchTx = asObject({
 
 const asCoinSwitchResult = asObject({
   data: asObject({
-    items: asArray(asCoinSwitchTx)
+    items: asArray(asUnknown)
   })
 })
 const COUNT = 25
@@ -60,18 +70,31 @@ export async function queryCoinSwitch(
       break
     }
     const txs = jsonObj.data.items
-    for (const tx of txs) {
+    for (const rawTx of txs) {
+      const tx = asCoinswitchTx(rawTx)
+      const depositTxid =
+        tx.inputTransactionHash === 'string'
+          ? tx.inputTransactionHash
+          : undefined
+      const payoutTxid =
+        tx.outputTransactionHash === 'string'
+          ? tx.outputTransactionHash
+          : undefined
       const ssTx: StandardTx = {
         status: 'complete',
-        inputTXID: tx.inputTransactionHash,
-        inputAddress: tx.exchangeAddress.address,
-        inputCurrency: tx.depositCoin.toUpperCase(),
-        inputAmount: tx.depositCoinAmount,
-        outputAddress: tx.destinationAddress.address,
-        outputCurrency: tx.destinationCoin.toUpperCase(),
-        outputAmount: tx.destinationCoinAmount,
+        orderId: tx.orderId,
+        depositTxid,
+        depositAddress: tx.exchangeAddress.address,
+        depositCurrency: tx.depositCoin.toUpperCase(),
+        depositAmount: tx.depositCoinAmount,
+        payoutTxid,
+        payoutAddress: tx.destinationAddress.address,
+        payoutCurrency: tx.destinationCoin.toUpperCase(),
+        payoutAmount: tx.destinationCoinAmount,
         timestamp: tx.createdAt / 1000,
-        isoDate: new Date(tx.createdAt).toISOString()
+        isoDate: new Date(tx.createdAt).toISOString(),
+        usdValue: undefined,
+        rawTx: rawTx
       }
       ssFormatTxs.push(ssTx)
       if (tx.createdAt > newLatestTimeStamp) {

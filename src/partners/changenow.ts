@@ -1,21 +1,35 @@
-import { asArray, asNumber, asObject, asOptional, asString } from 'cleaners'
+import {
+  asArray,
+  asNumber,
+  asObject,
+  asOptional,
+  asString,
+  asUnknown
+} from 'cleaners'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
 const asChangeNowTx = asObject({
-  status: asString,
   updatedAt: asString,
-  payinHash: asOptional(asString),
+  payinHash: asString,
+  payoutHash: asString,
   payinAddress: asString,
   fromCurrency: asString,
-  amountSend: asOptional(asNumber),
+  amountSend: asNumber,
   payoutAddress: asString,
   toCurrency: asString,
+  amountReceive: asNumber
+})
+
+const asChangeNowRawTx = asObject({
+  status: asString,
+  payinHash: asOptional(asString),
+  amountSend: asOptional(asNumber),
   amountReceive: asOptional(asNumber)
 })
 
-const asChangeNowResult = asArray(asChangeNowTx)
+const asChangeNowResult = asArray(asUnknown)
 const LIMIT = 100
 const ROLLBACK = 500
 
@@ -46,26 +60,32 @@ export async function queryChangeNow(
       break
     }
     const txs = jsonObj
-    for (const tx of txs) {
+    for (const rawtx of txs) {
+      const checkTx = asChangeNowRawTx(rawtx)
       if (
-        tx.status === 'finished' &&
-        tx.payinHash != null &&
-        tx.amountSend != null &&
-        tx.amountReceive != null
+        checkTx.status === 'finished' &&
+        checkTx.payinHash != null &&
+        checkTx.amountSend != null &&
+        checkTx.amountReceive != null
       ) {
+        const tx = asChangeNowTx(rawtx)
         const date = new Date(tx.updatedAt)
         const timestamp = date.getTime() / 1000
         const ssTx: StandardTx = {
           status: 'complete',
-          inputTXID: tx.payinHash,
-          inputAddress: tx.payinAddress,
-          inputCurrency: tx.fromCurrency.toUpperCase(),
-          inputAmount: tx.amountSend,
-          outputAddress: tx.payoutAddress,
-          outputCurrency: tx.toCurrency.toUpperCase(),
-          outputAmount: tx.amountReceive,
+          orderId: tx.payinHash,
+          depositTxid: tx.payinHash,
+          depositAddress: tx.payinAddress,
+          depositCurrency: tx.fromCurrency.toUpperCase(),
+          depositAmount: tx.amountSend,
+          payoutTxid: tx.payoutHash,
+          payoutAddress: tx.payoutAddress,
+          payoutCurrency: tx.toCurrency.toUpperCase(),
+          payoutAmount: tx.amountReceive,
           timestamp,
-          isoDate: new Date(tx.updatedAt).toISOString()
+          isoDate: tx.updatedAt,
+          usdValue: undefined,
+          rawTx: rawtx
         }
         ssFormatTxs.push(ssTx)
       }

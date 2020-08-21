@@ -1,1157 +1,1157 @@
 {
   "inputOne": [
     {
-      "inputTXID": "3419c8e89cc33d392fa882ef448cb326f4d5b70de5a54a11ec7c79eb8a11896e",
-      "inputCurrency": "DOGE",
-      "outputCurrency": "ETH",
+      "orderId": "3419c8e89cc33d392fa882ef448cb326f4d5b70de5a54a11ec7c79eb8a11896e",
+      "depositCurrency": "DOGE",
+      "payoutCurrency": "ETH",
       "timestamp": 1594351955.264,
       "usdValue": 196.46396120225884
     },
     {
-      "inputTXID": "6FE128188D16C13DB00ED8962640051B7600E601711C00682006404A996A990C",
-      "inputCurrency": "XRP",
-      "outputCurrency": "DOGE",
+      "orderId": "6FE128188D16C13DB00ED8962640051B7600E601711C00682006404A996A990C",
+      "depositCurrency": "XRP",
+      "payoutCurrency": "DOGE",
       "timestamp": 1594360209.044,
       "usdValue": 21.66977686562629
     },
     {
-      "inputTXID": "f4df3a562b84dd5edd4b4a5a6ee5ab58c2e95f254425aaaa755ebd08e0525c3d",
-      "inputCurrency": "LTC",
-      "outputCurrency": "DOGE",
+      "orderId": "f4df3a562b84dd5edd4b4a5a6ee5ab58c2e95f254425aaaa755ebd08e0525c3d",
+      "depositCurrency": "LTC",
+      "payoutCurrency": "DOGE",
       "timestamp": 1594365026.121,
       "usdValue": 43.5332177393634
     },
     {
-      "inputTXID": "1af0faa3cd3b9378f9bbc1c1887eaf474eb4014474674b04d43e2650799c9aca",
-      "inputCurrency": "DOGE",
-      "outputCurrency": "BTC",
+      "orderId": "1af0faa3cd3b9378f9bbc1c1887eaf474eb4014474674b04d43e2650799c9aca",
+      "depositCurrency": "DOGE",
+      "payoutCurrency": "BTC",
       "timestamp": 1594370585.275,
       "usdValue": 10.426821978854969
     },
     {
-      "inputTXID": "4ca09502b98f13e1eefefa7ab01e0d76ff8927c9a49080f56873748d02ccce34",
-      "inputCurrency": "DOGE",
-      "outputCurrency": "LTC",
+      "orderId": "4ca09502b98f13e1eefefa7ab01e0d76ff8927c9a49080f56873748d02ccce34",
+      "depositCurrency": "DOGE",
+      "payoutCurrency": "LTC",
       "timestamp": 1594376453.252,
       "usdValue": 45.354977704482
     },
     {
-      "inputTXID": "8c75a909b3a181030268143ef96aa782560a2163c7f871ac3aa5cd5c8ffc1a01",
-      "inputCurrency": "DOGE",
-      "outputCurrency": "XLM",
+      "orderId": "8c75a909b3a181030268143ef96aa782560a2163c7f871ac3aa5cd5c8ffc1a01",
+      "depositCurrency": "DOGE",
+      "payoutCurrency": "XLM",
       "timestamp": 1594377122.011,
       "usdValue": 44.90383385400632
     },
     {
-      "inputTXID": "d5bdb49df65d419edd51886eec7c6c68f217fcff6c10fd617216cf8991af03f2",
-      "inputCurrency": "BTC",
-      "outputCurrency": "XRP",
+      "orderId": "d5bdb49df65d419edd51886eec7c6c68f217fcff6c10fd617216cf8991af03f2",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "XRP",
       "timestamp": 1594378885.315,
       "usdValue": 10.440395218750519
     },
     {
-      "inputTXID": "ab5947118bd181bb380c32927f7845b0aa8b7f23fe61e49cd9efb168191ea320",
-      "inputCurrency": "BTG",
-      "outputCurrency": "DOGE",
+      "orderId": "ab5947118bd181bb380c32927f7845b0aa8b7f23fe61e49cd9efb168191ea320",
+      "depositCurrency": "BTG",
+      "payoutCurrency": "DOGE",
       "timestamp": 1594382106.471,
       "usdValue": 22.22298692136
     },
     {
-      "inputTXID": "0414ece5c628a15588d0887d22ba9628919445653f867d737489c2e1f9b01f54",
-      "inputCurrency": "BTC",
-      "outputCurrency": "DOGE",
+      "orderId": "0414ece5c628a15588d0887d22ba9628919445653f867d737489c2e1f9b01f54",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "DOGE",
       "timestamp": 1594385326.325,
       "usdValue": 18.348062470921604
     },
     {
-      "inputTXID": "e793a2322dac7a21ad4a720870bf63affc15d2c990f90c2ce621e65c4da6a3f8",
-      "inputCurrency": "XMR",
-      "outputCurrency": "BTC",
+      "orderId": "e793a2322dac7a21ad4a720870bf63affc15d2c990f90c2ce621e65c4da6a3f8",
+      "depositCurrency": "XMR",
+      "payoutCurrency": "BTC",
       "timestamp": 1594386424.006,
       "usdValue": 65.7040014549597
     },
     {
-      "inputTXID": "3c37ab378b4255a68593ce47501c4c81970866ce74ab3366b34ce369e637db40",
-      "inputCurrency": "XMR",
-      "outputCurrency": "ETH",
+      "orderId": "3c37ab378b4255a68593ce47501c4c81970866ce74ab3366b34ce369e637db40",
+      "depositCurrency": "XMR",
+      "payoutCurrency": "ETH",
       "timestamp": 1594387663.057,
       "usdValue": 9.644518858665599
     },
     {
-      "inputTXID": "bcdaa53bf9e5e95401d233a92307af47dffc58ce9ee0a88293c558e978067ec9",
-      "inputCurrency": "BTC",
-      "outputCurrency": "DOGE",
+      "orderId": "bcdaa53bf9e5e95401d233a92307af47dffc58ce9ee0a88293c558e978067ec9",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "DOGE",
       "timestamp": 1594389078.328,
       "usdValue": 14.731238689262424
     },
     {
-      "inputTXID": "33f064f193e690d0331ecf2a4b4939c398fb977e94124aea64d026e2058d59a4",
-      "inputCurrency": "BTC",
-      "outputCurrency": "POLY",
+      "orderId": "33f064f193e690d0331ecf2a4b4939c398fb977e94124aea64d026e2058d59a4",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "POLY",
       "timestamp": 1594405072.688,
       "usdValue": 29.9791086886794
     },
     {
-      "inputTXID": "5638c719f28dcf0927bd7d1e10004b3fec809496cb599f440f5a118bbfd04497",
-      "inputCurrency": "DOGE",
-      "outputCurrency": "BTC",
+      "orderId": "5638c719f28dcf0927bd7d1e10004b3fec809496cb599f440f5a118bbfd04497",
+      "depositCurrency": "DOGE",
+      "payoutCurrency": "BTC",
       "timestamp": 1594411283.738,
       "usdValue": 34.07745677701315
     },
     {
-      "inputTXID": "a9f95d1c16d9d3c3c5c53566cf213928c870b1ec0afeba6c34a85b4fe71617f8",
-      "inputCurrency": "BTC",
-      "outputCurrency": "ETH",
+      "orderId": "a9f95d1c16d9d3c3c5c53566cf213928c870b1ec0afeba6c34a85b4fe71617f8",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "ETH",
       "timestamp": 1594413099.317,
       "usdValue": 20.97942584678724
     },
     {
-      "inputTXID": "e3c40f5004de3b91fd9496bafb46c0ea463e0f2f703d2d644ae05dc690d9375c",
-      "inputCurrency": "BTC",
-      "outputCurrency": "DOGE",
+      "orderId": "e3c40f5004de3b91fd9496bafb46c0ea463e0f2f703d2d644ae05dc690d9375c",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "DOGE",
       "timestamp": 1594414549.16,
       "usdValue": 18.408455507881122
     },
     {
-      "inputTXID": "4a7e12b98102f032c57dbe7c0c05cba7e1749a6185a7e6cf85f1b3cc3676d770",
-      "inputCurrency": "BTC",
-      "outputCurrency": "DOGE",
+      "orderId": "4a7e12b98102f032c57dbe7c0c05cba7e1749a6185a7e6cf85f1b3cc3676d770",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "DOGE",
       "timestamp": 1594419027.408,
       "usdValue": 798.7013064374866
     },
     {
-      "inputTXID": "EC32FAFD00CE954BFC400948B72F8BA1EACC965B39AD0E6EE5C30C692BFEAD62",
-      "inputCurrency": "XRP",
-      "outputCurrency": "BTC",
+      "orderId": "EC32FAFD00CE954BFC400948B72F8BA1EACC965B39AD0E6EE5C30C692BFEAD62",
+      "depositCurrency": "XRP",
+      "payoutCurrency": "BTC",
       "timestamp": 1594421263.837,
       "usdValue": 12.00385275635792
     },
     {
-      "inputTXID": "0x41ab2f2cb34c861861d8fba072f440692ddc61bbfc59ae218ec6eac5750edcda",
-      "inputCurrency": "KNC",
-      "outputCurrency": "LINK",
+      "orderId": "0x41ab2f2cb34c861861d8fba072f440692ddc61bbfc59ae218ec6eac5750edcda",
+      "depositCurrency": "KNC",
+      "payoutCurrency": "LINK",
       "timestamp": 1594428782.069,
       "usdValue": 20.011996903143903
     },
     {
-      "inputTXID": "3e82650529af159f8d786d2487e6c3ec6aa17785de4a9f805b51bdc2f470c53b",
-      "inputCurrency": "BTC",
-      "outputCurrency": "DOGE",
+      "orderId": "3e82650529af159f8d786d2487e6c3ec6aa17785de4a9f805b51bdc2f470c53b",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "DOGE",
       "timestamp": 1594429126.834,
       "usdValue": 498.9184724981584
     },
     {
-      "inputTXID": "fbd5abab7d531076df94185268f2e2958f76b4224c015022569b37067806c7c1",
-      "inputCurrency": "BTC",
-      "outputCurrency": "LINK",
+      "orderId": "fbd5abab7d531076df94185268f2e2958f76b4224c015022569b37067806c7c1",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "LINK",
       "timestamp": 1594431514.563,
       "usdValue": 19.98111695134347
     },
     {
-      "inputTXID": "285c3dd8fec6d8999e83e723b3c621446fd1b74ceed2d4755287fd0e5e64d0a3",
-      "inputCurrency": "XLM",
-      "outputCurrency": "BTC",
+      "orderId": "285c3dd8fec6d8999e83e723b3c621446fd1b74ceed2d4755287fd0e5e64d0a3",
+      "depositCurrency": "XLM",
+      "payoutCurrency": "BTC",
       "timestamp": 1594435425.54,
       "usdValue": 16.94499749667328
     },
     {
-      "inputTXID": "b74846e127e2d9f529c1c98d9e683d7b59e42c14d927fd2bd89760adf942e089",
-      "inputCurrency": "BTC",
-      "outputCurrency": "ETH",
+      "orderId": "b74846e127e2d9f529c1c98d9e683d7b59e42c14d927fd2bd89760adf942e089",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "ETH",
       "timestamp": 1594450488.322,
       "usdValue": 12.586362898559882
     },
     {
-      "inputTXID": "65f094f9320ab3966573dc5d7611dbe62c17b30742abecfac1cd7406e48aa005",
-      "inputCurrency": "BTC",
-      "outputCurrency": "DOGE",
+      "orderId": "65f094f9320ab3966573dc5d7611dbe62c17b30742abecfac1cd7406e48aa005",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "DOGE",
       "timestamp": 1594458635.174,
       "usdValue": 95.82786761213205
     },
     {
-      "inputTXID": "3c1ec154721f696d266ab5bb7e73c981d8a5c00b00b2fba93a960546f301aafd",
-      "inputCurrency": "DOGE",
-      "outputCurrency": "ETH",
+      "orderId": "3c1ec154721f696d266ab5bb7e73c981d8a5c00b00b2fba93a960546f301aafd",
+      "depositCurrency": "DOGE",
+      "payoutCurrency": "ETH",
       "timestamp": 1594463905.535,
       "usdValue": 352.08483601220803
     },
     {
-      "inputTXID": "cc6fc9a85ffb932394d2818615d74168fd91d45bb626f6215a10447d8ca9b438",
-      "inputCurrency": "BTC",
-      "outputCurrency": "XMR",
+      "orderId": "cc6fc9a85ffb932394d2818615d74168fd91d45bb626f6215a10447d8ca9b438",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "XMR",
       "timestamp": 1594489595.008,
       "usdValue": 486.3643614421758
     },
     {
-      "inputTXID": "46c509ee2166fe66b9883f6b684a32168d52bda8f127fa0dc7c0a512d37a64fc",
-      "inputCurrency": "BTC",
-      "outputCurrency": "XMR",
+      "orderId": "46c509ee2166fe66b9883f6b684a32168d52bda8f127fa0dc7c0a512d37a64fc",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "XMR",
       "timestamp": 1594494316.245,
       "usdValue": 750.7866611641095
     },
     {
-      "inputTXID": "0546d1432f54581c40ee7fd2e3399707dfba70069c6784dcedf0dcd567ebe8b2",
-      "inputCurrency": "BTC",
-      "outputCurrency": "DOGE",
+      "orderId": "0546d1432f54581c40ee7fd2e3399707dfba70069c6784dcedf0dcd567ebe8b2",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "DOGE",
       "timestamp": 1594503380.804,
       "usdValue": 92.2321346478
     },
     {
-      "inputTXID": "33ffd057b5980ee2764d1ce78c0cc50c33955750e86d85fbce06692ca6954ab2",
-      "inputCurrency": "XMR",
-      "outputCurrency": "BTC",
+      "orderId": "33ffd057b5980ee2764d1ce78c0cc50c33955750e86d85fbce06692ca6954ab2",
+      "depositCurrency": "XMR",
+      "payoutCurrency": "BTC",
       "timestamp": 1594504465.586,
       "usdValue": 14.398431827535001
     },
     {
-      "inputTXID": "ebdd00b70ef02ef816d69f1cd0185a357fe3a662c5320463cf5bf4826c90bce5",
-      "inputCurrency": "BTC",
-      "outputCurrency": "DOGE",
+      "orderId": "ebdd00b70ef02ef816d69f1cd0185a357fe3a662c5320463cf5bf4826c90bce5",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "DOGE",
       "timestamp": 1594504728.851,
       "usdValue": 656.6228388258666
     },
     {
-      "inputTXID": "ae4fb48e4eb4b8605f1661507956381b4a051366dfe144a89e423a57031f1ff4",
-      "inputCurrency": "BTC",
-      "outputCurrency": "DOGE",
+      "orderId": "ae4fb48e4eb4b8605f1661507956381b4a051366dfe144a89e423a57031f1ff4",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "DOGE",
       "timestamp": 1594511150.899,
       "usdValue": 500.39672798275245
     },
     {
-      "inputTXID": "0de966ce687b32ae4d66d02e30fbdb1d47eae803e475fb635aff01306ef6af59",
-      "inputCurrency": "XMR",
-      "outputCurrency": "BTC",
+      "orderId": "0de966ce687b32ae4d66d02e30fbdb1d47eae803e475fb635aff01306ef6af59",
+      "depositCurrency": "XMR",
+      "payoutCurrency": "BTC",
       "timestamp": 1594512135.16,
       "usdValue": 15.5891574387234
     },
     {
-      "inputTXID": "812769c2e395c09b70a4bb77f8ac32102b651a946f60165149046588a892297f",
-      "inputCurrency": "BTC",
-      "outputCurrency": "POLY",
+      "orderId": "812769c2e395c09b70a4bb77f8ac32102b651a946f60165149046588a892297f",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "POLY",
       "timestamp": 1594517455.593,
       "usdValue": 39.951374886016
     },
     {
-      "inputTXID": "0xab326ead7b53c9a0edb99ff3e4df2d09e7d3094032d575075f8fa50867c39362",
-      "inputCurrency": "ETH",
-      "outputCurrency": "XRP",
+      "orderId": "0xab326ead7b53c9a0edb99ff3e4df2d09e7d3094032d575075f8fa50867c39362",
+      "depositCurrency": "ETH",
+      "payoutCurrency": "XRP",
       "timestamp": 1594519414.41,
       "usdValue": 40.877767911532324
     },
     {
-      "inputTXID": "39c21d66dcbcfe1639abb5e4c73359154b3067b74cd8ff735a2905772079781e",
-      "inputCurrency": "BTC",
-      "outputCurrency": "ETH",
+      "orderId": "39c21d66dcbcfe1639abb5e4c73359154b3067b74cd8ff735a2905772079781e",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "ETH",
       "timestamp": 1594520476.426,
       "usdValue": 98.46224997357027
     },
     {
-      "inputTXID": "BEDA18518074930057737798D5EA99F4DDEF735D5ECC29198B81B30BAB91911B",
-      "inputCurrency": "XRP",
-      "outputCurrency": "BNB",
+      "orderId": "BEDA18518074930057737798D5EA99F4DDEF735D5ECC29198B81B30BAB91911B",
+      "depositCurrency": "XRP",
+      "payoutCurrency": "BNB",
       "timestamp": 1594530279.271,
       "usdValue": 19.98968289257178
     },
     {
-      "inputTXID": "19ea770554ac486fdca1639e4c81ef0057ea5cef527d873edf8fde7782558b51",
-      "inputCurrency": "LTC",
-      "outputCurrency": "LINK",
+      "orderId": "19ea770554ac486fdca1639e4c81ef0057ea5cef527d873edf8fde7782558b51",
+      "depositCurrency": "LTC",
+      "payoutCurrency": "LINK",
       "timestamp": 1594532756.51,
       "usdValue": 11.568876263683082
     },
     {
-      "inputTXID": "E2CBD1306949ECA70AC1B3372A3AFDE8E4A8BD02EB9B3CDB69B76AA753A09744",
-      "inputCurrency": "XRP",
-      "outputCurrency": "BTC",
+      "orderId": "E2CBD1306949ECA70AC1B3372A3AFDE8E4A8BD02EB9B3CDB69B76AA753A09744",
+      "depositCurrency": "XRP",
+      "payoutCurrency": "BTC",
       "timestamp": 1594533000.587,
       "usdValue": 13.89124576745856
     },
     {
-      "inputTXID": "b3782044d2c7a40bcc1ecb74c4250608255ab457ba23b14c7f466160cdeaf5d7",
-      "inputCurrency": "XMR",
-      "outputCurrency": "BTC",
+      "orderId": "b3782044d2c7a40bcc1ecb74c4250608255ab457ba23b14c7f466160cdeaf5d7",
+      "depositCurrency": "XMR",
+      "payoutCurrency": "BTC",
       "timestamp": 1594535636.687,
       "usdValue": 209.4493804932
     },
     {
-      "inputTXID": "1ba6e8694417d07f018824770a0f1ca343e86dd2b23c024659e05a77b4f5ecd9",
-      "inputCurrency": "BTC",
-      "outputCurrency": "XMR",
+      "orderId": "1ba6e8694417d07f018824770a0f1ca343e86dd2b23c024659e05a77b4f5ecd9",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "XMR",
       "timestamp": 1594537684.706,
       "usdValue": 48.610335961824376
     },
     {
-      "inputTXID": "c1f799aebf5aa9a78334ab9689cd3e77dc696fae60019166589a9f7791d45719",
-      "inputCurrency": "BTC",
-      "outputCurrency": "ETH",
+      "orderId": "c1f799aebf5aa9a78334ab9689cd3e77dc696fae60019166589a9f7791d45719",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "ETH",
       "timestamp": 1594546114.377,
       "usdValue": 11.29194617291837
     },
     {
-      "inputTXID": "130c937e39d1cc1938129a180de12b01fa3003c8228bfd85d5730e590be65e51",
-      "inputCurrency": "DASH",
-      "outputCurrency": "BTC",
+      "orderId": "130c937e39d1cc1938129a180de12b01fa3003c8228bfd85d5730e590be65e51",
+      "depositCurrency": "DASH",
+      "payoutCurrency": "BTC",
       "timestamp": 1594559383.207,
       "usdValue": 10.116017566466
     },
     {
-      "inputTXID": "99574007f542d5257a55a5a88e576c38e368c608f556b6aeef7d4edca556a381",
-      "inputCurrency": "BTC",
-      "outputCurrency": "XMR",
+      "orderId": "99574007f542d5257a55a5a88e576c38e368c608f556b6aeef7d4edca556a381",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "XMR",
       "timestamp": 1594569052.855,
       "usdValue": 37.982361090736966
     },
     {
-      "inputTXID": "a0655ef18f56465438ca6cebf0fe7ce307a82ad865108b4f1d5f0af5c624a6e4",
-      "inputCurrency": "DASH",
-      "outputCurrency": "BTC",
+      "orderId": "a0655ef18f56465438ca6cebf0fe7ce307a82ad865108b4f1d5f0af5c624a6e4",
+      "depositCurrency": "DASH",
+      "payoutCurrency": "BTC",
       "timestamp": 1594574708.627,
       "usdValue": 13.003919171744311
     },
     {
-      "inputTXID": "67e188118099c32963f7c8eab63c133730a10751d64d4293d33cdb3ea07394d7",
-      "inputCurrency": "DASH",
-      "outputCurrency": "BTC",
+      "orderId": "67e188118099c32963f7c8eab63c133730a10751d64d4293d33cdb3ea07394d7",
+      "depositCurrency": "DASH",
+      "payoutCurrency": "BTC",
       "timestamp": 1594575636.591,
       "usdValue": 14.318561737747622
     },
     {
-      "inputTXID": "1d9444bc091fe91aeb8591337d700f0f4815399e3f8adc70dafc1fef87f943d1",
-      "inputCurrency": "BCHABC",
-      "outputCurrency": "BTC",
+      "orderId": "1d9444bc091fe91aeb8591337d700f0f4815399e3f8adc70dafc1fef87f943d1",
+      "depositCurrency": "BCHABC",
+      "payoutCurrency": "BTC",
       "timestamp": 1594580182.03,
       "usdValue": 11.285936608903066
     },
     {
-      "inputTXID": "da69effc35635dec3521ba2e839add784ebc6d4d08b61d4e505a9ebdcd8fa092",
-      "inputCurrency": "BTC",
-      "outputCurrency": "ETH",
+      "orderId": "da69effc35635dec3521ba2e839add784ebc6d4d08b61d4e505a9ebdcd8fa092",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "ETH",
       "timestamp": 1594581611.066,
       "usdValue": 20.063861355569852
     },
     {
-      "inputTXID": "65b5f2bf7c638d034f2f39278d9756d147cade0503d722e977f452126854125d",
-      "inputCurrency": "BTC",
-      "outputCurrency": "DOGE",
+      "orderId": "65b5f2bf7c638d034f2f39278d9756d147cade0503d722e977f452126854125d",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "DOGE",
       "timestamp": 1594585343.412,
       "usdValue": 19.98236735073004
     },
     {
-      "inputTXID": "c21928a521f8980649ae92f92d93cb0ec67ccc0d351759a236a7ae3b46f4627c",
-      "inputCurrency": "XLM",
-      "outputCurrency": "BTC",
+      "orderId": "c21928a521f8980649ae92f92d93cb0ec67ccc0d351759a236a7ae3b46f4627c",
+      "depositCurrency": "XLM",
+      "payoutCurrency": "BTC",
       "timestamp": 1594593252.559,
       "usdValue": 16.9202914346648
     },
     {
-      "inputTXID": "ca5340babe794a7b782d1bd961fa30cf055032eb8b1c5697435a6da1d777f7f6",
-      "inputCurrency": "BTC",
-      "outputCurrency": "XMR",
+      "orderId": "ca5340babe794a7b782d1bd961fa30cf055032eb8b1c5697435a6da1d777f7f6",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "XMR",
       "timestamp": 1594594290.083,
       "usdValue": 193.4788589362198
     },
     {
-      "inputTXID": "e89820ac2d4fb34c76ae509cc98e27b0d42141369563fe89f5014a74075be452",
-      "inputCurrency": "XMR",
-      "outputCurrency": "BTC",
+      "orderId": "e89820ac2d4fb34c76ae509cc98e27b0d42141369563fe89f5014a74075be452",
+      "depositCurrency": "XMR",
+      "payoutCurrency": "BTC",
       "timestamp": 1594595181.115,
       "usdValue": 13.983917033166751
     },
     {
-      "inputTXID": "07fd2bea58349802bd8c4b47a2313b010614c755c1efa7ee4c29ba7849a2211c",
-      "inputCurrency": "BTC",
-      "outputCurrency": "DOGE",
+      "orderId": "07fd2bea58349802bd8c4b47a2313b010614c755c1efa7ee4c29ba7849a2211c",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "DOGE",
       "timestamp": 1594599772.233,
       "usdValue": 102.46863461000542
     },
     {
-      "inputTXID": "a1723214c8025945f86930979d3f2ec87fc676fcce380067aba2527004e4d6db",
-      "inputCurrency": "BTC",
-      "outputCurrency": "USDT",
+      "orderId": "a1723214c8025945f86930979d3f2ec87fc676fcce380067aba2527004e4d6db",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "USDT",
       "timestamp": 1594603239.129,
       "usdValue": 14.009735807498151
     },
     {
-      "inputTXID": "cc9b5503bebedb9db1c0f812f9e3db311d61d280942e6a0d9e6aa97ecc47312e",
-      "inputCurrency": "BTC",
-      "outputCurrency": "ETH",
+      "orderId": "cc9b5503bebedb9db1c0f812f9e3db311d61d280942e6a0d9e6aa97ecc47312e",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "ETH",
       "timestamp": 1594604868.802,
       "usdValue": 14.95558578548767
     },
     {
-      "inputTXID": "9d512e0cd4aac7f88592986dc815af65fb5d3957b518aab6d1654cbd874ad1d2",
-      "inputCurrency": "BCHABC",
-      "outputCurrency": "BTC",
+      "orderId": "9d512e0cd4aac7f88592986dc815af65fb5d3957b518aab6d1654cbd874ad1d2",
+      "depositCurrency": "BCHABC",
+      "payoutCurrency": "BTC",
       "timestamp": 1594618063.094,
       "usdValue": 20.30120719237915
     },
     {
-      "inputTXID": "8a7d4a40d368ba8900051d93a1122ee5c36fe84ce0b348023abf1a77ac3dda5b",
-      "inputCurrency": "LTC",
-      "outputCurrency": "LINK",
+      "orderId": "8a7d4a40d368ba8900051d93a1122ee5c36fe84ce0b348023abf1a77ac3dda5b",
+      "depositCurrency": "LTC",
+      "payoutCurrency": "LINK",
       "timestamp": 1594618195.123,
       "usdValue": 8.487001185661915
     },
     {
-      "inputTXID": "8ef811e7ac54f9cc8220b8ff3a8180bb3fd4ff865babdf1c48df0556ec6768a6",
-      "inputCurrency": "DOGE",
-      "outputCurrency": "BNT",
+      "orderId": "8ef811e7ac54f9cc8220b8ff3a8180bb3fd4ff865babdf1c48df0556ec6768a6",
+      "depositCurrency": "DOGE",
+      "payoutCurrency": "BNT",
       "timestamp": 1594630947.633,
       "usdValue": 1910.3368198739308
     },
     {
-      "inputTXID": "fb434652c3fd133db8d40f9b76d34c0c2cb9507db7483274207b842577be0647",
-      "inputCurrency": "RVN",
-      "outputCurrency": "BTC",
+      "orderId": "fb434652c3fd133db8d40f9b76d34c0c2cb9507db7483274207b842577be0647",
+      "depositCurrency": "RVN",
+      "payoutCurrency": "BTC",
       "timestamp": 1594642920.731,
       "usdValue": 31.662063385949903
     },
     {
-      "inputTXID": "0xed5d06d38717480a839405b4b1e245025786531cc5925751ce76f7a1f114bcc0",
-      "inputCurrency": "ETH",
-      "outputCurrency": "BTC",
+      "orderId": "0xed5d06d38717480a839405b4b1e245025786531cc5925751ce76f7a1f114bcc0",
+      "depositCurrency": "ETH",
+      "payoutCurrency": "BTC",
       "timestamp": 1594647777.236,
       "usdValue": 12.934992866991099
     },
     {
-      "inputTXID": "b3ecdc719e4bb11e89a72768b63b6244adc57683c9060d9baa86e4a5c14a9672",
-      "inputCurrency": "BTC",
-      "outputCurrency": "RVN",
+      "orderId": "b3ecdc719e4bb11e89a72768b63b6244adc57683c9060d9baa86e4a5c14a9672",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "RVN",
       "timestamp": 1594650333.927,
       "usdValue": 467.8768459578956
     },
     {
-      "inputTXID": "0x2e7f0516b878c4b5aeaa6786383744cc399836c1add4b4de6d942236d21ef9d2",
-      "inputCurrency": "ETH",
-      "outputCurrency": "KNC",
+      "orderId": "0x2e7f0516b878c4b5aeaa6786383744cc399836c1add4b4de6d942236d21ef9d2",
+      "depositCurrency": "ETH",
+      "payoutCurrency": "KNC",
       "timestamp": 1594658594.866,
       "usdValue": 16.94278417034
     },
     {
-      "inputTXID": "ddde6bbf5804c3d888291ba278562476cc6b84668e881a8a3ccb3a6f653f0e45",
-      "inputCurrency": "BTC",
-      "outputCurrency": "ETH",
+      "orderId": "ddde6bbf5804c3d888291ba278562476cc6b84668e881a8a3ccb3a6f653f0e45",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "ETH",
       "timestamp": 1594659867.337,
       "usdValue": 29.88770230910325
     },
     {
-      "inputTXID": "eccff86d948cfb3f16e74e25727097a91610f9e9b9dd7536e397bc40c0e1cdf0",
-      "inputCurrency": "BTC",
-      "outputCurrency": "XMR",
+      "orderId": "eccff86d948cfb3f16e74e25727097a91610f9e9b9dd7536e397bc40c0e1cdf0",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "XMR",
       "timestamp": 1594668264.332,
       "usdValue": 711.2591323102623
     },
     {
-      "inputTXID": "0x67cc170bf79b7a9f5b855ba7a327701a3617e985f0251919a390f72849b1c4fc",
-      "inputCurrency": "ETH",
-      "outputCurrency": "NEXO",
+      "orderId": "0x67cc170bf79b7a9f5b855ba7a327701a3617e985f0251919a390f72849b1c4fc",
+      "depositCurrency": "ETH",
+      "payoutCurrency": "NEXO",
       "timestamp": 1594672529.825,
       "usdValue": 24.960156373013852
     },
     {
-      "inputTXID": "0x3cb99d41b3cf9a656a3f03f2b49f4ef3404319b61d8ddbea00429b959e33ff27",
-      "inputCurrency": "ETH",
-      "outputCurrency": "USDC",
+      "orderId": "0x3cb99d41b3cf9a656a3f03f2b49f4ef3404319b61d8ddbea00429b959e33ff27",
+      "depositCurrency": "ETH",
+      "payoutCurrency": "USDC",
       "timestamp": 1594672719.085,
       "usdValue": 15.948555060926399
     },
     {
-      "inputTXID": "b4fd81de087894cc1b93a19df3e23aa9b217239b93db9215ca12ed9f13367b5a",
-      "inputCurrency": "BTC",
-      "outputCurrency": "XTZ",
+      "orderId": "b4fd81de087894cc1b93a19df3e23aa9b217239b93db9215ca12ed9f13367b5a",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "XTZ",
       "timestamp": 1594675748.038,
       "usdValue": 5.810937095833991
     },
     {
-      "inputTXID": "605be33e9d967debb5fcbdccb3bff32339cdea172ae1c5ceb5316e269acd2789",
-      "inputCurrency": "BTC",
-      "outputCurrency": "BCHABC",
+      "orderId": "605be33e9d967debb5fcbdccb3bff32339cdea172ae1c5ceb5316e269acd2789",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "BCHABC",
       "timestamp": 1594699991.177,
       "usdValue": 18.99117579815739
     },
     {
-      "inputTXID": "c05f57d2b19911eaed29060fd421303271e2f2e481747d66ef8f68781d5bf347",
-      "inputCurrency": "BTC",
-      "outputCurrency": "XMR",
+      "orderId": "c05f57d2b19911eaed29060fd421303271e2f2e481747d66ef8f68781d5bf347",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "XMR",
       "timestamp": 1594704572.207,
       "usdValue": 546.1785193715548
     },
     {
-      "inputTXID": "4d73d9a49c044ebd99ed1763d00785acd19dc36612fc460d50cf206663b80693",
-      "inputCurrency": "XMR",
-      "outputCurrency": "BTC",
+      "orderId": "4d73d9a49c044ebd99ed1763d00785acd19dc36612fc460d50cf206663b80693",
+      "depositCurrency": "XMR",
+      "payoutCurrency": "BTC",
       "timestamp": 1594711082.984,
       "usdValue": 10.6652343059077
     },
     {
-      "inputTXID": "91bb928090c3fbd3c1478175cefd9a65e65088fa92f5621b7de28aa8c72d2bb1",
-      "inputCurrency": "BTC",
-      "outputCurrency": "BCHABC",
+      "orderId": "91bb928090c3fbd3c1478175cefd9a65e65088fa92f5621b7de28aa8c72d2bb1",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "BCHABC",
       "timestamp": 1594713960.763,
       "usdValue": 19.989795670699518
     },
     {
-      "inputTXID": "7324219A1B8A49841615F24D0516530B12B494785D76F3AE3D5123C7C9A6B776",
-      "inputCurrency": "XRP",
-      "outputCurrency": "LINK",
+      "orderId": "7324219A1B8A49841615F24D0516530B12B494785D76F3AE3D5123C7C9A6B776",
+      "depositCurrency": "XRP",
+      "payoutCurrency": "LINK",
       "timestamp": 1594729087.255,
       "usdValue": 12.49527495363045
     },
     {
-      "inputTXID": "badb1ad2399b8b66189cf85bf3c9acab87d77c9f36c328beb1388dd16dc67e40",
-      "inputCurrency": "BTC",
-      "outputCurrency": "XMR",
+      "orderId": "badb1ad2399b8b66189cf85bf3c9acab87d77c9f36c328beb1388dd16dc67e40",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "XMR",
       "timestamp": 1594743406.798,
       "usdValue": 50.41493379854204
     },
     {
-      "inputTXID": "cae2021624796a45849684d066ad8cfe8ce704a3e63956f7971bddd115cba2e1",
-      "inputCurrency": "BTC",
-      "outputCurrency": "ETH",
+      "orderId": "cae2021624796a45849684d066ad8cfe8ce704a3e63956f7971bddd115cba2e1",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "ETH",
       "timestamp": 1594748674.37,
       "usdValue": 19.969980681316322
     },
     {
-      "inputTXID": "a1b9dd49983d54e9dd039b2c47101b9023ab88e896b74fc347ba1cd47c54ec50",
-      "inputCurrency": "LTC",
-      "outputCurrency": "LINK",
+      "orderId": "a1b9dd49983d54e9dd039b2c47101b9023ab88e896b74fc347ba1cd47c54ec50",
+      "depositCurrency": "LTC",
+      "payoutCurrency": "LINK",
       "timestamp": 1594754702.131,
       "usdValue": 5.852682439805498
     },
     {
-      "inputTXID": "5595238c2c1ebbfc3d18e6d54637b2829e919b0bd76ece4c3fb0433a5dd8a4dc",
-      "inputCurrency": "QTUM",
-      "outputCurrency": "USDC",
+      "orderId": "5595238c2c1ebbfc3d18e6d54637b2829e919b0bd76ece4c3fb0433a5dd8a4dc",
+      "depositCurrency": "QTUM",
+      "payoutCurrency": "USDC",
       "timestamp": 1594758093.156,
       "usdValue": 31.86745219494
     },
     {
-      "inputTXID": "cddfbdac4e4b1fa1c2183e879cc076be53778fdd757f67c4d5d6542bd43343a4",
-      "inputCurrency": "BTC",
-      "outputCurrency": "DOGE",
+      "orderId": "cddfbdac4e4b1fa1c2183e879cc076be53778fdd757f67c4d5d6542bd43343a4",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "DOGE",
       "timestamp": 1594758543.847,
       "usdValue": 43.11702557515427
     },
     {
-      "inputTXID": "0xc84d0feeaeed3b75cce2c8084ff7a8fdbe24b825cf4b50fc9611bb2aaaca152f",
-      "inputCurrency": "NEXO",
-      "outputCurrency": "ETH",
+      "orderId": "0xc84d0feeaeed3b75cce2c8084ff7a8fdbe24b825cf4b50fc9611bb2aaaca152f",
+      "depositCurrency": "NEXO",
+      "payoutCurrency": "ETH",
       "timestamp": 1594760146.065,
       "usdValue": 17.090707570886
     },
     {
-      "inputTXID": "f044b690e0691d97a5c7fc45207dd90f423cec080875cdd48b386505dcd8caf5",
-      "inputCurrency": "BTC",
-      "outputCurrency": "ETH",
+      "orderId": "f044b690e0691d97a5c7fc45207dd90f423cec080875cdd48b386505dcd8caf5",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "ETH",
       "timestamp": 1594760526.304,
       "usdValue": 20.970015707505038
     },
     {
-      "inputTXID": "0x9ea150aab64be7fe9e3cd03d6914498fc32bc092f7d411a250769613df17c30e",
-      "inputCurrency": "ETH",
-      "outputCurrency": "XRP",
+      "orderId": "0x9ea150aab64be7fe9e3cd03d6914498fc32bc092f7d411a250769613df17c30e",
+      "depositCurrency": "ETH",
+      "payoutCurrency": "XRP",
       "timestamp": 1594762268.251,
       "usdValue": 17.925853295425842
     },
     {
-      "inputTXID": "3fa13e2b49ed0044d6901f64029d70fb654d503270ffd18d139e12e72767dbe4",
-      "inputCurrency": "DOGE",
-      "outputCurrency": "KNC",
+      "orderId": "3fa13e2b49ed0044d6901f64029d70fb654d503270ffd18d139e12e72767dbe4",
+      "depositCurrency": "DOGE",
+      "payoutCurrency": "KNC",
       "timestamp": 1594764513.197,
       "usdValue": 1140.4183395295383
     },
     {
-      "inputTXID": "20FFA9CDACB235F5E68F5D2EA2893A8F12E0160EAD7184C0043ABAE708D918D5",
-      "inputCurrency": "XRP",
-      "outputCurrency": "BTC",
+      "orderId": "20FFA9CDACB235F5E68F5D2EA2893A8F12E0160EAD7184C0043ABAE708D918D5",
+      "depositCurrency": "XRP",
+      "payoutCurrency": "BTC",
       "timestamp": 1594777101.024,
       "usdValue": 29.035510345818
     },
     {
-      "inputTXID": "285fc017cbdedf7c1d2e245263168d6a7902217fd8576a38bcae6f72fc118f5b",
-      "inputCurrency": "BTC",
-      "outputCurrency": "BCHSV",
+      "orderId": "285fc017cbdedf7c1d2e245263168d6a7902217fd8576a38bcae6f72fc118f5b",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "BCHSV",
       "timestamp": 1594801561.572,
       "usdValue": 19.99069062676944
     },
     {
-      "inputTXID": "783d65a20c56929e63ff2a0b3d157172527ca691fb09b92104fdbf431b677baf",
-      "inputCurrency": "BTC",
-      "outputCurrency": "XRP",
+      "orderId": "783d65a20c56929e63ff2a0b3d157172527ca691fb09b92104fdbf431b677baf",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "XRP",
       "timestamp": 1594804751.463,
       "usdValue": 10.98046119221128
     },
     {
-      "inputTXID": "0xf7b791b89a28701c5a80901ad0b82d28629000dc88a351464dd752e44e5acad3",
-      "inputCurrency": "ETH",
-      "outputCurrency": "BTC",
+      "orderId": "0xf7b791b89a28701c5a80901ad0b82d28629000dc88a351464dd752e44e5acad3",
+      "depositCurrency": "ETH",
+      "payoutCurrency": "BTC",
       "timestamp": 1594812603.367,
       "usdValue": 18.087837087605003
     },
     {
-      "inputTXID": "1847B4F542EDD9297CE88C275EE012839D538603638147EB0F271ECC4E40F160",
-      "inputCurrency": "BNB",
-      "outputCurrency": "BTC",
+      "orderId": "1847B4F542EDD9297CE88C275EE012839D538603638147EB0F271ECC4E40F160",
+      "depositCurrency": "BNB",
+      "payoutCurrency": "BTC",
       "timestamp": 1594826630.92,
       "usdValue": 10.995353672141341
     },
     {
-      "inputTXID": "1a5b3eb8b60919d9da4b57bee5c8bd13ffbc0a1502258948283e4514cdf372a3",
-      "inputCurrency": "BTC",
-      "outputCurrency": "XMR",
+      "orderId": "1a5b3eb8b60919d9da4b57bee5c8bd13ffbc0a1502258948283e4514cdf372a3",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "XMR",
       "timestamp": 1594827683.236,
       "usdValue": 199.860243489863
     },
     {
-      "inputTXID": "AB651645E43BF6AB7C545F51DEA1264539F07DFAA42E98AF280E1B3C6F7B3F06",
-      "inputCurrency": "XRP",
-      "outputCurrency": "BNB",
+      "orderId": "AB651645E43BF6AB7C545F51DEA1264539F07DFAA42E98AF280E1B3C6F7B3F06",
+      "depositCurrency": "XRP",
+      "payoutCurrency": "BNB",
       "timestamp": 1594834653.943,
       "usdValue": 39.99157622931422
     },
     {
-      "inputTXID": "92e4282b85fb3acbce67a616c555a29c1bcda12e1936b191119a8d84f077137c",
-      "inputCurrency": "BTC",
-      "outputCurrency": "ETH",
+      "orderId": "92e4282b85fb3acbce67a616c555a29c1bcda12e1936b191119a8d84f077137c",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "ETH",
       "timestamp": 1594835425.182,
       "usdValue": 26.2082011863339
     },
     {
-      "inputTXID": "6081c48fd7885524bb8c0c16769f06051c341f8ca973b71ed620408928178f3a",
-      "inputCurrency": "XMR",
-      "outputCurrency": "BTC",
+      "orderId": "6081c48fd7885524bb8c0c16769f06051c341f8ca973b71ed620408928178f3a",
+      "depositCurrency": "XMR",
+      "payoutCurrency": "BTC",
       "timestamp": 1594836712.462,
       "usdValue": 14.08396563524
     },
     {
-      "inputTXID": "65b9c15ccd958ca631643596bf6c682852e7fb22813d4b1278a22d8f7ff0b302",
-      "inputCurrency": "DOGE",
-      "outputCurrency": "BTC",
+      "orderId": "65b9c15ccd958ca631643596bf6c682852e7fb22813d4b1278a22d8f7ff0b302",
+      "depositCurrency": "DOGE",
+      "payoutCurrency": "BTC",
       "timestamp": 1594849066.632,
       "usdValue": 28.20511106318007
     },
     {
-      "inputTXID": "7dd459249073f68a073147c69c64f25bc9c954f2e8f4051f7a244700bcf9ce65",
-      "inputCurrency": "XMR",
-      "outputCurrency": "BTC",
+      "orderId": "7dd459249073f68a073147c69c64f25bc9c954f2e8f4051f7a244700bcf9ce65",
+      "depositCurrency": "XMR",
+      "payoutCurrency": "BTC",
       "timestamp": 1594855343.566,
       "usdValue": 10.637753746092056
     },
     {
-      "inputTXID": "e04d1efc127790a9d7012e0f372ea0fd646db279a3d8cbc06ebbd4280453a8c2",
-      "inputCurrency": "DOGE",
-      "outputCurrency": "BNB",
+      "orderId": "e04d1efc127790a9d7012e0f372ea0fd646db279a3d8cbc06ebbd4280453a8c2",
+      "depositCurrency": "DOGE",
+      "payoutCurrency": "BNB",
       "timestamp": 1594883010.931,
       "usdValue": 33.850572912556125
     },
     {
-      "inputTXID": "0x45a8badf0a56953982548f9016393fee8ed73dc47bb021c594f140d33ee1efe3",
-      "inputCurrency": "ETH",
-      "outputCurrency": "BTC",
+      "orderId": "0x45a8badf0a56953982548f9016393fee8ed73dc47bb021c594f140d33ee1efe3",
+      "depositCurrency": "ETH",
+      "payoutCurrency": "BTC",
       "timestamp": 1594892908.019,
       "usdValue": 10.461721811947472
     },
     {
-      "inputTXID": "88c4cdb86c100f1a2a0ae22c2151e0c7a7fb46c92de52025897e9dbfe53838dc",
-      "inputCurrency": "DOGE",
-      "outputCurrency": "ETH",
+      "orderId": "88c4cdb86c100f1a2a0ae22c2151e0c7a7fb46c92de52025897e9dbfe53838dc",
+      "depositCurrency": "DOGE",
+      "payoutCurrency": "ETH",
       "timestamp": 1594895936.307,
       "usdValue": 500.9018050066641
     },
     {
-      "inputTXID": "0x73625efafd824eacc36d2a2f30f3909727b206b796bb99a8921bf6ba5ffd345d",
-      "inputCurrency": "ETH",
-      "outputCurrency": "XRP",
+      "orderId": "0x73625efafd824eacc36d2a2f30f3909727b206b796bb99a8921bf6ba5ffd345d",
+      "depositCurrency": "ETH",
+      "payoutCurrency": "XRP",
       "timestamp": 1594900879.615,
       "usdValue": 7.00817153739165
     },
     {
-      "inputTXID": "d0fac67f887653844fdd45a9ae4b3ea788d604902c24f15c01cc9cebd30a1fd5",
-      "inputCurrency": "BTC",
-      "outputCurrency": "DOGE",
+      "orderId": "d0fac67f887653844fdd45a9ae4b3ea788d604902c24f15c01cc9cebd30a1fd5",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "DOGE",
       "timestamp": 1594923577.822,
       "usdValue": 98.00723072565475
     },
     {
-      "inputTXID": "0x399af1d560b2358fa10671c5310aa6ec710ff17919455de157c9061a219c5461",
-      "inputCurrency": "USDC",
-      "outputCurrency": "BTC",
+      "orderId": "0x399af1d560b2358fa10671c5310aa6ec710ff17919455de157c9061a219c5461",
+      "depositCurrency": "USDC",
+      "payoutCurrency": "BTC",
       "timestamp": 1594928262.073,
       "usdValue": 16.905625606155002
     },
     {
-      "inputTXID": "70e6d09e4ffadb2c2a6d03896db706deb633b8bc3fcfb2e3cea89c85d4d76821",
-      "inputCurrency": "BTC",
-      "outputCurrency": "ETH",
+      "orderId": "70e6d09e4ffadb2c2a6d03896db706deb633b8bc3fcfb2e3cea89c85d4d76821",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "ETH",
       "timestamp": 1594953652.248,
       "usdValue": 21.970304070696237
     },
     {
-      "inputTXID": "0x96d2b331fdaa0ce41098438f249774c084784507f2cbe7991c222a25ff615d47",
-      "inputCurrency": "ETH",
-      "outputCurrency": "BTC",
+      "orderId": "0x96d2b331fdaa0ce41098438f249774c084784507f2cbe7991c222a25ff615d47",
+      "depositCurrency": "ETH",
+      "payoutCurrency": "BTC",
       "timestamp": 1594994797.254,
       "usdValue": 10.00054833117816
     },
     {
-      "inputTXID": "0x43ba47501812be31ea9f0d34ac450fedcf589ec7132743d2fe1a9b0ed174b3ae",
-      "inputCurrency": "LINK",
-      "outputCurrency": "BTC",
+      "orderId": "0x43ba47501812be31ea9f0d34ac450fedcf589ec7132743d2fe1a9b0ed174b3ae",
+      "depositCurrency": "LINK",
+      "payoutCurrency": "BTC",
       "timestamp": 1595003694.027,
       "usdValue": 24.076808012869684
     },
     {
-      "inputTXID": "abbf8e4321b2b9cf094e5b42ab91ae5b06b4724367d4f4a56b63f13515564bff",
-      "inputCurrency": "BTC",
-      "outputCurrency": "DOGE",
+      "orderId": "abbf8e4321b2b9cf094e5b42ab91ae5b06b4724367d4f4a56b63f13515564bff",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "DOGE",
       "timestamp": 1595012841.178,
       "usdValue": 29.981184716598033
     },
     {
-      "inputTXID": "17a41140918615a2f7e5b11d4841f66b0833a72aca1a75cd1ea69fdffdaced1e",
-      "inputCurrency": "BTC",
-      "outputCurrency": "XTZ",
+      "orderId": "17a41140918615a2f7e5b11d4841f66b0833a72aca1a75cd1ea69fdffdaced1e",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "XTZ",
       "timestamp": 1595015795.468,
       "usdValue": 4.9858440393387005
     },
     {
-      "inputTXID": "d00adce3c53b7ca0092d179f3391f7eb2a6a4f28d41f293337c8c465834d03de",
-      "inputCurrency": "BTC",
-      "outputCurrency": "RLC",
+      "orderId": "d00adce3c53b7ca0092d179f3391f7eb2a6a4f28d41f293337c8c465834d03de",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "RLC",
       "timestamp": 1595029745.629,
       "usdValue": 1557.0567474297727
     },
     {
-      "inputTXID": "90999120ddd0f419b33df5ffc813285bb41302f2819a6bd2cc3388a15a6712b6",
-      "inputCurrency": "XMR",
-      "outputCurrency": "BTC",
+      "orderId": "90999120ddd0f419b33df5ffc813285bb41302f2819a6bd2cc3388a15a6712b6",
+      "depositCurrency": "XMR",
+      "payoutCurrency": "BTC",
       "timestamp": 1595032057.769,
       "usdValue": 25.03888548112332
     },
     {
-      "inputTXID": "8cc310d3b04adec3c61dad1b4fe998bd6d42527fdd1160071d930b4240c60a08",
-      "inputCurrency": "BTC",
-      "outputCurrency": "BCHABC",
+      "orderId": "8cc310d3b04adec3c61dad1b4fe998bd6d42527fdd1160071d930b4240c60a08",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "BCHABC",
       "timestamp": 1595034938.182,
       "usdValue": 17.95742743165296
     },
     {
-      "inputTXID": "34020b98312b4df86b3ddc05b96bdb887716d726fb04557070dfe160c99636b7",
-      "inputCurrency": "BTC",
-      "outputCurrency": "LTC",
+      "orderId": "34020b98312b4df86b3ddc05b96bdb887716d726fb04557070dfe160c99636b7",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "LTC",
       "timestamp": 1595036365.163,
       "usdValue": 12.47257290457866
     },
     {
-      "inputTXID": "9baff6d3a11e808a1127033d51edf3b600ceb52cc89538e7d00877f6c6366f94",
-      "inputCurrency": "BTC",
-      "outputCurrency": "XLM",
+      "orderId": "9baff6d3a11e808a1127033d51edf3b600ceb52cc89538e7d00877f6c6366f94",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "XLM",
       "timestamp": 1595039235.309,
       "usdValue": 18.3772993296189
     },
     {
-      "inputTXID": "5042f30925d653e8be25c3237df708bbd8bdd6402d0162a0c4b0d1929bb91ef7",
-      "inputCurrency": "BTC",
-      "outputCurrency": "DOGE",
+      "orderId": "5042f30925d653e8be25c3237df708bbd8bdd6402d0162a0c4b0d1929bb91ef7",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "DOGE",
       "timestamp": 1595040913.873,
       "usdValue": 24.9334860420936
     },
     {
-      "inputTXID": "d5b435214766835c1441631e0d90d773648ba19620bb31be25c74fd71834124e",
-      "inputCurrency": "BTC",
-      "outputCurrency": "XRP",
+      "orderId": "d5b435214766835c1441631e0d90d773648ba19620bb31be25c74fd71834124e",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "XRP",
       "timestamp": 1595042011.717,
       "usdValue": 25.60653105341864
     },
     {
-      "inputTXID": "0x37c41e232e6fa53b72a46b49dc09a54785b2c6ba73739dbe74d19ea42ed51b7f",
-      "inputCurrency": "LINK",
-      "outputCurrency": "ETH",
+      "orderId": "0x37c41e232e6fa53b72a46b49dc09a54785b2c6ba73739dbe74d19ea42ed51b7f",
+      "depositCurrency": "LINK",
+      "payoutCurrency": "ETH",
       "timestamp": 1595044346.696,
       "usdValue": 12.874597110302178
     },
     {
-      "inputTXID": "0x319f9ee1db6b76c45d71ccc495a931c173f613f2e053f28975ac46535c34537b",
-      "inputCurrency": "ETH",
-      "outputCurrency": "BTC",
+      "orderId": "0x319f9ee1db6b76c45d71ccc495a931c173f613f2e053f28975ac46535c34537b",
+      "depositCurrency": "ETH",
+      "payoutCurrency": "BTC",
       "timestamp": 1595045029.144,
       "usdValue": 25.959902365959
     },
     {
-      "inputTXID": "0x0bbd96aca6d69bd57e91cc81ea1ec591d1721e43a394ef8f7b9e35d73210772a",
-      "inputCurrency": "ETH",
-      "outputCurrency": "XRP",
+      "orderId": "0x0bbd96aca6d69bd57e91cc81ea1ec591d1721e43a394ef8f7b9e35d73210772a",
+      "depositCurrency": "ETH",
+      "payoutCurrency": "XRP",
       "timestamp": 1595049093.781,
       "usdValue": 18.533707347172946
     },
     {
-      "inputTXID": "750fe7314389ab64dd5ee43053cffaad6309d715ae6a25c19090738e8c760cfb",
-      "inputCurrency": "LTC",
-      "outputCurrency": "USDT",
+      "orderId": "750fe7314389ab64dd5ee43053cffaad6309d715ae6a25c19090738e8c760cfb",
+      "depositCurrency": "LTC",
+      "payoutCurrency": "USDT",
       "timestamp": 1595065475.568,
       "usdValue": 1059.38865431
     },
     {
-      "inputTXID": "d6310d5f7550ce0ea06e75ad82649dede3fccc2b3dae90b315edf7828c614888",
-      "inputCurrency": "DOGE",
-      "outputCurrency": "LINK",
+      "orderId": "d6310d5f7550ce0ea06e75ad82649dede3fccc2b3dae90b315edf7828c614888",
+      "depositCurrency": "DOGE",
+      "payoutCurrency": "LINK",
       "timestamp": 1595067223.053,
       "usdValue": 856.3218184399308
     },
     {
-      "inputTXID": "a408c58cc937c7376e402ad4d6f5cb1a752fe87bb53d1075e944a8dd2008a1db",
-      "inputCurrency": "XMR",
-      "outputCurrency": "RLC",
+      "orderId": "a408c58cc937c7376e402ad4d6f5cb1a752fe87bb53d1075e944a8dd2008a1db",
+      "depositCurrency": "XMR",
+      "payoutCurrency": "RLC",
       "timestamp": 1595081056.356,
       "usdValue": 623.7357083808093
     },
     {
-      "inputTXID": "21ab36f94e0af71339632213e197c73000953fb1ff3a727a8c877ca708437ccd",
-      "inputCurrency": "XMR",
-      "outputCurrency": "RLC",
+      "orderId": "21ab36f94e0af71339632213e197c73000953fb1ff3a727a8c877ca708437ccd",
+      "depositCurrency": "XMR",
+      "payoutCurrency": "RLC",
       "timestamp": 1595081056.406,
       "usdValue": 623.7357083808093
     },
     {
-      "inputTXID": "0x2d34cfea2120f2a09d775179f6adf9c5b57bad4ac3a5b9c680aa4f498616e7f7",
-      "inputCurrency": "ETH",
-      "outputCurrency": "BTC",
+      "orderId": "0x2d34cfea2120f2a09d775179f6adf9c5b57bad4ac3a5b9c680aa4f498616e7f7",
+      "depositCurrency": "ETH",
+      "payoutCurrency": "BTC",
       "timestamp": 1595099027.571,
       "usdValue": 12.96349789943436
     },
     {
-      "inputTXID": "3B21477EA0634D4B80AFE26D8B80C0B5E1A0B7319747D741490EC3B51CA67EB8",
-      "inputCurrency": "BNB",
-      "outputCurrency": "BTC",
+      "orderId": "3B21477EA0634D4B80AFE26D8B80C0B5E1A0B7319747D741490EC3B51CA67EB8",
+      "depositCurrency": "BNB",
+      "payoutCurrency": "BTC",
       "timestamp": 1595103759.766,
       "usdValue": 15.948281098364639
     },
     {
-      "inputTXID": "650914e7890a548f3b372abe826b0d6ca83d69de52353fe9335e383ad77f2e62",
-      "inputCurrency": "XMR",
-      "outputCurrency": "ETH",
+      "orderId": "650914e7890a548f3b372abe826b0d6ca83d69de52353fe9335e383ad77f2e62",
+      "depositCurrency": "XMR",
+      "payoutCurrency": "ETH",
       "timestamp": 1595117205.643,
       "usdValue": 99.73054920904818
     },
     {
-      "inputTXID": "0x77648e858b21b40717fc42447f1cca79f9d2366dd98822dc19091eebf3c49292",
-      "inputCurrency": "USDT",
-      "outputCurrency": "LTC",
+      "orderId": "0x77648e858b21b40717fc42447f1cca79f9d2366dd98822dc19091eebf3c49292",
+      "depositCurrency": "USDT",
+      "payoutCurrency": "LTC",
       "timestamp": 1595125539.186,
       "usdValue": 78.0674312127036
     },
     {
-      "inputTXID": "12849caa0b37c694a48cc74c1f54d47fd63e8ba436a37b610f85b00a62b64f09",
-      "inputCurrency": "BTC",
-      "outputCurrency": "ETH",
+      "orderId": "12849caa0b37c694a48cc74c1f54d47fd63e8ba436a37b610f85b00a62b64f09",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "ETH",
       "timestamp": 1595130323.256,
       "usdValue": 10.832809782712001
     },
     {
-      "inputTXID": "d9b01ea8f3cdfb9f4a9560b85c0c54d513a7cec0710a1169a352b6c963bd5224",
-      "inputCurrency": "RVN",
-      "outputCurrency": "ETH",
+      "orderId": "d9b01ea8f3cdfb9f4a9560b85c0c54d513a7cec0710a1169a352b6c963bd5224",
+      "depositCurrency": "RVN",
+      "payoutCurrency": "ETH",
       "timestamp": 1595170071.146,
       "usdValue": 9.939616607489949
     },
     {
-      "inputTXID": "0xd6d249d03de22cb1b205b1254f3d9c1de13f825e23a9ab46dd2bbab0db4c3569",
-      "inputCurrency": "ETH",
-      "outputCurrency": "BTC",
+      "orderId": "0xd6d249d03de22cb1b205b1254f3d9c1de13f825e23a9ab46dd2bbab0db4c3569",
+      "depositCurrency": "ETH",
+      "payoutCurrency": "BTC",
       "timestamp": 1595173505.835,
       "usdValue": 18.936277802721
     },
     {
-      "inputTXID": "31D7BFF4ABC500450EA2B9EAEDC0665B157FBB2913C395E028992D38BC249CD2",
-      "inputCurrency": "XRP",
-      "outputCurrency": "BTC",
+      "orderId": "31D7BFF4ABC500450EA2B9EAEDC0665B157FBB2913C395E028992D38BC249CD2",
+      "depositCurrency": "XRP",
+      "payoutCurrency": "BTC",
       "timestamp": 1595187790.814,
       "usdValue": 27.9460185935328
     },
     {
-      "inputTXID": "0x1d596eb440a81001f514d49725965e1a953879adf626f69abc25be55816e65be",
-      "inputCurrency": "ETH",
-      "outputCurrency": "LTC",
+      "orderId": "0x1d596eb440a81001f514d49725965e1a953879adf626f69abc25be55816e65be",
+      "depositCurrency": "ETH",
+      "payoutCurrency": "LTC",
       "timestamp": 1595201314.526,
       "usdValue": 8.98013736347532
     },
     {
-      "inputTXID": "3dcc4cb1c89b12cce05b4298c193edc49cd330dcd9bdc2221f43391c72db9dd4",
-      "inputCurrency": "BTC",
-      "outputCurrency": "BCHABC",
+      "orderId": "3dcc4cb1c89b12cce05b4298c193edc49cd330dcd9bdc2221f43391c72db9dd4",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "BCHABC",
       "timestamp": 1595211950.911,
       "usdValue": 19.9209409518528
     },
     {
-      "inputTXID": "b034e08f7dbeb39cadbf7c10593c4feeb75ca17c63efa3d0d1ef95394878663c",
-      "inputCurrency": "BTC",
-      "outputCurrency": "DAI",
+      "orderId": "b034e08f7dbeb39cadbf7c10593c4feeb75ca17c63efa3d0d1ef95394878663c",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "DAI",
       "timestamp": 1595247652.648,
       "usdValue": 6.980823176180841
     },
     {
-      "inputTXID": "620d8e31b37e1681d8373ff621b64371b8d789d181d77af08a8a93f7353dc378",
-      "inputCurrency": "BTC",
-      "outputCurrency": "DOGE",
+      "orderId": "620d8e31b37e1681d8373ff621b64371b8d789d181d77af08a8a93f7353dc378",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "DOGE",
       "timestamp": 1595255232.981,
       "usdValue": 170.82371932658185
     },
     {
-      "inputTXID": "75927c236e86e29f71de421269bd6a0e28022b09559a984cb7f56796cd24a20d",
-      "inputCurrency": "LTC",
-      "outputCurrency": "BNB",
+      "orderId": "75927c236e86e29f71de421269bd6a0e28022b09559a984cb7f56796cd24a20d",
+      "depositCurrency": "LTC",
+      "payoutCurrency": "BNB",
       "timestamp": 1595260806.268,
       "usdValue": 9.289118872836
     },
     {
-      "inputTXID": "2de1aa85ef21729a2db85052f1ebcb552071e69e9ff2116bf19b9b6f809106fa",
-      "inputCurrency": "BCHABC",
-      "outputCurrency": "XRP",
+      "orderId": "2de1aa85ef21729a2db85052f1ebcb552071e69e9ff2116bf19b9b6f809106fa",
+      "depositCurrency": "BCHABC",
+      "payoutCurrency": "XRP",
       "timestamp": 1595261058.924,
       "usdValue": 21.98388230543158
     },
     {
-      "inputTXID": "215145b64bbceca14d9c9aec80bd1875163703ff18907e0782d024e87c3ef0a0",
-      "inputCurrency": "BTC",
-      "outputCurrency": "USDT",
+      "orderId": "215145b64bbceca14d9c9aec80bd1875163703ff18907e0782d024e87c3ef0a0",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "USDT",
       "timestamp": 1595268848.261,
       "usdValue": 144.54094513989486
     },
     {
-      "inputTXID": "1dfb3c2813b74317fe97768f2d2d7a7bdccfa574e37eb5806f317a7ccc308bd7",
-      "inputCurrency": "DASH",
-      "outputCurrency": "BTC",
+      "orderId": "1dfb3c2813b74317fe97768f2d2d7a7bdccfa574e37eb5806f317a7ccc308bd7",
+      "depositCurrency": "DASH",
+      "payoutCurrency": "BTC",
       "timestamp": 1595270404.556,
       "usdValue": 12.83657223870132
     },
     {
-      "inputTXID": "45c927300b3eff9d4f1374ad80b664fc8d507c26d20eb1d9347715c158a45f3e",
-      "inputCurrency": "DOGE",
-      "outputCurrency": "BNB",
+      "orderId": "45c927300b3eff9d4f1374ad80b664fc8d507c26d20eb1d9347715c158a45f3e",
+      "depositCurrency": "DOGE",
+      "payoutCurrency": "BNB",
       "timestamp": 1595271599.452,
       "usdValue": 17.78248418380489
     },
     {
-      "inputTXID": "00631113e1e9391b138efd012a2f270cbb53bc0f13311e2ef0fa838c38dfd093",
-      "inputCurrency": "LTC",
-      "outputCurrency": "BTC",
+      "orderId": "00631113e1e9391b138efd012a2f270cbb53bc0f13311e2ef0fa838c38dfd093",
+      "depositCurrency": "LTC",
+      "payoutCurrency": "BTC",
       "timestamp": 1595276940.584,
       "usdValue": 11.89942196010588
     },
     {
-      "inputTXID": "5aeae49d69a67432f2753be958c8e0c28642eb857c0f98f6ffc966aa404fe58b",
-      "inputCurrency": "DOGE",
-      "outputCurrency": "POLY",
+      "orderId": "5aeae49d69a67432f2753be958c8e0c28642eb857c0f98f6ffc966aa404fe58b",
+      "depositCurrency": "DOGE",
+      "payoutCurrency": "POLY",
       "timestamp": 1595282245.407,
       "usdValue": 48.7970166379449
     },
     {
-      "inputTXID": "B5935B008024837E785E2A585B375571F02B72E8FE5510F28652257E56666AC5",
-      "inputCurrency": "XRP",
-      "outputCurrency": "BTC",
+      "orderId": "B5935B008024837E785E2A585B375571F02B72E8FE5510F28652257E56666AC5",
+      "depositCurrency": "XRP",
+      "payoutCurrency": "BTC",
       "timestamp": 1595283216.255,
       "usdValue": 25.0562268876936
     },
     {
-      "inputTXID": "B2843B191664AE76B38F7646EAA4421A8F12D08F494FBE5A579DA26CF32F7A6B",
-      "inputCurrency": "XRP",
-      "outputCurrency": "BTC",
+      "orderId": "B2843B191664AE76B38F7646EAA4421A8F12D08F494FBE5A579DA26CF32F7A6B",
+      "depositCurrency": "XRP",
+      "payoutCurrency": "BTC",
       "timestamp": 1595283922.527,
       "usdValue": 14.0017537094391
     },
     {
-      "inputTXID": "c82f3fe6f45d4274696237954dc7748df1e127d24433820b01833abcdf5cc6d1",
-      "inputCurrency": "LTC",
-      "outputCurrency": "ETH",
+      "orderId": "c82f3fe6f45d4274696237954dc7748df1e127d24433820b01833abcdf5cc6d1",
+      "depositCurrency": "LTC",
+      "payoutCurrency": "ETH",
       "timestamp": 1595286833.551,
       "usdValue": 19.95136564068622
     },
     {
-      "inputTXID": "58410939441E9686469DA507CE5B14B1F4DF6FAF049E46FE87A204C8E8DC6B54",
-      "inputCurrency": "XRP",
-      "outputCurrency": "DOGE",
+      "orderId": "58410939441E9686469DA507CE5B14B1F4DF6FAF049E46FE87A204C8E8DC6B54",
+      "depositCurrency": "XRP",
+      "payoutCurrency": "DOGE",
       "timestamp": 1595294486.384,
       "usdValue": 174.5475785744688
     },
     {
-      "inputTXID": "f906bd59a7fbac114a9c47f2fa853eb040e32410a305684f6753ef07518d2be0",
-      "inputCurrency": "BTC",
-      "outputCurrency": "USDT",
+      "orderId": "f906bd59a7fbac114a9c47f2fa853eb040e32410a305684f6753ef07518d2be0",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "USDT",
       "timestamp": 1595303025.829,
       "usdValue": 29.92858328266598
     },
     {
-      "inputTXID": "0xbf2f4676c036b66507216eb87c331d6b7043f627a328c62197ee31e829a76a90",
-      "inputCurrency": "ETH",
-      "outputCurrency": "BTC",
+      "orderId": "0xbf2f4676c036b66507216eb87c331d6b7043f627a328c62197ee31e829a76a90",
+      "depositCurrency": "ETH",
+      "payoutCurrency": "BTC",
       "timestamp": 1595306466.072,
       "usdValue": 23.676044416400003
     },
     {
-      "inputTXID": "9be15d85277ac8e938dc4bb7d22fcfe5f295c0eea358afa3eb6a13b8e6b5b469",
-      "inputCurrency": "BTC",
-      "outputCurrency": "BCHABC",
+      "orderId": "9be15d85277ac8e938dc4bb7d22fcfe5f295c0eea358afa3eb6a13b8e6b5b469",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "BCHABC",
       "timestamp": 1595324935.287,
       "usdValue": 12.656728498290661
     },
     {
-      "inputTXID": "49e50bc10bfb66bb5ad8b3303c90ee60bb4a675503a2420e39b7ec882e9ba4c9",
-      "inputCurrency": "BCHABC",
-      "outputCurrency": "BTC",
+      "orderId": "49e50bc10bfb66bb5ad8b3303c90ee60bb4a675503a2420e39b7ec882e9ba4c9",
+      "depositCurrency": "BCHABC",
+      "payoutCurrency": "BTC",
       "timestamp": 1595325025.343,
       "usdValue": 16.304990702109087
     },
     {
-      "inputTXID": "0x1c35030e6db6fc4003a75da78202b5b9bd37bcfc07057655598a1179acda5a83",
-      "inputCurrency": "OMG",
-      "outputCurrency": "USDC",
+      "orderId": "0x1c35030e6db6fc4003a75da78202b5b9bd37bcfc07057655598a1179acda5a83",
+      "depositCurrency": "OMG",
+      "payoutCurrency": "USDC",
       "timestamp": 1595332252.449,
       "usdValue": 12.773739338099999
     },
     {
-      "inputTXID": "0xe4c1ca44a07fa2414f0a13e33de243cc805799497662557d848f63c3584c6412",
-      "inputCurrency": "REP",
-      "outputCurrency": "USDC",
+      "orderId": "0xe4c1ca44a07fa2414f0a13e33de243cc805799497662557d848f63c3584c6412",
+      "depositCurrency": "REP",
+      "payoutCurrency": "USDC",
       "timestamp": 1595332306.058,
       "usdValue": 12.708161563047
     },
     {
-      "inputTXID": "7d83e943997575278caae2dd9cffa5643cbbc26e57a06eac898118f4a3b8af03",
-      "inputCurrency": "DOGE",
-      "outputCurrency": "ETH",
+      "orderId": "7d83e943997575278caae2dd9cffa5643cbbc26e57a06eac898118f4a3b8af03",
+      "depositCurrency": "DOGE",
+      "payoutCurrency": "ETH",
       "timestamp": 1595333295.46,
       "usdValue": 31.005526944710972
     },
     {
-      "inputTXID": "5bfa8cabee7ebefb31ab86723ac9f079630de6f54cb4a1df86a3aa5952a7361f",
-      "inputCurrency": "BTC",
-      "outputCurrency": "BNB",
+      "orderId": "5bfa8cabee7ebefb31ab86723ac9f079630de6f54cb4a1df86a3aa5952a7361f",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "BNB",
       "timestamp": 1595348210.188,
       "usdValue": 25.43308459171968
     },
     {
-      "inputTXID": "bd6110623eab79b8475366e2889fe1c5f9e39f24667c1c2988ff9c5d8bc0a78c",
-      "inputCurrency": "BTC",
-      "outputCurrency": "ETH",
+      "orderId": "bd6110623eab79b8475366e2889fe1c5f9e39f24667c1c2988ff9c5d8bc0a78c",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "ETH",
       "timestamp": 1595349645.927,
       "usdValue": 12.589076805512558
     },
     {
-      "inputTXID": "544B6F15D5F61D19D1ED4A27AAFA379EDBA1F9EA018F0F34C1FDCEC916C5C239",
-      "inputCurrency": "XRP",
-      "outputCurrency": "LINK",
+      "orderId": "544B6F15D5F61D19D1ED4A27AAFA379EDBA1F9EA018F0F34C1FDCEC916C5C239",
+      "depositCurrency": "XRP",
+      "payoutCurrency": "LINK",
       "timestamp": 1595366881.427,
       "usdValue": 14.88034540312879
     },
     {
-      "inputTXID": "0xc99c1c3b447938fae4c4c7449d5d9ef9846668a95c6bb6d031436a0b99bed3bc",
-      "inputCurrency": "ETH",
-      "outputCurrency": "BNB",
+      "orderId": "0xc99c1c3b447938fae4c4c7449d5d9ef9846668a95c6bb6d031436a0b99bed3bc",
+      "depositCurrency": "ETH",
+      "payoutCurrency": "BNB",
       "timestamp": 1595373797.696,
       "usdValue": 20.464990813564608
     },
     {
-      "inputTXID": "2873a8093a181b659f10b659d2f75f0ea9ed92043cf6f29e9852b27361c32610",
-      "inputCurrency": "BTC",
-      "outputCurrency": "LINK",
+      "orderId": "2873a8093a181b659f10b659d2f75f0ea9ed92043cf6f29e9852b27361c32610",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "LINK",
       "timestamp": 1595373890.954,
       "usdValue": 21.660871075988066
     },
     {
-      "inputTXID": "5a991f1cfc1f13550a460b25596643b2b4f6b99fb6a4d39c59705d25659f658a",
-      "inputCurrency": "BTC",
-      "outputCurrency": "KNC",
+      "orderId": "5a991f1cfc1f13550a460b25596643b2b4f6b99fb6a4d39c59705d25659f658a",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "KNC",
       "timestamp": 1595374142.091,
       "usdValue": 21.64377570279221
     },
     {
-      "inputTXID": "47089b32036d4f075f34e75bb025c35d640ebd1e8ea0553a6491048b39462329",
-      "inputCurrency": "BTC",
-      "outputCurrency": "ETH",
+      "orderId": "47089b32036d4f075f34e75bb025c35d640ebd1e8ea0553a6491048b39462329",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "ETH",
       "timestamp": 1595377067.109,
       "usdValue": 27.64192237134322
     },
     {
-      "inputTXID": "b3f0beb4e5bcd08b904c14b745f508bd2cf01a3def1eaf51d769fc2cb118dd77",
-      "inputCurrency": "BTC",
-      "outputCurrency": "QTUM",
+      "orderId": "b3f0beb4e5bcd08b904c14b745f508bd2cf01a3def1eaf51d769fc2cb118dd77",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "QTUM",
       "timestamp": 1595380108.183,
       "usdValue": 27.002485708648823
     },
     {
-      "inputTXID": "ca2be1ece45bbcef6144f11ba219e1fce748606b877e9014c5322319b4ff6523",
-      "inputCurrency": "XLM",
-      "outputCurrency": "BTC",
+      "orderId": "ca2be1ece45bbcef6144f11ba219e1fce748606b877e9014c5322319b4ff6523",
+      "depositCurrency": "XLM",
+      "payoutCurrency": "BTC",
       "timestamp": 1595382103.848,
       "usdValue": 12.72564224412385
     },
     {
-      "inputTXID": "0x762dd0b44d62d0efd52bc556c3555a64c931c91a980e32e52a0cbb67ecaecce6",
-      "inputCurrency": "USDT",
-      "outputCurrency": "BTC",
+      "orderId": "0x762dd0b44d62d0efd52bc556c3555a64c931c91a980e32e52a0cbb67ecaecce6",
+      "depositCurrency": "USDT",
+      "payoutCurrency": "BTC",
       "timestamp": 1595384256.064,
       "usdValue": 220.38109889549284
     },
     {
-      "inputTXID": "aae9a2cd979b7262ed01e96930404374fdf32f100b60850ad6f19ca20f350a56",
-      "inputCurrency": "XMR",
-      "outputCurrency": "BTC",
+      "orderId": "aae9a2cd979b7262ed01e96930404374fdf32f100b60850ad6f19ca20f350a56",
+      "depositCurrency": "XMR",
+      "payoutCurrency": "BTC",
       "timestamp": 1595385207.983,
       "usdValue": 19.999403156960785
     },
     {
-      "inputTXID": "0x3c3361c0cb7adcb5b23f1ab14299c6962f7222e730be21143187180c2b58d84f",
-      "inputCurrency": "BNT",
-      "outputCurrency": "ZRX",
+      "orderId": "0x3c3361c0cb7adcb5b23f1ab14299c6962f7222e730be21143187180c2b58d84f",
+      "depositCurrency": "BNT",
+      "payoutCurrency": "ZRX",
       "timestamp": 1595395147.869,
       "usdValue": 11.531170463535823
     },
     {
-      "inputTXID": "0x0def065895c7230e3a335ca44cd902b86c77530219d711efb14fd27ab4b74ed0",
-      "inputCurrency": "ZRX",
-      "outputCurrency": "XRP",
+      "orderId": "0x0def065895c7230e3a335ca44cd902b86c77530219d711efb14fd27ab4b74ed0",
+      "depositCurrency": "ZRX",
+      "payoutCurrency": "XRP",
       "timestamp": 1595396388.849,
       "usdValue": 10.083336806508179
     },
     {
-      "inputTXID": "0x81404dd3b93ef323eb90f721bfde0e13742aafc0cb7e9aec4bcb4981fecf5543",
-      "inputCurrency": "ETH",
-      "outputCurrency": "DOGE",
+      "orderId": "0x81404dd3b93ef323eb90f721bfde0e13742aafc0cb7e9aec4bcb4981fecf5543",
+      "depositCurrency": "ETH",
+      "payoutCurrency": "DOGE",
       "timestamp": 1595405246.465,
       "usdValue": 10.462782712939573
     },
     {
-      "inputTXID": "0x6a92837e862adee78adb71962daee6e10a67f425681c38f54c20c4bc973d3e3c",
-      "inputCurrency": "ETH",
-      "outputCurrency": "BNB",
+      "orderId": "0x6a92837e862adee78adb71962daee6e10a67f425681c38f54c20c4bc973d3e3c",
+      "depositCurrency": "ETH",
+      "payoutCurrency": "BNB",
       "timestamp": 1595415827.041,
       "usdValue": 12.199309533841582
     },
     {
-      "inputTXID": "e88a32fab02cdbe4edf3766ddc9ef66d5c3ad6cbfc693dab9064203a8ce0d91e",
-      "inputCurrency": "BTC",
-      "outputCurrency": "ETH",
+      "orderId": "e88a32fab02cdbe4edf3766ddc9ef66d5c3ad6cbfc693dab9064203a8ce0d91e",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "ETH",
       "timestamp": 1595429269.912,
       "usdValue": 10.995629535638782
     },
     {
-      "inputTXID": "0xae09889f56418b60e99f05dd08a6b77cd654575fcccb7811be0e1ce46128c20c",
-      "inputCurrency": "ETH",
-      "outputCurrency": "BTC",
+      "orderId": "0xae09889f56418b60e99f05dd08a6b77cd654575fcccb7811be0e1ce46128c20c",
+      "depositCurrency": "ETH",
+      "payoutCurrency": "BTC",
       "timestamp": 1595434613.85,
       "usdValue": 14.98816645542584
     },
     {
-      "inputTXID": "0x42c1fb5df5a061a46a20c75abdd0c4a058451896c47a548c04b0ac06e3befeee",
-      "inputCurrency": "ETH",
-      "outputCurrency": "BTC",
+      "orderId": "0x42c1fb5df5a061a46a20c75abdd0c4a058451896c47a548c04b0ac06e3befeee",
+      "depositCurrency": "ETH",
+      "payoutCurrency": "BTC",
       "timestamp": 1595436760.045,
       "usdValue": 12.74012557224883
     },
     {
-      "inputTXID": "7d8e408dc76cb648c091ca9aba678c35ce37f45452107e6d89b4e0d449533ada",
-      "inputCurrency": "XMR",
-      "outputCurrency": "ETH",
+      "orderId": "7d8e408dc76cb648c091ca9aba678c35ce37f45452107e6d89b4e0d449533ada",
+      "depositCurrency": "XMR",
+      "payoutCurrency": "ETH",
       "timestamp": 1595454302.778,
       "usdValue": 114.04515841630094
     }
@@ -1267,43 +1267,44 @@
       "day": [],
       "hour": []
     },
+    "app": "edge",
     "pluginId": "coinswitch",
     "start": 1594023608,
     "end": 1596055300
   },
   "inputTwo": [
     {
-      "inputTXID": "3419c",
-      "inputCurrency": "DOGE",
-      "outputCurrency": "ETH",
+      "orderId": "3419c",
+      "depositCurrency": "DOGE",
+      "payoutCurrency": "ETH",
       "timestamp": 1300000500,
       "usdValue": 400
     },
     {
-      "inputTXID": "6FE12",
-      "inputCurrency": "XRP",
-      "outputCurrency": "DOGE",
+      "orderId": "6FE12",
+      "depositCurrency": "XRP",
+      "payoutCurrency": "DOGE",
       "timestamp": 1300001000,
       "usdValue": 80
     },
     {
-      "inputTXID": "f4df3",
-      "inputCurrency": "BTC",
-      "outputCurrency": "DOGE",
+      "orderId": "f4df3",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "DOGE",
       "timestamp": 1300002500,
       "usdValue": 2000
     },
     {
-      "inputTXID": "f4ut3",
-      "inputCurrency": "BTC",
-      "outputCurrency": "DOGE",
+      "orderId": "f4ut3",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "DOGE",
       "timestamp": 1300012500,
       "usdValue": 7000
     },
     {
-      "inputTXID": "uuu98",
-      "inputCurrency": "ETH",
-      "outputCurrency": "DOGE",
+      "orderId": "uuu98",
+      "depositCurrency": "ETH",
+      "payoutCurrency": "DOGE",
       "timestamp": 1300069000,
       "usdValue": 40
     }
@@ -1521,43 +1522,44 @@
         }
       ]
     },
-    "pluginId": "dummy",
+    "app": "app-dummy",
+    "pluginId": "partner-dummy",
     "start": 1300000000,
     "end": 1300070000
   },
   "inputThree": [
     {
-      "inputTXID": "5758h",
-      "inputCurrency": "BTC",
-      "outputCurrency": "ETH",
+      "orderId": "5758h",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "ETH",
       "timestamp": 1709001000,
       "usdValue": 9900.43
     },
     {
-      "inputTXID": "8lert",
-      "inputCurrency": "BTC",
-      "outputCurrency": "DOGE",
+      "orderId": "8lert",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "DOGE",
       "timestamp": 1709200000,
       "usdValue": 800
     },
     {
-      "inputTXID": "qppow",
-      "inputCurrency": "BTC",
-      "outputCurrency": "DOGE",
+      "orderId": "qppow",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "DOGE",
       "timestamp": 1709200200,
       "usdValue": 20000
     },
     {
-      "inputTXID": "vnwrg",
-      "inputCurrency": "BTC",
-      "outputCurrency": "DOGE",
+      "orderId": "vnwrg",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "DOGE",
       "timestamp": 1709270000,
       "usdValue": 2
     },
     {
-      "inputTXID": "pq00x",
-      "inputCurrency": "ETH",
-      "outputCurrency": "DOGE",
+      "orderId": "pq00x",
+      "depositCurrency": "ETH",
+      "payoutCurrency": "DOGE",
       "timestamp": 1709420000,
       "usdValue": 1000
     }
@@ -2499,22 +2501,23 @@
         }
       ]
     },
-    "pluginId": "dummy",
+    "app": "app-dummy",
+    "pluginId": "partner-dummy",
     "start": 1708992000,
     "end": 1709424000
   },
   "inputFour": [
     {
-      "inputTXID": "8hhhc",
-      "inputCurrency": "ETH",
-      "outputCurrency": "BTC",
+      "orderId": "8hhhc",
+      "depositCurrency": "ETH",
+      "payoutCurrency": "BTC",
       "timestamp": 1672444902,
       "usdValue": 920
     },
     {
-      "inputTXID": "lrgna",
-      "inputCurrency": "BTC",
-      "outputCurrency": "DOGE",
+      "orderId": "lrgna",
+      "depositCurrency": "BTC",
+      "payoutCurrency": "DOGE",
       "timestamp": 1706518400,
       "usdValue": 3
     }
@@ -2641,7 +2644,8 @@
       "day": [],
       "hour": []
     },
-    "pluginId": "dummy",
+    "app": "app-dummy",
+    "pluginId": "partner-dummy",
     "start": 1672444800,
     "end": 1706918400
   }

@@ -13,12 +13,13 @@ import {
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
 const asSimplexTx = asObject({
-  fiat_total_amount: asString,
+  amount_usd: asString,
   amount_crypto: asString,
+  fiat_total_amount: asString,
   created_at: asNumber,
   order_id: asString,
-  currency: asString,
-  crypto_currency: asString
+  crypto_currency: asString,
+  currency: asString
 })
 
 const asSimplexResult = asObject({
@@ -91,20 +92,21 @@ export async function querySimplex(
     for (const rawtx of txs) {
       const tx = asSimplexTx(rawtx)
       const timestamp = tx.created_at
-      const uniqueIdentifier = tx.order_id
       const ssTx = {
         status: 'complete',
-        inputTXID: uniqueIdentifier,
-        inputAddress: '',
-        inputCurrency: tx.currency,
-        inputAmount: parseFloat(
-          tx.fiat_total_amount.replace('$', '').replace(',', '')
-        ),
-        outputAddress: '',
-        outputCurrency: tx.crypto_currency,
-        outputAmount: parseFloat(tx.amount_crypto),
+        orderId: tx.order_id,
+        depositTxid: undefined,
+        depositAddress: undefined,
+        depositCurrency: tx.currency,
+        depositAmount: parseFloat(tx.fiat_total_amount),
+        payoutTxid: undefined,
+        payoutAddress: undefined,
+        payoutCurrency: tx.crypto_currency,
+        payoutAmount: parseFloat(tx.amount_crypto),
         timestamp,
-        isoDate: new Date(timestamp * 1000).toISOString()
+        isoDate: new Date(timestamp * 1000).toISOString(),
+        usdValue: parseFloat(tx.amount_usd),
+        rawTx: rawtx
       }
       ssFormatTxs.push(ssTx)
 

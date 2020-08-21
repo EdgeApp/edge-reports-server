@@ -102,15 +102,19 @@ export async function queryMoonpay(
         const timestamp = date.getTime()
         const ssTx = {
           status: 'complete',
-          inputTXID: tx.id,
-          inputAddress: '',
-          inputCurrency: baseCurrency.code.toUpperCase(),
-          inputAmount: tx.baseCurrencyAmount,
-          outputAddress: tx.walletAddress,
-          outputCurrency: outputCurrency.code.toUpperCase(),
-          outputAmount: tx.quoteCurrencyAmount,
+          orderId: tx.id,
+          depositTxid: undefined,
+          depositAddress: undefined,
+          depositCurrency: baseCurrency.code.toUpperCase(),
+          depositAmount: tx.baseCurrencyAmount,
+          payoutTxid: tx.cryptoTransactionId,
+          payoutAddress: tx.walletAddress,
+          payoutCurrency: outputCurrency.code.toUpperCase(),
+          payoutAmount: tx.quoteCurrencyAmount,
           timestamp: timestamp / 1000,
-          isoDate: date.toISOString()
+          isoDate: tx.createdAt,
+          usdValue: undefined,
+          rawTx: rawtx
         }
         ssFormatTxs.push(ssTx)
         done = latestTimestamp > timestamp || txs.length < PER_REQUEST_LIMIT

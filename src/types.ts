@@ -1,4 +1,11 @@
-import { asMap, asNumber, asObject, asOptional, asString } from 'cleaners'
+import {
+  asMap,
+  asNumber,
+  asObject,
+  asOptional,
+  asString,
+  asUnknown
+} from 'cleaners'
 
 export const asPluginParams = asObject({
   settings: asMap((raw: any): any => raw),
@@ -17,30 +24,32 @@ export interface PartnerPlugin {
   pluginId: string
 }
 const standardTxFields = {
-  inputTXID: asString,
-  inputAddress: asOptional(asString),
-  inputCurrency: asString,
-  inputAmount: asNumber,
-  outputAddress: asOptional(asString),
-  outputCurrency: asString,
+  orderId: asString,
+  depositTxid: asOptional(asString),
+  depositAddress: asOptional(asString),
+  depositCurrency: asString,
+  depositAmount: asNumber,
+  payoutTxid: asOptional(asString),
+  payoutAddress: asOptional(asString),
+  payoutCurrency: asString,
+  payoutAmount: asNumber,
   status: asString,
   isoDate: asString,
   timestamp: asNumber,
-  outputAmount: asNumber
+  usdValue: asOptional(asNumber),
+  rawTx: asUnknown
 }
 export const asDbTx = asObject({
   ...standardTxFields,
-  usdValue: asOptional(asNumber),
   _id: asOptional(asString),
   _rev: asOptional(asString)
 })
 export const asStandardTx = asObject(standardTxFields)
 
-export const asDbSettings = asObject({
+export const asProgressSettings = asObject({
   _id: asOptional(asString),
   _rev: asOptional(asString),
-  settings: asMap((raw: any): any => raw),
-  apiKeys: asMap((raw: any): any => raw)
+  progressCache: asMap((raw: any): any => raw)
 })
 
 export type DbTx = ReturnType<typeof asDbTx>

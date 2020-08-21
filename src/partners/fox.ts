@@ -85,15 +85,19 @@ export async function queryFox(
       }
       const ssTx: StandardTx = {
         status: 'complete',
-        inputTXID: tx.orderId,
-        inputAddress: tx.exchangeAddress.address,
-        inputCurrency: tx.depositCoin.toUpperCase(),
-        inputAmount: tx.depositCoinAmount,
-        outputAddress: tx.destinationAddress.address,
-        outputCurrency: tx.destinationCoin.toUpperCase(),
-        outputAmount: tx.destinationCoinAmount,
+        orderId: tx.orderId,
+        depositTxid: undefined,
+        depositAddress: tx.exchangeAddress.address,
+        depositCurrency: tx.depositCoin.toUpperCase(),
+        depositAmount: tx.depositCoinAmount,
+        payoutTxid: tx.outputTransactionHash,
+        payoutAddress: tx.destinationAddress.address,
+        payoutCurrency: tx.destinationCoin.toUpperCase(),
+        payoutAmount: tx.destinationCoinAmount,
         timestamp: tx.createdAt / 1000,
-        isoDate: new Date(tx.createdAt).toISOString()
+        isoDate: new Date(tx.createdAt).toISOString(),
+        usdValue: undefined,
+        rawTx: rawtx
       }
       ssFormatTxs.push(ssTx)
       if (tx.createdAt > newestTimestamp) {

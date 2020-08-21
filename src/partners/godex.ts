@@ -72,15 +72,19 @@ export async function queryGodex(
         const timestamp = parseInt(tx.created_at)
         const ssTx = {
           status: 'complete',
-          inputTXID: tx.hash_in,
-          inputAddress: tx.deposit,
-          inputCurrency: tx.coin_from.toUpperCase(),
-          inputAmount: parseFloat(tx.deposit_amount),
-          outputAddress: tx.withdrawal,
-          outputCurrency: tx.coin_to.toUpperCase(),
-          outputAmount: parseFloat(tx.withdrawal_amount),
+          orderId: tx.hash_in,
+          depositTxid: tx.hash_in,
+          depositAddress: tx.deposit,
+          depositCurrency: tx.coin_from.toUpperCase(),
+          depositAmount: parseFloat(tx.deposit_amount),
+          payoutTxid: undefined,
+          payoutAddress: tx.withdrawal,
+          payoutCurrency: tx.coin_to.toUpperCase(),
+          payoutAmount: parseFloat(tx.withdrawal_amount),
           timestamp: timestamp,
-          isoDate: new Date(timestamp * 1000).toISOString()
+          isoDate: new Date(timestamp * 1000).toISOString(),
+          usdValue: undefined,
+          rawTx: rawtx
         }
         ssFormatTxs.push(ssTx)
         if (timestamp > newestTimestamp) {

@@ -11,6 +11,7 @@ const asBogTx = asObject({
     fiat_amount: asNumber,
     timestamp: asString
   }),
+  type: asString,
   id: asString
 })
 
@@ -69,17 +70,34 @@ export async function queryBitsOfGold(
     const date = new Date(data.timestamp)
     const timestamp = date.getTime()
 
+    let [depositCurrency, depositAmount, payoutCurrency, payoutAmount] = [
+      data.coin_type,
+      data.coin_amount,
+      data.fiat_type,
+      data.fiat_amount
+    ]
+    if (tx.type.toLowerCase() === 'buy') {
+      depositCurrency = data.fiat_type
+      depositAmount = data.fiat_amount
+      payoutCurrency = data.coin_type
+      payoutAmount = data.fiat_amount
+    }
+
     const ssTx: StandardTx = {
       status: 'complete',
-      inputTXID: tx.id,
-      inputAddress: '',
-      inputCurrency: data.coin_type,
-      inputAmount: data.coin_amount,
-      outputAddress: '',
-      outputCurrency: data.fiat_type,
-      outputAmount: data.fiat_amount,
+      orderId: tx.id,
+      depositTxid: undefined,
+      depositAddress: undefined,
+      depositCurrency,
+      depositAmount,
+      payoutTxid: undefined,
+      payoutAddress: undefined,
+      payoutCurrency,
+      payoutAmount,
       timestamp: timestamp / 1000,
-      isoDate: data.timestamp
+      isoDate: date.toISOString(),
+      usdValue: undefined,
+      rawTx: rawtx
     }
     latestTimeStamp = latestTimeStamp > timestamp ? latestTimeStamp : timestamp
     ssFormatTxs.push(ssTx)

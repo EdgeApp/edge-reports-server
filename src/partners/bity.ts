@@ -118,15 +118,19 @@ export async function queryBity(
         const tx = asBityTx(rawtx)
         const ssTx: StandardTx = {
           status: 'complete',
-          inputTXID: tx.id,
-          inputAddress: '',
-          inputCurrency: tx.input.currency.toUpperCase(),
-          inputAmount: parseFloat(tx.input.amount),
-          outputAddress: '',
-          outputCurrency: tx.output.currency.toUpperCase(),
-          outputAmount: parseFloat(tx.output.amount),
-          timestamp: Date.parse(tx.timestamp_executed.concat('Z')) / 1000,
-          isoDate: tx.timestamp_executed
+          orderId: tx.id,
+          depositTxid: undefined,
+          depositAddress: undefined,
+          depositCurrency: tx.input.currency.toUpperCase(),
+          depositAmount: parseFloat(tx.input.amount),
+          payoutTxid: undefined,
+          payoutAddress: undefined,
+          payoutCurrency: tx.output.currency.toUpperCase(),
+          payoutAmount: parseFloat(tx.output.amount),
+          timestamp: Date.parse(tx.timestamp_created.concat('Z')) / 1000,
+          isoDate: new Date(tx.timestamp_created.concat('Z')).toISOString(),
+          usdValue: undefined,
+          rawTx: rawtx
         }
         ssFormatTxs.push(ssTx)
       }

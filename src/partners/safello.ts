@@ -51,15 +51,19 @@ export async function querySafello(
       const timestamp = date.getTime()
       const ssTx = {
         status: 'complete',
-        inputTXID: tx.id,
-        inputAddress: '',
-        inputCurrency: tx.currency,
-        inputAmount: tx.amount,
-        outputAddress: '',
-        outputCurrency: tx.cryptoCurrency,
-        outputAmount: tx.amount,
+        orderId: tx.id,
+        depositTxid: undefined,
+        depositAddress: undefined,
+        depositCurrency: tx.currency,
+        depositAmount: tx.amount,
+        payoutTxid: undefined,
+        payoutAddress: undefined,
+        payoutCurrency: tx.cryptoCurrency,
+        payoutAmount: 0,
         timestamp: timestamp / 1000,
-        isoDate: date.toISOString()
+        isoDate: date.toISOString(),
+        usdValue: undefined,
+        rawTx: rawtx
       }
       ssFormatTxs.push(ssTx)
       if (timestamp > newestTimestamp) {

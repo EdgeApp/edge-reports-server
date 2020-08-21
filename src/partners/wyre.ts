@@ -13,7 +13,8 @@ const asWyreTx = asObject({
   sourceCurrency: asString,
   destAmount: asString,
   destCurrency: asString,
-  failureReason: asString
+  usdFeeEquiv: asString,
+  usdEquiv: asString
 })
 
 export type WyreTx = ReturnType<typeof asWyreTx>
@@ -44,9 +45,10 @@ export async function queryWyre(
       completedAt: txItems[4],
       sourceAmount: txItems[5],
       sourceCurrency: txItems[6],
-      destAmount: txItems[7],
-      destCurrency: txItems[8],
-      failureReason: txItems[9]
+      usdFeeEquiv: txItems[7],
+      destAmount: txItems[8],
+      destCurrency: txItems[9],
+      usdEquiv: txItems[10]
     }
   }
 
@@ -66,15 +68,19 @@ export async function queryWyre(
 
       const ssTx: StandardTx = {
         status: 'complete',
-        inputTXID: tx.id,
-        inputAddress: '',
-        inputCurrency: tx.sourceCurrency,
-        inputAmount: parseFloat(tx.sourceAmount),
-        outputAddress: '',
-        outputCurrency: tx.destCurrency,
-        outputAmount: parseFloat(tx.destAmount),
+        orderId: tx.id,
+        depositTxid: undefined,
+        depositAddress: undefined,
+        depositCurrency: tx.sourceCurrency,
+        depositAmount: parseFloat(tx.sourceAmount),
+        payoutTxid: undefined,
+        payoutAddress: undefined,
+        payoutCurrency: tx.destCurrency,
+        payoutAmount: parseFloat(tx.destAmount),
         timestamp: date.getTime() / 1000,
-        isoDate: date.toISOString()
+        isoDate: date.toISOString(),
+        usdValue: parseFloat(tx.usdEquiv),
+        rawTx: txStr
       }
       ssFormatTxs.push(ssTx)
     }

@@ -5,7 +5,7 @@ import fetch from 'node-fetch'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
 const asFaastTx = asObject({
-  status: asString,
+  order_id: asString,
   transaction_id: asString,
   deposit_address: asString,
   deposit_currency: asString,
@@ -13,7 +13,11 @@ const asFaastTx = asObject({
   withdrawal_address: asString,
   withdrawal_currency: asString,
   amount_withdrawn: asNumber,
-  updated_at: asString
+  created_at: asString
+})
+
+const asRawFaastTx = asObject({
+  status: asString
 })
 
 const asFaastResult = asObject({
@@ -47,15 +51,15 @@ export async function queryFaast(
       transactions: []
     }
   }
-  const url = `https://api.faa.st/api/v2/public/affiliate/swaps?limit=${PAGE_LIMIT}&page=${page}`
-  const headers = {
-    'affiliate-id': `${pluginParams.apiKeys.faastAffiliateId}`,
-    nonce,
-    signature
-  }
   let newLatestTimeStamp = latestTimeStamp
   let done = false
   while (!done) {
+    const url = `https://api.faa.st/api/v2/public/affiliate/swaps?limit=${PAGE_LIMIT}&page=${page}`
+    const headers = {
+      'affiliate-id': `${pluginParams.apiKeys.faastAffiliateId}`,
+      nonce,
+      signature
+    }
     let jsonObj: ReturnType<typeof asFaastResult>
     let resultJSON
     try {
@@ -68,27 +72,25 @@ export async function queryFaast(
     }
     const txs = jsonObj.orders
     for (const rawtx of txs) {
-      let tx
-      try {
-        tx = asFaastTx(rawtx)
-      } catch (e) {
-        console.log(e)
-        throw e
-      }
-      if (tx.status === 'complete') {
-        const date = new Date(tx.updated_at)
+      if (asRawFaastTx(rawtx).status === 'complete') {
+        const tx = asFaastTx(rawtx)
+        const date = new Date(tx.created_at)
         const timestamp = date.getTime() / 1000
         const ssTx: StandardTx = {
           status: 'complete',
-          inputTXID: tx.transaction_id,
-          inputAddress: tx.deposit_address,
-          inputCurrency: tx.deposit_currency.toUpperCase(),
-          inputAmount: tx.amount_deposited,
-          outputAddress: tx.withdrawal_address,
-          outputCurrency: tx.withdrawal_currency.toUpperCase(),
-          outputAmount: tx.amount_withdrawn,
+          orderId: tx.order_id,
+          depositTxid: undefined,
+          depositAddress: tx.deposit_address,
+          depositCurrency: tx.deposit_currency.toUpperCase(),
+          depositAmount: tx.amount_deposited,
+          payoutTxid: tx.transaction_id,
+          payoutAddress: tx.withdrawal_address,
+          payoutCurrency: tx.withdrawal_currency.toUpperCase(),
+          payoutAmount: tx.amount_withdrawn,
           timestamp,
-          isoDate: tx.updated_at
+          isoDate: tx.created_at,
+          usdValue: undefined,
+          rawTx: rawtx
         }
         ssFormatTxs.push(ssTx)
         if (timestamp > newLatestTimeStamp) {

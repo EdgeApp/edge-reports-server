@@ -387,10 +387,11 @@ export async function queryTotle(
 
           const ssTx = {
             status: 'complete',
-            inputTXID: receipt.transactionHash,
-            inputAddress: receipt.from,
-            inputCurrency: sourceToken.symbol,
-            inputAmount: parseFloat(
+            orderId: receipt.transactionHash,
+            depositTxid: receipt.transactionHash,
+            depositAddress: receipt.from,
+            depositCurrency: sourceToken.symbol,
+            depositAmount: parseFloat(
               bns.div(
                 sourceAmount.toString(),
                 (10 ** sourceToken.decimals).toString(),
@@ -398,9 +399,10 @@ export async function queryTotle(
                 10
               )
             ),
-            outputAddress: receipt.to,
-            outputCurrency: destinationToken.symbol,
-            outputAmount: parseFloat(
+            payoutTxid: receipt.transactionHash,
+            payoutAddress: receipt.to,
+            payoutCurrency: destinationToken.symbol,
+            payoutAmount: parseFloat(
               bns.div(
                 destinationAmount.toString(),
                 (10 ** destinationToken.decimals).toString(),
@@ -409,7 +411,9 @@ export async function queryTotle(
               )
             ),
             timestamp: timestamp,
-            isoDate: new Date(timestamp * 1000).toISOString()
+            isoDate: new Date(timestamp * 1000).toISOString(),
+            usdValue: undefined,
+            rawTx: rawSwapEvent
           }
           ssFormatTxs.push(ssTx)
         }
