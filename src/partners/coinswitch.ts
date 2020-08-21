@@ -70,31 +70,31 @@ export async function queryCoinSwitch(
       break
     }
     const txs = jsonObj.data.items
-    for (const rawtx of txs) {
-      const tx = asCoinswitchTx(rawtx)
-      if (
-        tx.inputTransactionHash === null ||
-        tx.outputTransactionHash === null
-      ) {
-        console.log('Missing Transaction Hash:')
-        console.log(rawtx)
-        continue
-      }
+    for (const rawTx of txs) {
+      const tx = asCoinswitchTx(rawTx)
+      const depositTxid =
+        tx.inputTransactionHash === 'string'
+          ? tx.inputTransactionHash
+          : undefined
+      const payoutTxid =
+        tx.outputTransactionHash === 'string'
+          ? tx.outputTransactionHash
+          : undefined
       const ssTx: StandardTx = {
         status: 'complete',
-        orderId: tx.inputTransactionHash,
-        depositTxid: tx.inputTransactionHash,
+        orderId: tx.orderId,
+        depositTxid,
         depositAddress: tx.exchangeAddress.address,
         depositCurrency: tx.depositCoin.toUpperCase(),
         depositAmount: tx.depositCoinAmount,
-        payoutTxid: tx.outputTransactionHash,
+        payoutTxid,
         payoutAddress: tx.destinationAddress.address,
         payoutCurrency: tx.destinationCoin.toUpperCase(),
         payoutAmount: tx.destinationCoinAmount,
         timestamp: tx.createdAt / 1000,
         isoDate: new Date(tx.createdAt).toISOString(),
         usdValue: undefined,
-        rawTx: rawtx
+        rawTx: rawTx
       }
       ssFormatTxs.push(ssTx)
       if (tx.createdAt > newLatestTimeStamp) {
