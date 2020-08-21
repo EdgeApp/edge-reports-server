@@ -58,7 +58,7 @@ export async function queryPaytrie(
     const ssTx: StandardTx = {
       status: 'complete',
       orderId: order.inputTXID,
-      depositTxid: order.inputTXID,
+      depositTxid: undefined,
       depositAddress: order.inputAddress,
       depositCurrency: order.inputCurrency,
       depositAmount: order.inputAmount,
