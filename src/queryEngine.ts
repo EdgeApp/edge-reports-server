@@ -204,35 +204,26 @@ async function runPlugin(
     }
 
     // set apiKeys and settings for use in partner's function
-    const apiKeys =
-      Object.keys(app.pluginIds[pluginId]).length !== 0
-        ? app.pluginIds[pluginId]
-        : {}
+    const apiKeys = app.pluginIds[pluginId]
     const settings = progressSettings.progressCache
     datelog(`Querying partner: ${pluginId}, app: ${app.appId}`)
-    try {
-      // run the plugin function
-      const result = await pluginFunction.queryFunc({
-        apiKeys,
-        settings
-      })
-      datelog(
-        `Updating database with transactions and settings for partner: ${pluginId}, app: ${app.appId}`
-      )
-      await insertTransactions(result.transactions, `${app.appId}_${pluginId}`)
-      progressSettings.progressCache = result.settings
-      progressSettings._id = progressCacheFileName
-      await dbProgress.insert(progressSettings)
-      // Returning a successful completion message
-      const completionTime = (Date.now() - start) / 1000
-      const successfulCompletionMessage = `Finished updating database with transactions and settings for partner: ${pluginId}, app: ${app.appId} in ${completionTime} seconds.`
-      datelog(successfulCompletionMessage)
-      return successfulCompletionMessage
-    } catch (e) {
-      errorText = `Error updating partner: ${pluginId}, app: ${app.appId}.  Error message: ${e}`
-      datelog(errorText)
-      return errorText
-    }
+    // run the plugin function
+    const result = await plugin.queryFunc({
+      apiKeys,
+      settings
+    })
+    datelog(
+      `Updating database with transactions and settings for partner: ${pluginId}, app: ${app.appId}`
+    )
+    await insertTransactions(result.transactions, `${app.appId}_${pluginId}`)
+    progressSettings.progressCache = result.settings
+    progressSettings._id = progressCacheFileName
+    await dbProgress.insert(progressSettings)
+    // Returning a successful completion message
+    const completionTime = (Date.now() - start) / 1000
+    const successfulCompletionMessage = `Finished updating database with transactions and settings for partner: ${pluginId}, app: ${app.appId} in ${completionTime} seconds.`
+    datelog(successfulCompletionMessage)
+    return successfulCompletionMessage
   } catch (e) {
     errorText = `Error running partner: ${pluginId}, app: ${app.appId}.  Error message: ${e}`
     datelog(errorText)
