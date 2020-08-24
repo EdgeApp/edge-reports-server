@@ -17,7 +17,7 @@ const asAnalyticsReq = asObject({
 })
 
 const asCheckTxReq = asObject({
-  appId: asString,
+  apiKey: asString,
   pluginId: asString,
   orderId: asString
 })
@@ -34,12 +34,21 @@ const asDbReq = asObject({
   )
 })
 
+const asApiKeySearch = asObject({
+  docs: asArray(
+    asObject({
+      appId: asString
+    })
+  )
+})
+
 const nanoDb = nano(config.couchDbFullpath)
 
 function main(): void {
   // start express and couch db server
   const app = express()
   const reportsTransactions = nanoDb.use('reports_transactions')
+  const reportsApps = nanoDb.use('reports_apps')
 
   app.use(bodyParser.json({ limit: '1mb' }))
   app.use(cors())
@@ -112,9 +121,22 @@ function main(): void {
       res.status(400).send(`Missing Request fields.`)
       return
     }
+    const query = {
+      selector: {
+        _id: { $eq: queryResult.apiKey }
+      },
+      fields: ['appId'],
+      limit: 1
+    }
+    const searchedAppId = asApiKeySearch(await reportsApps.find(query))
+    if (searchedAppId.docs.length === 0) {
+      res.status(404).send('Api Key has no match.')
+      return
+    }
+    const appId = searchedAppId.docs[0].appId
     let result
     try {
-      const query = `${queryResult.appId}_${queryResult.pluginId}:${queryResult.orderId}`
+      const query = `${appId}_${queryResult.pluginId}:${queryResult.orderId}`
       const dbResult = await reportsTransactions.get(query.toLowerCase())
       result = asDbTx(dbResult)
     } catch (e) {
@@ -123,7 +145,7 @@ function main(): void {
       return
     }
     const out = {
-      appId: queryResult.appId,
+      appId: appId,
       pluginId: queryResult.pluginId,
       orderId: queryResult.orderId,
       usdValue: undefined
