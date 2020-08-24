@@ -97,11 +97,26 @@ export async function queryEngine(): Promise<void> {
     const rawApps = await dbApps.find(query)
     const apps = asApps(rawApps.docs)
     const appAndPluginId: Array<Promise<string>> = []
+    let remainingPlugins: String[] = []
     // loop over every app
     for (const app of apps) {
       // loop over every pluginId that app uses
       for (const pluginId in app.pluginIds) {
-        appAndPluginId.push(runPlugin(app, pluginId, dbProgress))
+        remainingPlugins.push(pluginId)
+        appAndPluginId.push(
+          runPlugin(app, pluginId, dbProgress)
+            .finally(
+              () =>
+                (remainingPlugins = remainingPlugins.filter(
+                  string => string !== pluginId
+                ))
+            )
+            .finally(() => {
+              if (remainingPlugins.length > 0) {
+                datelog('REMAINING PLUGINS:', remainingPlugins.join(', '))
+              }
+            })
+        )
       }
     }
     // await the conclusion of every app + plugin combo created above.
@@ -175,7 +190,7 @@ async function runPlugin(
     const plugin = partners.find(partner => partner.pluginId === pluginId)
     // if current plugin is not within the list of partners skip to next
     if (plugin === undefined) {
-      errorText = `Plugin Name ${pluginId} for app: ${app.appId}not found`
+      errorText = `Plugin Name ${pluginId} for app: ${app.appId} not found`
       datelog(errorText)
       return errorText
     }
