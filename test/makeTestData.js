@@ -1330,6 +1330,7 @@ const rawTestData = {
           start: 1593561600,
           isoDate: '2020-07-01T00:00:00.000Z',
           usdValue: 18949.855647399967,
+          numTxs: 165,
           currencyCodes: {
             DOGE: 4353.434238976961,
             ETH: 1039.0955238959054,
@@ -1432,7 +1433,8 @@ const rawTestData = {
         }
       ],
       day: [],
-      hour: []
+      hour: [],
+      numAllTxs: 165
     },
     app: 'edge',
     pluginId: 'coinswitch',
@@ -1483,6 +1485,7 @@ const rawTestData = {
           start: 1298937600,
           isoDate: '2011-03-01T00:00:00.000Z',
           usdValue: 9520,
+          numTxs: 5,
           currencyCodes: { DOGE: 4760, ETH: 220, XRP: 40, BTC: 4500 },
           currencyPairs: {
             'DOGE-ETH': 400,
@@ -1497,6 +1500,7 @@ const rawTestData = {
           start: 1299974400,
           isoDate: '2011-03-13T00:00:00.000Z',
           usdValue: 9480,
+          numTxs: 4,
           currencyCodes: { DOGE: 4740, ETH: 200, XRP: 40, BTC: 4500 },
           currencyPairs: { 'DOGE-ETH': 400, 'XRP-DOGE': 80, 'BTC-DOGE': 9000 }
         },
@@ -1504,6 +1508,7 @@ const rawTestData = {
           start: 1300060800,
           isoDate: '2011-03-14T00:00:00.000Z',
           usdValue: 40,
+          numTxs: 1,
           currencyCodes: { ETH: 20, DOGE: 20 },
           currencyPairs: { 'ETH-DOGE': 40 }
         }
@@ -1513,6 +1518,7 @@ const rawTestData = {
           start: 1299999600,
           isoDate: '2011-03-13T07:00:00.000Z',
           usdValue: 2480,
+          numTxs: 3,
           currencyCodes: { DOGE: 1240, ETH: 200, XRP: 40, BTC: 1000 },
           currencyPairs: { 'DOGE-ETH': 400, 'XRP-DOGE': 80, 'BTC-DOGE': 2000 }
         },
@@ -1520,6 +1526,7 @@ const rawTestData = {
           start: 1300003200,
           isoDate: '2011-03-13T08:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1527,6 +1534,7 @@ const rawTestData = {
           start: 1300006800,
           isoDate: '2011-03-13T09:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1534,6 +1542,7 @@ const rawTestData = {
           start: 1300010400,
           isoDate: '2011-03-13T10:00:00.000Z',
           usdValue: 7000,
+          numTxs: 1,
           currencyCodes: { BTC: 3500, DOGE: 3500 },
           currencyPairs: { 'BTC-DOGE': 7000 }
         },
@@ -1541,6 +1550,7 @@ const rawTestData = {
           start: 1300014000,
           isoDate: '2011-03-13T11:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1548,6 +1558,7 @@ const rawTestData = {
           start: 1300017600,
           isoDate: '2011-03-13T12:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1555,6 +1566,7 @@ const rawTestData = {
           start: 1300021200,
           isoDate: '2011-03-13T13:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1562,6 +1574,7 @@ const rawTestData = {
           start: 1300024800,
           isoDate: '2011-03-13T14:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1569,6 +1582,7 @@ const rawTestData = {
           start: 1300028400,
           isoDate: '2011-03-13T15:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1576,6 +1590,7 @@ const rawTestData = {
           start: 1300032000,
           isoDate: '2011-03-13T16:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1583,6 +1598,7 @@ const rawTestData = {
           start: 1300035600,
           isoDate: '2011-03-13T17:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1590,6 +1606,7 @@ const rawTestData = {
           start: 1300039200,
           isoDate: '2011-03-13T18:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1597,6 +1614,7 @@ const rawTestData = {
           start: 1300042800,
           isoDate: '2011-03-13T19:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1604,6 +1622,7 @@ const rawTestData = {
           start: 1300046400,
           isoDate: '2011-03-13T20:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1611,6 +1630,7 @@ const rawTestData = {
           start: 1300050000,
           isoDate: '2011-03-13T21:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1618,6 +1638,7 @@ const rawTestData = {
           start: 1300053600,
           isoDate: '2011-03-13T22:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1625,6 +1646,7 @@ const rawTestData = {
           start: 1300057200,
           isoDate: '2011-03-13T23:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1632,6 +1654,7 @@ const rawTestData = {
           start: 1300060800,
           isoDate: '2011-03-14T00:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1639,6 +1662,7 @@ const rawTestData = {
           start: 1300064400,
           isoDate: '2011-03-14T01:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1646,10 +1670,12 @@ const rawTestData = {
           start: 1300068000,
           isoDate: '2011-03-14T02:00:00.000Z',
           usdValue: 40,
+          numTxs: 1,
           currencyCodes: { ETH: 20, DOGE: 20 },
           currencyPairs: { 'ETH-DOGE': 40 }
         }
-      ]
+      ],
+      numAllTxs: 5
     },
     app: 'app-dummy',
     pluginId: 'partner-dummy',
@@ -1701,6 +1727,7 @@ const rawTestData = {
           start: 1708992000,
           isoDate: '2024-02-27T00:00:00.000Z',
           usdValue: 9900.43,
+          numTxs: 1,
           currencyCodes: { BTC: 4950.215, ETH: 4950.215 },
           currencyPairs: { 'BTC-ETH': 9900.43 }
         },
@@ -1708,6 +1735,7 @@ const rawTestData = {
           start: 1709078400,
           isoDate: '2024-02-28T00:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1715,6 +1743,7 @@ const rawTestData = {
           start: 1709164800,
           isoDate: '2024-02-29T00:00:00.000Z',
           usdValue: 20800,
+          numTxs: 2,
           currencyCodes: { BTC: 10400, DOGE: 10400 },
           currencyPairs: { 'BTC-DOGE': 20800 }
         },
@@ -1722,6 +1751,7 @@ const rawTestData = {
           start: 1709251200,
           isoDate: '2024-03-01T00:00:00.000Z',
           usdValue: 2,
+          numTxs: 1,
           currencyCodes: { BTC: 1, DOGE: 1 },
           currencyPairs: { 'BTC-DOGE': 2 }
         },
@@ -1729,6 +1759,7 @@ const rawTestData = {
           start: 1709337600,
           isoDate: '2024-03-02T00:00:00.000Z',
           usdValue: 1000,
+          numTxs: 1,
           currencyCodes: { ETH: 500, DOGE: 500 },
           currencyPairs: { 'ETH-DOGE': 1000 }
         },
@@ -1736,6 +1767,7 @@ const rawTestData = {
           start: 1709424000,
           isoDate: '2024-03-03T00:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         }
@@ -1745,6 +1777,7 @@ const rawTestData = {
           start: 1708992000,
           isoDate: '2024-02-27T00:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1752,6 +1785,7 @@ const rawTestData = {
           start: 1708995600,
           isoDate: '2024-02-27T01:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1759,6 +1793,7 @@ const rawTestData = {
           start: 1708999200,
           isoDate: '2024-02-27T02:00:00.000Z',
           usdValue: 9900.43,
+          numTxs: 1,
           currencyCodes: { BTC: 4950.215, ETH: 4950.215 },
           currencyPairs: { 'BTC-ETH': 9900.43 }
         },
@@ -1766,6 +1801,7 @@ const rawTestData = {
           start: 1709002800,
           isoDate: '2024-02-27T03:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1773,6 +1809,7 @@ const rawTestData = {
           start: 1709006400,
           isoDate: '2024-02-27T04:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1780,6 +1817,7 @@ const rawTestData = {
           start: 1709010000,
           isoDate: '2024-02-27T05:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1787,6 +1825,7 @@ const rawTestData = {
           start: 1709013600,
           isoDate: '2024-02-27T06:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1794,6 +1833,7 @@ const rawTestData = {
           start: 1709017200,
           isoDate: '2024-02-27T07:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1801,6 +1841,7 @@ const rawTestData = {
           start: 1709020800,
           isoDate: '2024-02-27T08:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1808,6 +1849,7 @@ const rawTestData = {
           start: 1709024400,
           isoDate: '2024-02-27T09:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1815,6 +1857,7 @@ const rawTestData = {
           start: 1709028000,
           isoDate: '2024-02-27T10:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1822,6 +1865,7 @@ const rawTestData = {
           start: 1709031600,
           isoDate: '2024-02-27T11:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1829,6 +1873,7 @@ const rawTestData = {
           start: 1709035200,
           isoDate: '2024-02-27T12:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1836,6 +1881,7 @@ const rawTestData = {
           start: 1709038800,
           isoDate: '2024-02-27T13:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1843,6 +1889,7 @@ const rawTestData = {
           start: 1709042400,
           isoDate: '2024-02-27T14:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1850,6 +1897,7 @@ const rawTestData = {
           start: 1709046000,
           isoDate: '2024-02-27T15:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1857,6 +1905,7 @@ const rawTestData = {
           start: 1709049600,
           isoDate: '2024-02-27T16:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1864,6 +1913,7 @@ const rawTestData = {
           start: 1709053200,
           isoDate: '2024-02-27T17:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1871,6 +1921,7 @@ const rawTestData = {
           start: 1709056800,
           isoDate: '2024-02-27T18:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1878,6 +1929,7 @@ const rawTestData = {
           start: 1709060400,
           isoDate: '2024-02-27T19:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1885,6 +1937,7 @@ const rawTestData = {
           start: 1709064000,
           isoDate: '2024-02-27T20:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1892,6 +1945,7 @@ const rawTestData = {
           start: 1709067600,
           isoDate: '2024-02-27T21:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1899,6 +1953,7 @@ const rawTestData = {
           start: 1709071200,
           isoDate: '2024-02-27T22:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1906,6 +1961,7 @@ const rawTestData = {
           start: 1709074800,
           isoDate: '2024-02-27T23:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1913,6 +1969,7 @@ const rawTestData = {
           start: 1709078400,
           isoDate: '2024-02-28T00:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1920,6 +1977,7 @@ const rawTestData = {
           start: 1709082000,
           isoDate: '2024-02-28T01:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1927,6 +1985,7 @@ const rawTestData = {
           start: 1709085600,
           isoDate: '2024-02-28T02:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1934,6 +1993,7 @@ const rawTestData = {
           start: 1709089200,
           isoDate: '2024-02-28T03:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1941,6 +2001,7 @@ const rawTestData = {
           start: 1709092800,
           isoDate: '2024-02-28T04:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1948,6 +2009,7 @@ const rawTestData = {
           start: 1709096400,
           isoDate: '2024-02-28T05:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1955,6 +2017,7 @@ const rawTestData = {
           start: 1709100000,
           isoDate: '2024-02-28T06:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1962,6 +2025,7 @@ const rawTestData = {
           start: 1709103600,
           isoDate: '2024-02-28T07:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1969,6 +2033,7 @@ const rawTestData = {
           start: 1709107200,
           isoDate: '2024-02-28T08:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1976,6 +2041,7 @@ const rawTestData = {
           start: 1709110800,
           isoDate: '2024-02-28T09:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1983,6 +2049,7 @@ const rawTestData = {
           start: 1709114400,
           isoDate: '2024-02-28T10:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1990,6 +2057,7 @@ const rawTestData = {
           start: 1709118000,
           isoDate: '2024-02-28T11:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -1997,6 +2065,7 @@ const rawTestData = {
           start: 1709121600,
           isoDate: '2024-02-28T12:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2004,6 +2073,7 @@ const rawTestData = {
           start: 1709125200,
           isoDate: '2024-02-28T13:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2011,6 +2081,7 @@ const rawTestData = {
           start: 1709128800,
           isoDate: '2024-02-28T14:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2018,6 +2089,7 @@ const rawTestData = {
           start: 1709132400,
           isoDate: '2024-02-28T15:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2025,6 +2097,7 @@ const rawTestData = {
           start: 1709136000,
           isoDate: '2024-02-28T16:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2032,6 +2105,7 @@ const rawTestData = {
           start: 1709139600,
           isoDate: '2024-02-28T17:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2039,6 +2113,7 @@ const rawTestData = {
           start: 1709143200,
           isoDate: '2024-02-28T18:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2046,6 +2121,7 @@ const rawTestData = {
           start: 1709146800,
           isoDate: '2024-02-28T19:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2053,6 +2129,7 @@ const rawTestData = {
           start: 1709150400,
           isoDate: '2024-02-28T20:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2060,6 +2137,7 @@ const rawTestData = {
           start: 1709154000,
           isoDate: '2024-02-28T21:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2067,6 +2145,7 @@ const rawTestData = {
           start: 1709157600,
           isoDate: '2024-02-28T22:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2074,6 +2153,7 @@ const rawTestData = {
           start: 1709161200,
           isoDate: '2024-02-28T23:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2081,6 +2161,7 @@ const rawTestData = {
           start: 1709164800,
           isoDate: '2024-02-29T00:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2088,6 +2169,7 @@ const rawTestData = {
           start: 1709168400,
           isoDate: '2024-02-29T01:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2095,6 +2177,7 @@ const rawTestData = {
           start: 1709172000,
           isoDate: '2024-02-29T02:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2102,6 +2185,7 @@ const rawTestData = {
           start: 1709175600,
           isoDate: '2024-02-29T03:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2109,6 +2193,7 @@ const rawTestData = {
           start: 1709179200,
           isoDate: '2024-02-29T04:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2116,6 +2201,7 @@ const rawTestData = {
           start: 1709182800,
           isoDate: '2024-02-29T05:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2123,6 +2209,7 @@ const rawTestData = {
           start: 1709186400,
           isoDate: '2024-02-29T06:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2130,6 +2217,7 @@ const rawTestData = {
           start: 1709190000,
           isoDate: '2024-02-29T07:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2137,6 +2225,7 @@ const rawTestData = {
           start: 1709193600,
           isoDate: '2024-02-29T08:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2144,6 +2233,7 @@ const rawTestData = {
           start: 1709197200,
           isoDate: '2024-02-29T09:00:00.000Z',
           usdValue: 20800,
+          numTxs: 2,
           currencyCodes: { BTC: 10400, DOGE: 10400 },
           currencyPairs: { 'BTC-DOGE': 20800 }
         },
@@ -2151,6 +2241,7 @@ const rawTestData = {
           start: 1709200800,
           isoDate: '2024-02-29T10:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2158,6 +2249,7 @@ const rawTestData = {
           start: 1709204400,
           isoDate: '2024-02-29T11:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2165,6 +2257,7 @@ const rawTestData = {
           start: 1709208000,
           isoDate: '2024-02-29T12:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2172,6 +2265,7 @@ const rawTestData = {
           start: 1709211600,
           isoDate: '2024-02-29T13:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2179,6 +2273,7 @@ const rawTestData = {
           start: 1709215200,
           isoDate: '2024-02-29T14:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2186,6 +2281,7 @@ const rawTestData = {
           start: 1709218800,
           isoDate: '2024-02-29T15:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2193,6 +2289,7 @@ const rawTestData = {
           start: 1709222400,
           isoDate: '2024-02-29T16:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2200,6 +2297,7 @@ const rawTestData = {
           start: 1709226000,
           isoDate: '2024-02-29T17:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2207,6 +2305,7 @@ const rawTestData = {
           start: 1709229600,
           isoDate: '2024-02-29T18:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2214,6 +2313,7 @@ const rawTestData = {
           start: 1709233200,
           isoDate: '2024-02-29T19:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2221,6 +2321,7 @@ const rawTestData = {
           start: 1709236800,
           isoDate: '2024-02-29T20:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2228,6 +2329,7 @@ const rawTestData = {
           start: 1709240400,
           isoDate: '2024-02-29T21:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2235,6 +2337,7 @@ const rawTestData = {
           start: 1709244000,
           isoDate: '2024-02-29T22:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2242,6 +2345,7 @@ const rawTestData = {
           start: 1709247600,
           isoDate: '2024-02-29T23:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2249,6 +2353,7 @@ const rawTestData = {
           start: 1709251200,
           isoDate: '2024-03-01T00:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2256,6 +2361,7 @@ const rawTestData = {
           start: 1709254800,
           isoDate: '2024-03-01T01:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2263,6 +2369,7 @@ const rawTestData = {
           start: 1709258400,
           isoDate: '2024-03-01T02:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2270,6 +2377,7 @@ const rawTestData = {
           start: 1709262000,
           isoDate: '2024-03-01T03:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2277,6 +2385,7 @@ const rawTestData = {
           start: 1709265600,
           isoDate: '2024-03-01T04:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2284,6 +2393,7 @@ const rawTestData = {
           start: 1709269200,
           isoDate: '2024-03-01T05:00:00.000Z',
           usdValue: 2,
+          numTxs: 1,
           currencyCodes: { BTC: 1, DOGE: 1 },
           currencyPairs: { 'BTC-DOGE': 2 }
         },
@@ -2291,6 +2401,7 @@ const rawTestData = {
           start: 1709272800,
           isoDate: '2024-03-01T06:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2298,6 +2409,7 @@ const rawTestData = {
           start: 1709276400,
           isoDate: '2024-03-01T07:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2305,6 +2417,7 @@ const rawTestData = {
           start: 1709280000,
           isoDate: '2024-03-01T08:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2312,6 +2425,7 @@ const rawTestData = {
           start: 1709283600,
           isoDate: '2024-03-01T09:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2319,6 +2433,7 @@ const rawTestData = {
           start: 1709287200,
           isoDate: '2024-03-01T10:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2326,6 +2441,7 @@ const rawTestData = {
           start: 1709290800,
           isoDate: '2024-03-01T11:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2333,6 +2449,7 @@ const rawTestData = {
           start: 1709294400,
           isoDate: '2024-03-01T12:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2340,6 +2457,7 @@ const rawTestData = {
           start: 1709298000,
           isoDate: '2024-03-01T13:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2347,6 +2465,7 @@ const rawTestData = {
           start: 1709301600,
           isoDate: '2024-03-01T14:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2354,6 +2473,7 @@ const rawTestData = {
           start: 1709305200,
           isoDate: '2024-03-01T15:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2361,6 +2481,7 @@ const rawTestData = {
           start: 1709308800,
           isoDate: '2024-03-01T16:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2368,6 +2489,7 @@ const rawTestData = {
           start: 1709312400,
           isoDate: '2024-03-01T17:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2375,6 +2497,7 @@ const rawTestData = {
           start: 1709316000,
           isoDate: '2024-03-01T18:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2382,6 +2505,7 @@ const rawTestData = {
           start: 1709319600,
           isoDate: '2024-03-01T19:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2389,6 +2513,7 @@ const rawTestData = {
           start: 1709323200,
           isoDate: '2024-03-01T20:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2396,6 +2521,7 @@ const rawTestData = {
           start: 1709326800,
           isoDate: '2024-03-01T21:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2403,6 +2529,7 @@ const rawTestData = {
           start: 1709330400,
           isoDate: '2024-03-01T22:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2410,6 +2537,7 @@ const rawTestData = {
           start: 1709334000,
           isoDate: '2024-03-01T23:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2417,6 +2545,7 @@ const rawTestData = {
           start: 1709337600,
           isoDate: '2024-03-02T00:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2424,6 +2553,7 @@ const rawTestData = {
           start: 1709341200,
           isoDate: '2024-03-02T01:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2431,6 +2561,7 @@ const rawTestData = {
           start: 1709344800,
           isoDate: '2024-03-02T02:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2438,6 +2569,7 @@ const rawTestData = {
           start: 1709348400,
           isoDate: '2024-03-02T03:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2445,6 +2577,7 @@ const rawTestData = {
           start: 1709352000,
           isoDate: '2024-03-02T04:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2452,6 +2585,7 @@ const rawTestData = {
           start: 1709355600,
           isoDate: '2024-03-02T05:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2459,6 +2593,7 @@ const rawTestData = {
           start: 1709359200,
           isoDate: '2024-03-02T06:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2466,6 +2601,7 @@ const rawTestData = {
           start: 1709362800,
           isoDate: '2024-03-02T07:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2473,6 +2609,7 @@ const rawTestData = {
           start: 1709366400,
           isoDate: '2024-03-02T08:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2480,6 +2617,7 @@ const rawTestData = {
           start: 1709370000,
           isoDate: '2024-03-02T09:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2487,6 +2625,7 @@ const rawTestData = {
           start: 1709373600,
           isoDate: '2024-03-02T10:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2494,6 +2633,7 @@ const rawTestData = {
           start: 1709377200,
           isoDate: '2024-03-02T11:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2501,6 +2641,7 @@ const rawTestData = {
           start: 1709380800,
           isoDate: '2024-03-02T12:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2508,6 +2649,7 @@ const rawTestData = {
           start: 1709384400,
           isoDate: '2024-03-02T13:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2515,6 +2657,7 @@ const rawTestData = {
           start: 1709388000,
           isoDate: '2024-03-02T14:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2522,6 +2665,7 @@ const rawTestData = {
           start: 1709391600,
           isoDate: '2024-03-02T15:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2529,6 +2673,7 @@ const rawTestData = {
           start: 1709395200,
           isoDate: '2024-03-02T16:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2536,6 +2681,7 @@ const rawTestData = {
           start: 1709398800,
           isoDate: '2024-03-02T17:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2543,6 +2689,7 @@ const rawTestData = {
           start: 1709402400,
           isoDate: '2024-03-02T18:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2550,6 +2697,7 @@ const rawTestData = {
           start: 1709406000,
           isoDate: '2024-03-02T19:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2557,6 +2705,7 @@ const rawTestData = {
           start: 1709409600,
           isoDate: '2024-03-02T20:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2564,6 +2713,7 @@ const rawTestData = {
           start: 1709413200,
           isoDate: '2024-03-02T21:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2571,6 +2721,7 @@ const rawTestData = {
           start: 1709416800,
           isoDate: '2024-03-02T22:00:00.000Z',
           usdValue: 1000,
+          numTxs: 1,
           currencyCodes: { ETH: 500, DOGE: 500 },
           currencyPairs: { 'ETH-DOGE': 1000 }
         },
@@ -2578,6 +2729,7 @@ const rawTestData = {
           start: 1709420400,
           isoDate: '2024-03-02T23:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2585,10 +2737,12 @@ const rawTestData = {
           start: 1709424000,
           isoDate: '2024-03-03T00:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         }
-      ]
+      ],
+      numAllTxs: 5
     },
     app: 'app-dummy',
     pluginId: 'partner-dummy',
@@ -2618,6 +2772,7 @@ const rawTestData = {
           start: 1669852800,
           isoDate: '2022-12-01T00:00:00.000Z',
           usdValue: 920,
+          numTxs: 1,
           currencyCodes: { ETH: 460, BTC: 460 },
           currencyPairs: { 'ETH-BTC': 920 }
         },
@@ -2625,6 +2780,7 @@ const rawTestData = {
           start: 1672531200,
           isoDate: '2023-01-01T00:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2632,6 +2788,7 @@ const rawTestData = {
           start: 1675209600,
           isoDate: '2023-02-01T00:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2639,6 +2796,7 @@ const rawTestData = {
           start: 1677628800,
           isoDate: '2023-03-01T00:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2646,6 +2804,7 @@ const rawTestData = {
           start: 1680307200,
           isoDate: '2023-04-01T00:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2653,6 +2812,7 @@ const rawTestData = {
           start: 1682899200,
           isoDate: '2023-05-01T00:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2660,6 +2820,7 @@ const rawTestData = {
           start: 1685577600,
           isoDate: '2023-06-01T00:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2667,6 +2828,7 @@ const rawTestData = {
           start: 1688169600,
           isoDate: '2023-07-01T00:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2674,6 +2836,7 @@ const rawTestData = {
           start: 1690848000,
           isoDate: '2023-08-01T00:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2681,6 +2844,7 @@ const rawTestData = {
           start: 1693526400,
           isoDate: '2023-09-01T00:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2688,6 +2852,7 @@ const rawTestData = {
           start: 1696118400,
           isoDate: '2023-10-01T00:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2695,6 +2860,7 @@ const rawTestData = {
           start: 1698796800,
           isoDate: '2023-11-01T00:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2702,6 +2868,7 @@ const rawTestData = {
           start: 1701388800,
           isoDate: '2023-12-01T00:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         },
@@ -2709,6 +2876,7 @@ const rawTestData = {
           start: 1704067200,
           isoDate: '2024-01-01T00:00:00.000Z',
           usdValue: 3,
+          numTxs: 1,
           currencyCodes: { BTC: 1.5, DOGE: 1.5 },
           currencyPairs: { 'BTC-DOGE': 3 }
         },
@@ -2716,12 +2884,14 @@ const rawTestData = {
           start: 1706745600,
           isoDate: '2024-02-01T00:00:00.000Z',
           usdValue: 0,
+          numTxs: 0,
           currencyCodes: {},
           currencyPairs: {}
         }
       ],
       day: [],
-      hour: []
+      hour: [],
+      numAllTxs: 2
     },
     app: 'app-dummy',
     pluginId: 'partner-dummy',

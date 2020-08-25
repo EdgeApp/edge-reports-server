@@ -16,6 +16,7 @@ interface DbTx {
 interface Bucket {
   start: number
   usdValue: number
+  numTxs: number
   isoDate: string
   currencyCodes: { [currencyCode: string]: number }
   currencyPairs: { [currencyPair: string]: number }
@@ -26,6 +27,7 @@ interface AnalyticsResult {
     hour: Bucket[]
     day: Bucket[]
     month: Bucket[]
+    numAllTxs: number
   }
   app: string
   pluginId: string
@@ -57,6 +59,7 @@ export const getAnalytics = (
         start: monthStart.getTime() / 1000,
         isoDate: monthStart.toISOString(),
         usdValue: 0,
+        numTxs: 0,
         currencyCodes: {},
         currencyPairs: {}
       })
@@ -73,6 +76,7 @@ export const getAnalytics = (
         start: dayStart.getTime() / 1000,
         isoDate: dayStart.toISOString(),
         usdValue: 0,
+        numTxs: 0,
         currencyCodes: {},
         currencyPairs: {}
       })
@@ -89,6 +93,7 @@ export const getAnalytics = (
         start: hourStart.getTime() / 1000,
         isoDate: hourStart.toISOString(),
         usdValue: 0,
+        numTxs: 0,
         currencyCodes: {},
         currencyPairs: {}
       })
@@ -125,7 +130,8 @@ export const getAnalytics = (
     result: {
       month: monthArray,
       day: dayArray,
-      hour: hourArray
+      hour: hourArray,
+      numAllTxs: txs.length
     },
     app,
     pluginId,
@@ -161,6 +167,8 @@ const bucketScroller = (
 }
 
 const bucketAdder = (bucket: Bucket, tx: DbTx): void => {
+  // numTxs
+  bucket.numTxs++
   // usdValue
   bucket.usdValue += tx.usdValue != null ? tx.usdValue : 0
   // currencyCode
