@@ -23,7 +23,7 @@ const asChangellyResult = asObject({
   result: asArray(asUnknown)
 })
 
-const LIMIT = 100
+const LIMIT = 300
 const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
 
 async function getTransactionsPromised(
@@ -115,11 +115,16 @@ export async function queryChangelly(
           newLatestTimeStamp = tx.createdAt
         }
         if (tx.createdAt < latestTimeStamp - QUERY_LOOKBACK) {
+          console.log(
+            `Changelly done: date ${tx.createdAt} < ${latestTimeStamp -
+              QUERY_LOOKBACK}`
+          )
           done = true
         }
       }
     }
     if (result.result.length < LIMIT) {
+      console.log(`Changelly done: r.len ${result.result.length} < ${LIMIT}`)
       break
     }
     offset += LIMIT

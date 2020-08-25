@@ -86,9 +86,13 @@ function main(): void {
       // proper api arcitechture should page forward instead of all in 1 chunk
       limit: 1000000
     }
-    const result = asDbReq(
-      await reportsTransactions.partitionedFind(appAndPluginId, query)
-    )
+    let result
+    try {
+      const r = await reportsTransactions.partitionedFind(appAndPluginId, query)
+      result = asDbReq(r)
+    } catch (e) {
+      console.log(e)
+    }
     // TODO: put the sort within the query, need to add default indexs in the database.
     const sortedTxs = result.docs.sort(function(a, b) {
       return a.timestamp - b.timestamp
