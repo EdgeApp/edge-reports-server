@@ -1,0 +1,211 @@
+html, body { 
+    margin:0; 
+    padding:0; 
+    height:100%; 
+}
+
+.row {
+    width: 100%;
+    height: 100%;
+}
+
+.graphHolder {
+    min-Width: 0;
+    height: 800px;
+}
+
+.legend-holder {
+    position: relative;
+}
+
+.legend-position {
+    position: absolute;
+    top: 12px;
+    left: 24px;
+}
+
+.legend {
+    margin-top: -6px;
+    margin-left: 8px;
+    font-family: Quicksand;
+    font-style: normal;
+    font-weight: normal;
+    font-size: 18px;
+    line-height: 30px;
+}
+
+#logo {
+    margin-top: 26px;
+    margin-left: 26px;
+    margin-bottom: 10px;
+    height: 28px;
+    width: 28px;
+}
+
+#calendar {     
+    position: absolute;
+    top: -3px;
+    left: 50px;
+    height: 24px;
+    width: 24px;
+}
+
+.row {
+    width: 100%;
+    min-height: 100%;
+    display:table;
+    table-layout: fixed;
+}
+
+.column {
+    min-height: 100%;
+    display:table-cell
+}
+  
+.sidebar {
+    background: linear-gradient(90deg, #0C446A 0%, #0D2145 100%);
+    width: 200px;
+}
+  
+.graphs {
+    vertical-align: top;
+    width: 100%;
+}
+
+.bargraph-legend-keys {
+    margin-top: 2px;
+    display: flex;
+    flex-direction: row;
+}
+
+.bargraph-legend-holder {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+   
+#range {
+    color: white;
+    text-align: center;
+}
+
+.sidebar-container {
+    margin-top: 12px;
+    width: 100%;
+}
+
+#range-container {
+    display: inline;
+}
+
+#time-period-holder {
+    margin-left: -6px;
+    margin-top: 16px;
+}
+
+.sidebar-text {
+    position: relative;
+    margin-top: 26px;
+    margin-left: 26px;
+    font-family: Quicksand;
+    font-style: normal;
+    font-weight: normal;
+    font-size: 16px;
+    color: white;
+}
+
+.date-picker {
+    margin-left: 26px;
+}
+
+.title-text {
+    margin-top: 0px;
+    margin-left: 26px;
+    color: white;
+    font-family: Quicksand;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 24px;
+}
+
+.calendar-text {
+    margin-top: 20px;
+    color: white;
+    font-size: 16px;
+    font-family: Quicksand;
+    font-style: normal;
+    font-weight: normal;
+}
+
+.divider {
+    margin-top: 15px;
+    width: 72%;
+    border-top: .5px solid rgb(255, 255, 255);
+}
+
+.currency-swap {
+    margin-top: 12px;
+}
+
+.first-currency {
+    margin-top: 20px;
+}
+ 
+button {
+    background-color: Transparent;
+    color: white;
+    background-repeat:no-repeat;
+    border: none;
+    cursor:pointer;
+    overflow: hidden;
+    outline:none;
+    margin-left: 20px;
+    font-family: Quicksand;
+    font-style: normal;
+    font-weight: normal;
+    font-size: 16px;
+}
+
+.calendar-search {
+    margin-top: 12px;
+    margin-left: 68px;
+    margin-bottom: 12px;
+    border: 1px solid white;
+}
+
+.time-period {
+    margin-top: -1px;
+    margin-right: 20px;
+    font-family: Quicksand;
+    font-style: normal;
+    font-weight: normal;
+    font-size: 16px;
+    color: black;
+}
+
+span {
+    font-family: Quicksand;
+    font-style: normal;
+    font-weight: normal;
+    font-size: 16px;
+}
+
+input {
+    margin-left: -2px;
+    font-family: Quicksand;
+    font-style: normal;
+    font-weight: normal;
+    font-size: 16px;
+    background-color: transparent;
+    border-width: 0px;
+    color: white;
+}
+
+input:focus {
+    outline: 0px;
+}
+
+.exchange-type-top {
+    margin-top: 23px;
+    position: relative;
+}
