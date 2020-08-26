@@ -29,7 +29,7 @@ interface AnalyticsResult {
     month: Bucket[]
     numAllTxs: number
   }
-  app: string
+  appId: string
   pluginId: string
   start: number
   end: number
@@ -39,7 +39,7 @@ export const getAnalytics = (
   txs: DbTx[],
   start: number,
   end: number,
-  app: string,
+  appId: string,
   pluginId: string,
   timePeriod: string
 ): AnalyticsResult => {
@@ -133,7 +133,7 @@ export const getAnalytics = (
       hour: hourArray,
       numAllTxs: txs.length
     },
-    app,
+    appId,
     pluginId,
     start: start,
     end: end
