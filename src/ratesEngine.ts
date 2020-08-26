@@ -4,7 +4,7 @@ import fetch from 'node-fetch'
 
 import config from '../config.json'
 import { asDbTx, DbTx } from './types'
-const datelog = function(...args: any): void {
+const datelog = function (...args: any): void {
   const date = new Date().toISOString()
   console.log(date, ...args)
 }
@@ -21,6 +21,7 @@ export async function ratesEngine(): Promise<void> {
   const dbTransactions: nano.DocumentScope<DbTx> = nanoDb.db.use(
     'reports_transactions'
   )
+  let bookmark
   while (true) {
     const query = {
       selector: {
@@ -30,37 +31,28 @@ export async function ratesEngine(): Promise<void> {
           { payoutAmount: { $eq: 0 } }
         ]
       },
-      fields: [
-        '_id',
-        '_rev',
-        'orderId',
-        'depositTxid',
-        'depositAddress',
-        'depositAmount',
-        'depositCurrency',
-        'payoutTxid',
-        'payoutAddress',
-        'payoutAmount',
-        'payoutCurrency',
-        'status',
-        'timestamp',
-        'isoDate',
-        'usdValue',
-        'rawTx'
-      ],
+      bookmark,
       limit: QUERY_LIMIT
     }
     const result = await dbTransactions.find(query)
+    if (typeof result.bookmark === 'string' && result.bookmark.length > 10) {
+      bookmark = result.bookmark
+    } else {
+      bookmark = undefined
+    }
     asDbQueryResult(result)
     datelog(
       'Finished query for empty usdValue fields, adding usdValues to each field'
     )
     datelog(`${result.docs.length} docs to update`)
+    const promiseArray: Array<Promise<void>> = []
     for (const doc of result.docs) {
-      await updateTxUsdValue(doc).catch(e => {
+      const p = updateTxValues(doc).catch(e => {
         datelog('updateTx failed', e)
       })
+      promiseArray.push(p)
     }
+    await Promise.all(promiseArray)
     datelog(
       'Finished updating all usdValues, bulk writing back to the database'
     )
@@ -75,7 +67,8 @@ export async function ratesEngine(): Promise<void> {
   }
 }
 
-export async function updateTxUsdValue(transaction: DbTx): Promise<void> {
+export async function updateTxValues(transaction: DbTx): Promise<void> {
+  let success = false
   const date: string = transaction.isoDate
   if (transaction.payoutAmount === 0) {
     const exchangeRate = await getExchangeRate(
@@ -83,9 +76,49 @@ export async function updateTxUsdValue(transaction: DbTx): Promise<void> {
       transaction.payoutCurrency,
       date
     )
-    transaction.payoutAmount = transaction.depositAmount * exchangeRate
+    if (exchangeRate > 0) {
+      transaction.payoutAmount = transaction.depositAmount * exchangeRate
+      success = true
+    }
   }
-  if (transaction.usdValue == null) {
+  if (transaction.payoutAmount === 0) {
+    const exchangeRate = await getExchangeRate(
+      transaction.payoutCurrency,
+      transaction.depositCurrency,
+      date
+    )
+    if (exchangeRate > 0) {
+      transaction.payoutAmount = transaction.depositAmount * (1 / exchangeRate)
+      success = true
+    }
+  }
+  if (
+    transaction.payoutAmount === 0 &&
+    transaction.usdValue !== undefined &&
+    transaction.usdValue > 0
+  ) {
+    const exchangeRate = await getExchangeRate(
+      'USD',
+      transaction.payoutCurrency,
+      date
+    )
+    if (exchangeRate > 0) {
+      transaction.payoutAmount = transaction.usdValue * exchangeRate
+      success = true
+    }
+    if (transaction.payoutAmount === 0) {
+      const exchangeRate = await getExchangeRate(
+        transaction.payoutCurrency,
+        'USD',
+        date
+      )
+      if (exchangeRate > 0) {
+        transaction.payoutAmount = transaction.usdValue * (1 / exchangeRate)
+        success = true
+      }
+    }
+  }
+  if (transaction.usdValue == null || transaction.usdValue === 0) {
     const exchangeRate = await getExchangeRate(
       transaction.depositCurrency,
       'USD',
@@ -93,7 +126,8 @@ export async function updateTxUsdValue(transaction: DbTx): Promise<void> {
     )
     if (exchangeRate > 0) {
       transaction.usdValue = transaction.depositAmount * exchangeRate
-    } else {
+      success = true
+    } else if (transaction.payoutAmount !== 0) {
       const exchangeRate = await getExchangeRate(
         transaction.payoutCurrency,
         'USD',
@@ -101,8 +135,14 @@ export async function updateTxUsdValue(transaction: DbTx): Promise<void> {
       )
       if (exchangeRate > 0) {
         transaction.usdValue = transaction.payoutAmount * exchangeRate
+        success = true
       }
     }
+  }
+  if (success) {
+    datelog(`SUCCESS id:${transaction._id} updated`)
+  } else {
+    datelog(`FAIL    id:${transaction._id} not updated`)
   }
 }
 
