@@ -23,7 +23,9 @@ const asChangellyResult = asObject({
   result: asArray(asUnknown)
 })
 
+const MAX_ATTEMPTS = 3
 const LIMIT = 300
+const TIMEOUT = 20000
 const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
 
 async function getTransactionsPromised(
@@ -34,22 +36,39 @@ async function getTransactionsPromised(
   address: string | undefined,
   extraId: string | undefined
 ): Promise<ReturnType<typeof asChangellyResult>> {
-  return new Promise((resolve, reject) => {
-    changellySDK.getTransactions(
-      limit,
-      offset,
-      currencyFrom,
-      address,
-      extraId,
-      (err, data) => {
-        if (err != null) {
-          reject(err)
-        } else {
-          resolve(data)
+  let promise
+  let attempt = 1
+  while (true) {
+    const changellyFetch = new Promise((resolve, reject) => {
+      changellySDK.getTransactions(
+        limit,
+        offset,
+        currencyFrom,
+        address,
+        extraId,
+        (err, data) => {
+          if (err != null) {
+            resolve(err.code)
+          } else {
+            resolve(data)
+          }
         }
-      }
-    )
-  })
+      )
+    })
+
+    const timeoutTest = new Promise((resolve, reject) => {
+      setTimeout(resolve, TIMEOUT, 'ETIMEDOUT')
+    })
+
+    promise = await Promise.race([changellyFetch, timeoutTest])
+    if (promise === 'ETIMEDOUT' && attempt <= MAX_ATTEMPTS) {
+      console.log(`Changelly request timed out.  Retry attempt: ${attempt}`)
+      attempt++
+      continue
+    }
+    break
+  }
+  return promise
 }
 
 export async function queryChangelly(
@@ -91,7 +110,8 @@ export async function queryChangelly(
       undefined,
       undefined
     )
-    for (const rawTx of result.result) {
+    const txs = asChangellyResult(result).result
+    for (const rawTx of txs) {
       if (asChangellyRawTx(rawTx).status === 'finished') {
         const tx = asChangellyTx(rawTx)
         const ssTx: StandardTx = {
@@ -114,7 +134,7 @@ export async function queryChangelly(
         if (tx.createdAt > newLatestTimeStamp) {
           newLatestTimeStamp = tx.createdAt
         }
-        if (tx.createdAt < latestTimeStamp - QUERY_LOOKBACK) {
+        if (tx.createdAt < latestTimeStamp - QUERY_LOOKBACK && done === false) {
           console.log(
             `Changelly done: date ${tx.createdAt} < ${
               latestTimeStamp - QUERY_LOOKBACK
