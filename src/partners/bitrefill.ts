@@ -9,6 +9,7 @@ import {
   asUnknown
 } from 'cleaners'
 import fetch from 'node-fetch'
+import { datelog } from '../queryEngine'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
@@ -74,7 +75,7 @@ export async function queryBitrefill(
       })
       jsonObj = asBitrefillResult(await result.json())
     } catch (e) {
-      console.log(e)
+      datelog(e)
       break
     }
     const txs = jsonObj.orders
@@ -90,7 +91,7 @@ export async function queryBitrefill(
         let inputAmountStr = tx.satoshiPrice?.toString()
         const inputCurrency: string = tx.coinCurrency.toUpperCase()
         if (typeof div[inputCurrency] !== 'string') {
-          console.log(inputCurrency + ' has no div')
+          datelog(inputCurrency + ' has no div')
           break
         }
         if (typeof inputCurrency === 'string' && inputCurrency !== 'BTC') {

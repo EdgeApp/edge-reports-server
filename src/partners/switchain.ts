@@ -1,5 +1,6 @@
 import { asArray, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
+import { datelog } from '../queryEngine'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
@@ -60,7 +61,7 @@ export async function querySwitchain(
         result = asSwitchainResult(await response.json())
       }
     } catch (e) {
-      console.log(e)
+      datelog(e)
       throw e
     }
 

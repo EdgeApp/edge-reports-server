@@ -1,5 +1,6 @@
 import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
+import { datelog } from '../queryEngine'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
@@ -59,7 +60,7 @@ export async function queryBitsOfGold(
     const result = await fetch(url, { method: 'GET', headers: headers })
     resultJSON = asBogResult(await result.json())
   } catch (e) {
-    console.log(e)
+    datelog(e)
     throw e
   }
   const txs = resultJSON.data

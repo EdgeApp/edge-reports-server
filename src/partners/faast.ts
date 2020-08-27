@@ -1,6 +1,7 @@
 import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import crypto from 'crypto'
 import fetch from 'node-fetch'
+import { datelog } from '../queryEngine'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
@@ -67,7 +68,7 @@ export async function queryFaast(
       resultJSON = await result.json()
       jsonObj = asFaastResult(resultJSON)
     } catch (e) {
-      console.log(e)
+      datelog(e)
       throw e
     }
     const txs = jsonObj.orders

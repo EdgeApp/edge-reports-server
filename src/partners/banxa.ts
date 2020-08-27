@@ -1,4 +1,5 @@
 import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
+import { datelog } from '../queryEngine'
 import crypto from 'crypto'
 import fetch from 'node-fetch'
 import sleep from 'sleep'
@@ -71,7 +72,7 @@ export async function queryBanxa(
     let page = 1
     let attempt = 1
     while (true) {
-      console.log(
+      datelog(
         `BANXA: Calling API with date ${currentQuery}, result size ${PAGE_LIMIT} and offset ${page} for attempt ${attempt}`
       )
       const apiResponse = await callBanxaAPI(
@@ -85,7 +86,7 @@ export async function queryBanxa(
       // Handle the situation where the API is rate limiting the requests
       if (status !== 200) {
         const delay = 2 * attempt
-        console.log(
+        datelog(
           `BANXA: Response code ${status}. Retrying after ${delay} second sleep...`
         )
         sleep.sleep(delay)
@@ -106,7 +107,7 @@ export async function queryBanxa(
       page++
     }
     if (attempt === MAX_ATTEMPTS) {
-      console.log(`BANXA: Retry Limit reached for date ${currentQuery}.`)
+      datelog(`BANXA: Retry Limit reached for date ${currentQuery}.`)
       break
     }
     currentQuery = new Date(new Date(currentQuery).getTime() + 86400000)

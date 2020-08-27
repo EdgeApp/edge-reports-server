@@ -1,5 +1,6 @@
 import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
+import { datelog } from '../queryEngine'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
@@ -52,7 +53,7 @@ export async function queryMoonpay(
         Authorization: `Api-Key ${apiKey}`
       }
     } catch (e) {
-      console.log(e)
+      datelog(e)
       throw e
     }
   } else {

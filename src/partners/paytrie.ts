@@ -1,5 +1,6 @@
 import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
+import { datelog } from '../queryEngine'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
@@ -49,7 +50,7 @@ export async function queryPaytrie(
       },
       method: 'post'
     }
-  ).catch(err => console.error(err))
+  ).catch(err => datelog(err))
 
   const orders = asPaytrieTxs(await apiResponse.json())
 

@@ -3,7 +3,7 @@ import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
 import Web3 from 'web3'
 
-// import { AbiItem } from 'web3-utils'
+import { datelog } from '../queryEngine'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
 const asCurrentBlockResult = asNumber
@@ -416,11 +416,12 @@ export async function queryTotle(
             rawTx: rawSwapEvent
           }
           ssFormatTxs.push(ssTx)
+          datelog(`TOTLE: Currently saved ${ssFormatTxs.length} transactions.`)
         }
       }
     }
   } catch (err) {
-    console.log(err)
+    datelog(err)
   }
 
   const out: PluginResult = {

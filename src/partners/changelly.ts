@@ -1,5 +1,6 @@
 import Changelly from 'api-changelly/lib.js'
 import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
+import { datelog } from '../queryEngine'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
@@ -62,7 +63,7 @@ async function getTransactionsPromised(
 
     promise = await Promise.race([changellyFetch, timeoutTest])
     if (promise === 'ETIMEDOUT' && attempt <= MAX_ATTEMPTS) {
-      console.log(`Changelly request timed out.  Retry attempt: ${attempt}`)
+      datelog(`Changelly request timed out.  Retry attempt: ${attempt}`)
       attempt++
       continue
     }
@@ -101,7 +102,7 @@ export async function queryChangelly(
   let newLatestTimeStamp = latestTimeStamp
   let done = false
   while (!done) {
-    console.log(`Query changelly offset: ${offset}`)
+    datelog(`Query changelly offset: ${offset}`)
     const result = await getTransactionsPromised(
       changellySDK,
       LIMIT,
@@ -135,7 +136,7 @@ export async function queryChangelly(
           newLatestTimeStamp = tx.createdAt
         }
         if (tx.createdAt < latestTimeStamp - QUERY_LOOKBACK && done === false) {
-          console.log(
+          datelog(
             `Changelly done: date ${tx.createdAt} < ${
               latestTimeStamp - QUERY_LOOKBACK
             }`
@@ -145,7 +146,7 @@ export async function queryChangelly(
       }
     }
     if (result.result.length < LIMIT) {
-      console.log(`Changelly done: r.len ${result.result.length} < ${LIMIT}`)
+      datelog(`Changelly done: r.len ${result.result.length} < ${LIMIT}`)
       break
     }
     offset += LIMIT

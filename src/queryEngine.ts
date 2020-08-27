@@ -30,7 +30,7 @@ const asApp = asObject({
 })
 const asApps = asArray(asApp)
 
-const datelog = function(...args: any): void {
+export const datelog = function (...args: any): void {
   const date = new Date().toISOString()
   console.log(date, ...args)
 }
