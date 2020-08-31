@@ -40,7 +40,11 @@ export async function ratesEngine(): Promise<void> {
     } else {
       bookmark = undefined
     }
-    asDbQueryResult(result)
+    try {
+      asDbQueryResult(result)
+    } catch {
+      continue
+    }
     datelog(
       'Finished query for empty usdValue fields, adding usdValues to each field'
     )
