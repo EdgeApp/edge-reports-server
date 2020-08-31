@@ -63,8 +63,8 @@ function main(): void {
     }
     let { start, end, appId, pluginId, timePeriod } = analyticsQuery
     timePeriod = timePeriod.toLowerCase()
-    const queryStart = parseInt(start)
-    const queryEnd = parseInt(end)
+    const queryStart = new Date(start).getTime()
+    const queryEnd = new Date(end).getTime()
     if (
       !(queryStart > 0) ||
       !(queryEnd > 0) ||
