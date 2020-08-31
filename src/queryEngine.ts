@@ -96,31 +96,27 @@ export async function queryEngine(): Promise<void> {
     }
     const rawApps = await dbApps.find(query)
     const apps = asApps(rawApps.docs)
-    const appAndPluginId: Array<Promise<string>> = []
+    const promiseArray: Array<Promise<string>> = []
     let remainingPlugins: String[] = []
     // loop over every app
     for (const app of apps) {
       // loop over every pluginId that app uses
       for (const pluginId in app.pluginIds) {
         remainingPlugins.push(pluginId)
-        appAndPluginId.push(
-          runPlugin(app, pluginId, dbProgress)
-            .finally(
-              () =>
-                (remainingPlugins = remainingPlugins.filter(
-                  string => string !== pluginId
-                ))
+        promiseArray.push(
+          runPlugin(app, pluginId, dbProgress).finally(() => {
+            remainingPlugins = remainingPlugins.filter(
+              string => string !== pluginId
             )
-            .finally(() => {
-              if (remainingPlugins.length > 0) {
-                datelog('REMAINING PLUGINS:', remainingPlugins.join(', '))
-              }
-            })
+            if (remainingPlugins.length > 0) {
+              datelog('REMAINING PLUGINS:', remainingPlugins.join(', '))
+            }
+          })
         )
       }
     }
     // await the conclusion of every app + plugin combo created above.
-    const partnerStatus = await Promise.all(appAndPluginId)
+    const partnerStatus = await Promise.all(promiseArray)
     // log how long every app + plugin took to run
     datelog(partnerStatus)
     datelog(`Snoozing for ${QUERY_FREQ_MS} milliseconds`)
