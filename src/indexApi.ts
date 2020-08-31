@@ -34,17 +34,15 @@ const asDbReq = asObject({
   )
 })
 
-const asApiKeySearch = asObject({
-  docs: asArray(
-    asObject({
-      appId: asString
-    })
-  )
+const asApp = asObject({
+  _id: asString,
+  appId: asString
 })
+const asApps = asArray(asApp)
 
 const nanoDb = nano(config.couchDbFullpath)
 
-function main(): void {
+async function main(): Promise<void> {
   // start express and couch db server
   const app = express()
   const reportsTransactions = nanoDb.use('reports_transactions')
@@ -53,7 +51,17 @@ function main(): void {
   app.use(bodyParser.json({ limit: '1mb' }))
   app.use(cors())
 
-  app.get(`/v1/analytics/`, async function(req, res) {
+  const query = {
+    selector: {
+      appId: { $exists: true }
+    },
+    fields: ['_id', 'appId'],
+    limit: 1000000
+  }
+  const rawApps = await reportsApps.find(query)
+  const apps = asApps(rawApps.docs)
+
+  app.get(`/v1/analytics/`, async function (req, res) {
     let analyticsQuery: ReturnType<typeof asAnalyticsReq>
     try {
       analyticsQuery = asAnalyticsReq(req.query)
@@ -126,19 +134,12 @@ function main(): void {
       res.status(400).send(`Missing Request fields.`)
       return
     }
-    const query = {
-      selector: {
-        _id: { $eq: queryResult.apiKey }
-      },
-      fields: ['appId'],
-      limit: 1
-    }
-    const searchedAppId = asApiKeySearch(await reportsApps.find(query))
-    if (searchedAppId.docs.length === 0) {
+    const searchedAppId = apps.find(app => app._id === req.query.apiKey)
+    if (typeof searchedAppId === 'undefined') {
       res.status(404).send('Api Key has no match.')
       return
     }
-    const appId = searchedAppId.docs[0].appId
+    const appId = searchedAppId.appId
     let result
     try {
       const query = `${appId}_${queryResult.pluginId}:${queryResult.orderId}`
