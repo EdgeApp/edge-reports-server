@@ -110,9 +110,16 @@ async function main(): Promise<void> {
       result = asDbReq(r)
     } catch (e) {
       console.log(e)
+      if (e.code === 'ECONNREFUSED') {
+        res.status(500).send(`Internal Server Error.`)
+        return
+      } else {
+        res.status(400).send(`Database Query returned bad results.`)
+        return
+      }
     }
     // TODO: put the sort within the query, need to add default indexs in the database.
-    const sortedTxs = result.docs.sort(function (a, b) {
+    const sortedTxs = result.docs.sort(function(a, b) {
       return a.timestamp - b.timestamp
     })
     const answer = getAnalytics(
@@ -147,8 +154,13 @@ async function main(): Promise<void> {
       result = asDbTx(dbResult)
     } catch (e) {
       console.log(e)
-      res.status(404).send('Could not find Transaction.')
-      return
+      if (e.code === 'ECONNREFUSED') {
+        res.status(500).send(`Internal Server Error.`)
+        return
+      } else {
+        res.status(404).send(`Could not find transaction.`)
+        return
+      }
     }
     const out = {
       appId: appId,
