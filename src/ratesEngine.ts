@@ -1,10 +1,10 @@
-import { asArray, asObject } from 'cleaners'
+import { asArray, asObject, asUnknown } from 'cleaners'
 import nano from 'nano'
 import fetch from 'node-fetch'
 
 import config from '../config.json'
 import { asDbTx, DbTx } from './types'
-const datelog = function (...args: any): void {
+const datelog = function(...args: any): void {
   const date = new Date().toISOString()
   console.log(date, ...args)
 }
@@ -14,7 +14,7 @@ const QUERY_LIMIT = 50
 const snooze: Function = async (ms: number) =>
   new Promise((resolve: Function) => setTimeout(resolve, ms))
 
-const asDbQueryResult = asObject({ docs: asArray(asDbTx) })
+const asDbQueryResult = asObject({ docs: asArray(asUnknown) })
 
 export async function ratesEngine(): Promise<void> {
   datelog('Starting ratesEngine query')
@@ -51,6 +51,12 @@ export async function ratesEngine(): Promise<void> {
     datelog(`${result.docs.length} docs to update`)
     const promiseArray: Array<Promise<void>> = []
     for (const doc of result.docs) {
+      try {
+        asDbTx(doc)
+      } catch {
+        datelog('Bad Transaction', doc)
+        continue
+      }
       const p = updateTxValues(doc).catch(e => {
         datelog('updateTx failed', e)
       })
