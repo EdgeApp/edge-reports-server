@@ -35,14 +35,18 @@ export async function ratesEngine(): Promise<void> {
       limit: QUERY_LIMIT
     }
     const result = await dbTransactions.find(query)
-    if (typeof result.bookmark === 'string' && result.docs.length > 10) {
+    if (
+      typeof result.bookmark === 'string' &&
+      result.docs.length === QUERY_LIMIT
+    ) {
       bookmark = result.bookmark
     } else {
       bookmark = undefined
     }
     try {
       asDbQueryResult(result)
-    } catch {
+    } catch (e) {
+      datelog('Invalid Rates Query Result: ', e)
       continue
     }
     datelog(
