@@ -162,8 +162,8 @@ async function main(): Promise<void> {
     res.json(out)
   })
 
-  app.listen(3000, function() {
+  app.listen(config.httpPort, function() {
     console.log('Server started on Port 3000')
   })
 }
-main()
+main().catch(e => console.log(e))
