@@ -108,13 +108,16 @@ async function main(): Promise<void> {
     try {
       const r = await reportsTransactions.partitionedFind(appAndPluginId, query)
       result = asDbReq(r)
+      if (result.docs.length === 0) {
+        throw new Error('No results.')
+      }
     } catch (e) {
       console.log(e)
-      if (e.code === 'ECONNREFUSED') {
-        res.status(500).send(`Internal Server Error.`)
+      if (e.message === 'No results.') {
+        res.status(404).send(`Requested Database not found.`)
         return
       } else {
-        res.status(400).send(`Database Query returned bad results.`)
+        res.status(500).send(`Internal server error.`)
         return
       }
     }
@@ -154,11 +157,11 @@ async function main(): Promise<void> {
       result = asDbTx(dbResult)
     } catch (e) {
       console.log(e)
-      if (e.code === 'ECONNREFUSED') {
-        res.status(500).send(`Internal Server Error.`)
+      if (e.statusCode === 404) {
+        res.status(404).send(`Could not find transaction.`)
         return
       } else {
-        res.status(404).send(`Could not find transaction.`)
+        res.status(500).send(`Internal Server Error.`)
         return
       }
     }
