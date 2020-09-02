@@ -108,18 +108,10 @@ async function main(): Promise<void> {
     try {
       const r = await reportsTransactions.partitionedFind(appAndPluginId, query)
       result = asDbReq(r)
-      if (result.docs.length === 0) {
-        throw new Error('No results.')
-      }
     } catch (e) {
       console.log(e)
-      if (e.message === 'No results.') {
-        res.status(404).send(`Requested Database not found.`)
-        return
-      } else {
-        res.status(500).send(`Internal server error.`)
-        return
-      }
+      res.status(500).send(`Internal server error.`)
+      return
     }
     // TODO: put the sort within the query, need to add default indexs in the database.
     const sortedTxs = result.docs.sort(function(a, b) {
@@ -157,7 +149,7 @@ async function main(): Promise<void> {
       result = asDbTx(dbResult)
     } catch (e) {
       console.log(e)
-      if (e.statusCode === 404) {
+      if (e != null && e.error === 'not_found') {
         res.status(404).send(`Could not find transaction.`)
         return
       } else {
