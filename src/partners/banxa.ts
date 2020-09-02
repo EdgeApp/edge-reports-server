@@ -87,7 +87,8 @@ export async function queryBanxa(
       if (status !== 200) {
         const delay = 2000 * attempt
         datelog(
-          `BANXA: Response code ${status}. Retrying after ${delay} second snooze...`
+          `BANXA: Response code ${status}. Retrying after ${delay /
+            1000} second snooze...`
         )
         snooze(delay)
         attempt++
