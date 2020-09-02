@@ -70,8 +70,9 @@ export async function ratesEngine(): Promise<void> {
     datelog(
       'Finished updating all usdValues, bulk writing back to the database'
     )
+    const successfulDocs = result.docs.filter(doc => doc._id !== undefined)
     try {
-      await dbTransactions.bulk({ docs: result.docs })
+      await dbTransactions.bulk({ docs: successfulDocs })
     } catch (e) {
       datelog('Error doing bulk usdValue insert', e)
       throw e
@@ -157,6 +158,7 @@ export async function updateTxValues(transaction: DbTx): Promise<void> {
     datelog(`SUCCESS id:${transaction._id} updated`)
   } else {
     datelog(`FAIL    id:${transaction._id} not updated`)
+    transaction._id = undefined
   }
 }
 
