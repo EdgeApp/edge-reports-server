@@ -71,8 +71,8 @@ async function main(): Promise<void> {
     }
     let { start, end, appId, pluginId, timePeriod } = analyticsQuery
     timePeriod = timePeriod.toLowerCase()
-    const queryStart = new Date(start).getTime()
-    const queryEnd = new Date(end).getTime()
+    const queryStart = new Date(start).getTime() / 1000
+    const queryEnd = new Date(end).getTime() / 1000
     if (
       !(queryStart > 0) ||
       !(queryEnd > 0) ||
