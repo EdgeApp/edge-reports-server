@@ -61,7 +61,7 @@ async function main(): Promise<void> {
   const rawApps = await reportsApps.find(query)
   const apps = asApps(rawApps.docs)
 
-  app.get(`/v1/analytics/`, async function (req, res) {
+  app.get(`/v1/analytics/`, async function(req, res) {
     let analyticsQuery: ReturnType<typeof asAnalyticsReq>
     try {
       analyticsQuery = asAnalyticsReq(req.query)
@@ -175,7 +175,7 @@ async function main(): Promise<void> {
   })
 
   app.listen(config.httpPort, function() {
-    console.log('Server started on Port 3000')
+    console.log(`Server started on Port ${config.httpPort}`)
   })
 }
 main().catch(e => console.log(e))
