@@ -1,5 +1,6 @@
 import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
+import { datelog } from '../queryEngine'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
@@ -71,7 +72,7 @@ export async function queryFox(
         txs = asFoxTxs(await res.json())
       }
     } catch (e) {
-      console.log(e)
+      datelog(e)
       throw e
     }
 
@@ -80,7 +81,7 @@ export async function queryFox(
       try {
         tx = asFoxTx(rawtx)
       } catch (e) {
-        console.log(e)
+        datelog(e)
         throw e
       }
       const ssTx: StandardTx = {

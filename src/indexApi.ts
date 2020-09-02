@@ -17,7 +17,7 @@ const asAnalyticsReq = asObject({
 })
 
 const asCheckTxReq = asObject({
-  appId: asString,
+  apiKey: asString,
   pluginId: asString,
   orderId: asString
 })
@@ -34,17 +34,34 @@ const asDbReq = asObject({
   )
 })
 
+const asApp = asObject({
+  _id: asString,
+  appId: asString
+})
+const asApps = asArray(asApp)
+
 const nanoDb = nano(config.couchDbFullpath)
 
-function main(): void {
+async function main(): Promise<void> {
   // start express and couch db server
   const app = express()
   const reportsTransactions = nanoDb.use('reports_transactions')
+  const reportsApps = nanoDb.use('reports_apps')
 
   app.use(bodyParser.json({ limit: '1mb' }))
   app.use(cors())
 
-  app.get(`/v1/analytics/`, async function(req, res) {
+  const query = {
+    selector: {
+      appId: { $exists: true }
+    },
+    fields: ['_id', 'appId'],
+    limit: 1000000
+  }
+  const rawApps = await reportsApps.find(query)
+  const apps = asApps(rawApps.docs)
+
+  app.get(`/v1/analytics/`, async function (req, res) {
     let analyticsQuery: ReturnType<typeof asAnalyticsReq>
     try {
       analyticsQuery = asAnalyticsReq(req.query)
@@ -54,8 +71,8 @@ function main(): void {
     }
     let { start, end, appId, pluginId, timePeriod } = analyticsQuery
     timePeriod = timePeriod.toLowerCase()
-    const queryStart = parseInt(start)
-    const queryEnd = parseInt(end)
+    const queryStart = new Date(start).getTime()
+    const queryEnd = new Date(end).getTime()
     if (
       !(queryStart > 0) ||
       !(queryEnd > 0) ||
@@ -86,9 +103,21 @@ function main(): void {
       // proper api arcitechture should page forward instead of all in 1 chunk
       limit: 1000000
     }
-    const result = asDbReq(
-      await reportsTransactions.partitionedFind(appAndPluginId, query)
-    )
+
+    let result
+    try {
+      const r = await reportsTransactions.partitionedFind(appAndPluginId, query)
+      result = asDbReq(r)
+    } catch (e) {
+      console.log(e)
+      if (e.code === 'ECONNREFUSED') {
+        res.status(500).send(`Internal Server Error.`)
+        return
+      } else {
+        res.status(400).send(`Database Query returned bad results.`)
+        return
+      }
+    }
     // TODO: put the sort within the query, need to add default indexs in the database.
     const sortedTxs = result.docs.sort(function(a, b) {
       return a.timestamp - b.timestamp
@@ -112,18 +141,29 @@ function main(): void {
       res.status(400).send(`Missing Request fields.`)
       return
     }
+    const searchedAppId = apps.find(app => app._id === req.query.apiKey)
+    if (typeof searchedAppId === 'undefined') {
+      res.status(404).send('Api Key has no match.')
+      return
+    }
+    const appId = searchedAppId.appId
     let result
     try {
-      const query = `${queryResult.appId}_${queryResult.pluginId}:${queryResult.orderId}`
+      const query = `${appId}_${queryResult.pluginId}:${queryResult.orderId}`
       const dbResult = await reportsTransactions.get(query.toLowerCase())
       result = asDbTx(dbResult)
     } catch (e) {
       console.log(e)
-      res.status(404).send('Could not find Transaction.')
-      return
+      if (e.code === 'ECONNREFUSED') {
+        res.status(500).send(`Internal Server Error.`)
+        return
+      } else {
+        res.status(404).send(`Could not find transaction.`)
+        return
+      }
     }
     const out = {
-      appId: queryResult.appId,
+      appId: appId,
       pluginId: queryResult.pluginId,
       orderId: queryResult.orderId,
       usdValue: undefined
@@ -134,8 +174,8 @@ function main(): void {
     res.json(out)
   })
 
-  app.listen(3000, function() {
+  app.listen(config.httpPort, function() {
     console.log('Server started on Port 3000')
   })
 }
-main()
+main().catch(e => console.log(e))

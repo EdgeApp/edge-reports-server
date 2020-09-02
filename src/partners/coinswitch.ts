@@ -8,6 +8,7 @@ import {
   asUnknown
 } from 'cleaners'
 import fetch from 'node-fetch'
+import { datelog } from '../queryEngine'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
@@ -66,7 +67,7 @@ export async function queryCoinSwitch(
       const result = await fetch(url, { method: 'GET', headers: headers })
       jsonObj = asCoinSwitchResult(await result.json())
     } catch (e) {
-      console.log(e)
+      datelog(e)
       break
     }
     const txs = jsonObj.data.items

@@ -30,7 +30,7 @@ const asApp = asObject({
 })
 const asApps = asArray(asApp)
 
-const datelog = function(...args: any): void {
+export const datelog = function (...args: any): void {
   const date = new Date().toISOString()
   console.log(date, ...args)
 }
@@ -96,16 +96,27 @@ export async function queryEngine(): Promise<void> {
     }
     const rawApps = await dbApps.find(query)
     const apps = asApps(rawApps.docs)
-    const appAndPluginId: Array<Promise<string>> = []
+    const promiseArray: Array<Promise<string>> = []
+    let remainingPlugins: String[] = []
     // loop over every app
     for (const app of apps) {
       // loop over every pluginId that app uses
       for (const pluginId in app.pluginIds) {
-        appAndPluginId.push(runPlugin(app, pluginId, dbProgress))
+        remainingPlugins.push(pluginId)
+        promiseArray.push(
+          runPlugin(app, pluginId, dbProgress).finally(() => {
+            remainingPlugins = remainingPlugins.filter(
+              string => string !== pluginId
+            )
+            if (remainingPlugins.length > 0) {
+              datelog('REMAINING PLUGINS:', remainingPlugins.join(', '))
+            }
+          })
+        )
       }
     }
     // await the conclusion of every app + plugin combo created above.
-    const partnerStatus = await Promise.all(appAndPluginId)
+    const partnerStatus = await Promise.all(promiseArray)
     // log how long every app + plugin took to run
     datelog(partnerStatus)
     datelog(`Snoozing for ${QUERY_FREQ_MS} milliseconds`)
@@ -175,7 +186,7 @@ async function runPlugin(
     const plugin = partners.find(partner => partner.pluginId === pluginId)
     // if current plugin is not within the list of partners skip to next
     if (plugin === undefined) {
-      errorText = `Plugin Name ${pluginId} for app: ${app.appId}not found`
+      errorText = `Plugin Name ${pluginId} for app: ${app.appId} not found`
       datelog(errorText)
       return errorText
     }

@@ -7,6 +7,7 @@ import {
   asUnknown
 } from 'cleaners'
 import fetch from 'node-fetch'
+import { datelog } from '../queryEngine'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
@@ -56,7 +57,7 @@ export async function queryChangeNow(
       })
       jsonObj = asChangeNowResult(await result.json())
     } catch (e) {
-      console.log(e)
+      datelog(e)
       break
     }
     const txs = jsonObj
@@ -91,7 +92,7 @@ export async function queryChangeNow(
       }
     }
     if (txs.length < LIMIT) {
-      // console.log('length < 100, stopping query')
+      // datelog('length < 100, stopping query')
       break
     }
     offset += LIMIT

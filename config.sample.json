@@ -1,3 +1,4 @@
 {
-  "couchDbFullpath": "http://admin:admin@localhost:5984"
+  "couchDbFullpath": "http://admin:admin@localhost:5984",
+  "httpPort": "8000"
 }

@@ -15,6 +15,7 @@
     "precommit": "lint-staged && npm run prepare",
     "prepare": "npm-run-all clean -p build.*",
     "start": "node -r sucrase/register src/indexEngine.ts",
+    "start:rates": "node -r sucrase/register src/indexRatesEngine.ts",
     "start:api": "node -r sucrase/register src/indexApi.ts",
     "test": "mocha -r sucrase/register 'test/**/*.test.ts'",
     "demo": "parcel serve src/demo/index.html --open",

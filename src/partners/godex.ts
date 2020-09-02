@@ -1,5 +1,6 @@
 import { asArray, asObject, asOptional, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
+import { datelog } from '../queryEngine'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
@@ -56,7 +57,7 @@ export async function queryGodex(
       const result = await fetch(url, { method: 'GET', headers: headers })
       resultJSON = await result.json()
     } catch (e) {
-      console.log(e)
+      datelog(e)
     }
     const txs = asGodexResult(resultJSON)
 
@@ -65,7 +66,7 @@ export async function queryGodex(
       try {
         tx = asGodexTx(rawtx)
       } catch (e) {
-        console.log(e)
+        datelog(e)
         throw e
       }
       if (tx.status === 'success') {
