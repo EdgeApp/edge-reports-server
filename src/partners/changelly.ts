@@ -1,10 +1,11 @@
 import Changelly from 'api-changelly/lib.js'
 import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
-import { datelog } from '../queryEngine'
 
+import { datelog } from '../queryEngine'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
 const asChangellyTx = asObject({
+  id: asString,
   payinHash: asString,
   payoutHash: asString,
   payinAddress: asString,
@@ -117,7 +118,7 @@ export async function queryChangelly(
         const tx = asChangellyTx(rawTx)
         const ssTx: StandardTx = {
           status: 'complete',
-          orderId: tx.payinHash,
+          orderId: tx.id,
           depositTxid: tx.payinHash,
           depositAddress: tx.payinAddress,
           depositCurrency: tx.currencyFrom.toUpperCase(),
@@ -137,9 +138,8 @@ export async function queryChangelly(
         }
         if (tx.createdAt < latestTimeStamp - QUERY_LOOKBACK && done === false) {
           datelog(
-            `Changelly done: date ${tx.createdAt} < ${
-              latestTimeStamp - QUERY_LOOKBACK
-            }`
+            `Changelly done: date ${tx.createdAt} < ${latestTimeStamp -
+              QUERY_LOOKBACK}`
           )
           done = true
         }

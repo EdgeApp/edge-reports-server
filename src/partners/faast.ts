@@ -1,11 +1,12 @@
 import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import crypto from 'crypto'
 import fetch from 'node-fetch'
-import { datelog } from '../queryEngine'
 
+import { datelog } from '../queryEngine'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
 const asFaastTx = asObject({
+  swap_id: asString,
   order_id: asString,
   transaction_id: asString,
   deposit_address: asString,
@@ -79,7 +80,7 @@ export async function queryFaast(
         const timestamp = date.getTime() / 1000
         const ssTx: StandardTx = {
           status: 'complete',
-          orderId: tx.order_id,
+          orderId: tx.swap_id,
           depositTxid: undefined,
           depositAddress: tx.deposit_address,
           depositCurrency: tx.deposit_currency.toUpperCase(),

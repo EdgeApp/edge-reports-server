@@ -1,10 +1,11 @@
 import { asArray, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
-import { datelog } from '../queryEngine'
 
+import { datelog } from '../queryEngine'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
 const asSwitchainTx = asObject({
+  id: asString,
   status: asString,
   appId: asString,
   createdAt: asString,
@@ -73,7 +74,7 @@ export async function querySwitchain(
         const pair = tx.pair.split('-')
         const ssTx: StandardTx = {
           status: 'complete',
-          orderId: tx.depositTxId,
+          orderId: tx.id,
           depositTxid: tx.depositTxId,
           depositAddress: tx.depositAddress,
           depositCurrency: pair[0].toUpperCase(),

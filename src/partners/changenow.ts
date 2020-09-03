@@ -7,11 +7,12 @@ import {
   asUnknown
 } from 'cleaners'
 import fetch from 'node-fetch'
-import { datelog } from '../queryEngine'
 
+import { datelog } from '../queryEngine'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
 const asChangeNowTx = asObject({
+  id: asString,
   updatedAt: asString,
   payinHash: asString,
   payoutHash: asString,
@@ -74,7 +75,7 @@ export async function queryChangeNow(
         const timestamp = date.getTime() / 1000
         const ssTx: StandardTx = {
           status: 'complete',
-          orderId: tx.payinHash,
+          orderId: tx.id,
           depositTxid: tx.payinHash,
           depositAddress: tx.payinAddress,
           depositCurrency: tx.fromCurrency.toUpperCase(),
