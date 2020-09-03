@@ -89,7 +89,7 @@ export async function queryBanxa(
           `BANXA: Response code ${status}. Retrying after ${delay /
             1000} second snooze...`
         )
-        snooze(delay)
+        await snooze(delay)
         attempt++
         if (attempt === MAX_ATTEMPTS) {
           break
