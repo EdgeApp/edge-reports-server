@@ -1,8 +1,8 @@
 import { asArray, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
 
-import { datelog } from '../queryEngine'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import { datelog } from '../util'
 
 const asSwitchainTx = asObject({
   id: asString,

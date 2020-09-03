@@ -1,6 +1,6 @@
 import { asArray, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
-import { datelog } from '../queryEngine'
+import { datelog } from '../util'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 

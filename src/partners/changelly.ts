@@ -1,8 +1,8 @@
 import Changelly from 'api-changelly/lib.js'
 import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 
-import { datelog } from '../queryEngine'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import { datelog } from '../util'
 
 const asChangellyTx = asObject({
   id: asString,

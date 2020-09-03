@@ -1,8 +1,7 @@
 import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
-import { datelog } from '../queryEngine'
 import crypto from 'crypto'
 import fetch from 'node-fetch'
-import { snooze } from '../util'
+import { datelog, snooze } from '../util'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 

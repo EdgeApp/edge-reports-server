@@ -1,13 +1,10 @@
 import { asArray, asObject, asUnknown } from 'cleaners'
+import { asDbTx, DbTx } from './types'
 import nano from 'nano'
+import config from '../config.json'
+import { datelog } from './util'
 import fetch from 'node-fetch'
 
-import config from '../config.json'
-import { asDbTx, DbTx } from './types'
-const datelog = function(...args: any): void {
-  const date = new Date().toISOString()
-  console.log(date, ...args)
-}
 const nanoDb = nano(config.couchDbFullpath)
 const QUERY_FREQ_MS = 1000
 const QUERY_LIMIT = 50

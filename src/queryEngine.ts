@@ -1,7 +1,9 @@
 import { asArray, asMap, asObject, asString } from 'cleaners'
+import { asProgressSettings, DbTx, StandardTx } from './types'
 import nano from 'nano'
-
 import config from '../config.json'
+import { datelog } from './util'
+
 import { banxa } from './partners/banxa'
 import { bitrefill } from './partners/bitrefill'
 import { bitsofgold } from './partners/bitsofgold'
@@ -21,19 +23,12 @@ import { switchain } from './partners/switchain'
 import { totle } from './partners/totle'
 import { transak } from './partners/transak'
 import { wyre } from './partners/wyre'
-// Cleaners
-import { asProgressSettings, DbTx, StandardTx } from './types'
 
 const asApp = asObject({
   appId: asString,
   pluginIds: asMap(asMap(asString))
 })
 const asApps = asArray(asApp)
-
-export const datelog = function (...args: any): void {
-  const date = new Date().toISOString()
-  console.log(date, ...args)
-}
 
 const nanoDb = nano(config.couchDbFullpath)
 const CURRENCY_CONVERSION = {
