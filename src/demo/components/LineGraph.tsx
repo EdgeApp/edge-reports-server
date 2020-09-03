@@ -120,15 +120,42 @@ const LineGraph: any = (props: {
       pointLabelYOffset={-12}
       useMesh
       tooltip={input => {
-        const style = {
-          backgroundColor: 'rgb(255,255,255)'
+        const verticalBlockHolder = {
+          display: 'flex',
+          flexDirection: 'column',
+          borderRadius: '2px',
+          backgroundColor: 'rgb(255,255,255)',
+          border: '1px solid #BFBFBF'
+        }
+        const horizontalBlockHolder = {
+          display: 'flex',
+          flexDirection: 'row'
+        }
+        const blocks = {
+          width: '10px',
+          height: '10px'
+        }
+        const styleTwo = {
+          backgroundColor: 'rgb(255,255,255)',
+          fontFamily: 'Quicksand',
+          fontStyle: 'normal',
+          fontWeight: 'normal',
+          fontSize: '16px'
         }
         const usdAmount = input.point.data.y.toFixed(2)
         return (
-          <div style={style}>
-            <div>{`Date: ${input.point.data.x}`}</div>
-            <div>{`USD Value: ${usdAmount}`}</div>
-            <div>{`Transactions: ${input.point.data.numTxs}`}</div>
+          <div style={verticalBlockHolder}>
+            <div style={blocks} />
+            <div style={horizontalBlockHolder}>
+              <div style={blocks} />
+              <div style={styleTwo}>
+                <div>{`Date: ${input.point.data.x}`}</div>
+                <div>{`USD Value: $${usdAmount}`}</div>
+                <div>{`Transactions: ${input.point.data.numTxs}`}</div>
+              </div>
+              <div style={blocks} />
+            </div>
+            <div style={blocks} />
           </div>
         )
       }}

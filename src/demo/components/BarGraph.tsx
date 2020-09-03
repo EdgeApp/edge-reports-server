@@ -121,9 +121,16 @@ const BarGraph: any = (props: {
         labelSkipHeight={12}
         labelTextColor={{ from: 'color', modifiers: [['darker', 1.6]] }}
         tooltip={input => {
+          const styleTwo = {
+            backgroundColor: 'rgb(255,255,255)',
+            fontFamily: 'Quicksand',
+            fontStyle: 'normal',
+            fontWeight: 'normal',
+            fontSize: '16px'
+          }
           const usdAmount = input.value.toFixed(2)
           return (
-            <div>
+            <div style={styleTwo}>
               <div>{`PluginId: ${input.id}`}</div>
               <div>{`Date: ${input.indexValue}`}</div>
               <div>{`USD Value: $${usdAmount}`}</div>
