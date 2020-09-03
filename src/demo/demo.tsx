@@ -15,6 +15,7 @@ import logo from './images/logo.png'
 interface Bucket {
   start: number
   usdValue: number
+  numTxs: number
   isoDate: string
   currencyCodes: { [currencyCode: string]: number }
   currencyPairs: { [currencyPair: string]: number }
@@ -25,6 +26,7 @@ interface AnalyticsResult {
     hour: Bucket[]
     day: Bucket[]
     month: Bucket[]
+    numAllTxs: number
   }
   app: string
   pluginId: string
@@ -77,27 +79,30 @@ class App extends Component<
       },
       exchangeType: 'All',
       colorPalette: [
-        '#000000',
-        '#40ADB5',
-        '#2FA849',
-        '#ff6f00',
-        '#6200ff',
-        '#fbff00',
-        '#98f5cd',
-        '#ff00fb',
-        '#ff0000',
-        '#d4ff00',
-        '#001eff',
-        '#525956',
-        '#f5ab98',
-        '#6b4d6b',
-        '#a5adb5',
-        '#193b1b',
-        '#575417',
-        '#1c1724',
-        '#ffb300',
-        '#00ff1a',
-        '#00b7ff'
+        '#004c6d',
+        '#06759d',
+        '#06a1ce',
+        '#00cfff',
+        '#dc143c',
+        '#ed5e67',
+        '#f99093',
+        '#ffbec0',
+        '#006400',
+        '#4d953c',
+        '#86c972',
+        '#c1ffaa',
+        '#ff8c00',
+        '#fdb03b',
+        '#fccf6a',
+        '#ffeb9c',
+        '#4b0082',
+        '#8d4da9',
+        '#c892d2',
+        '#ffdaff',
+        '#8b4513',
+        '#b17f49',
+        '#d6b989',
+        '#fff3d0'
       ],
       timePeriod: 'day',
       data: []
@@ -267,7 +272,7 @@ class App extends Component<
       'simplex',
       'wyre'
     ]
-    const url = `http://localhost:3000/v1/getPluginIds?appId=${this.state.appId}`
+    const url = `http://localhost:8000/v1/getPluginIds?appId=${this.state.appId}`
     const response = await fetch(url)
     const json = await response.json()
     const existingPartners = json.filter(pluginId =>
@@ -282,15 +287,17 @@ class App extends Component<
     end: number
   ): Promise<void> {
     const urls: string[] = []
+    const startDate = new Date(start)
+    const endDate = new Date(end)
     for (const pluginId of pluginIds) {
-      const url = `http://localhost:3000/v1/analytics/?start=${start}&end=${end}&appId=${this.state.appId}&pluginId=${pluginId}&timePeriod=monthdayhour`
+      const url = `http://localhost:8000/v1/analytics/?start=${startDate}&end=${endDate}&appId=${this.state.appId}&pluginId=${pluginId}&timePeriod=monthdayhour`
       urls.push(url)
     }
     const promises = urls.map(url => fetch(url).then(y => y.json()))
     const newData = await Promise.all(promises)
     // discard all entries with 0 usdValue on every bucket
     const trimmedData = newData.filter(data => {
-      if (Math.max(...data.result.month.map(x => x.usdValue)) !== 0) {
+      if (data.result.numAllTxs > 0) {
         return data
       }
     })

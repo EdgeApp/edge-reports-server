@@ -4,6 +4,7 @@ import React from 'react'
 interface Bucket {
   start: number
   usdValue: number
+  numTxs: number
   isoDate: string
   currencyCodes: { [currencyCode: string]: number }
   currencyPairs: { [currencyPair: string]: number }
@@ -14,6 +15,7 @@ interface AnalyticsResult {
     hour: Bucket[]
     day: Bucket[]
     month: Bucket[]
+    numAllTxs: number
   }
   app: string
   pluginId: string
@@ -47,7 +49,8 @@ const LineGraph: any = (props: {
       }
       return {
         x: date,
-        y: bucket.usdValue
+        y: bucket.usdValue,
+        numTxs: bucket.numTxs
       }
     }
   )
@@ -116,6 +119,19 @@ const LineGraph: any = (props: {
       pointLabel="y"
       pointLabelYOffset={-12}
       useMesh
+      tooltip={input => {
+        const style = {
+          backgroundColor: 'rgb(255,255,255)'
+        }
+        const usdAmount = input.point.data.y.toFixed(2)
+        return (
+          <div style={style}>
+            <div>{`Date: ${input.point.data.x}`}</div>
+            <div>{`USD Value: ${usdAmount}`}</div>
+            <div>{`Transactions: ${input.point.data.numTxs}`}</div>
+          </div>
+        )
+      }}
       animate={false}
     />
   )

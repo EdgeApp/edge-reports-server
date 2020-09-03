@@ -4,6 +4,7 @@ import React from 'react'
 interface Bucket {
   start: number
   usdValue: number
+  numTxs: number
   isoDate: string
   currencyCodes: { [currencyCode: string]: number }
   currencyPairs: { [currencyPair: string]: number }
@@ -14,6 +15,7 @@ interface AnalyticsResult {
     hour: Bucket[]
     day: Bucket[]
     month: Bucket[]
+    numAllTxs: number
   }
   app: string
   pluginId: string
@@ -63,6 +65,7 @@ const BarGraph: any = (props: {
         rawData[i].pluginId.charAt(0).toUpperCase() +
         rawData[i].pluginId.slice(1)
       data[j][graphName] = rawData[i].result[timePeriod][j].usdValue
+      data[j][`${graphName}NumTxs`] = rawData[i].result[timePeriod][j].numTxs
       data[j][`${graphName}Color`] = props.colors[i]
     }
   }
@@ -117,6 +120,17 @@ const BarGraph: any = (props: {
         labelSkipWidth={12}
         labelSkipHeight={12}
         labelTextColor={{ from: 'color', modifiers: [['darker', 1.6]] }}
+        tooltip={input => {
+          const usdAmount = input.value.toFixed(2)
+          return (
+            <div>
+              <div>{`PluginId: ${input.id}`}</div>
+              <div>{`Date: ${input.indexValue}`}</div>
+              <div>{`USD Value: $${usdAmount}`}</div>
+              <div>{`Transactions: ${input.data[`${input.id}NumTxs`]}`}</div>
+            </div>
+          )
+        }}
         animate={false}
       />
     </>
