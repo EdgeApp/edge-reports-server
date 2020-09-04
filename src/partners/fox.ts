@@ -1,6 +1,6 @@
 import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
-import { datelog } from '../queryEngine'
+import { datelog } from '../util'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
@@ -13,6 +13,10 @@ const asFoxTx = asObject({
   destinationCoinAmount: asNumber,
   destinationAddress: asObject({ address: asString }),
   createdAt: asNumber
+})
+
+const asFoxRawTx = asObject({
+  status: asString
 })
 
 const asFoxTxs = asObject({
@@ -77,35 +81,37 @@ export async function queryFox(
     }
 
     for (const rawtx of txs.data.items) {
-      let tx
-      try {
-        tx = asFoxTx(rawtx)
-      } catch (e) {
-        datelog(e)
-        throw e
-      }
-      const ssTx: StandardTx = {
-        status: 'complete',
-        orderId: tx.orderId,
-        depositTxid: undefined,
-        depositAddress: tx.exchangeAddress.address,
-        depositCurrency: tx.depositCoin.toUpperCase(),
-        depositAmount: tx.depositCoinAmount,
-        payoutTxid: tx.outputTransactionHash,
-        payoutAddress: tx.destinationAddress.address,
-        payoutCurrency: tx.destinationCoin.toUpperCase(),
-        payoutAmount: tx.destinationCoinAmount,
-        timestamp: tx.createdAt / 1000,
-        isoDate: new Date(tx.createdAt).toISOString(),
-        usdValue: undefined,
-        rawTx: rawtx
-      }
-      ssFormatTxs.push(ssTx)
-      if (tx.createdAt > newestTimestamp) {
-        newestTimestamp = tx.createdAt
-      }
-      if (lastCheckedTimestamp > tx.createdAt) {
-        done = true
+      if (asFoxRawTx(rawtx).status === 'complete') {
+        let tx
+        try {
+          tx = asFoxTx(rawtx)
+        } catch (e) {
+          datelog(e)
+          throw e
+        }
+        const ssTx: StandardTx = {
+          status: 'complete',
+          orderId: tx.orderId,
+          depositTxid: undefined,
+          depositAddress: tx.exchangeAddress.address,
+          depositCurrency: tx.depositCoin.toUpperCase(),
+          depositAmount: tx.depositCoinAmount,
+          payoutTxid: tx.outputTransactionHash,
+          payoutAddress: tx.destinationAddress.address,
+          payoutCurrency: tx.destinationCoin.toUpperCase(),
+          payoutAmount: tx.destinationCoinAmount,
+          timestamp: tx.createdAt / 1000,
+          isoDate: new Date(tx.createdAt).toISOString(),
+          usdValue: undefined,
+          rawTx: rawtx
+        }
+        ssFormatTxs.push(ssTx)
+        if (tx.createdAt > newestTimestamp) {
+          newestTimestamp = tx.createdAt
+        }
+        if (lastCheckedTimestamp > tx.createdAt) {
+          done = true
+        }
       }
     }
 

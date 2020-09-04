@@ -1,8 +1,8 @@
 import { asArray, asObject, asOptional, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
 
-import { datelog } from '../queryEngine'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import { datelog } from '../util'
 
 // CLEANER that verfies the data fetched matches the given format and data types
 const asGodexTx = asObject({

@@ -1,8 +1,7 @@
 import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
-import { datelog } from '../queryEngine'
 import crypto from 'crypto'
 import fetch from 'node-fetch'
-import sleep from 'sleep'
+import { datelog, snooze } from '../util'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
@@ -85,11 +84,12 @@ export async function queryBanxa(
 
       // Handle the situation where the API is rate limiting the requests
       if (status !== 200) {
-        const delay = 2 * attempt
+        const delay = 2000 * attempt
         datelog(
-          `BANXA: Response code ${status}. Retrying after ${delay} second sleep...`
+          `BANXA: Response code ${status}. Retrying after ${delay /
+            1000} second snooze...`
         )
-        sleep.sleep(delay)
+        await snooze(delay)
         attempt++
         if (attempt === MAX_ATTEMPTS) {
           break
@@ -143,7 +143,10 @@ function callBanxaAPI(
   const text = `GET\n${apiQuery}\n${nonce}`
   const secret = apiKey
   const key = 'EDGE'
-  const hmac = crypto.createHmac('sha256', secret).update(text).digest('hex')
+  const hmac = crypto
+    .createHmac('sha256', secret)
+    .update(text)
+    .digest('hex')
   const authHeader = `${key}:${hmac}:${nonce}`
 
   const headers = {

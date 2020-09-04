@@ -2,8 +2,8 @@ import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import crypto from 'crypto'
 import fetch from 'node-fetch'
 
-import { datelog } from '../queryEngine'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import { datelog } from '../util'
 
 const asFaastTx = asObject({
   swap_id: asString,

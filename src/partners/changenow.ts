@@ -8,8 +8,8 @@ import {
 } from 'cleaners'
 import fetch from 'node-fetch'
 
-import { datelog } from '../queryEngine'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import { datelog } from '../util'
 
 const asChangeNowTx = asObject({
   id: asString,

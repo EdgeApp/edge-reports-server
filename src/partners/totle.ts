@@ -3,7 +3,7 @@ import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
 import Web3 from 'web3'
 
-import { datelog } from '../queryEngine'
+import { datelog } from '../util'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
 const asCurrentBlockResult = asNumber

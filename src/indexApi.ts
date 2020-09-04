@@ -61,7 +61,7 @@ async function main(): Promise<void> {
   const rawApps = await reportsApps.find(query)
   const apps = asApps(rawApps.docs)
 
-  app.get(`/v1/analytics/`, async function (req, res) {
+  app.get(`/v1/analytics/`, async function(req, res) {
     let analyticsQuery: ReturnType<typeof asAnalyticsReq>
     try {
       analyticsQuery = asAnalyticsReq(req.query)
@@ -71,8 +71,8 @@ async function main(): Promise<void> {
     }
     let { start, end, appId, pluginId, timePeriod } = analyticsQuery
     timePeriod = timePeriod.toLowerCase()
-    const queryStart = new Date(start).getTime()
-    const queryEnd = new Date(end).getTime()
+    const queryStart = new Date(start).getTime() / 1000
+    const queryEnd = new Date(end).getTime() / 1000
     if (
       !(queryStart > 0) ||
       !(queryEnd > 0) ||
@@ -110,13 +110,8 @@ async function main(): Promise<void> {
       result = asDbReq(r)
     } catch (e) {
       console.log(e)
-      if (e.code === 'ECONNREFUSED') {
-        res.status(500).send(`Internal Server Error.`)
-        return
-      } else {
-        res.status(400).send(`Database Query returned bad results.`)
-        return
-      }
+      res.status(500).send(`Internal server error.`)
+      return
     }
     // TODO: put the sort within the query, need to add default indexs in the database.
     const sortedTxs = result.docs.sort(function(a, b) {
@@ -154,11 +149,11 @@ async function main(): Promise<void> {
       result = asDbTx(dbResult)
     } catch (e) {
       console.log(e)
-      if (e.code === 'ECONNREFUSED') {
-        res.status(500).send(`Internal Server Error.`)
+      if (e != null && e.error === 'not_found') {
+        res.status(404).send(`Could not find transaction.`)
         return
       } else {
-        res.status(404).send(`Could not find transaction.`)
+        res.status(500).send(`Internal Server Error.`)
         return
       }
     }
@@ -175,7 +170,7 @@ async function main(): Promise<void> {
   })
 
   app.listen(config.httpPort, function() {
-    console.log('Server started on Port 3000')
+    console.log(`Server started on Port ${config.httpPort}`)
   })
 }
 main().catch(e => console.log(e))

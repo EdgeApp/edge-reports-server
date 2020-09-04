@@ -1,13 +1,10 @@
 import { asArray, asObject, asUnknown } from 'cleaners'
+import { asDbTx, DbTx } from './types'
 import nano from 'nano'
+import config from '../config.json'
+import { datelog } from './util'
 import fetch from 'node-fetch'
 
-import config from '../config.json'
-import { asDbTx, DbTx } from './types'
-const datelog = function(...args: any): void {
-  const date = new Date().toISOString()
-  console.log(date, ...args)
-}
 const nanoDb = nano(config.couchDbFullpath)
 const QUERY_FREQ_MS = 1000
 const QUERY_LIMIT = 50
@@ -70,8 +67,9 @@ export async function ratesEngine(): Promise<void> {
     datelog(
       'Finished updating all usdValues, bulk writing back to the database'
     )
+    const successfulDocs = result.docs.filter(doc => doc._id !== undefined)
     try {
-      await dbTransactions.bulk({ docs: result.docs })
+      await dbTransactions.bulk({ docs: successfulDocs })
     } catch (e) {
       datelog('Error doing bulk usdValue insert', e)
       throw e
@@ -157,6 +155,7 @@ export async function updateTxValues(transaction: DbTx): Promise<void> {
     datelog(`SUCCESS id:${transaction._id} updated`)
   } else {
     datelog(`FAIL    id:${transaction._id} not updated`)
+    transaction._id = undefined
   }
 }
 

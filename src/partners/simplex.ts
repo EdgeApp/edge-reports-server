@@ -22,6 +22,10 @@ const asSimplexTx = asObject({
   currency: asString
 })
 
+const asSimplexRawTx = asObject({
+  status_name: asString
+})
+
 const asSimplexResult = asObject({
   data: asObject({
     data: asArray(asUnknown),
@@ -89,31 +93,33 @@ export async function querySimplex(
     }
 
     const txs = csvData.data.data
-    for (const rawtx of txs) {
-      const tx = asSimplexTx(rawtx)
-      const timestamp = tx.created_at
-      const ssTx = {
-        status: 'complete',
-        orderId: tx.order_id,
-        depositTxid: undefined,
-        depositAddress: undefined,
-        depositCurrency: tx.currency,
-        depositAmount: parseFloat(tx.fiat_total_amount),
-        payoutTxid: undefined,
-        payoutAddress: undefined,
-        payoutCurrency: tx.crypto_currency,
-        payoutAmount: parseFloat(tx.amount_crypto),
-        timestamp,
-        isoDate: new Date(timestamp * 1000).toISOString(),
-        usdValue: parseFloat(tx.amount_usd),
-        rawTx: rawtx
-      }
-      ssFormatTxs.push(ssTx)
+    for (const rawTx of txs) {
+      if (asSimplexRawTx(rawTx).status_name === 'approved') {
+        const tx = asSimplexTx(rawTx)
+        const timestamp = tx.created_at
+        const ssTx = {
+          status: 'complete',
+          orderId: tx.order_id,
+          depositTxid: undefined,
+          depositAddress: undefined,
+          depositCurrency: tx.currency,
+          depositAmount: parseFloat(tx.fiat_total_amount),
+          payoutTxid: undefined,
+          payoutAddress: undefined,
+          payoutCurrency: tx.crypto_currency,
+          payoutAmount: parseFloat(tx.amount_crypto),
+          timestamp,
+          isoDate: new Date(timestamp * 1000).toISOString(),
+          usdValue: parseFloat(tx.amount_usd),
+          rawTx
+        }
+        ssFormatTxs.push(ssTx)
 
-      newestTimestamp =
-        timestamp > newestTimestamp ? timestamp : newestTimestamp
-      if (lastTimestamp > timestamp) {
-        done = true
+        newestTimestamp =
+          timestamp > newestTimestamp ? timestamp : newestTimestamp
+        if (lastTimestamp > timestamp) {
+          done = true
+        }
       }
     }
 
