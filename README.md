@@ -43,7 +43,7 @@ You can also build the server code by running `yarn build`, which puts its outpu
 ```sh
 
 # install forever-service:
-sudo yarn add global forever-service
+sudo npm i -global forever-service
 
 # install:
 sudo forever-service install reportsQuery --script lib/indexEngine.js --start
