@@ -41,6 +41,10 @@ To launch the reports server, just type `yarn start`.
 You can also build the server code by running `yarn build`, which puts its output in the `lib` folder. You can then use `forever-service` or similar tools to install the software on your server machine.
 
 ```sh
+
+# install forever-service:
+sudo yarn add global forever-service
+
 # install:
 sudo forever-service install reportsQuery --script lib/indexEngine.js --start
 sudo forever-service install reportsRates --script lib/indexRatesEngine.js --start
