@@ -42,14 +42,22 @@ You can also build the server code by running `yarn build`, which puts its outpu
 
 ```sh
 # install:
-sudo forever-service install reportsServer --script lib/index.js --start
+sudo forever-service install reportsQuery --script lib/indexEngine.js --start
+sudo forever-service install reportsRates --script lib/indexRatesEngine.js --start
+sudo forever-service install reportsApi --script lib/indexApi.js --start
 
 # manage:
-sudo service reportsServer restart
-sudo service reportsServer stop
+sudo service reportsQuery restart
+sudo service reportsQuery stop
+sudo service reportsRates restart
+sudo service reportsRates stop
+sudo service reportsApi restart
+sudo service reportsApi stop
 
 # uninstall:
-sudo forever-service delete reportsServer
+sudo forever-service delete reportsQuery
+sudo forever-service delete reportsRates
+sudo forever-service delete reportsApi
 ```
 
 ## Demo app
