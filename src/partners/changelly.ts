@@ -154,6 +154,7 @@ export async function queryChangelly(
               `Changelly done: date ${tx.createdAt} < ${latestTimeStamp -
                 QUERY_LOOKBACK}`
             )
+            offset = 0
             done = true
           }
         }
@@ -162,7 +163,7 @@ export async function queryChangelly(
     }
   } catch {
     datelog(`ERROR: Exiting early at offset ${offset}.`)
-    offset -= 300
+    offset -= LIMIT
     offset = offset > 0 ? offset : 0
     newLatestTimeStamp = 0
   }
