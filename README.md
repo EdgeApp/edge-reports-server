@@ -43,9 +43,11 @@ You can also build the server code by running `yarn build`, which puts its outpu
 ```sh
 
 # install forever-service:
+sudo npm i -global forever
 sudo npm i -global forever-service
 
 # install:
+cd edge-reports-server
 sudo forever-service install reportsQuery --script lib/indexEngine.js --start
 sudo forever-service install reportsRates --script lib/indexRatesEngine.js --start
 sudo forever-service install reportsApi --script lib/indexApi.js --start
