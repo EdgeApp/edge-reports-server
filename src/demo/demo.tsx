@@ -287,8 +287,8 @@ class App extends Component<
     end: number
   ): Promise<void> {
     const urls: string[] = []
-    const startDate = new Date(start)
-    const endDate = new Date(end)
+    const startDate = new Date(start * 1000).toISOString()
+    const endDate = new Date(end * 1000).toISOString()
     for (const pluginId of pluginIds) {
       const url = `http://localhost:8000/v1/analytics/?start=${startDate}&end=${endDate}&appId=${this.state.appId}&pluginId=${pluginId}&timePeriod=monthdayhour`
       urls.push(url)
