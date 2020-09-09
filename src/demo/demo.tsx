@@ -329,25 +329,34 @@ class App extends Component<
       )
     })
 
-    const lineGraphs = this.state.data.map((object, key) => {
-      return (
-        <div key={key}>
-          {this.state.partnerTypes[object.pluginId] ===
-            this.state.exchangeType || this.state.exchangeType === 'All' ? (
-            <div className="legend-holder">
-              <div className="legend-position">{barGraphStyles[key]}</div>
-              <div className="graphHolder">
-                <LineGraph
-                  analyticsRequest={object}
-                  timePeriod={this.state.timePeriod}
-                  color={this.state.colorPalette[key]}
-                />
+    const lineGraphs = this.state.data
+      .filter(obj => {
+        if (this.state.exchangeType === 'All') {
+          return obj
+        }
+        if (this.state.partnerTypes[obj.pluginId] === this.state.exchangeType) {
+          return obj
+        }
+      })
+      .map((object, key) => {
+        return (
+          <div key={key}>
+            {this.state.partnerTypes[object.pluginId] ===
+              this.state.exchangeType || this.state.exchangeType === 'All' ? (
+              <div className="legend-holder">
+                <div className="legend-position">{barGraphStyles[key]}</div>
+                <div className="graphHolder">
+                  <LineGraph
+                    analyticsRequest={object}
+                    timePeriod={this.state.timePeriod}
+                    color={this.state.colorPalette[key]}
+                  />
+                </div>
               </div>
-            </div>
-          ) : null}
-        </div>
-      )
-    })
+            ) : null}
+          </div>
+        )
+      })
 
     let tpWidth
     let tpPosition
