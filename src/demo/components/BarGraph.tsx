@@ -124,8 +124,8 @@ const BarGraph: any = (props: {
           const styleTwo = {
             backgroundColor: 'rgb(255,255,255)',
             fontFamily: 'Quicksand',
-            fontStyle: 'normal',
-            fontWeight: 'normal',
+            fontStyle: 'normal' as 'normal',
+            fontWeight: 'normal' as 'normal',
             fontSize: '16px'
           }
           const usdAmount = input.value.toFixed(2)

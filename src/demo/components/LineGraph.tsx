@@ -121,15 +121,15 @@ const LineGraph: any = (props: {
       useMesh
       tooltip={input => {
         const verticalBlockHolder = {
-          display: 'flex',
-          flexDirection: 'column',
+          display: 'flex' as 'flex',
+          flexDirection: 'column' as 'column',
           borderRadius: '2px',
           backgroundColor: 'rgb(255,255,255)',
           border: '1px solid #BFBFBF'
         }
         const horizontalBlockHolder = {
-          display: 'flex',
-          flexDirection: 'row'
+          display: 'flex' as 'flex',
+          flexDirection: 'row' as 'row'
         }
         const blocks = {
           width: '10px',
@@ -138,11 +138,14 @@ const LineGraph: any = (props: {
         const styleTwo = {
           backgroundColor: 'rgb(255,255,255)',
           fontFamily: 'Quicksand',
-          fontStyle: 'normal',
-          fontWeight: 'normal',
+          fontStyle: 'normal' as 'normal',
+          fontWeight: 'normal' as 'normal',
           fontSize: '16px'
         }
-        const usdAmount = input.point.data.y.toFixed(2)
+        let usdAmount
+        if (typeof input.point.data.y === 'number') {
+          usdAmount = input.point.data.y.toFixed(2)
+        }
         return (
           <div style={verticalBlockHolder}>
             <div style={blocks} />
@@ -151,7 +154,7 @@ const LineGraph: any = (props: {
               <div style={styleTwo}>
                 <div>{`Date: ${input.point.data.x}`}</div>
                 <div>{`USD Value: $${usdAmount}`}</div>
-                <div>{`Transactions: ${input.point.data.numTxs}`}</div>
+                {/* <div>`Transactions: ${input.point.data.numTxs}`</div> */}
               </div>
               <div style={blocks} />
             </div>
