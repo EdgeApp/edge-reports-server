@@ -9,8 +9,16 @@ import DatePicker from 'react-datepicker'
 
 import BarGraph from './components/BarGraph'
 import LineGraph from './components/LineGraph'
+// @ts-ignore
 import calendar from './images/calendar.png'
+// @ts-ignore
 import logo from './images/logo.png'
+
+const PRODUCTION = true
+let API_PREFIX = 'localhost:8000'
+if (PRODUCTION === true) {
+  API_PREFIX = ''
+}
 
 interface Bucket {
   start: number
@@ -272,7 +280,7 @@ class App extends Component<
       'simplex',
       'wyre'
     ]
-    const url = `http://localhost:8000/v1/getPluginIds?appId=${this.state.appId}`
+    const url = `${API_PREFIX}/v1/getPluginIds?appId=${this.state.appId}`
     const response = await fetch(url)
     const json = await response.json()
     const existingPartners = json.filter(pluginId =>
@@ -290,7 +298,7 @@ class App extends Component<
     const startDate = new Date(start * 1000).toISOString()
     const endDate = new Date(end * 1000).toISOString()
     for (const pluginId of pluginIds) {
-      const url = `http://localhost:8000/v1/analytics/?start=${startDate}&end=${endDate}&appId=${this.state.appId}&pluginId=${pluginId}&timePeriod=monthdayhour`
+      const url = `${API_PREFIX}/v1/analytics/?start=${startDate}&end=${endDate}&appId=${this.state.appId}&pluginId=${pluginId}&timePeriod=monthdayhour`
       urls.push(url)
     }
     const promises = urls.map(url => fetch(url).then(y => y.json()))
@@ -389,7 +397,7 @@ class App extends Component<
       etWidth = '34px'
     }
     const underlineExchangeTypeStyle = {
-      position: 'absolute',
+      position: 'absolute' as 'absolute',
       width: etWidth,
       top: etPosition,
       left: '26px'
