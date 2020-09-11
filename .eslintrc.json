@@ -3,13 +3,11 @@
     "standard-kit/prettier",
     "standard-kit/prettier/node",
     "standard-kit/prettier/jsx",
-    "standard-kit/prettier/typescript"
+    "standard-kit/prettier/typescript",
+    "plugin:@typescript-eslint/eslint-recommended"
   ],
   "parserOptions": {
     "project": "tsconfig.json"
   },
-  "plugins": ["simple-import-sort"],
-  "rules": {
-    "simple-import-sort/sort": "error"
-  }
+  "plugins": ["simple-import-sort"]
 }
