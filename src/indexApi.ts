@@ -58,6 +58,7 @@ async function main(): Promise<void> {
 
   app.use(bodyParser.json({ limit: '1mb' }))
   app.use(cors())
+  app.use('/', express.static('dist'))
 
   const query = {
     selector: {
