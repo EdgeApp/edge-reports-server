@@ -18,6 +18,7 @@
     "start:rates": "node -r sucrase/register src/indexRatesEngine.ts",
     "start:api": "node -r sucrase/register src/indexApi.ts",
     "start:destroyPartition": "node -r sucrase/register src/bin/destroyPartition.ts",
+    "start:migrate": "node -r sucrase/register src/bin/migration.ts",
     "test": "mocha -r sucrase/register 'test/**/*.test.ts'",
     "demo": "parcel serve src/demo/index.html --open",
     "lint": "eslint --ext .js,.jsx,.ts,.tsx ."
