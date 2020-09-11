@@ -79,7 +79,10 @@ export async function queryChangelly(
   let changellySDK
   let latestTimeStamp = 0
   let offset = 0
-  if (typeof pluginParams.settings.latestTimeStamp === 'number') {
+  if (
+    typeof pluginParams.settings.latestTimeStamp === 'number' &&
+    pluginParams.settings.offset === 0
+  ) {
     latestTimeStamp = pluginParams.settings.latestTimeStamp
   }
   if (typeof pluginParams.settings.offset === 'number') {
@@ -165,7 +168,6 @@ export async function queryChangelly(
     datelog(`ERROR: Exiting early at offset ${offset}.`)
     offset -= LIMIT
     offset = offset > 0 ? offset : 0
-    newLatestTimeStamp = 0
   }
   const out = {
     settings: { latestTimeStamp: newLatestTimeStamp, offset },
