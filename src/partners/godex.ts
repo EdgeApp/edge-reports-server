@@ -1,26 +1,25 @@
-import { asArray, asObject, asOptional, asString, asUnknown } from 'cleaners'
+import { asArray, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { datelog } from '../util'
 
-// CLEANER that verfies the data fetched matches the given format and data types
 const asGodexTx = asObject({
   transaction_id: asString,
-  status: asString,
-  hash_in: asOptional(asString),
+  hash_in: asString,
   deposit: asString,
   coin_from: asString,
   deposit_amount: asString,
   withdrawal: asString,
   coin_to: asString,
   withdrawal_amount: asString,
-  created_at: asString // Date and time when transaction was created
+  created_at: asString
 })
 
 const asGodexResult = asArray(asUnknown)
-const LIMIT = 100
-const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
+
+const LIMIT = 500
+const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
 
 export async function queryGodex(
   pluginParams: PluginParams
@@ -28,13 +27,11 @@ export async function queryGodex(
   const ssFormatTxs: StandardTx[] = []
   let apiKey
   let offset = 0
-  let lastCheckedTimestamp
+  let lastCheckedTimestamp = 0
 
-  if (typeof pluginParams.settings.latestTimeStamp !== 'number') {
-    // understand the pluginParams.settings.offset
-    lastCheckedTimestamp = Date.now() - QUERY_LOOKBACK // checks 5 days ago we want to check everything in the database for production, but for testing we can use 20 days ago
-  } else {
-    lastCheckedTimestamp = pluginParams.settings.latestTimeStamp
+  if (typeof pluginParams.settings.latestTimeStamp === 'number') {
+    lastCheckedTimestamp =
+      pluginParams.settings.latestTimeStamp - QUERY_LOOKBACK
   }
   if (typeof pluginParams.apiKeys.apiKey === 'string') {
     apiKey = pluginParams.apiKeys.apiKey
@@ -47,30 +44,19 @@ export async function queryGodex(
 
   let done = false
   let newestTimestamp = 0
-  while (!done) {
-    let resultJSON = {}
-    const url = `https://api.godex.io/api/v1/affiliate/history?limit=${LIMIT}&offset=${offset}`
-    const headers = {
-      Authorization: apiKey
-    }
-
-    try {
-      const result = await fetch(url, { method: 'GET', headers: headers })
-      resultJSON = await result.json()
-    } catch (e) {
-      datelog(e)
-    }
-    const txs = asGodexResult(resultJSON)
-
-    for (const rawtx of txs) {
-      let tx
-      try {
-        tx = asGodexTx(rawtx)
-      } catch (e) {
-        datelog(e)
-        throw e
+  try {
+    while (!done) {
+      const url = `https://api.godex.io/api/v1/affiliate/history?status=success&limit=${LIMIT}&offset=${offset}`
+      const headers = {
+        Authorization: apiKey
       }
-      if (tx.status === 'success') {
+
+      const result = await fetch(url, { method: 'GET', headers: headers })
+      const resultJSON = await result.json()
+      const txs = asGodexResult(resultJSON)
+
+      for (const rawtx of txs) {
+        const tx = asGodexTx(rawtx)
         const timestamp = parseInt(tx.created_at)
         const ssTx = {
           status: 'complete',
@@ -96,13 +82,16 @@ export async function queryGodex(
           done = true
         }
       }
-    }
 
-    offset += LIMIT
-    // this is if the end of the database is reached
-    if (txs.length < 100) {
-      done = true
+      offset += LIMIT
+      // this is if the end of the database is reached
+      if (txs.length < LIMIT) {
+        done = true
+      }
     }
+  } catch (e) {
+    datelog(e)
+    throw e
   }
   const out: PluginResult = {
     settings: { latestTimeStamp: newestTimestamp },
