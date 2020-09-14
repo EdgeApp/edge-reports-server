@@ -121,6 +121,7 @@ async function migration(): Promise<void> {
 
     try {
       await reportsTransactions
+        // @ts-ignore
         .partitionedList(appAndPluginId, { include_docs: true })
         .then(body => {
           body.rows.forEach(doc => {
