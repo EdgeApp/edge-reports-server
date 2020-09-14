@@ -1,8 +1,8 @@
 import { asArray, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
-import { datelog } from '../util'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import { datelog } from '../util'
 
 const asBityTx = asObject({
   id: asString,
@@ -30,8 +30,8 @@ export async function queryBity(
   let credentials
   let authToken
 
-  let queryYear = '2020'
-  let queryMonth = '01'
+  let queryYear = '2019'
+  let queryMonth = '09'
 
   if (typeof pluginParams.settings.lastCheckedYear === 'string') {
     queryYear = pluginParams.settings.lastCheckedYear
