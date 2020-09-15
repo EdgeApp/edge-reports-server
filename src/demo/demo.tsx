@@ -274,6 +274,7 @@ class App extends Component<
       'moonpay',
       'paytrie',
       'safello',
+      'shapeshift',
       'switchain',
       'totle',
       'transak',
