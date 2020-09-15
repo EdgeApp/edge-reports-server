@@ -1,6 +1,9 @@
 import { checkDomain, filterEdgeDomains, getFioCustomers } from './fioLookup'
 
-const testAddress = ['FIO5MctVjvoTiEFPyJYNnPerAXHWRUhDe2ZNEDCj43ngU4W5jZXzA']
+const testAddress = [
+  'FIO5MctVjvoTiEFPyJYNnPerAXHWRUhDe2ZNEDCj43ngU4W5jZXzA',
+  'FIO8TPpos3a8TVp9k4KaByrTw5sh2N1QuS4ro4gc4ooBczEPvTNNU'
+]
 const test = async (): Promise<void> => {
   // Write one case that works, and one that doesn't
   // Try to use different prompts
@@ -12,9 +15,10 @@ const test = async (): Promise<void> => {
   console.log(expectedResult)
   if (expectedResult !== true) throw new Error(`Check Domain ${testAddress[0]}`)
 
-  // const expectedResult2 = await checkAddress(testAddress[1])
-  // console.log(expectedResult2)
-  // if (expectedResult2 !== true) throw new Error(`Check Address ${testAddress[1]}`)
+  const expectedResult2 = await checkDomain(testAddress[1])
+  console.log(expectedResult2)
+  if (expectedResult2 !== false)
+    throw new Error(`Check Address ${testAddress[1]}`)
 }
 
 async function main(): Promise<null> {
@@ -27,17 +31,18 @@ async function main(): Promise<null> {
 
   console.log(`Checking from: ${checkFrom}`)
 
-  // 2. Get customers in specified time-frame
+  // 2. Get FIO customers in specified time-frame
   const fioCustomers = await getFioCustomers(checkFrom)
 
   console.log(`Number of FIO customers: ${fioCustomers.length}`)
   console.log(`Fio customers: ${JSON.stringify(fioCustomers)}`)
 
-  // 3. Check for @edge domains
+  // 3. Filter for @edge domains
   const edgeAccounts = await filterEdgeDomains(fioCustomers)
   console.log(edgeAccounts)
 
-  // 4. Apply Limits
+  // 4. Add up purchases up to 40 FIO
+  // const
 
   // 5. Send money
 
