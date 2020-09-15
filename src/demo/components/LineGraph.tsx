@@ -154,7 +154,8 @@ const LineGraph: any = (props: {
               <div style={styleTwo}>
                 <div>{`Date: ${input.point.data.x}`}</div>
                 <div>{`USD Value: $${usdAmount}`}</div>
-                {/* <div>`Transactions: ${input.point.data.numTxs}`</div> */}
+                {/* @ts-ignore */}
+                <div>{`Transactions: ${input.point.data.numTxs}`}</div>
               </div>
               <div style={blocks} />
             </div>
