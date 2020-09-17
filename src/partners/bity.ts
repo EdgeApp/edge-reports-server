@@ -30,8 +30,8 @@ export async function queryBity(
   let credentials
   let authToken
 
-  let queryYear = '2019'
-  let queryMonth = '09'
+  let queryYear = '2020'
+  let queryMonth = '01'
 
   if (typeof pluginParams.settings.lastCheckedYear === 'string') {
     queryYear = pluginParams.settings.lastCheckedYear

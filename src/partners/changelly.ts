@@ -165,7 +165,6 @@ export async function queryChangelly(
                 QUERY_LOOKBACK}`
             )
             done = true
-            firstAttempt = false
           }
         }
       }
