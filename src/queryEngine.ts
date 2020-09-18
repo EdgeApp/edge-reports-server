@@ -1,10 +1,9 @@
 import { asArray, asMap, asObject, asString } from 'cleaners'
-import { asProgressSettings, DbTx, StandardTx } from './types'
 import nano from 'nano'
-import config from '../config.json'
-import { datelog } from './util'
 
+import config from '../config.json'
 import { banxa } from './partners/banxa'
+import { bitaccess } from './partners/bitaccess'
 import { bitrefill } from './partners/bitrefill'
 import { bitsofgold } from './partners/bitsofgold'
 import { bity } from './partners/bity'
@@ -24,6 +23,8 @@ import { switchain } from './partners/switchain'
 import { totle } from './partners/totle'
 import { transak } from './partners/transak'
 import { wyre } from './partners/wyre'
+import { asProgressSettings, DbTx, StandardTx } from './types'
+import { datelog } from './util'
 
 const asApp = asObject({
   appId: asString,
@@ -46,6 +47,7 @@ const DB_NAMES = [
 
 const partners = [
   banxa,
+  bitaccess,
   bitsofgold,
   bity,
   bitrefill,
