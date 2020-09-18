@@ -22,10 +22,6 @@ const asSimplexTx = asObject({
   currency: asString
 })
 
-const asSimplexRawTx = asObject({
-  status_name: asString
-})
-
 const asSimplexResult = asObject({
   data: asObject({
     data: asArray(asUnknown),
@@ -34,6 +30,7 @@ const asSimplexResult = asObject({
   })
 })
 
+const API_START_DATE = new Date('2020-08-10T00:00:00.000Z').getTime() / 1000
 const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
 const LIMIT = 100
 
@@ -42,7 +39,7 @@ export async function querySimplex(
 ): Promise<PluginResult> {
   const ssFormatTxs: StandardTx[] = []
   let apiKey
-  let lastTimestamp = 0
+  let lastTimestamp = API_START_DATE
   if (typeof pluginParams.settings.lastTimestamp === 'number') {
     lastTimestamp = pluginParams.settings.lastTimestamp
   }
@@ -56,10 +53,13 @@ export async function querySimplex(
   }
 
   lastTimestamp -= QUERY_LOOKBACK
+  if (lastTimestamp < API_START_DATE) {
+    lastTimestamp = API_START_DATE
+  }
   let continueFromSyntax = ''
   let nextPageCursor = ''
-  let done = false
   let newestTimestamp = 0
+  let done = false
   let retry = 3
 
   while (!done) {
@@ -94,32 +94,31 @@ export async function querySimplex(
 
     const txs = csvData.data.data
     for (const rawTx of txs) {
-      if (asSimplexRawTx(rawTx).status_name === 'approved') {
-        const tx = asSimplexTx(rawTx)
-        const timestamp = tx.created_at
-        const ssTx = {
-          status: 'complete',
-          orderId: tx.order_id,
-          depositTxid: undefined,
-          depositAddress: undefined,
-          depositCurrency: tx.currency,
-          depositAmount: parseFloat(tx.fiat_total_amount),
-          payoutTxid: undefined,
-          payoutAddress: undefined,
-          payoutCurrency: tx.crypto_currency,
-          payoutAmount: parseFloat(tx.amount_crypto),
-          timestamp,
-          isoDate: new Date(timestamp * 1000).toISOString(),
-          usdValue: parseFloat(tx.amount_usd),
-          rawTx
-        }
-        ssFormatTxs.push(ssTx)
-
-        newestTimestamp =
-          timestamp > newestTimestamp ? timestamp : newestTimestamp
-        if (lastTimestamp > timestamp) {
-          done = true
-        }
+      const tx = asSimplexTx(rawTx)
+      const timestamp = tx.created_at
+      if (lastTimestamp > timestamp) {
+        done = true
+        break
+      }
+      const ssTx = {
+        status: 'complete',
+        orderId: tx.order_id,
+        depositTxid: undefined,
+        depositAddress: undefined,
+        depositCurrency: tx.currency,
+        depositAmount: parseFloat(tx.fiat_total_amount),
+        payoutTxid: undefined,
+        payoutAddress: undefined,
+        payoutCurrency: tx.crypto_currency,
+        payoutAmount: parseFloat(tx.amount_crypto),
+        timestamp,
+        isoDate: new Date(timestamp * 1000).toISOString(),
+        usdValue: parseFloat(tx.amount_usd),
+        rawTx
+      }
+      ssFormatTxs.push(ssTx)
+      if (timestamp > newestTimestamp) {
+        newestTimestamp = timestamp
       }
     }
 

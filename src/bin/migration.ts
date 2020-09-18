@@ -84,6 +84,8 @@ const CURRENCY_CONVERSION = {
   BCHSV: 'BSV'
 }
 
+const BATCH_ADVANCE = 1000
+
 const oldTransactions = [
   banxaJSON,
   bityJSON,
@@ -121,6 +123,7 @@ async function migration(): Promise<void> {
 
     try {
       await reportsTransactions
+        // @ts-ignore
         .partitionedList(appAndPluginId, { include_docs: true })
         .then(body => {
           body.rows.forEach(doc => {
@@ -154,72 +157,92 @@ async function migration(): Promise<void> {
         return obj
       }
     })
-    const reformattedTxs: DbTx[] = await Promise.all(
-      filteredTransactions.map(async tx => {
-        if (appAndPluginId === `edge_shapeshift`) {
-          const cleanedShapeshiftTx = asShapeshiftTx(tx)
-          const newTx = {
-            status: 'complete',
-            orderId: cleanedShapeshiftTx.orderId,
-            depositTxid: cleanedShapeshiftTx.inputTXID,
-            depositAddress: cleanedShapeshiftTx.inputAddress,
-            depositCurrency: cleanedShapeshiftTx.inputCurrency,
-            depositAmount: cleanedShapeshiftTx.inputAmount,
-            payoutTxid: cleanedShapeshiftTx.outputTXID,
-            payoutAddress: cleanedShapeshiftTx.outputAddress,
-            payoutCurrency: cleanedShapeshiftTx.outputCurrency,
-            payoutAmount: parseFloat(cleanedShapeshiftTx.outputAmount),
-            timestamp: cleanedShapeshiftTx.timestamp,
-            isoDate: new Date(
-              cleanedShapeshiftTx.timestamp * 1000
-            ).toISOString(),
-            usdValue: undefined,
-            rawTx: tx
-          }
-          return standardTxReformat(newTx, appAndPluginId, reportsTransactions)
-        }
-        const cleanedOldTx = asOldTx(tx)
-        const timestamp =
-          typeof cleanedOldTx.timestamp === 'number'
-            ? cleanedOldTx.timestamp
-            : parseFloat(cleanedOldTx.timestamp)
-        const isoDate = new Date(timestamp * 1000).toISOString()
-        const depositAddress =
-          typeof cleanedOldTx.inputAddress === 'string' &&
-          cleanedOldTx.inputAddress.length > 0
-            ? cleanedOldTx.inputAddress
-            : undefined
-        const payoutAddress =
-          cleanedOldTx.outputAddress.length > 0
-            ? cleanedOldTx.outputAddress
-            : undefined
-        const depositAmount =
-          typeof cleanedOldTx.inputAmount === 'number'
-            ? cleanedOldTx.inputAmount
-            : parseFloat(cleanedOldTx.inputAmount)
-        const payoutAmount =
-          typeof cleanedOldTx.outputAmount === 'number'
-            ? cleanedOldTx.outputAmount
-            : parseFloat(cleanedOldTx.outputAmount)
-        const newTx = {
-          orderId: cleanedOldTx.inputTXID,
-          depositTxid: undefined,
-          depositAddress,
-          depositCurrency: cleanedOldTx.inputCurrency,
-          depositAmount,
-          payoutTxid: undefined,
-          payoutAddress,
-          payoutCurrency: cleanedOldTx.outputCurrency,
-          payoutAmount,
-          status: 'complete',
-          isoDate,
-          timestamp,
-          usdValue: undefined,
-          rawTx: undefined
-        }
-        return standardTxReformat(newTx, appAndPluginId, reportsTransactions)
-      })
-    )
+    const reformattedTxs: DbTx[] = []
+    let offset = 0
+    while (offset < filteredTransactions.length) {
+      reformattedTxs.push(
+        ...(await Promise.all(
+          filteredTransactions
+            .slice(offset, offset + BATCH_ADVANCE)
+            .map(async tx => {
+              if (appAndPluginId === `edge_shapeshift`) {
+                const cleanedShapeshiftTx = asShapeshiftTx(tx)
+                const newTx = {
+                  status: 'complete',
+                  orderId: cleanedShapeshiftTx.orderId,
+                  depositTxid: cleanedShapeshiftTx.inputTXID,
+                  depositAddress: cleanedShapeshiftTx.inputAddress,
+                  depositCurrency: cleanedShapeshiftTx.inputCurrency,
+                  depositAmount: cleanedShapeshiftTx.inputAmount,
+                  payoutTxid: cleanedShapeshiftTx.outputTXID,
+                  payoutAddress: cleanedShapeshiftTx.outputAddress,
+                  payoutCurrency: cleanedShapeshiftTx.outputCurrency,
+                  payoutAmount: parseFloat(cleanedShapeshiftTx.outputAmount),
+                  timestamp: cleanedShapeshiftTx.timestamp,
+                  isoDate: new Date(
+                    cleanedShapeshiftTx.timestamp * 1000
+                  ).toISOString(),
+                  usdValue: undefined,
+                  rawTx: tx
+                }
+                return standardTxReformat(
+                  newTx,
+                  appAndPluginId,
+                  reportsTransactions
+                )
+              }
+              const cleanedOldTx = asOldTx(tx)
+              const timestamp =
+                typeof cleanedOldTx.timestamp === 'number'
+                  ? cleanedOldTx.timestamp
+                  : parseFloat(cleanedOldTx.timestamp)
+              const isoDate = new Date(timestamp * 1000).toISOString()
+              const depositAddress =
+                typeof cleanedOldTx.inputAddress === 'string' &&
+                cleanedOldTx.inputAddress.length > 0
+                  ? cleanedOldTx.inputAddress
+                  : undefined
+              const payoutAddress =
+                cleanedOldTx.outputAddress.length > 0
+                  ? cleanedOldTx.outputAddress
+                  : undefined
+              const depositAmount =
+                typeof cleanedOldTx.inputAmount === 'number'
+                  ? cleanedOldTx.inputAmount
+                  : parseFloat(cleanedOldTx.inputAmount)
+              const payoutAmount =
+                typeof cleanedOldTx.outputAmount === 'number'
+                  ? cleanedOldTx.outputAmount
+                  : parseFloat(cleanedOldTx.outputAmount)
+              const newTx = {
+                orderId: cleanedOldTx.inputTXID,
+                depositTxid: undefined,
+                depositAddress,
+                depositCurrency: cleanedOldTx.inputCurrency,
+                depositAmount,
+                payoutTxid: undefined,
+                payoutAddress,
+                payoutCurrency: cleanedOldTx.outputCurrency,
+                payoutAmount,
+                status: 'complete',
+                isoDate,
+                timestamp,
+                usdValue: undefined,
+                rawTx: undefined
+              }
+              return standardTxReformat(
+                newTx,
+                appAndPluginId,
+                reportsTransactions
+              )
+            })
+        ))
+      )
+      offset += BATCH_ADVANCE
+      datelog(
+        `Reformatted ${reformattedTxs.length} ${appAndPluginId} transactions.`
+      )
+    }
     datelog(
       `Importing ${filteredTransactions.length} transactions for ${partner.name} before date ${earliestDate}.`
     )
@@ -273,6 +296,5 @@ async function standardTxReformat(
   newObj.depositCurrency = standardizeNames(newObj.depositCurrency)
   newObj.payoutCurrency = standardizeNames(newObj.payoutCurrency)
 
-  datelog(`id: ${newObj._id}. revision: ${newObj._rev}`)
   return newObj
 }
