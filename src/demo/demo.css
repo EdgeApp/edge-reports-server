@@ -18,6 +18,8 @@ html, body {
     position: relative;
 }
 
+
+
 .legend-position {
     position: absolute;
     top: 12px;
@@ -79,7 +81,10 @@ html, body {
 }
 
 .bargraph-legend-holder {
-    display: flex;
+    width: 95%;
+    margin-top: 10px;
+    margin-left: 24px;
+    display: inline-flex;
     flex-direction: row;
     flex-wrap: wrap;
 }

@@ -45,8 +45,12 @@ interface AnalyticsResult {
 class App extends Component<
   {},
   {
-    calendarStart: Date
-    calendarEnd: Date
+    year: number
+    month: number
+    day: number
+    weekStart: number
+    start: Date
+    end: Date
     appId: string
     pluginIds: string[]
     timePeriod: string
@@ -58,9 +62,18 @@ class App extends Component<
 > {
   constructor(props) {
     super(props)
+    const currentDate = new Date(Date.now())
+    const year = currentDate.getUTCFullYear()
+    const month = currentDate.getUTCMonth()
+    const day = currentDate.getUTCDate()
+    const weekStart = day - currentDate.getUTCDay()
     this.state = {
-      calendarStart: new Date(Date.now()),
-      calendarEnd: new Date(Date.now()),
+      year,
+      month,
+      day,
+      weekStart,
+      start: currentDate,
+      end: currentDate,
       appId: 'edge',
       pluginIds: [],
       partnerTypes: {
@@ -119,18 +132,18 @@ class App extends Component<
 
   async componentDidMount(): Promise<void> {
     await this.getPluginIds()
-    await this.lastMonth()
+    await this.getPresetDates(0, 0, 1, 0, false, false, true)
   }
 
   handleStartChange(date: Date): void {
     this.setState({
-      calendarStart: date
+      start: date
     })
   }
 
   handleEndChange(date: Date): void {
     this.setState({
-      calendarEnd: date
+      end: date
     })
   }
 
@@ -156,106 +169,6 @@ class App extends Component<
 
   changeSwap(): void {
     this.setState({ exchangeType: 'Swap' })
-  }
-
-  async calendarSearch(): Promise<void> {
-    await this.getData(
-      this.state.pluginIds,
-      this.state.calendarStart.getTime() / 1000,
-      this.state.calendarEnd.getTime() / 1000 - 1
-    )
-  }
-
-  async lastDay(): Promise<void> {
-    const currentDate = new Date(Date.now())
-    const y = currentDate.getUTCFullYear()
-    const m = currentDate.getUTCMonth()
-    const d = currentDate.getUTCDate()
-    const start = Date.UTC(y, m, d - 1) / 1000
-    const end = Date.UTC(y, m, d) / 1000 - 1
-    await this.getData(this.state.pluginIds, start, end)
-    this.setState({ timePeriod: 'hour' })
-  }
-
-  async thisDay(): Promise<void> {
-    const currentDate = new Date(Date.now())
-    const y = currentDate.getUTCFullYear()
-    const m = currentDate.getUTCMonth()
-    const d = currentDate.getUTCDate()
-    const start = Date.UTC(y, m, d) / 1000
-    const end = Date.UTC(y, m, d + 1) / 1000 - 1
-    await this.getData(this.state.pluginIds, start, end)
-    this.setState({ timePeriod: 'hour' })
-  }
-
-  async lastWeek(): Promise<void> {
-    const currentDate = new Date(Date.now())
-    const y = currentDate.getUTCFullYear()
-    const m = currentDate.getUTCMonth()
-    const d = currentDate.getUTCDate() - currentDate.getUTCDay()
-    const start = Date.UTC(y, m, d - 7) / 1000
-    const end = Date.UTC(y, m, d) / 1000 - 1
-    await this.getData(this.state.pluginIds, start, end)
-    this.setState({ timePeriod: 'day' })
-  }
-
-  async thisWeek(): Promise<void> {
-    const currentDate = new Date(Date.now())
-    const y = currentDate.getUTCFullYear()
-    const m = currentDate.getUTCMonth()
-    const d = currentDate.getUTCDate() - currentDate.getUTCDay()
-    const start = Date.UTC(y, m, d) / 1000
-    const end = Date.UTC(y, m, d + 7) / 1000 - 1
-    await this.getData(this.state.pluginIds, start, end)
-    this.setState({ timePeriod: 'day' })
-  }
-
-  async lastMonth(): Promise<void> {
-    const currentDate = new Date(Date.now())
-    const y = currentDate.getUTCFullYear()
-    const m = currentDate.getUTCMonth()
-    const start = Date.UTC(y, m - 1, 1) / 1000
-    const end = Date.UTC(y, m, 1) / 1000 - 1
-    const startISO = parseISO(new Date(start * 1000).toISOString().slice(0, 10))
-    const endISO = parseISO(
-      new Date((end + 1) * 1000).toISOString().slice(0, 10)
-    )
-    await this.getData(this.state.pluginIds, start, end)
-    this.setState({
-      timePeriod: 'day',
-      calendarStart: startISO,
-      calendarEnd: endISO
-    })
-  }
-
-  async thisMonth(): Promise<void> {
-    const currentDate = new Date(Date.now())
-    const y = currentDate.getUTCFullYear()
-    const m = currentDate.getUTCMonth()
-    const start = Date.UTC(y, m, 1) / 1000
-    const end = Date.UTC(y, m + 1, 1) / 1000 - 1
-    await this.getData(this.state.pluginIds, start, end)
-    this.setState({ timePeriod: 'day' })
-  }
-
-  async lastQuarter(): Promise<void> {
-    const currentDate = new Date(Date.now())
-    const y = currentDate.getUTCFullYear()
-    const m = Math.floor(currentDate.getUTCMonth() / 3) * 3
-    const start = Date.UTC(y, m - 3, 1) / 1000
-    const end = Date.UTC(y, m, 1) / 1000 - 1
-    await this.getData(this.state.pluginIds, start, end)
-    this.setState({ timePeriod: 'month' })
-  }
-
-  async thisQuarter(): Promise<void> {
-    const currentDate = new Date(Date.now())
-    const y = currentDate.getUTCFullYear()
-    const m = Math.floor(currentDate.getUTCMonth() / 3) * 3
-    const start = Date.UTC(y, m, 1) / 1000
-    const end = Date.UTC(y, m + 3, 1) / 1000 - 1
-    await this.getData(this.state.pluginIds, start, end)
-    this.setState({ timePeriod: 'month' })
   }
 
   async getPluginIds(): Promise<void> {
@@ -290,27 +203,88 @@ class App extends Component<
     this.setState({ pluginIds: existingPartners })
   }
 
-  async getData(
-    pluginIds: string[],
-    start: number,
-    end: number
+  async getPresetDates(
+    startMonthModifier: number,
+    startDayModifier: number,
+    endMonthModifier: number,
+    endDayModifier: number,
+    quarterSearch: boolean,
+    weekSearch: boolean,
+    dropDay: boolean
   ): Promise<void> {
+    let { year, month, day } = this.state
+    if (quarterSearch === true) {
+      month = Math.floor(month / 3) * 3
+    }
+    if (weekSearch === true) {
+      day = this.state.weekStart
+    }
+    if (dropDay === true) {
+      day = 1
+    }
+    const offset = this.state.start.getTimezoneOffset()
+    const start = new Date(
+      Date.UTC(
+        year,
+        month + startMonthModifier,
+        day + startDayModifier,
+        0,
+        offset
+      )
+    )
+    const end = new Date(
+      Date.UTC(
+        year,
+        month + endMonthModifier,
+        day + endDayModifier,
+        0,
+        offset
+      ) + -1
+    )
+    const startDate = new Date(
+      Date.UTC(year, month + startMonthModifier, day + startDayModifier)
+    ).toISOString()
+
+    const endDate = new Date(
+      Date.UTC(year, month + endMonthModifier, day + endDayModifier) - 1
+    ).toISOString()
+
+    this.setState({ start, end })
+    await this.getData(startDate, endDate)
+  }
+
+  async getData(start: string, end: string): Promise<void> {
+    const time1 = Date.now()
     const urls: string[] = []
-    const startDate = new Date(start * 1000).toISOString()
-    const endDate = new Date(end * 1000).toISOString()
-    for (const pluginId of pluginIds) {
-      const url = `${API_PREFIX}/v1/analytics/?start=${startDate}&end=${endDate}&appId=${this.state.appId}&pluginId=${pluginId}&timePeriod=monthdayhour`
+    for (const pluginId of this.state.pluginIds) {
+      const url = `${API_PREFIX}/v1/analytics/?start=${start}&end=${end}&appId=${this.state.appId}&pluginId=${pluginId}&timePeriod=monthdayhour`
       urls.push(url)
     }
+    const time2 = Date.now()
     const promises = urls.map(url => fetch(url).then(y => y.json()))
     const newData = await Promise.all(promises)
+    const time3 = Date.now()
     // discard all entries with 0 usdValue on every bucket
     const trimmedData = newData.filter(data => {
       if (data.result.numAllTxs > 0) {
         return data
       }
     })
-    this.setState({ data: trimmedData })
+    const timeRange = new Date(end).getTime() - new Date(start).getTime()
+    let timePeriod
+    if (timeRange < 1000 * 60 * 60 * 24 * 3) {
+      timePeriod = 'hour'
+    } else if (timeRange < 1000 * 60 * 60 * 24 * 75) {
+      timePeriod = 'day'
+    } else {
+      timePeriod = 'month'
+    }
+    this.setState({ data: trimmedData, timePeriod })
+    const time4 = Date.now()
+    console.log(`getData urls: ${time2 - time1}`)
+    console.log(`getData fetch: ${time3 - time2}`)
+    console.log(`getData filter: ${time4 - time3}`)
+    console.log(`getData total: ${time4 - time1}`)
   }
 
   render(): JSX.Element {
@@ -418,7 +392,7 @@ class App extends Component<
           <div className="sidebar-container">
             <button
               onClick={async () => {
-                await this.lastDay()
+                await this.getPresetDates(0, -1, 0, 0, false, false, false)
               }}
             >
               Yesterday
@@ -427,7 +401,7 @@ class App extends Component<
           <div className="sidebar-container">
             <button
               onClick={async () => {
-                await this.thisDay()
+                await this.getPresetDates(0, 0, 0, 1, false, false, false)
               }}
             >
               Today
@@ -436,7 +410,7 @@ class App extends Component<
           <div className="sidebar-container">
             <button
               onClick={async () => {
-                await this.lastWeek()
+                await this.getPresetDates(0, -7, 0, 0, false, true, false)
               }}
             >
               Last Week
@@ -445,7 +419,7 @@ class App extends Component<
           <div className="sidebar-container">
             <button
               onClick={async () => {
-                await this.thisWeek()
+                await this.getPresetDates(0, 0, 0, 7, false, true, false)
               }}
             >
               This Week
@@ -454,7 +428,7 @@ class App extends Component<
           <div className="sidebar-container">
             <button
               onClick={async () => {
-                await this.lastMonth()
+                await this.getPresetDates(-1, 0, 0, 0, false, false, true)
               }}
             >
               Last Month
@@ -463,7 +437,7 @@ class App extends Component<
           <div className="sidebar-container">
             <button
               onClick={async () => {
-                await this.thisMonth()
+                await this.getPresetDates(0, 0, 1, 0, false, false, true)
               }}
             >
               This Month
@@ -472,7 +446,7 @@ class App extends Component<
           <div className="sidebar-container">
             <button
               onClick={async () => {
-                await this.lastQuarter()
+                await this.getPresetDates(-3, 0, 0, 0, true, false, true)
               }}
             >
               Last Quarter
@@ -481,7 +455,7 @@ class App extends Component<
           <div className="sidebar-container">
             <button
               onClick={async () => {
-                await this.thisQuarter()
+                await this.getPresetDates(0, 0, 3, 0, true, false, true)
               }}
             >
               This Quarter
@@ -491,14 +465,14 @@ class App extends Component<
           <div className="date-picker">
             <div className="calendar-text">Start</div>
             <DatePicker
-              selected={this.state.calendarStart}
+              selected={this.state.start}
               onChange={e => this.handleStartChange(e)}
             />
           </div>
           <div className="date-picker">
             <div className="calendar-text">End</div>
             <DatePicker
-              selected={this.state.calendarEnd}
+              selected={this.state.end}
               onChange={e => this.handleEndChange(e)}
             />
           </div>
@@ -506,7 +480,10 @@ class App extends Component<
             <button
               className="calendar-search"
               onClick={async () => {
-                await this.calendarSearch()
+                await this.getData(
+                  this.state.start.toISOString(),
+                  this.state.end.toISOString()
+                )
               }}
             >
               Search
@@ -557,10 +534,8 @@ class App extends Component<
           </div>
           <hr style={underlineTimePeriodStyle} />
           {this.state.data.length > 0 ? (
-            <div className="legend-holder">
-              <div className="bargraph-legend-holder legend-position">
-                {barGraphStyles}
-              </div>
+            <div>
+              <div className="bargraph-legend-holder">{barGraphStyles}</div>
               <div className="graphHolder">
                 <BarGraph
                   rawData={barGraphData}
