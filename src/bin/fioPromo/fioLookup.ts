@@ -58,12 +58,9 @@ export async function filterDomain( // Test
 
   for (const tx of fioList) {
     const { payoutAddress } = tx
-    // console.log(`Payout address is: ${payoutAddress}`)
-    if (payoutAddress == null) continue
-    const result = await checkDomain(payoutAddress)
 
-    // console.log(`Checking address: ${payoutAddress}`)
-    // console.log(`Result: ${result}`)
+    if (payoutAddress == null) continue
+    const result = await checkDomain(payoutAddress, domain)
 
     if (result) txList.push(tx)
   }
@@ -77,8 +74,6 @@ export const checkDomain = async (
   domain: string = DEFAULT_DOMAIN, // By default check for @edge domains
   network: string = NETWORK
 ): Promise<boolean> => {
-  // console.log(`Pubkey to check: ${pubkey}`)
-
   const endPoint = '/get_fio_names'
 
   // const tapiUrl = testNet + endPoint
@@ -89,7 +84,6 @@ export const checkDomain = async (
   })
 
   const fioInfo = await result.json()
-  // console.log(Object.entries(fioInfo).toString())
 
   if (
     Object.entries(fioInfo)
@@ -101,7 +95,7 @@ export const checkDomain = async (
   } else {
     const fioNames = asGetFioNames(fioInfo)
 
-    // console.log(fioNames)
+
 
     for (const fioName of fioNames.fio_addresses) {
       const cleanFioName = asFioAddress(fioName)
@@ -140,7 +134,6 @@ export const getRewards = (
     }
   }
 
-  // console.log(`The mapped results are: ${rewards}`)
 
   return rewards
 }
