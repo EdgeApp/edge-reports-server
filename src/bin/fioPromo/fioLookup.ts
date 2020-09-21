@@ -1,8 +1,10 @@
 import { asArray, asObject, asString, asUnknown } from 'cleaners'
+import fs from 'fs'
 import fetch from 'node-fetch'
 
 import { queryChangeNow } from '../../partners/changenow'
 import { PluginParams, StandardTx } from '../../types'
+
 const asGetFioNames = asObject({
   fio_addresses: asArray(asUnknown)
 })
@@ -10,77 +12,96 @@ const asFioAddress = asObject({
   fio_address: asString
 })
 
+interface AddressReward {
+  [payoutAddress: string]: number
+}
+
 const noNamesMessage: string = 'No FIO names'
+const MAX_FIO_REWARD = 40
+const DEFAULT_DOMAIN = 'edge'
+
+// const testNet = 'http://testnet.fioprotocol.io/v1/chain'
+const NETWORK = 'https://fio.cryptolions.io:443/v1/chain'
+
+const configFile: string = fs.readFileSync(
+  `${__dirname}/../../../config.json`,
+  'utf8'
+)
+const config = JSON.parse(configFile)
 
 // Returns all customers from ChangeNow who have purchased FIO
-export async function getFioCustomers(checkFrom): Promise<StandardTx[]> {
+export async function getFioTransactions(checkFrom): Promise<StandardTx[]> {
   // Get public keys from offset
-  const config: PluginParams = {
+  const pluginConfig: PluginParams = {
     settings: {
       offset: checkFrom
     },
     apiKeys: {
-      changenowApiKey:
-        '19556aef5cd0a1e8090d30540f93b456b76cda1aecf2c864cb66d89b7815c941'
+      changenowApiKey: config.changenowApiKey
     }
   }
 
-  const txnList = await queryChangeNow(config)
+  const txnList = await queryChangeNow(pluginConfig)
 
+  console.log(`notsure ${JSON.stringify(txnList)}`)
   // Return list of Fio Customers
   return txnList.transactions.filter(
     transaction => transaction.payoutCurrency === 'FIO'
   )
 }
 
-export async function filterEdgeDomains(
-  fioList: StandardTx[]
-): Promise<string[]> {
-  const domainList: string[] = []
+export async function filterDomain( // Test
+  fioList: StandardTx[],
+  domain: string = DEFAULT_DOMAIN // By default check for @edge domains
+): Promise<StandardTx[]> {
+  const txList: StandardTx[] = []
 
-  for (const { payoutAddress } of fioList) {
-    console.log(`Payout address is: ${payoutAddress}`)
+  for (const tx of fioList) {
+    const { payoutAddress } = tx
+    // console.log(`Payout address is: ${payoutAddress}`)
     if (payoutAddress == null) continue
     const result = await checkDomain(payoutAddress)
 
-    console.log(`Checking address: ${payoutAddress}`)
-    console.log(`Result: ${result}`)
+    // console.log(`Checking address: ${payoutAddress}`)
+    // console.log(`Result: ${result}`)
 
-    if (result) domainList.push(payoutAddress)
+    if (result) txList.push(tx)
   }
-  return domainList // only FIO addresses with an @edge Fio domain
+  return txList // only FIO addresses with an @edge Fio domain
 }
 
 // Does FIO public address have specified domain?
 export const checkDomain = async (
+  // Test
   pubkey: string | undefined,
-  domain: string | undefined = 'edge' // By default check for @edge domains
+  domain: string = DEFAULT_DOMAIN, // By default check for @edge domains
+  network: string = NETWORK
 ): Promise<boolean> => {
-  console.log(`Pubkey to check: ${pubkey}`)
+  // console.log(`Pubkey to check: ${pubkey}`)
 
-  const apiUrl: string = 'http://testnet.fioprotocol.io/v1/chain/get_fio_names'
-  // const mainNet = 'https://reg.fioprotocol.io/public-api/'
-  const result = (
-    await fetch(`${apiUrl}`, {
-      method: 'POST',
-      body: JSON.stringify({ fio_public_key: pubkey })
-    })
-  ).json() // Get body
+  const endPoint = '/get_fio_names'
 
-  console.log(Object.entries(await result))
-  console.log(Object.entries(await result).toString())
+  // const tapiUrl = testNet + endPoint
+  const apiUrl = network + endPoint
+  const result = await fetch(`${apiUrl}`, {
+    method: 'POST',
+    body: JSON.stringify({ fio_public_key: pubkey })
+  })
+
+  const fioInfo = await result.json()
+  // console.log(Object.entries(fioInfo).toString())
 
   if (
-    Object.entries(await result)
+    Object.entries(fioInfo)
       .toString()
       .includes(noNamesMessage)
   ) {
     // No FIO names
     return false
   } else {
-    const fioNames = asGetFioNames(await result)
+    const fioNames = asGetFioNames(fioInfo)
 
-    console.log(fioNames)
+    // console.log(fioNames)
 
     for (const fioName of fioNames.fio_addresses) {
       const cleanFioName = asFioAddress(fioName)
@@ -91,3 +112,36 @@ export const checkDomain = async (
     return false
   }
 }
+
+// Takes a list of public keys to be checked and returns a 2D array with keys and values
+export const getRewards = (
+  txList: StandardTx[],
+  rewardMax: number = MAX_FIO_REWARD
+): AddressReward => {
+  const rewards: AddressReward = {}
+
+  // Get possible reward amounts
+  for (const tx of txList) {
+    const { payoutAddress, payoutAmount } = tx
+    if (payoutAddress == null) continue
+    // If it's the first time we are using the payoutAddress
+    if (rewards[payoutAddress] == null) {
+      rewards[payoutAddress] = payoutAmount // Set the new key to the payoutAmount
+      // If the payoutAddress exists previously,
+    } else {
+      rewards[payoutAddress] += payoutAmount // Add the payoutAmount to the previously defined key
+    }
+  }
+
+  // Make sure every reward is under maximum
+  for (const reward in rewards) {
+    if (rewards[reward] >= rewardMax) {
+      rewards[reward] = rewardMax
+    }
+  }
+
+  // console.log(`The mapped results are: ${rewards}`)
+
+  return rewards
+}
+
