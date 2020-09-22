@@ -118,7 +118,7 @@ async function main(): Promise<void> {
     let result
     try {
       const r = await reportsTransactions.partitionedFind(appAndPluginId, query)
-      result = asDbReq(r)
+      result = asDbReq(r).docs
     } catch (e) {
       console.log(e)
       res.status(500).send(`Internal server error.`)
