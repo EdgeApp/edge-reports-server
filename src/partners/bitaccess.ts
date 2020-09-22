@@ -1,4 +1,11 @@
-import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
+import {
+  asArray,
+  asNumber,
+  asObject,
+  asOptional,
+  asString,
+  asUnknown
+} from 'cleaners'
 import crypto from 'crypto'
 import fetch from 'node-fetch'
 
@@ -7,9 +14,11 @@ import { datelog } from '../util'
 
 const asBitaccessTx = asObject({
   transaction_id: asString,
+  tx_hash: asOptional(asString),
   deposit_address: asString,
   deposit_currency: asString,
   deposit_amount: asNumber,
+  withdrawal_address: asOptional(asString),
   withdrawal_currency: asString,
   withdrawal_amount: asNumber,
   updated_at: asString
@@ -76,16 +85,24 @@ export async function queryBitaccess(
         if (asBitaccessRawTx(rawTx).status === 'complete') {
           const tx = asBitaccessTx(rawTx)
           const timestamp = new Date(tx.updated_at).getTime() / 1000
+          let depositTxid
+          let payoutTxid
+          if (typeof tx.deposit_address === 'string') {
+            depositTxid = tx.tx_hash
+          }
+          if (typeof tx.withdrawal_address === 'string') {
+            payoutTxid = tx.tx_hash
+          }
 
           const ssTx: StandardTx = {
             status: 'complete',
             orderId: tx.transaction_id,
-            depositTxid: undefined,
+            depositTxid,
             depositAddress: tx.deposit_address,
             depositCurrency: tx.deposit_currency.toUpperCase(),
             depositAmount: tx.deposit_amount,
-            payoutTxid: undefined,
-            payoutAddress: undefined,
+            payoutTxid,
+            payoutAddress: tx.withdrawal_address,
             payoutCurrency: tx.withdrawal_currency.toUpperCase(),
             payoutAmount: tx.withdrawal_amount,
             timestamp,
@@ -109,7 +126,7 @@ export async function queryBitaccess(
       page++
     } catch (e) {
       datelog(e)
-      break
+      throw e
     }
   }
 
