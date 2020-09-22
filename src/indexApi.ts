@@ -109,6 +109,8 @@ async function main(): Promise<void> {
         'timestamp',
         'usdValue'
       ],
+      use_index: 'timestamp-index',
+      sort: ['timestamp'],
       // proper api arcitechture should page forward instead of all in 1 chunk
       limit: 1000000
     }
@@ -123,11 +125,11 @@ async function main(): Promise<void> {
       return
     }
     // TODO: put the sort within the query, need to add default indexs in the database.
-    const sortedTxs = result.docs.sort(function(a, b) {
-      return a.timestamp - b.timestamp
-    })
+    // const sortedTxs = result.docs.sort(function(a, b) {
+    //   return a.timestamp - b.timestamp
+    // })
     const answer = getAnalytics(
-      sortedTxs,
+      result,
       queryStart,
       queryEnd,
       appId,
