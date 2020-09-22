@@ -2,7 +2,6 @@ import 'regenerator-runtime/runtime'
 import './demo.css'
 import 'react-datepicker/dist/react-datepicker.css'
 
-import parseISO from 'date-fns/parseISO'
 import fetch from 'node-fetch'
 import React, { Component } from 'react'
 import DatePicker from 'react-datepicker'
@@ -78,6 +77,7 @@ class App extends Component<
       pluginIds: [],
       partnerTypes: {
         banxa: 'Fiat',
+        bitaccess: 'Fiat',
         bitsofgold: 'Fiat',
         bity: 'Fiat',
         bitrefill: 'Fiat',
@@ -135,45 +135,35 @@ class App extends Component<
     await this.getPresetDates(0, 0, 1, 0, false, false, true)
   }
 
-  handleStartChange(date: Date): void {
-    this.setState({
-      start: date
-    })
+  handleStartChange(start: Date): void {
+    this.setState({ start })
   }
 
-  handleEndChange(date: Date): void {
-    this.setState({
-      end: date
-    })
+  handleEndChange(end: Date): void {
+    this.setState({ end })
   }
 
-  changeMonth(): void {
-    this.setState({ timePeriod: 'month' })
+  changeTimeperiod(timePeriod: string): void {
+    this.setState({ timePeriod })
   }
 
-  changeDay(): void {
-    this.setState({ timePeriod: 'day' })
+  changeExchangetype(exchangeType: string): void {
+    this.setState({ exchangeType })
   }
 
-  changeHour(): void {
-    this.setState({ timePeriod: 'hour' })
-  }
-
-  changeTotals(): void {
-    this.setState({ exchangeType: 'All' })
-  }
-
-  changeFiat(): void {
-    this.setState({ exchangeType: 'Fiat' })
-  }
-
-  changeSwap(): void {
-    this.setState({ exchangeType: 'Swap' })
+  getISOString(date: Date, end: boolean): string {
+    const year = date.getUTCFullYear()
+    const month = date.getUTCMonth()
+    const day = date.getUTCDate()
+    const isEnd = end === true ? 1 : 0
+    const timezonedDate = new Date(Date.UTC(year, month, day) - isEnd)
+    return timezonedDate.toISOString()
   }
 
   async getPluginIds(): Promise<void> {
     const partners = [
       'banxa',
+      'bitaccess',
       'bitsofgold',
       'bity',
       'bitrefill',
@@ -260,10 +250,8 @@ class App extends Component<
       const url = `${API_PREFIX}/v1/analytics/?start=${start}&end=${end}&appId=${this.state.appId}&pluginId=${pluginId}&timePeriod=monthdayhour`
       urls.push(url)
     }
-    const time2 = Date.now()
     const promises = urls.map(url => fetch(url).then(y => y.json()))
     const newData = await Promise.all(promises)
-    const time3 = Date.now()
     // discard all entries with 0 usdValue on every bucket
     const trimmedData = newData.filter(data => {
       if (data.result.numAllTxs > 0) {
@@ -280,11 +268,8 @@ class App extends Component<
       timePeriod = 'month'
     }
     this.setState({ data: trimmedData, timePeriod })
-    const time4 = Date.now()
-    console.log(`getData urls: ${time2 - time1}`)
-    console.log(`getData fetch: ${time3 - time2}`)
-    console.log(`getData filter: ${time4 - time3}`)
-    console.log(`getData total: ${time4 - time1}`)
+    const time2 = Date.now()
+    console.log(`getData time: ${time2 - time1} ms.`)
   }
 
   render(): JSX.Element {
@@ -481,8 +466,8 @@ class App extends Component<
               className="calendar-search"
               onClick={async () => {
                 await this.getData(
-                  this.state.start.toISOString(),
-                  this.state.end.toISOString()
+                  this.getISOString(this.state.start, false),
+                  this.getISOString(this.state.end, true)
                 )
               }}
             >
@@ -494,7 +479,7 @@ class App extends Component<
             <hr style={underlineExchangeTypeStyle} />
             <button
               onClick={async () => {
-                await this.changeTotals()
+                await this.changeExchangetype('All')
               }}
             >
               Totals
@@ -503,7 +488,7 @@ class App extends Component<
           <div className="sidebar-container">
             <button
               onClick={async () => {
-                await this.changeFiat()
+                await this.changeExchangetype('Fiat')
               }}
             >
               Fiat
@@ -512,7 +497,7 @@ class App extends Component<
           <div className="sidebar-container">
             <button
               onClick={async () => {
-                await this.changeSwap()
+                await this.changeExchangetype('Swap')
               }}
             >
               Swap
@@ -522,13 +507,22 @@ class App extends Component<
         </div>
         <div className="graphs column">
           <div id="time-period-holder">
-            <button className="time-period" onClick={() => this.changeHour()}>
+            <button
+              className="time-period"
+              onClick={() => this.changeTimeperiod('hour')}
+            >
               Hourly
             </button>
-            <button className="time-period" onClick={() => this.changeDay()}>
+            <button
+              className="time-period"
+              onClick={() => this.changeTimeperiod('day')}
+            >
               Daily
             </button>
-            <button className="time-period" onClick={() => this.changeMonth()}>
+            <button
+              className="time-period"
+              onClick={() => this.changeTimeperiod('month')}
+            >
               Monthly
             </button>
           </div>
