@@ -42,8 +42,6 @@ export async function getFioTransactions(checkFrom): Promise<StandardTx[]> {
   }
 
   const txnList = await queryChangeNow(pluginConfig)
-
-  console.log(`notsure ${JSON.stringify(txnList)}`)
   // Return list of Fio Customers
   return txnList.transactions.filter(
     transaction => transaction.payoutCurrency === 'FIO'
@@ -58,10 +56,8 @@ export async function filterDomain( // Test
 
   for (const tx of fioList) {
     const { payoutAddress } = tx
-
     if (payoutAddress == null) continue
     const result = await checkDomain(payoutAddress, domain)
-
     if (result) txList.push(tx)
   }
   return txList // only FIO addresses with an @edge Fio domain
@@ -69,7 +65,6 @@ export async function filterDomain( // Test
 
 // Does FIO public address have specified domain?
 export const checkDomain = async (
-  // Test
   pubkey: string | undefined,
   domain: string = DEFAULT_DOMAIN, // By default check for @edge domains
   network: string = NETWORK
@@ -94,8 +89,6 @@ export const checkDomain = async (
     return false
   } else {
     const fioNames = asGetFioNames(fioInfo)
-
-
 
     for (const fioName of fioNames.fio_addresses) {
       const cleanFioName = asFioAddress(fioName)
@@ -134,7 +127,32 @@ export const getRewards = (
     }
   }
 
-
   return rewards
 }
 
+// Accept AddressReward interface
+export const sendRewards = async (
+  rewardList: AddressReward,
+  rewardCurrency: string = 'fio'
+): Promise<string[]> => {
+
+  const txIdList:string[] = []
+  
+  for (const reward in rewardList) {
+    console.log(rewardList)
+    const transaction = await fetch(`http://localhost:8080/spend/?type=${rewardCurrency}`, {
+      body: JSON.stringify({
+        spendTargets: [{ reward: Object.keys(reward) }] // amount: address
+      }),
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      method: 'POST'
+    })
+
+    txIdList.push(transaction.txid)
+
+  }
+  return txIdList
+  // return ['example hash']
+}

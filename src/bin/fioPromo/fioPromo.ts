@@ -1,7 +1,9 @@
+
 import {
   filterDomain,
   getFioTransactions,
-  getRewards
+  getRewards,
+  sendRewards
 } from './fioLookup'
 
 const DEFAULT_OFFSET = 135000 // Latest is 139000
@@ -29,6 +31,7 @@ async function main(): Promise<null> {
   console.log(`Rewards are: ${JSON.stringify(rewards)}`)
 
   // 5. Send money
+  // sendRewards(rewards)
 
   return null
 }

@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { describe, it } from 'mocha'
 
-import { checkDomain, getRewards } from '../src/bin/fioPromo/fioLookup'
+import { checkDomain, getRewards, sendRewards } from '../src/bin/fioPromo/fioLookup'
 
 const testAddress: Array<[string,boolean]> = [
   ['FIO5MctVjvoTiEFPyJYNnPerAXHWRUhDe2ZNEDCj43ngU4W5jZXzA', false],
@@ -52,8 +52,18 @@ const fixtures = {
       "FIO6oPCnk7SNSnAAXFM1nS1qv8kNsBXnaHLXDfMBjEh6r2U3kQ5PY": 40,
       "FIO7vXvbZnkAodCj8Huw4dhFiu4VkPaTexpvLcxJVQmU2CtfzkAoD": 40 // Personal test address*/
     }
+  },
+  sendRewards: {
+    data: [
+      {
+        'FIO7vXvbZnkAodCj8Huw4dhFiu4VkPaTexpvLcxJVQmU2CtfzkAoD': 40
+      }
+    ],
+    expected: {
+
     }
   }
+}
 
 
 
@@ -71,4 +81,11 @@ describe('Checking rewards function', function () {
       expect(getRewards(fixtures.getRewards.data)).to.deep.
         equals(fixtures.getRewards.expected)
     })
+})
+
+describe('Checking spend transaction', function () {
+  it('Sending from test wallet to same test wallet', async function () {
+    const result = await sendRewards(fixtures.sendRewards.data[0])
+    expect(result).equals(fixtures.sendRewards.expected)
+  })
 })
