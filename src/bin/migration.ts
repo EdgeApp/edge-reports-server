@@ -80,7 +80,6 @@ async function migration(): Promise<void> {
   fs.readdirSync('./cache').forEach(file => {
     partnerJSONNames.push(file)
   })
-  console.log(partnerJSONNames)
   for (const partnerJSONName of partnerJSONNames) {
     const partnerJSON = js.readFileSync(`./cache/${partnerJSONName}`)
     const partner = asPartner(partnerJSON)
@@ -213,14 +212,27 @@ async function migration(): Promise<void> {
       `Importing ${filteredTransactions.length} transactions for ${partner.name} before date ${earliestDate}.`
     )
     try {
-      const docs = await reportsTransactions.bulk({ docs: reformattedTxs })
       let numErrors = 0
-      for (const doc of docs) {
-        if (doc.error != null) {
-          datelog(
-            `There was an error in the batch ${doc.error}.  id: ${doc.id}. revision: ${doc.rev}`
-          )
-          numErrors++
+      for (
+        let offset = 0;
+        offset < reformattedTxs.length;
+        offset += BATCH_ADVANCE
+      ) {
+        let advance = BATCH_ADVANCE
+        if (offset + BATCH_ADVANCE > reformattedTxs.length) {
+          advance = reformattedTxs.length - offset
+        }
+        const docs = await reportsTransactions.bulk({
+          docs: reformattedTxs.slice(offset, offset + advance)
+        })
+        datelog(`Inserted ${offset + advance} transactions.`)
+        for (const doc of docs) {
+          if (doc.error != null) {
+            datelog(
+              `There was an error in the batch ${doc.error}.  id: ${doc.id}. revision: ${doc.rev}`
+            )
+            numErrors++
+          }
         }
       }
       datelog(`total errors: ${numErrors}`)
