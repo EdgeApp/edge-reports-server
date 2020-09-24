@@ -69,6 +69,7 @@ const partners = [
   wyre
 ]
 const QUERY_FREQ_MS = 29 * 60 * 1000
+const BATCH_ADVANCE = 1000
 const snooze: Function = async (ms: number) =>
   new Promise((resolve: Function) => setTimeout(resolve, ms))
 
@@ -156,14 +157,27 @@ async function insertTransactions(
     transactionsArray.push(newObj)
   }
   try {
-    const docs = await dbTransactions.bulk({ docs: transactionsArray })
     let numErrors = 0
-    for (const doc of docs) {
-      if (doc.error != null) {
-        datelog(
-          `There was an error in the batch ${doc.error}.  id: ${doc.id}. revision: ${doc.rev}`
-        )
-        numErrors++
+    for (
+      let offset = 0;
+      offset < transactionsArray.length;
+      offset += BATCH_ADVANCE
+    ) {
+      let advance = BATCH_ADVANCE
+      if (offset + BATCH_ADVANCE > transactionsArray.length) {
+        advance = transactionsArray.length - offset
+      }
+      const docs = await dbTransactions.bulk({
+        docs: transactionsArray.slice(offset, offset + advance)
+      })
+      datelog(`Inserted ${offset + advance} transactions.`)
+      for (const doc of docs) {
+        if (doc.error != null) {
+          datelog(
+            `There was an error in the batch ${doc.error}.  id: ${doc.id}. revision: ${doc.rev}`
+          )
+          numErrors++
+        }
       }
     }
     datelog(`total errors: ${numErrors}`)
