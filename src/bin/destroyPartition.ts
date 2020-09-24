@@ -1,6 +1,7 @@
-import nano from 'nano'
-import js from 'jsonfile'
 import { asObject, asString } from 'cleaners'
+import js from 'jsonfile'
+import nano from 'nano'
+
 import { datelog } from '../util'
 
 const config = js.readFileSync('./config.json')
@@ -18,6 +19,8 @@ const asPartitionedDoc = asObject({
   id: asString,
   value: asObject({ rev: asString })
 })
+
+const BATCH_ADVANCE = 1000
 
 async function main(partitionName: string): Promise<void> {
   const transactions: Transactions[] = []
@@ -43,7 +46,30 @@ async function main(partitionName: string): Promise<void> {
   }
 
   try {
-    await reportsTransactions.bulk({ docs: transactions })
+    let numErrors = 0
+    for (
+      let offset = 0;
+      offset < transactions.length;
+      offset += BATCH_ADVANCE
+    ) {
+      let advance = BATCH_ADVANCE
+      if (offset + BATCH_ADVANCE > transactions.length) {
+        advance = transactions.length - offset
+      }
+      const docs = await reportsTransactions.bulk({
+        docs: transactions.slice(offset, offset + advance)
+      })
+      datelog(`Deleted ${offset + advance} transactions.`)
+      for (const doc of docs) {
+        if (doc.error != null) {
+          datelog(
+            `There was an error in the batch ${doc.error}.  id: ${doc.id}. revision: ${doc.rev}`
+          )
+          numErrors++
+        }
+      }
+    }
+    datelog(`total errors: ${numErrors}`)
     datelog(`Successfully Deleted: ${transactions.length} docs`)
     datelog(`Successfully Deleted: partition ${partitionName}`)
 
