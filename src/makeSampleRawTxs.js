@@ -29,6 +29,34 @@ const rawTxs = {
     wallet_address: '3MdZFWVnafQT5RadRh1aEWweEr7pMqNub2',
     wallet_address_tag: null
   },
+  bitaccess: {
+    available_actions: [],
+    client_id: '5726293401272320',
+    created_at: '2020-09-13T16:34:24.733Z',
+    deposit_address: '1AZ16MKNJMT1WBaNS42jhBb1NLtqEx3taM',
+    deposit_amount: 0.01093701,
+    deposit_currency: 'BTC',
+    location_address: '1552 Beechview Avenue, Pittsburgh, PA, USA',
+    location_coordinates: {
+      latitude: 40.4107381,
+      longitude: -80.02498469999999
+    },
+    location_name: 'Dollar Eagle Discounts',
+    machine_id: 'coincloud570',
+    operator_margin_percentage: 11,
+    order_code: 'QR447RWH',
+    price: 9143.27,
+    refund_address: '3Aeni3pSUcfWFJTzdiET66kFpsdmhwsEzm',
+    spot_price: 10273.34,
+    status: 'complete',
+    trade_type: 'sell',
+    transaction_id:
+      'lwid:978ac7116aacbc7761bb4d472c7e9de6aff30b2c2d300a0319438774102e7784',
+    tx_hash: '2fbd5a9b07e585a5f05ab0b32e2f0205c4ee3599087884a52a1a9c977a4047cf',
+    updated_at: '2020-09-13T20:03:48.122Z',
+    withdrawal_amount: 100,
+    withdrawal_currency: 'USD'
+  },
   bitrefill: {
     id: '5f1b703424c92700046f5053',
     orderId: '5f1b703424c92700046f5053',
