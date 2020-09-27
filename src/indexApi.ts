@@ -43,9 +43,15 @@ const asApps = asArray(asApp)
 const asPluginIdsReq = asObject({
   appId: asString
 })
-
 const asPluginIdsDbReq = asObject({
   pluginIds: asMap(asMap(asString))
+})
+
+const asAppIdReq = asObject({
+  apiKey: asString
+})
+const asAppIdDbReq = asObject({
+  appId: asString
 })
 
 const nanoDb = nano(config.couchDbFullpath)
@@ -199,6 +205,25 @@ async function main(): Promise<void> {
     const app = asPluginIdsDbReq(rawApp.docs[0])
     const pluginNames = Object.keys(app.pluginIds)
     res.json(pluginNames)
+  })
+
+  app.get('/v1/getAppId/', async function(req, res) {
+    let queryResult
+    try {
+      queryResult = asAppIdReq(req.query)
+    } catch (e) {
+      res.status(400).send(`Missing Request fields.`)
+      return
+    }
+    let appId
+    try {
+      const dbResult = await reportsApps.get(queryResult.apiKey)
+      appId = asAppIdDbReq(dbResult).appId
+    } catch (e) {
+      res.status(400).send(`API KEY UNRECOGNIZED.`)
+      return
+    }
+    res.json(appId)
   })
 
   app.listen(config.httpPort, function() {
