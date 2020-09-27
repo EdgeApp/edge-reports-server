@@ -6,6 +6,7 @@ import fetch from 'node-fetch'
 import React, { Component } from 'react'
 import DatePicker from 'react-datepicker'
 
+// import { useParams } from 'react-router'
 import BarGraph from './components/BarGraph'
 import LineGraph from './components/LineGraph'
 // @ts-ignore
@@ -50,6 +51,7 @@ class App extends Component<
     weekStart: number
     start: Date
     end: Date
+    apiKey: string
     appId: string
     pluginIds: string[]
     timePeriod: string
@@ -66,6 +68,7 @@ class App extends Component<
     const month = currentDate.getUTCMonth()
     const day = currentDate.getUTCDate()
     const weekStart = day - currentDate.getUTCDay()
+    // const { apiKey } = useParams()
     this.state = {
       year,
       month,
@@ -73,7 +76,8 @@ class App extends Component<
       weekStart,
       start: currentDate,
       end: currentDate,
-      appId: 'edge',
+      apiKey: '4fea83a6812f3394d77afc6dc5000f3f',
+      appId: '',
       pluginIds: [],
       partnerTypes: {
         banxa: 'Fiat',
@@ -131,6 +135,7 @@ class App extends Component<
   }
 
   async componentDidMount(): Promise<void> {
+    await this.getAppId()
     await this.getPluginIds()
     await this.getPresetDates(0, 0, 1, 0, false, false, true)
   }
@@ -158,6 +163,13 @@ class App extends Component<
     const isEnd = end === true ? 1 : 0
     const timezonedDate = new Date(Date.UTC(year, month, day) - isEnd)
     return timezonedDate.toISOString()
+  }
+
+  async getAppId(): Promise<void> {
+    const url = `${API_PREFIX}/v1/getAppId?apiKey=${this.state.apiKey}`
+    const response = await fetch(url)
+    const appId = await response.json()
+    this.setState({ appId })
   }
 
   async getPluginIds(): Promise<void> {
