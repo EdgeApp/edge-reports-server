@@ -32,6 +32,14 @@ const asApp = asObject({
 })
 const asApps = asArray(asApp)
 
+const asIndexResult = asObject({
+  indexes: asArray(
+    asObject({
+      name: asString
+    })
+  )
+})
+
 const nanoDb = nano(config.couchDbFullpath)
 const CURRENCY_CONVERSION = {
   USDT20: 'USDT',
@@ -82,8 +90,33 @@ export async function queryEngine(): Promise<void> {
       await nanoDb.db.create(dbName.name, dbName.options)
     }
   }
+
+  try {
+    const dbTransactions = nanoDb.db.use('reports_transactions')
+    const indexesResult = await dbTransactions.get('_index')
+    const cleanedIndexes = asIndexResult(indexesResult)
+    const hasTimestampIndex = cleanedIndexes.indexes.filter(
+      index => index.name === 'Timestamp'
+    )
+
+    if (hasTimestampIndex.length === 0) {
+      const indexDef = {
+        index: { fields: ['timestamp'] },
+        ddoc: 'timestamp-index',
+        name: 'Timestamp',
+        type: 'json' as 'json',
+        partitioned: true
+      }
+      await dbTransactions.createIndex(indexDef)
+      datelog('Created Timestamp Index.')
+    }
+  } catch (e) {
+    datelog('Error Creating Timestamp:', e)
+  }
+
   const dbProgress = nanoDb.db.use('reports_progresscache')
   const dbApps = nanoDb.db.use('reports_apps')
+
   while (true) {
     // get the contents of all reports_apps docs
     const query = {
