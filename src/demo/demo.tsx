@@ -3,10 +3,11 @@ import './demo.css'
 import 'react-datepicker/dist/react-datepicker.css'
 
 import fetch from 'node-fetch'
+import { instanceOf } from 'prop-types'
 import React, { Component } from 'react'
+import { Cookies, withCookies } from 'react-cookie'
 import DatePicker from 'react-datepicker'
 
-// import { useParams } from 'react-router'
 import BarGraph from './components/BarGraph'
 import LineGraph from './components/LineGraph'
 // @ts-ignore
@@ -52,6 +53,7 @@ class App extends Component<
     start: Date
     end: Date
     apiKey: string
+    apiKeyMessage: string
     appId: string
     pluginIds: string[]
     timePeriod: string
@@ -61,14 +63,18 @@ class App extends Component<
     data: AnalyticsResult[]
   }
 > {
+  static propTypes = {
+    cookies: instanceOf(Cookies).isRequired
+  }
+
   constructor(props) {
     super(props)
+    const { cookies } = props
     const currentDate = new Date(Date.now())
     const year = currentDate.getUTCFullYear()
     const month = currentDate.getUTCMonth()
     const day = currentDate.getUTCDate()
     const weekStart = day - currentDate.getUTCDay()
-    // const { apiKey } = useParams()
     this.state = {
       year,
       month,
@@ -76,7 +82,8 @@ class App extends Component<
       weekStart,
       start: currentDate,
       end: currentDate,
-      apiKey: '4fea83a6812f3394d77afc6dc5000f3f',
+      apiKey: cookies.get('apiKey') || '',
+      apiKeyMessage: 'Enter API Key.',
       appId: '',
       pluginIds: [],
       partnerTypes: {
@@ -135,9 +142,11 @@ class App extends Component<
   }
 
   async componentDidMount(): Promise<void> {
-    await this.getAppId()
-    await this.getPluginIds()
-    await this.getPresetDates(0, 0, 1, 0, false, false, true)
+    if (this.state.apiKey !== '') {
+      await this.getAppId()
+      await this.getPluginIds()
+      await this.getPresetDates(0, 0, 1, 0, false, false, true)
+    }
   }
 
   handleStartChange(start: Date): void {
@@ -146,6 +155,10 @@ class App extends Component<
 
   handleEndChange(end: Date): void {
     this.setState({ end })
+  }
+
+  handleApiKeyChange(apiKey: any): void {
+    this.setState({ apiKey: apiKey.target.value })
   }
 
   changeTimeperiod(timePeriod: string): void {
@@ -168,8 +181,16 @@ class App extends Component<
   async getAppId(): Promise<void> {
     const url = `${API_PREFIX}/v1/getAppId?apiKey=${this.state.apiKey}`
     const response = await fetch(url)
+    if (response.status === 400) {
+      this.setState({ apiKeyMessage: 'Invalid API Key.' })
+      return
+    }
+    const { cookies } = this.props
+    cookies.set('apiKey', this.state.apiKey, { path: '/' })
     const appId = await response.json()
     this.setState({ appId })
+    await this.getPluginIds()
+    await this.getPresetDates(0, 0, 1, 0, false, false, true)
   }
 
   async getPluginIds(): Promise<void> {
@@ -282,6 +303,17 @@ class App extends Component<
     this.setState({ data: trimmedData, timePeriod })
     const time2 = Date.now()
     console.log(`getData time: ${time2 - time1} ms.`)
+  }
+
+  logout(): void {
+    const { cookies } = this.props
+    cookies.set('apiKey', '', { path: '/' })
+    this.setState({
+      apiKey: '',
+      apiKeyMessage: 'Enter API Key.',
+      appId: '',
+      data: []
+    })
   }
 
   render(): JSX.Element {
@@ -515,46 +547,79 @@ class App extends Component<
               Swap
             </button>
           </div>
-          <div />
-        </div>
-        <div className="graphs column">
-          <div id="time-period-holder">
-            <button
-              className="time-period"
-              onClick={() => this.changeTimeperiod('hour')}
-            >
-              Hourly
-            </button>
-            <button
-              className="time-period"
-              onClick={() => this.changeTimeperiod('day')}
-            >
-              Daily
-            </button>
-            <button
-              className="time-period"
-              onClick={() => this.changeTimeperiod('month')}
-            >
-              Monthly
-            </button>
-          </div>
-          <hr style={underlineTimePeriodStyle} />
-          {this.state.data.length > 0 ? (
+          {this.state.appId !== '' ? (
             <div>
-              <div className="bargraph-legend-holder">{barGraphStyles}</div>
-              <div className="graphHolder">
-                <BarGraph
-                  rawData={barGraphData}
-                  timePeriod={this.state.timePeriod}
-                  colors={this.state.colorPalette}
-                />
+              <hr className="divider" />
+              <div className="sidebar-container">
+                <button
+                  className="calendar-search"
+                  onClick={() => this.logout()}
+                >
+                  Logout
+                </button>
               </div>
             </div>
           ) : null}
-          <div>{lineGraphs}</div>
+          <div />
         </div>
+        {this.state.appId === '' ? (
+          <div className="apiKey-message-holder">
+            <div className="apiKey-input apiKey-message">
+              {this.state.apiKeyMessage}
+            </div>
+            <div className="apiKey-message">
+              <input
+                className="apiKey-input apiKey-input-length"
+                onChange={e => this.handleApiKeyChange(e)}
+              />
+              <button
+                className="apiKey-button"
+                onClick={async () => this.getAppId()}
+              >
+                Use
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="graphs column">
+            <div id="time-period-holder">
+              <button
+                className="time-period"
+                onClick={() => this.changeTimeperiod('hour')}
+              >
+                Hourly
+              </button>
+              <button
+                className="time-period"
+                onClick={() => this.changeTimeperiod('day')}
+              >
+                Daily
+              </button>
+              <button
+                className="time-period"
+                onClick={() => this.changeTimeperiod('month')}
+              >
+                Monthly
+              </button>
+            </div>
+            <hr style={underlineTimePeriodStyle} />
+            {this.state.data.length > 0 ? (
+              <div>
+                <div className="bargraph-legend-holder">{barGraphStyles}</div>
+                <div className="graphHolder">
+                  <BarGraph
+                    rawData={barGraphData}
+                    timePeriod={this.state.timePeriod}
+                    colors={this.state.colorPalette}
+                  />
+                </div>
+              </div>
+            ) : null}
+            <div>{lineGraphs}</div>
+          </div>
+        )}
       </div>
     )
   }
 }
-export default App
+export default withCookies(App)

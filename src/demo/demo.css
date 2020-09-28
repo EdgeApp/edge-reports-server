@@ -206,6 +206,41 @@ input {
     color: white;
 }
 
+.apiKey-input {
+    font-family: Quicksand;
+    font-style: normal;
+    font-weight: normal;
+    font-size: 16px;
+    border-width: 1px;
+    color: black;
+}
+
+.apiKey-button {
+    color: black;
+    border: 1px solid black;
+    cursor:pointer;
+    font-family: Quicksand;
+    font-style: normal;
+    font-weight: normal;
+    font-size: 16px;
+}
+
+.apiKey-message {
+    margin: 0 auto;
+    margin-top: 16px;
+    font-size: 24px;
+}
+
+.apiKey-message-holder {
+   display:flex;
+   align-items: center;
+   justify-content: center;
+   flex-direction: column;
+}
+.apiKey-input-length {
+    width: 270px;
+}
+
 input:focus {
     outline: 0px;
 }
