@@ -22,6 +22,10 @@ const asSimplexTx = asObject({
   currency: asString
 })
 
+const asRawSimplexTx = asObject({
+  status_name: asString
+})
+
 const asSimplexResult = asObject({
   data: asObject({
     data: asArray(asUnknown),
@@ -94,31 +98,33 @@ export async function querySimplex(
 
     const txs = csvData.data.data
     for (const rawTx of txs) {
-      const tx = asSimplexTx(rawTx)
-      const timestamp = tx.created_at
-      if (lastTimestamp > timestamp) {
-        done = true
-        break
-      }
-      const ssTx = {
-        status: 'complete',
-        orderId: tx.order_id,
-        depositTxid: undefined,
-        depositAddress: undefined,
-        depositCurrency: tx.currency,
-        depositAmount: parseFloat(tx.fiat_total_amount),
-        payoutTxid: undefined,
-        payoutAddress: undefined,
-        payoutCurrency: tx.crypto_currency,
-        payoutAmount: parseFloat(tx.amount_crypto),
-        timestamp,
-        isoDate: new Date(timestamp * 1000).toISOString(),
-        usdValue: parseFloat(tx.amount_usd),
-        rawTx
-      }
-      ssFormatTxs.push(ssTx)
-      if (timestamp > newestTimestamp) {
-        newestTimestamp = timestamp
+      if (asRawSimplexTx(rawTx).status_name === 'approved') {
+        const tx = asSimplexTx(rawTx)
+        const timestamp = tx.created_at
+        if (lastTimestamp > timestamp) {
+          done = true
+          break
+        }
+        const ssTx = {
+          status: 'complete',
+          orderId: tx.order_id,
+          depositTxid: undefined,
+          depositAddress: undefined,
+          depositCurrency: tx.currency,
+          depositAmount: parseFloat(tx.fiat_total_amount),
+          payoutTxid: undefined,
+          payoutAddress: undefined,
+          payoutCurrency: tx.crypto_currency,
+          payoutAmount: parseFloat(tx.amount_crypto),
+          timestamp,
+          isoDate: new Date(timestamp * 1000).toISOString(),
+          usdValue: parseFloat(tx.amount_usd),
+          rawTx
+        }
+        ssFormatTxs.push(ssTx)
+        if (timestamp > newestTimestamp) {
+          newestTimestamp = timestamp
+        }
       }
     }
 
