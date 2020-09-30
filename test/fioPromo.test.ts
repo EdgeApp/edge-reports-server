@@ -12,8 +12,6 @@ const testAddress: Array<[string, boolean]> = [
   ['FIO8TPpos3a8TVp9k4KaByrTw5sh2N1QuS4ro4gc4ooBczEPvTNNU', false]
 ]
 
-const FIO_MULTIPLE = 1000000000 // 1,000,000,000
-
 const fixtures = {
   getRewards: {
     data: [
