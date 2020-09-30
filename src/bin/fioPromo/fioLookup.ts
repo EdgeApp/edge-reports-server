@@ -18,6 +18,7 @@ interface AddressReward {
 
 const noNamesMessage: string = 'No FIO names'
 const MAX_FIO_REWARD = 40
+const FIO_MULTIPLE = 1000000000 // 1,000,000,000
 const DEFAULT_DOMAIN = 'edge'
 
 // const testNet = 'http://testnet.fioprotocol.io/v1/chain'
@@ -135,24 +136,38 @@ export const sendRewards = async (
   rewardList: AddressReward,
   rewardCurrency: string = 'fio'
 ): Promise<string[]> => {
+  const txIdList: string[] = []
 
-  const txIdList:string[] = []
-  
   for (const reward in rewardList) {
-    console.log(rewardList)
-    const transaction = await fetch(`http://localhost:8080/spend/?type=${rewardCurrency}`, {
-      body: JSON.stringify({
-        spendTargets: [{ reward: Object.keys(reward) }] // amount: address
-      }),
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      method: 'POST'
-    })
+    console.log(`reward address is: ${reward}`)
+    console.log(`Rewards amount is : ${rewardList[reward]}`)
+
+    const result = await fetch(
+      `http://localhost:8080/spend/?type=${rewardCurrency}`,
+      {
+        body: JSON.stringify({
+          spendTargets: [
+            {
+              publicAddress: `${reward}`, // Denominated in smallest unit
+              // Need to add in mining fee so exact amount is sent.
+              nativeAmount: `${rewardList[reward]}`
+            }
+          ]
+        }),
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        method: 'POST'
+      }
+    )
+
+    const transaction = await result.json()
+    console.log(`Transaction is: JSON.stringify(${transaction})`)
+    console.log(`Transaction ID: ${transaction.txid}`)
 
     txIdList.push(transaction.txid)
-
   }
+
   return txIdList
   // return ['example hash']
 }
