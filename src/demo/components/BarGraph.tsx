@@ -1,3 +1,5 @@
+import '../demo.css'
+
 import { ResponsiveBar } from '@nivo/bar'
 import React from 'react'
 
@@ -57,14 +59,16 @@ const BarGraph: any = (props: {
     if (index % tickSpace === 0) {
       tickRate.push(date)
     }
-    return { date }
+    return { date, allUsd: 0, allTxs: 0, currencyPairs: bucket.currencyPairs }
   })
   for (let i = 0; i < rawData.length; i++) {
     for (let j = 0; j < rawData[0].result[timePeriod].length; j++) {
       const graphName =
         rawData[i].pluginId.charAt(0).toUpperCase() +
         rawData[i].pluginId.slice(1)
+      data[j].allUsd += rawData[i].result[timePeriod][j].usdValue
       data[j][graphName] = rawData[i].result[timePeriod][j].usdValue
+      data[j].allTxs += rawData[i].result[timePeriod][j].numTxs
       data[j][`${graphName}NumTxs`] = rawData[i].result[timePeriod][j].numTxs
       data[j][`${graphName}Color`] = props.colors[i]
     }
@@ -129,12 +133,32 @@ const BarGraph: any = (props: {
             fontSize: '16px'
           }
           const usdAmount = input.value.toFixed(2)
+          const allUsdAmount = input.data.allUsd.toFixed(2)
+          const currencyPairs: JSX.Element[] = []
+          let index = 0
+          for (const [key, value] of Object.entries(input.data.currencyPairs)) {
+            currencyPairs.push(
+              <div key={index} className="currency-pair-holder">
+                <div className="currency-pair-name">{`${key}:`}</div>
+                <div className="currency-pair-usd">{`$${value.toFixed(
+                  2
+                )}`}</div>
+              </div>
+            )
+            index++
+          }
           return (
             <div style={styleTwo}>
               <div>{`PluginId: ${input.id}`}</div>
               <div>{`Date: ${input.indexValue}`}</div>
-              <div>{`USD Value: $${usdAmount}`}</div>
-              <div>{`Transactions: ${input.data[`${input.id}NumTxs`]}`}</div>
+              <div>{`Plugin USD: $${usdAmount}`}</div>
+              <div>{`Plugin Transactions: ${
+                input.data[`${input.id}NumTxs`]
+              }`}</div>
+              <hr className="divider" />
+              <div className="total-usd">{`Total USD: $${allUsdAmount}`}</div>
+              <div>{`Total Transactions: ${input.data.allTxs}`}</div>
+              <div className="currency-pairs">{currencyPairs}</div>
             </div>
           )
         }}
