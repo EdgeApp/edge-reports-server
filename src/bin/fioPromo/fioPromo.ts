@@ -1,4 +1,3 @@
-
 import {
   filterDomain,
   getFioTransactions,
@@ -9,8 +8,11 @@ import {
 const DEFAULT_OFFSET = 135000 // Latest is 139000
 
 async function main(): Promise<null> {
-  // 1. Get offset from user
-  let checkFrom = parseInt(process.argv[2]) // Getting first arg from
+  // 1. Get input from user
+  let checkFrom = parseInt(process.argv[2]) // Getting first cl arg
+  const devMode = process.argv[3] === 'dev'
+  const currency = devMode ? process.argv[4] : process.argv[3]
+
   console.log(checkFrom)
   checkFrom = isNaN(checkFrom) ? DEFAULT_OFFSET : checkFrom // If null, set to default
 
@@ -23,15 +25,16 @@ async function main(): Promise<null> {
   console.log(`Fio transactions: ${JSON.stringify(fioTransactions)}`)
 
   // 3. Filter for @edge domains
-  const edgeFioTransactions = await filterDomain(fioTransactions, 'edge')
-  console.log(edgeFioTransactions)
+  const edgeFioTransactions = await filterDomain(fioTransactions)
+  // console.log(edgeFioTransactions)
 
   // 4. Add up purchases up to 40 FIO
   const rewards = getRewards(edgeFioTransactions)
   console.log(`Rewards are: ${JSON.stringify(rewards)}`)
 
   // 5. Send money
-  // sendRewards(rewards)
+  const txIds = await sendRewards(rewards, currency, devMode)
+  console.log(`Sent reward transaction IDs: ${txIds}`)
 
   return null
 }

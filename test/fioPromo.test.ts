@@ -1,11 +1,7 @@
 import { expect } from 'chai'
 import { describe, it } from 'mocha'
 
-import {
-  checkDomain,
-  getRewards,
-  sendRewards
-} from '../src/bin/fioPromo/fioLookup'
+import { checkDomain, getRewards } from '../src/bin/fioPromo/fioLookup'
 
 const testAddress: Array<[string, boolean]> = [
   ['FIO5MctVjvoTiEFPyJYNnPerAXHWRUhDe2ZNEDCj43ngU4W5jZXzA', false],
@@ -57,17 +53,6 @@ const fixtures = {
       "FIO6oPCnk7SNSnAAXFM1nS1qv8kNsBXnaHLXDfMBjEh6r2U3kQ5PY": 40,
       "FIO7vXvbZnkAodCj8Huw4dhFiu4VkPaTexpvLcxJVQmU2CtfzkAoD": 40 */
     }
-  },
-  sendRewards: {
-    data: [
-      {
-        FIO8bToxvXGj1kK2W5yQoTxvhbrHRRtXu8EHokoaeB9mb9NFrAXu9: 1
-      },
-      {
-        FIO8bToxvXGj1kK2W5yQoTxvhbrHRRtXu8EHokoaeB9mb9NFrAXu9: 1
-      }
-    ],
-    expected: {}
   }
 }
 
@@ -82,15 +67,9 @@ describe('Checking if address has Edge domain', function() {
 
 describe('Checking rewards function', function() {
   it(`Check reward for single transaction`, function() {
+    this.timeout(0)
     expect(getRewards(fixtures.getRewards.data)).to.deep.equals(
       fixtures.getRewards.expected
     )
-  })
-})
-
-describe('Checking spend transaction', function() {
-  it('Sending from test wallet to same test wallet', async function() {
-    const txs = await sendRewards(fixtures.sendRewards.data[0])
-    console.log(txs)
   })
 })
