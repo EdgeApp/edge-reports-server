@@ -71,9 +71,10 @@ async function main(partitionName: string): Promise<void> {
       let usdAmount = 0
       let importedTxs = 0
       for (let i = 0; i < txs.length; i++) {
-        if (typeof txs[i].usdValue !== 'undefined') {
+        const usdValue = txs[i].usdValue
+        if (typeof usdValue !== 'undefined') {
           usdTxs++
-          usdAmount += txs[i].usdValue
+          usdAmount += usdValue
         }
         if (typeof txs[i].rawTx === 'undefined') {
           importedTxs++
