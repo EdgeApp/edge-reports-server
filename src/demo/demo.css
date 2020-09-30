@@ -241,6 +241,27 @@ input {
     width: 270px;
 }
 
+.total-usd {
+    margin-top: 16px;
+}
+
+.currency-pairs {
+    margin-top: 10px;
+}
+
+.currency-pair-holder {
+    display: flex;
+    flex-direction: row;
+}
+
+.currency-pair-name {
+    width: 57%;
+}
+
+.currency-pair-usd {
+    width: 43%;
+}
+
 input:focus {
     outline: 0px;
 }

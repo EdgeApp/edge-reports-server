@@ -1,3 +1,5 @@
+import '../demo.css'
+
 import { ResponsiveLine } from '@nivo/line'
 import React from 'react'
 
@@ -50,7 +52,8 @@ const LineGraph: any = (props: {
       return {
         x: date,
         y: bucket.usdValue,
-        numTxs: bucket.numTxs
+        numTxs: bucket.numTxs,
+        currencyPairs: bucket.currencyPairs
       }
     }
   )
@@ -146,6 +149,20 @@ const LineGraph: any = (props: {
         if (typeof input.point.data.y === 'number') {
           usdAmount = input.point.data.y.toFixed(2)
         }
+        const currencyPairs: JSX.Element[] = []
+        let index = 0
+        for (const [key, value] of Object.entries(
+          // @ts-ignore
+          input.point.data.currencyPairs
+        )) {
+          currencyPairs.push(
+            <div key={index} className="currency-pair-holder">
+              <div className="currency-pair-name">{`${key}:`}</div>
+              <div className="currency-pair-usd">{`$${value.toFixed(2)}`}</div>
+            </div>
+          )
+          index++
+        }
         return (
           <div style={verticalBlockHolder}>
             <div style={blocks} />
@@ -156,6 +173,8 @@ const LineGraph: any = (props: {
                 <div>{`USD Value: $${usdAmount}`}</div>
                 {/* @ts-ignore */}
                 <div>{`Transactions: ${input.point.data.numTxs}`}</div>
+                <hr className="divider" />
+                <div className="currency-pairs">{currencyPairs}</div>
               </div>
               <div style={blocks} />
             </div>
