@@ -63,10 +63,10 @@ const fixtures = {
   sendRewards: {
     data: [
       {
-        FIO8bToxvXGj1kK2W5yQoTxvhbrHRRtXu8EHokoaeB9mb9NFrAXu9: 1 * FIO_MULTIPLE
+        FIO8bToxvXGj1kK2W5yQoTxvhbrHRRtXu8EHokoaeB9mb9NFrAXu9: 1
       },
       {
-        FIO8bToxvXGj1kK2W5yQoTxvhbrHRRtXu8EHokoaeB9mb9NFrAXu9: 1 * FIO_MULTIPLE
+        FIO8bToxvXGj1kK2W5yQoTxvhbrHRRtXu8EHokoaeB9mb9NFrAXu9: 1
       }
     ],
     expected: {}

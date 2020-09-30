@@ -140,7 +140,10 @@ export const sendRewards = async (
 
   for (const reward in rewardList) {
     console.log(`reward address is: ${reward}`)
-    console.log(`Rewards amount is : ${rewardList[reward]}`)
+    console.log(`Rewards amount is: ${rewardList[reward]}`)
+    console.log(
+      `Multiple * reward amount: ${FIO_MULTIPLE * rewardList[reward]}`
+    )
 
     const result = await fetch(
       `http://localhost:8080/spend/?type=${rewardCurrency}`,
@@ -150,7 +153,7 @@ export const sendRewards = async (
             {
               publicAddress: `${reward}`, // Denominated in smallest unit
               // Need to add in mining fee so exact amount is sent.
-              nativeAmount: `${rewardList[reward]}`
+              nativeAmount: `${rewardList[reward] * FIO_MULTIPLE}`
             }
           ]
         }),
