@@ -41,17 +41,20 @@ const CURRENCY_CONVERSION = {
 }
 const DB_NAMES = [
   { name: 'reports_apps' },
-  { name: 'reports_transactions', options: { partitioned: true } },
-  { name: 'reports_progresscache', options: { partitioned: true } }
-]
-const DB_INDEXES = [
   {
-    index: { fields: ['timestamp'] },
-    ddoc: 'timestamp-index',
-    name: 'Timestamp',
-    type: 'json' as 'json',
-    partitioned: true
-  }
+    name: 'reports_transactions',
+    options: { partitioned: true },
+    indexes: [
+      {
+        index: { fields: ['timestamp'] },
+        ddoc: 'timestamp-index',
+        name: 'Timestamp',
+        type: 'json' as 'json',
+        partitioned: true
+      }
+    ]
+  },
+  { name: 'reports_progresscache', options: { partitioned: true } }
 ]
 
 const partners = [
@@ -89,11 +92,16 @@ export async function queryEngine(): Promise<void> {
   for (const dbName of DB_NAMES) {
     if (!result.includes(dbName.name)) {
       await nanoDb.db.create(dbName.name, dbName.options)
-      if (dbName.name === 'reports_transactions') {
-        const dbTransactions = nanoDb.db.use('reports_transactions')
-        for (const dbIndex of DB_INDEXES) {
-          await dbTransactions.createIndex(dbIndex)
-          datelog(`Created ${dbIndex.name} Index.`)
+    }
+    if (dbName.indexes !== undefined) {
+      const currentDb = nanoDb.db.use(dbName.name)
+      for (const dbIndex of dbName.indexes) {
+        try {
+          await currentDb.get(`_design/${dbIndex.ddoc}`)
+          datelog(`${dbName.name} already has '${dbIndex.name}' index.`)
+        } catch {
+          await currentDb.createIndex(dbIndex)
+          datelog(`Created '${dbIndex.name}' index for ${dbName.name}.`)
         }
       }
     }
