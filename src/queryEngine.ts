@@ -41,7 +41,19 @@ const CURRENCY_CONVERSION = {
 }
 const DB_NAMES = [
   { name: 'reports_apps' },
-  { name: 'reports_transactions', options: { partitioned: true } },
+  {
+    name: 'reports_transactions',
+    options: { partitioned: true },
+    indexes: [
+      {
+        index: { fields: ['timestamp'] },
+        ddoc: 'timestamp-index',
+        name: 'Timestamp',
+        type: 'json' as 'json',
+        partitioned: true
+      }
+    ]
+  },
   { name: 'reports_progresscache', options: { partitioned: true } }
 ]
 
@@ -81,9 +93,23 @@ export async function queryEngine(): Promise<void> {
     if (!result.includes(dbName.name)) {
       await nanoDb.db.create(dbName.name, dbName.options)
     }
+    if (dbName.indexes !== undefined) {
+      const currentDb = nanoDb.db.use(dbName.name)
+      for (const dbIndex of dbName.indexes) {
+        try {
+          await currentDb.get(`_design/${dbIndex.ddoc}`)
+          datelog(`${dbName.name} already has '${dbIndex.name}' index.`)
+        } catch {
+          await currentDb.createIndex(dbIndex)
+          datelog(`Created '${dbIndex.name}' index for ${dbName.name}.`)
+        }
+      }
+    }
   }
+
   const dbProgress = nanoDb.db.use('reports_progresscache')
   const dbApps = nanoDb.db.use('reports_apps')
+
   while (true) {
     // get the contents of all reports_apps docs
     const query = {
