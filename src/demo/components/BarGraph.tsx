@@ -59,7 +59,22 @@ const BarGraph: any = (props: {
     if (index % tickSpace === 0) {
       tickRate.push(date)
     }
-    return { date, allUsd: 0, allTxs: 0, currencyPairs: bucket.currencyPairs }
+    const currencyPairs = {}
+    for (const bucket of rawData) {
+      for (const [key, value] of Object.entries(
+        bucket.result[timePeriod][index].currencyPairs
+      )) {
+        if (currencyPairs[key] == null) {
+          currencyPairs[key] = value
+          continue
+        }
+        currencyPairs[key] += value
+      }
+    }
+    const currencyPairArray = Object.entries(currencyPairs).sort(
+      (a, b) => b[1] - a[1]
+    )
+    return { date, allUsd: 0, allTxs: 0, currencyPairs: currencyPairArray }
   })
   for (let i = 0; i < rawData.length; i++) {
     for (let j = 0; j < rawData[0].result[timePeriod].length; j++) {
@@ -136,7 +151,7 @@ const BarGraph: any = (props: {
           const allUsdAmount = input.data.allUsd.toFixed(2)
           const currencyPairs: JSX.Element[] = []
           let index = 0
-          for (const [key, value] of Object.entries(input.data.currencyPairs)) {
+          for (const [key, value] of input.data.currencyPairs) {
             currencyPairs.push(
               <div key={index} className="currency-pair-holder">
                 <div className="currency-pair-name">{`${key}:`}</div>
@@ -146,6 +161,7 @@ const BarGraph: any = (props: {
               </div>
             )
             index++
+            if (index === 15) break
           }
           return (
             <div style={styleTwo}>
