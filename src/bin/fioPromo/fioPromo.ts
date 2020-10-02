@@ -1,3 +1,5 @@
+import yargs from 'yargs'
+
 import {
   filterDomain,
   getFioTransactions,
@@ -5,20 +7,66 @@ import {
   sendRewards
 } from './fioLookup'
 
-const DEFAULT_OFFSET = 135000 // Latest is 139000
+const DEFAULT_STARTDATE = new Date('2019-01-01')
+
+// End time arguments
+// Info server - serves up static info to client app. Checks eery hour and finds all seed servers
+// Have list of servers that our EDGE's. If those are down or out of sync, send slack error
+// Couch DB
+
+// Logging srver - dedicated server that can be quired which can be sent JSON files
+// Make sense of massive JSON file
+
+// Info 1 services. Dynamic ethereum fee api
+
+// React native, supporting automated testing
 
 async function main(): Promise<null> {
   // 1. Get input from user
-  let checkFrom = parseInt(process.argv[2]) // Getting first cl arg
-  const devMode = process.argv[3] === 'dev'
-  const currency = devMode ? process.argv[4] : process.argv[3] // If no dev mode, use parameter for currency instead of dev
+  const argv = yargs
+    .command('sendMoney', 'Sends money to Fio addresses', {
+      // year: {
+      //   description: 'Send money',
+      //   alias: 'y',
+      //   type: 'number'
+      // }
+    })
+    .option('devMode', {
+      alias: 'd',
+      description: 'Run without sending money',
+      type: 'boolean'
+    })
+    .option('startDate', {
+      alias: 's',
+      description: 'Start checking for purchases from specified date',
+      type: 'date'
+    })
+    .option('endDate', {
+      alias: 'e',
+      description: 'End checking for purchases from specified date',
+      type: 'date'
+    })
+    .option('currency', {
+      alias: 'c',
+      description: 'Currency to run promotion for',
+      type: 'string'
+    })
+    .help()
+    .alias('help', 'h').argv
 
-  checkFrom = isNaN(checkFrom) ? DEFAULT_OFFSET : checkFrom // If null, set to default
+  const startDate = new Date(
+    argv.startDate == null ? DEFAULT_STARTDATE : argv.startDate
+  ) // If not specified, set to default
+  const endDate = new Date(argv.endDate == null ? new Date() : argv.endDate) // If not specified, set to today
+  const devMode: boolean = isNaN(argv.devMode) ? false : argv.devMode
+  const currency = argv.currency
 
-  console.log(`Checking from: ${checkFrom}`)
+  if (devMode) console.log(`Dev mode is on`)
+  console.log(`Start date: ${startDate}`)
+  console.log(`End date: ${endDate}`)
 
   // 2. Get FIO customers in specified time-frame
-  const fioTransactions = await getFioTransactions(checkFrom)
+  const fioTransactions = await getFioTransactions(startDate, endDate)
 
   console.log(`Number of FIO transactions: ${fioTransactions.length}`)
   // console.log(`Fio transactions: ${JSON.stringify(fioTransactions)}`)

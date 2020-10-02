@@ -36,7 +36,9 @@ const LIMIT = 100
 const ROLLBACK = 500
 
 export async function queryChangeNow(
-  pluginParams: PluginParams
+  pluginParams: PluginParams,
+  startDate: Date = new Date(0),
+  endDate: Date = new Date() // By default check to current date
 ): Promise<PluginResult> {
   const ssFormatTxs: StandardTx[] = []
   let apiKey = ''
@@ -49,7 +51,12 @@ export async function queryChangeNow(
       transactions: []
     }
   }
-  let url = `https://changenow.io/api/v1/transactions/${apiKey}?limit=${LIMIT}&offset=${offset}`
+  const partnerHost = `https://changenow.io/api`
+  const apiVersion = `/v1`
+  const endPoint = `/transactions`
+  const options = `?limit=${LIMIT}&offset=${offset}`
+  // https://changenow.io/api/v1/transactions?limit=100&offset=135000
+  let url = `${partnerHost}${apiVersion}${endPoint}/${apiKey}${options}`
   while (true) {
     let jsonObj: ReturnType<typeof asChangeNowResult>
     try {
@@ -62,34 +69,41 @@ export async function queryChangeNow(
       break
     }
     const txs = jsonObj
+    console.log('65. txs', txs)
     for (const rawtx of txs) {
-      const checkTx = asChangeNowRawTx(rawtx)
+      const checkTx = asChangeNowRawTx(rawtx) // Check RAW trasaction
       if (
         checkTx.status === 'finished' &&
         checkTx.payinHash != null &&
         checkTx.amountSend != null &&
         checkTx.amountReceive != null
       ) {
-        const tx = asChangeNowTx(rawtx)
+        const tx = asChangeNowTx(rawtx) // Set NORMAL trasaction
         const date = new Date(tx.updatedAt)
-        const timestamp = date.getTime() / 1000
-        const ssTx: StandardTx = {
-          status: 'complete',
-          orderId: tx.id,
-          depositTxid: tx.payinHash,
-          depositAddress: tx.payinAddress,
-          depositCurrency: tx.fromCurrency.toUpperCase(),
-          depositAmount: tx.amountSend,
-          payoutTxid: tx.payoutHash,
-          payoutAddress: tx.payoutAddress,
-          payoutCurrency: tx.toCurrency.toUpperCase(),
-          payoutAmount: tx.amountReceive,
-          timestamp,
-          isoDate: tx.updatedAt,
-          usdValue: undefined,
-          rawTx: rawtx
+
+        // If we reached end date, stop checking
+        if (endDate <= date) break
+        if (startDate <= date) {
+          // If tx is past start date
+          const timestamp = date.getTime() / 1000
+          const ssTx: StandardTx = {
+            status: 'complete',
+            orderId: tx.id,
+            depositTxid: tx.payinHash,
+            depositAddress: tx.payinAddress,
+            depositCurrency: tx.fromCurrency.toUpperCase(),
+            depositAmount: tx.amountSend,
+            payoutTxid: tx.payoutHash,
+            payoutAddress: tx.payoutAddress,
+            payoutCurrency: tx.toCurrency.toUpperCase(),
+            payoutAmount: tx.amountReceive,
+            timestamp,
+            isoDate: tx.updatedAt,
+            usdValue: undefined,
+            rawTx: rawtx
+          }
+          ssFormatTxs.push(ssTx)
         }
-        ssFormatTxs.push(ssTx)
       }
     }
     if (txs.length < LIMIT) {

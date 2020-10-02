@@ -23,6 +23,7 @@ export const defaultSettings: any = {
   maxFioReward: 40,
   fioMultiple: 1000000000, // 1,000,000,000
   defaultDomain: 'edge',
+  offset: 135000, // Latest is 139000
   currency: 'fio',
   endpoint: '/v1/chain/get_fio_names',
   currencyCode: 'FIO'
