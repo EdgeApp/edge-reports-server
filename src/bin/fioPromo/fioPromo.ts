@@ -11,9 +11,8 @@ async function main(): Promise<null> {
   // 1. Get input from user
   let checkFrom = parseInt(process.argv[2]) // Getting first cl arg
   const devMode = process.argv[3] === 'dev'
-  const currency = devMode ? process.argv[4] : process.argv[3]
+  const currency = devMode ? process.argv[4] : process.argv[3] // If no dev mode, use parameter for currency instead of dev
 
-  console.log(checkFrom)
   checkFrom = isNaN(checkFrom) ? DEFAULT_OFFSET : checkFrom // If null, set to default
 
   console.log(`Checking from: ${checkFrom}`)
@@ -22,11 +21,11 @@ async function main(): Promise<null> {
   const fioTransactions = await getFioTransactions(checkFrom)
 
   console.log(`Number of FIO transactions: ${fioTransactions.length}`)
-  console.log(`Fio transactions: ${JSON.stringify(fioTransactions)}`)
+  // console.log(`Fio transactions: ${JSON.stringify(fioTransactions)}`)
 
   // 3. Filter for @edge domains
   const edgeFioTransactions = await filterDomain(fioTransactions)
-  // console.log(edgeFioTransactions)
+  console.log(edgeFioTransactions)
 
   // 4. Add up purchases up to 40 FIO
   const rewards = getRewards(edgeFioTransactions)

@@ -150,43 +150,49 @@ export const sendRewards = async (
 ): Promise<string[]> => {
   const txIdList: string[] = []
 
-  for (const reward in rewardList) {
-    const sendAmount = fioMultiple * rewardList[reward]
-    console.log(`reward address is: ${reward}`)
-    console.log(`Rewards amount is: ${rewardList[reward]}`)
-    console.log(`Multiple * reward amount: ${sendAmount}`)
+  const localhost = `http://localhost:8080`
+
+  for (const address in rewardList) {
+    const sendAmount = (fioMultiple * rewardList[address]).toString()
+    console.log(`reward address is: ${address} typeof is: ${typeof address}`)
+    console.log(`Rewards amount is: ${rewardList[address]}`)
+    console.log(`Amount to send: ${sendAmount} typeof is: ${typeof sendAmount}`) // Multiple * reward amount
 
     let transaction = {
-      txid: `dev mode - address: ${reward}, amount: ${sendAmount}`
+      txid: `dev mode - address: ${address}, amount: ${sendAmount}`
     }
 
     if (!devMode) {
-      const result = await fetch(
-        `http://localhost:8080/spend/?type=${rewardCurrency}`,
-        {
-          body: JSON.stringify({
-            spendTargets: [
-              {
-                publicAddress: `${reward}`, // Denominated in smallest unit
-                // Need to add in mining fee so exact amount is sent.
-                nativeAmount: `${sendAmount}`
-              }
-            ]
-          }),
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          method: 'POST'
-        }
-      )
+      try {
+        const result = await fetch(
+          `${localhost}/spend/?type=${rewardCurrency}`,
+          {
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            method: 'POST',
+            body: JSON.stringify({
+              spendTargets: [
+                {
+                  nativeAmount: `${sendAmount}`,
+                  publicAddress: `${address}`
+                }
+              ]
+            })
+          }
+        )
 
-      transaction = await result.json()
+        console.log('183. result ', await result)
+        transaction = await result.json()
+
+        console.log(`Transaction is: JSON.stringify(${transaction})`)
+        console.log(`Transaction ID: ${transaction.txid}`)
+
+        txIdList.push(transaction.txid)
+      } catch (e) {
+        console.log(e)
+      }
     }
-
-    console.log(`Transaction is: JSON.stringify(${transaction})`)
-    console.log(`Transaction ID: ${transaction.txid}`)
-
-    txIdList.push(transaction.txid)
   }
 
   return txIdList

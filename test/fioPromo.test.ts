@@ -5,7 +5,8 @@ import { checkDomain, getRewards } from '../src/bin/fioPromo/fioLookup'
 
 const testAddress: Array<[string, boolean]> = [
   ['FIO5MctVjvoTiEFPyJYNnPerAXHWRUhDe2ZNEDCj43ngU4W5jZXzA', false],
-  ['FIO8TPpos3a8TVp9k4KaByrTw5sh2N1QuS4ro4gc4ooBczEPvTNNU', false]
+  ['FIO8TPpos3a8TVp9k4KaByrTw5sh2N1QuS4ro4gc4ooBczEPvTNNU', false],
+  ['FIO7vXvbZnkAodCj8Huw4dhFiu4VkPaTexpvLcxJVQmU2CtfzkAoD', true]
 ]
 
 const fixtures = {
@@ -59,7 +60,7 @@ const fixtures = {
 describe('Checking if address has Edge domain', function() {
   for (const fixture of testAddress) {
     it(`Check FIO public address: ${fixture[0]}`, async function() {
-      const result = await checkDomain(fixture[0], 'fiotestnet')
+      const result = await checkDomain(fixture[0], 'edge')
       expect(result).equals(fixture[1])
     })
   }
