@@ -49,11 +49,14 @@ const LineGraph: any = (props: {
       if (index % tickSpace === 0) {
         tickRate.push(date)
       }
+      const currencyPairs = Object.entries(bucket.currencyPairs).sort(
+        (a, b) => b[1] - a[1]
+      )
       return {
         x: date,
         y: bucket.usdValue,
         numTxs: bucket.numTxs,
-        currencyPairs: bucket.currencyPairs
+        currencyPairs
       }
     }
   )
@@ -151,10 +154,8 @@ const LineGraph: any = (props: {
         }
         const currencyPairs: JSX.Element[] = []
         let index = 0
-        for (const [key, value] of Object.entries(
-          // @ts-ignore
-          input.point.data.currencyPairs
-        )) {
+        // @ts-ignore
+        for (const [key, value] of input.point.data.currencyPairs) {
           currencyPairs.push(
             <div key={index} className="currency-pair-holder">
               <div className="currency-pair-name">{`${key}:`}</div>
@@ -162,6 +163,7 @@ const LineGraph: any = (props: {
             </div>
           )
           index++
+          if (index === 15) break
         }
         return (
           <div style={verticalBlockHolder}>
