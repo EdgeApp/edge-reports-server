@@ -24,13 +24,6 @@ const DEFAULT_STARTDATE = new Date('2019-01-01')
 async function main(): Promise<null> {
   // 1. Get input from user
   const argv = yargs
-    .command('sendMoney', 'Sends money to Fio addresses', {
-      // year: {
-      //   description: 'Send money',
-      //   alias: 'y',
-      //   type: 'number'
-      // }
-    })
     .option('devMode', {
       alias: 'd',
       description: 'Run without sending money',
@@ -58,7 +51,7 @@ async function main(): Promise<null> {
     argv.startDate == null ? DEFAULT_STARTDATE : argv.startDate
   ) // If not specified, set to default
   const endDate = new Date(argv.endDate == null ? new Date() : argv.endDate) // If not specified, set to today
-  const devMode: boolean = isNaN(argv.devMode) ? false : argv.devMode
+  const devMode: boolean = argv.devMode == null ? false : argv.devMode
   const currency = argv.currency
 
   if (devMode) console.log(`Dev mode is on`)
