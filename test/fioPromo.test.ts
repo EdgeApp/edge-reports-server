@@ -3,9 +3,10 @@ import { describe, it } from 'mocha'
 
 import { checkDomain, getRewards } from '../src/bin/fioPromo/fioLookup'
 
-const testAddress: Array<[string,boolean]> = [
+const testAddress: Array<[string, boolean]> = [
   ['FIO5MctVjvoTiEFPyJYNnPerAXHWRUhDe2ZNEDCj43ngU4W5jZXzA', false],
-  ['FIO8TPpos3a8TVp9k4KaByrTw5sh2N1QuS4ro4gc4ooBczEPvTNNU', false]
+  ['FIO8TPpos3a8TVp9k4KaByrTw5sh2N1QuS4ro4gc4ooBczEPvTNNU', false],
+  ['FIO7vXvbZnkAodCj8Huw4dhFiu4VkPaTexpvLcxJVQmU2CtfzkAoD', true]
 ]
 
 const fixtures = {
@@ -35,7 +36,8 @@ const fixtures = {
           payoutHash:
             '7fa2600f4b14a7e7b093e4ec3d65a9409681de6b48a26b5559e89b31b9eead58',
           payinAddress: 'qp3xryh97c7wnqyz0k5csc38fuwa2m3acszwvurnuf',
-          payoutAddress: 'FIO8bToxvXGj1kK2W5yQoTxvhbrHRRtXu8EHokoaeB9mb9NFrAXu9',
+          payoutAddress:
+            'FIO8bToxvXGj1kK2W5yQoTxvhbrHRRtXu8EHokoaeB9mb9NFrAXu9',
           fromCurrency: 'bch',
           toCurrency: 'fio',
           amountSend: 0.13699,
@@ -47,28 +49,28 @@ const fixtures = {
       }
     ],
     expected: {
-      "FIO8bToxvXGj1kK2W5yQoTxvhbrHRRtXu8EHokoaeB9mb9NFrAXu9": 40,/*
+      FIO8bToxvXGj1kK2W5yQoTxvhbrHRRtXu8EHokoaeB9mb9NFrAXu9: 40 /*
       "FIO8gcjB4tTfTHvjWjc1RQwLGpxk8vCzbxZujhiPvURx527xVrEkS": 40,
       "FIO6oPCnk7SNSnAAXFM1nS1qv8kNsBXnaHLXDfMBjEh6r2U3kQ5PY": 40,
-      "FIO7vXvbZnkAodCj8Huw4dhFiu4VkPaTexpvLcxJVQmU2CtfzkAoD": 40 // Personal test address*/
-    }
+      "FIO7vXvbZnkAodCj8Huw4dhFiu4VkPaTexpvLcxJVQmU2CtfzkAoD": 40 */
     }
   }
+}
 
-
-
-describe('Checking if address has Edge domain', function () {
+describe('Checking if address has Edge domain', function() {
   for (const fixture of testAddress) {
-    it(`Check FIO public address: ${fixture[0]}`, async function () {
-      const result = await checkDomain(fixture[0], 'fiotestnet')
+    it(`Check FIO public address: ${fixture[0]}`, async function() {
+      const result = await checkDomain(fixture[0], 'edge')
       expect(result).equals(fixture[1])
     })
   }
 })
 
-describe('Checking rewards function', function () {
-    it(`Check reward for single transaction`, function () {
-      expect(getRewards(fixtures.getRewards.data)).to.deep.
-        equals(fixtures.getRewards.expected)
-    })
+describe('Checking rewards function', function() {
+  it(`Check reward for single transaction`, function() {
+    this.timeout(0)
+    expect(getRewards(fixtures.getRewards.data)).to.deep.equals(
+      fixtures.getRewards.expected
+    )
+  })
 })
