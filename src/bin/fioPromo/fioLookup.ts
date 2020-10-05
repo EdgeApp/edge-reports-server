@@ -18,7 +18,6 @@ interface AddressReward {
 }
 
 const noNamesMessage: string = 'No FIO names'
-const NETWORK = 'https://fio.cryptolions.io:443/v1/chain'
 const {
   maxFioReward,
   fioMultiple,
@@ -71,22 +70,28 @@ export async function filterDomain( // Test
 
 // Does FIO public address have specified domain?
 export const checkDomain = async (
-  // Test
   pubkey: string | undefined,
-  domain: string = DEFAULT_DOMAIN, // By default check for @edge domains
-  network: string = NETWORK
+  domain: string = defaultDomain, // By default check for @edge domains
+  urls: string = networks
 ): Promise<boolean> => {
-  const endPoint = '/get_fio_names'
+  let fioInfo
+  let error = ''
+  for (const apiUrl of urls) {
+    try {
+      const result = await fetch(`${apiUrl}${endpoint}`, {
+        method: 'POST',
+        body: JSON.stringify({ fio_public_key: pubkey })
+      })
 
-  // const tapiUrl = testNet + endPoint
-  const apiUrl = network + endPoint
-  const result = await fetch(`${apiUrl}`, {
-    method: 'POST',
-    body: JSON.stringify({ fio_public_key: pubkey })
-  })
-
-  const fioInfo = await result.json()
-
+      fioInfo = await result.json()
+      error = ''
+      break
+    } catch (e) {
+      error = e
+      console.log(e)
+    }
+  }
+  if (error !== '') throw error
   if (
     Object.entries(fioInfo)
       .toString()
