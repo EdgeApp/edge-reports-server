@@ -4,6 +4,7 @@ import fetch from 'node-fetch'
 
 import { queryChangeNow } from '../../partners/changenow'
 import { PluginParams, StandardTx } from '../../types'
+import { defaultSettings } from './fioInfo'
 
 const asGetFioNames = asObject({
   fio_addresses: asArray(asUnknown)
@@ -17,11 +18,15 @@ interface AddressReward {
 }
 
 const noNamesMessage: string = 'No FIO names'
-const MAX_FIO_REWARD = 40
-const DEFAULT_DOMAIN = 'edge'
-
-// const testNet = 'http://testnet.fioprotocol.io/v1/chain'
-const NETWORK = 'https://fio.cryptolions.io:443/v1/chain'
+const {
+  maxFioReward,
+  fioMultiple,
+  defaultDomain,
+  currency,
+  currencyCode,
+  endpoint,
+  networks
+} = defaultSettings
 
 const configFile: string = fs.readFileSync(
   `${__dirname}/../../../config.json`,
@@ -42,26 +47,22 @@ export async function getFioTransactions(checkFrom): Promise<StandardTx[]> {
   }
 
   const txnList = await queryChangeNow(pluginConfig)
-
-  console.log(`notsure ${JSON.stringify(txnList)}`)
   // Return list of Fio Customers
   return txnList.transactions.filter(
-    transaction => transaction.payoutCurrency === 'FIO'
+    transaction => transaction.payoutCurrency === currencyCode
   )
 }
 
 export async function filterDomain( // Test
   fioList: StandardTx[],
-  domain: string = DEFAULT_DOMAIN // By default check for @edge domains
+  domain: string = defaultDomain // By default check for @edge domains
 ): Promise<StandardTx[]> {
   const txList: StandardTx[] = []
 
   for (const tx of fioList) {
     const { payoutAddress } = tx
-
     if (payoutAddress == null) continue
     const result = await checkDomain(payoutAddress, domain)
-
     if (result) txList.push(tx)
   }
   return txList // only FIO addresses with an @edge Fio domain
@@ -69,22 +70,28 @@ export async function filterDomain( // Test
 
 // Does FIO public address have specified domain?
 export const checkDomain = async (
-  // Test
   pubkey: string | undefined,
-  domain: string = DEFAULT_DOMAIN, // By default check for @edge domains
-  network: string = NETWORK
+  domain: string = defaultDomain, // By default check for @edge domains
+  urls: string = networks
 ): Promise<boolean> => {
-  const endPoint = '/get_fio_names'
+  let fioInfo
+  let error = ''
+  for (const apiUrl of urls) {
+    try {
+      const result = await fetch(`${apiUrl}${endpoint}`, {
+        method: 'POST',
+        body: JSON.stringify({ fio_public_key: pubkey })
+      })
 
-  // const tapiUrl = testNet + endPoint
-  const apiUrl = network + endPoint
-  const result = await fetch(`${apiUrl}`, {
-    method: 'POST',
-    body: JSON.stringify({ fio_public_key: pubkey })
-  })
-
-  const fioInfo = await result.json()
-
+      fioInfo = await result.json()
+      error = ''
+      break
+    } catch (e) {
+      error = e
+      console.log(e)
+    }
+  }
+  if (error !== '') throw error
   if (
     Object.entries(fioInfo)
       .toString()
@@ -94,8 +101,6 @@ export const checkDomain = async (
     return false
   } else {
     const fioNames = asGetFioNames(fioInfo)
-
-
 
     for (const fioName of fioNames.fio_addresses) {
       const cleanFioName = asFioAddress(fioName)
@@ -110,7 +115,7 @@ export const checkDomain = async (
 // Takes a list of public keys to be checked and returns a 2D array with keys and values
 export const getRewards = (
   txList: StandardTx[],
-  rewardMax: number = MAX_FIO_REWARD
+  rewardMax: number = maxFioReward
 ): AddressReward => {
   const rewards: AddressReward = {}
 
@@ -134,7 +139,60 @@ export const getRewards = (
     }
   }
 
-
   return rewards
 }
 
+// Accept AddressReward interface
+export const sendRewards = async (
+  rewardList: AddressReward,
+  rewardCurrency: string = currency,
+  devMode: boolean = false
+): Promise<string[]> => {
+  const txIdList: string[] = []
+
+  const localhost = `http://localhost:8080`
+
+  for (const address in rewardList) {
+    const sendAmount = (fioMultiple * rewardList[address]).toString()
+    console.log(`reward address is: ${address} typeof is: ${typeof address}`)
+    console.log(`Rewards amount is: ${rewardList[address]}`)
+    console.log(`Amount to send: ${sendAmount} typeof is: ${typeof sendAmount}`) // Multiple * reward amount
+
+    let transaction = {
+      txid: `dev mode - address: ${address}, amount: ${sendAmount}`
+    }
+
+    if (!devMode) {
+      try {
+        const result = await fetch(
+          `${localhost}/spend/?type=${rewardCurrency}`,
+          {
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            method: 'POST',
+            body: JSON.stringify({
+              spendTargets: [
+                {
+                  nativeAmount: `${sendAmount}`,
+                  publicAddress: `${address}`
+                }
+              ]
+            })
+          }
+        )
+
+        transaction = await result.json()
+
+        console.log(`Transaction is: ${JSON.stringify(transaction)}`)
+        console.log(`Transaction ID: ${transaction.txid}`)
+
+        txIdList.push(transaction.txid)
+      } catch (e) {
+        console.log(e)
+      }
+    }
+  }
+
+  return txIdList
+}
