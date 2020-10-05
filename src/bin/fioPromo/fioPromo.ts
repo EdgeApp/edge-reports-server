@@ -21,10 +21,10 @@ async function main(): Promise<null> {
   const fioTransactions = await getFioTransactions(checkFrom)
 
   console.log(`Number of FIO transactions: ${fioTransactions.length}`)
-  console.log(`Fio transactions: ${JSON.stringify(fioTransactions)}`)
+  // console.log(`Fio transactions: ${JSON.stringify(fioTransactions)}`)
 
   // 3. Filter for @edge domains
-  const edgeFioTransactions = await filterDomain(fioTransactions, 'edge')
+  const edgeFioTransactions = await filterDomain(fioTransactions)
   console.log(edgeFioTransactions)
 
   // 4. Add up purchases up to 40 FIO
