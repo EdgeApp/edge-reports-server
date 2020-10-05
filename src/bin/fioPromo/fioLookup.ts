@@ -35,18 +35,19 @@ const configFile: string = fs.readFileSync(
 const config = JSON.parse(configFile)
 
 // Returns all customers from ChangeNow who have purchased FIO
-export async function getFioTransactions(checkFrom): Promise<StandardTx[]> {
+export async function getFioTransactions(
+  startDate: Date,
+  endDate: Date
+): Promise<StandardTx[]> {
   // Get public keys from offset
   const pluginConfig: PluginParams = {
-    settings: {
-      offset: checkFrom
-    },
+    settings: {},
     apiKeys: {
       changenowApiKey: config.changenowApiKey
     }
   }
 
-  const txnList = await queryChangeNow(pluginConfig)
+  const txnList = await queryChangeNow(pluginConfig, startDate, endDate)
   // Return list of Fio Customers
   return txnList.transactions.filter(
     transaction => transaction.payoutCurrency === currencyCode
