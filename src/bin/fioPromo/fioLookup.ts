@@ -182,10 +182,9 @@ export const sendRewards = async (
           }
         )
 
-        console.log('183. result ', await result)
         transaction = await result.json()
 
-        console.log(`Transaction is: JSON.stringify(${transaction})`)
+        console.log(`Transaction is: ${JSON.stringify(transaction)}`)
         console.log(`Transaction ID: ${transaction.txid}`)
 
         txIdList.push(transaction.txid)
@@ -196,5 +195,4 @@ export const sendRewards = async (
   }
 
   return txIdList
-  // return ['example hash']
 }
