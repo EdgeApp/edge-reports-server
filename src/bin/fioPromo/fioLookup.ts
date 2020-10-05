@@ -4,6 +4,7 @@ import fetch from 'node-fetch'
 
 import { queryChangeNow } from '../../partners/changenow'
 import { PluginParams, StandardTx } from '../../types'
+import { defaultSettings } from './fioInfo'
 
 const asGetFioNames = asObject({
   fio_addresses: asArray(asUnknown)
@@ -17,11 +18,16 @@ interface AddressReward {
 }
 
 const noNamesMessage: string = 'No FIO names'
-const MAX_FIO_REWARD = 40
-const DEFAULT_DOMAIN = 'edge'
-
-// const testNet = 'http://testnet.fioprotocol.io/v1/chain'
 const NETWORK = 'https://fio.cryptolions.io:443/v1/chain'
+const {
+  maxFioReward,
+  fioMultiple,
+  defaultDomain,
+  currency,
+  currencyCode,
+  endpoint,
+  networks
+} = defaultSettings
 
 const configFile: string = fs.readFileSync(
   `${__dirname}/../../../config.json`,
@@ -42,26 +48,22 @@ export async function getFioTransactions(checkFrom): Promise<StandardTx[]> {
   }
 
   const txnList = await queryChangeNow(pluginConfig)
-
-  console.log(`notsure ${JSON.stringify(txnList)}`)
   // Return list of Fio Customers
   return txnList.transactions.filter(
-    transaction => transaction.payoutCurrency === 'FIO'
+    transaction => transaction.payoutCurrency === currencyCode
   )
 }
 
 export async function filterDomain( // Test
   fioList: StandardTx[],
-  domain: string = DEFAULT_DOMAIN // By default check for @edge domains
+  domain: string = defaultDomain // By default check for @edge domains
 ): Promise<StandardTx[]> {
   const txList: StandardTx[] = []
 
   for (const tx of fioList) {
     const { payoutAddress } = tx
-
     if (payoutAddress == null) continue
     const result = await checkDomain(payoutAddress, domain)
-
     if (result) txList.push(tx)
   }
   return txList // only FIO addresses with an @edge Fio domain
@@ -95,8 +97,6 @@ export const checkDomain = async (
   } else {
     const fioNames = asGetFioNames(fioInfo)
 
-
-
     for (const fioName of fioNames.fio_addresses) {
       const cleanFioName = asFioAddress(fioName)
       if (cleanFioName.fio_address.includes(`@${domain}`)) {
@@ -110,7 +110,7 @@ export const checkDomain = async (
 // Takes a list of public keys to be checked and returns a 2D array with keys and values
 export const getRewards = (
   txList: StandardTx[],
-  rewardMax: number = MAX_FIO_REWARD
+  rewardMax: number = maxFioReward
 ): AddressReward => {
   const rewards: AddressReward = {}
 
