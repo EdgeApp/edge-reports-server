@@ -1,3 +1,5 @@
+import { program } from 'commander'
+
 import {
   filterDomain,
   getFioTransactions,
@@ -5,17 +7,17 @@ import {
   sendRewards
 } from './fioLookup'
 
-const DEFAULT_OFFSET = 135000 // Latest is 139000
-
 async function main(): Promise<null> {
-  // 1. Get input from user
-  let checkFrom = parseInt(process.argv[2]) // Getting first cl arg
-  const devMode = process.argv[3] === 'dev'
-  const currency = devMode ? process.argv[4] : process.argv[3] // If no dev mode, use parameter for currency instead of dev
+  program
+    .option('-d, --dev', 'Run without sending money')
+    .option('-c, --currency <type>', 'Currency to run promotion for', 'fio')
 
-  checkFrom = isNaN(checkFrom) ? DEFAULT_OFFSET : checkFrom // If null, set to default
+  program.parse(process.argv)
 
-  console.log(`Checking from: ${checkFrom}`)
+  const devMode: boolean = program.dev == null ? false : program.dev
+  const currency = program.currency
+
+  if (devMode) console.log(`Dev mode is on`)
 
   // 2. Get FIO customers in specified time-frame
   const fioTransactions = await getFioTransactions(checkFrom)
