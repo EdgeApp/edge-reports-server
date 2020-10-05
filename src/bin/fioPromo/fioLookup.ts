@@ -134,7 +134,62 @@ export const getRewards = (
     }
   }
 
-
   return rewards
 }
 
+// Accept AddressReward interface
+export const sendRewards = async (
+  rewardList: AddressReward,
+  rewardCurrency: string = currency,
+  devMode: boolean = false
+): Promise<string[]> => {
+  const txIdList: string[] = []
+
+  const localhost = `http://localhost:8080`
+
+  for (const address in rewardList) {
+    const sendAmount = (fioMultiple * rewardList[address]).toString()
+    console.log(`reward address is: ${address} typeof is: ${typeof address}`)
+    console.log(`Rewards amount is: ${rewardList[address]}`)
+    console.log(`Amount to send: ${sendAmount} typeof is: ${typeof sendAmount}`) // Multiple * reward amount
+
+    let transaction = {
+      txid: `dev mode - address: ${address}, amount: ${sendAmount}`
+    }
+
+    if (!devMode) {
+      try {
+        const result = await fetch(
+          `${localhost}/spend/?type=${rewardCurrency}`,
+          {
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            method: 'POST',
+            body: JSON.stringify({
+              spendTargets: [
+                {
+                  nativeAmount: `${sendAmount}`,
+                  publicAddress: `${address}`
+                }
+              ]
+            })
+          }
+        )
+
+        console.log('183. result ', await result)
+        transaction = await result.json()
+
+        console.log(`Transaction is: JSON.stringify(${transaction})`)
+        console.log(`Transaction ID: ${transaction.txid}`)
+
+        txIdList.push(transaction.txid)
+      } catch (e) {
+        console.log(e)
+      }
+    }
+  }
+
+  return txIdList
+  // return ['example hash']
+}
