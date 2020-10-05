@@ -8,9 +8,11 @@ import {
 const DEFAULT_OFFSET = 135000 // Latest is 139000
 
 async function main(): Promise<null> {
-  // 1. Get offset from user
-  let checkFrom = parseInt(process.argv[2]) // Getting first arg from
-  console.log(checkFrom)
+  // 1. Get input from user
+  let checkFrom = parseInt(process.argv[2]) // Getting first cl arg
+  const devMode = process.argv[3] === 'dev'
+  const currency = devMode ? process.argv[4] : process.argv[3] // If no dev mode, use parameter for currency instead of dev
+
   checkFrom = isNaN(checkFrom) ? DEFAULT_OFFSET : checkFrom // If null, set to default
 
   console.log(`Checking from: ${checkFrom}`)
