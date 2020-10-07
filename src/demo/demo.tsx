@@ -6,14 +6,12 @@ import fetch from 'node-fetch'
 import { instanceOf } from 'prop-types'
 import React, { Component } from 'react'
 import { Cookies, withCookies } from 'react-cookie'
-import DatePicker from 'react-datepicker'
 
-import BarGraph from './components/BarGraph'
-import LineGraph from './components/LineGraph'
-// @ts-ignore
-import calendar from './images/calendar.png'
-// @ts-ignore
-import logo from './images/logo.png'
+import ApiKeyScreen from './components/ApiKeyScreen'
+import BarGraphs from './components/BarGraphs'
+import LineGraphs from './components/LineGraphs'
+import Sidebar from './components/Sidebar'
+import TimePeriods from './components/TimePeriods'
 
 const PRODUCTION = true
 let API_PREFIX = 'localhost:8000'
@@ -157,15 +155,15 @@ class App extends Component<
     this.setState({ end })
   }
 
-  handleApiKeyChange(apiKey: any): void {
+  handleApiKeyChange = (apiKey: any): void => {
     this.setState({ apiKey: apiKey.target.value })
   }
 
-  changeTimeperiod(timePeriod: string): void {
+  changeTimeperiod = (timePeriod: string): void => {
     this.setState({ timePeriod })
   }
 
-  changeExchangetype(exchangeType: string): void {
+  changeExchangetype = (exchangeType: string): void => {
     this.setState({ exchangeType })
   }
 
@@ -178,7 +176,7 @@ class App extends Component<
     return timezonedDate.toISOString()
   }
 
-  async getAppId(): Promise<void> {
+  getAppId = async (): Promise<void> => {
     const url = `${API_PREFIX}/v1/getAppId?apiKey=${this.state.apiKey}`
     const response = await fetch(url)
     if (response.status === 400) {
@@ -276,7 +274,7 @@ class App extends Component<
     await this.getData(startDate, endDate)
   }
 
-  async getData(start: string, end: string): Promise<void> {
+  getData = async (start: string, end: string): Promise<void> => {
     const time1 = Date.now()
     const urls: string[] = []
     for (const pluginId of this.state.pluginIds) {
@@ -305,7 +303,7 @@ class App extends Component<
     console.log(`getData time: ${time2 - time1} ms.`)
   }
 
-  logout(): void {
+  logout = (): void => {
     const { cookies } = this.props
     cookies.set('apiKey', '', { path: '/' })
     this.setState({
@@ -317,305 +315,45 @@ class App extends Component<
   }
 
   render(): JSX.Element {
-    let barGraphData = this.state.data
-    if (this.state.exchangeType !== 'All') {
-      barGraphData = barGraphData.filter(
-        obj => this.state.partnerTypes[obj.pluginId] === this.state.exchangeType
-      )
-    }
-
-    const barGraphStyles = barGraphData.map((obj, index) => {
-      const style = {
-        backgroundColor: this.state.colorPalette[index],
-        marginLeft: '10px',
-        width: '18px',
-        height: '18px'
-      }
-      const capitilizedPluginId =
-        obj.pluginId.charAt(0).toUpperCase() + obj.pluginId.slice(1)
-      return (
-        <div className="bargraph-legend-keys" key={index}>
-          <div style={style} />
-          <div className="legend">{capitilizedPluginId}</div>
-        </div>
-      )
-    })
-
-    const lineGraphs = this.state.data
-      .filter(obj => {
-        if (this.state.exchangeType === 'All') {
-          return obj
-        }
-        if (this.state.partnerTypes[obj.pluginId] === this.state.exchangeType) {
-          return obj
-        }
-      })
-      .map((object, key) => {
-        return (
-          <div key={key}>
-            {this.state.partnerTypes[object.pluginId] ===
-              this.state.exchangeType || this.state.exchangeType === 'All' ? (
-              <div className="legend-holder">
-                <div className="legend-position">{barGraphStyles[key]}</div>
-                <div className="graphHolder">
-                  <LineGraph
-                    analyticsRequest={object}
-                    timePeriod={this.state.timePeriod}
-                    color={this.state.colorPalette[key]}
-                  />
-                </div>
-              </div>
-            ) : null}
-          </div>
-        )
-      })
-
-    let tpWidth
-    let tpPosition
-    if (this.state.timePeriod === 'month') {
-      tpPosition = '201px'
-      tpWidth = '60px'
-    } else if (this.state.timePeriod === 'day') {
-      tpPosition = '113px'
-      tpWidth = '42px'
-    } else {
-      tpPosition = '16px'
-      tpWidth = '51px'
-    }
-    const underlineTimePeriodStyle = {
-      width: tpWidth,
-      marginTop: '2px',
-      marginLeft: tpPosition
-    }
-
-    let etWidth
-    let etPosition
-    if (this.state.exchangeType === 'All') {
-      etPosition = '12px'
-      etWidth = '38px'
-    } else if (this.state.exchangeType === 'Fiat') {
-      etPosition = '44px'
-      etWidth = '24px'
-    } else {
-      etPosition = '77px'
-      etWidth = '34px'
-    }
-    const underlineExchangeTypeStyle = {
-      position: 'absolute' as 'absolute',
-      width: etWidth,
-      top: etPosition,
-      left: '26px'
-    }
-
     return (
       <div className="row">
         <div className="sidebar column">
-          <img id="logo" src={logo} alt="Edge Logo" />
-          <div className="sidebar-container title-text">Edge</div>
-          <div className="sidebar-container title-text">Reports</div>
-          <div className="sidebar-container sidebar-text">
-            <span>Range</span>
-            <img id="calendar" src={calendar} alt="calendar" />
-          </div>
-          <hr className="divider" />
-          <div className="sidebar-container">
-            <button
-              onClick={async () => {
-                await this.getPresetDates(0, -1, 0, 0, false, false, false)
-              }}
-            >
-              Yesterday
-            </button>
-          </div>
-          <div className="sidebar-container">
-            <button
-              onClick={async () => {
-                await this.getPresetDates(0, 0, 0, 1, false, false, false)
-              }}
-            >
-              Today
-            </button>
-          </div>
-          <div className="sidebar-container">
-            <button
-              onClick={async () => {
-                await this.getPresetDates(0, -7, 0, 0, false, true, false)
-              }}
-            >
-              Last Week
-            </button>
-          </div>
-          <div className="sidebar-container">
-            <button
-              onClick={async () => {
-                await this.getPresetDates(0, 0, 0, 7, false, true, false)
-              }}
-            >
-              This Week
-            </button>
-          </div>
-          <div className="sidebar-container">
-            <button
-              onClick={async () => {
-                await this.getPresetDates(-1, 0, 0, 0, false, false, true)
-              }}
-            >
-              Last Month
-            </button>
-          </div>
-          <div className="sidebar-container">
-            <button
-              onClick={async () => {
-                await this.getPresetDates(0, 0, 1, 0, false, false, true)
-              }}
-            >
-              This Month
-            </button>
-          </div>
-          <div className="sidebar-container">
-            <button
-              onClick={async () => {
-                await this.getPresetDates(-3, 0, 0, 0, true, false, true)
-              }}
-            >
-              Last Quarter
-            </button>
-          </div>
-          <div className="sidebar-container">
-            <button
-              onClick={async () => {
-                await this.getPresetDates(0, 0, 3, 0, true, false, true)
-              }}
-            >
-              This Quarter
-            </button>
-          </div>
-          <hr className="divider" />
-          <div className="date-picker">
-            <div className="calendar-text">Start</div>
-            <DatePicker
-              selected={this.state.start}
-              onChange={e => this.handleStartChange(e)}
-            />
-          </div>
-          <div className="date-picker">
-            <div className="calendar-text">End</div>
-            <DatePicker
-              selected={this.state.end}
-              onChange={e => this.handleEndChange(e)}
-            />
-          </div>
-          <div className="sidebar-container">
-            <button
-              className="calendar-search"
-              onClick={async () => {
-                await this.getData(
-                  this.getISOString(this.state.start, false),
-                  this.getISOString(this.state.end, true)
-                )
-              }}
-            >
-              Search
-            </button>
-          </div>
-          <hr className="divider" />
-          <div className="sidebar-container exchange-type-top">
-            <hr style={underlineExchangeTypeStyle} />
-            <button
-              onClick={async () => {
-                await this.changeExchangetype('All')
-              }}
-            >
-              Totals
-            </button>
-          </div>
-          <div className="sidebar-container">
-            <button
-              onClick={async () => {
-                await this.changeExchangetype('Fiat')
-              }}
-            >
-              Fiat
-            </button>
-          </div>
-          <div className="sidebar-container">
-            <button
-              onClick={async () => {
-                await this.changeExchangetype('Swap')
-              }}
-            >
-              Swap
-            </button>
-          </div>
-          {this.state.appId !== '' ? (
-            <div>
-              <hr className="divider" />
-              <div className="sidebar-container">
-                <button
-                  className="calendar-search"
-                  onClick={() => this.logout()}
-                >
-                  Logout
-                </button>
-              </div>
-            </div>
-          ) : null}
-          <div />
+          <Sidebar
+            getData={this.getData}
+            changeExchangeType={this.changeExchangetype}
+            logout={this.logout}
+            appId={this.state.appId}
+            exchangeType={this.state.exchangeType}
+          />
         </div>
         {this.state.appId === '' ? (
-          <div className="apiKey-message-holder">
-            <div className="apiKey-input apiKey-message">
-              {this.state.apiKeyMessage}
-            </div>
-            <div className="apiKey-message">
-              <input
-                className="apiKey-input apiKey-input-length"
-                onChange={e => this.handleApiKeyChange(e)}
-              />
-              <button
-                className="apiKey-button"
-                onClick={async () => this.getAppId()}
-              >
-                Use
-              </button>
-            </div>
-          </div>
+          <ApiKeyScreen
+            apiKeyMessage={this.state.apiKeyMessage}
+            handleApiKeyChange={e => this.handleApiKeyChange(e)}
+            getAppId={this.getAppId}
+          />
         ) : (
           <div className="graphs column">
-            <div id="time-period-holder">
-              <button
-                className="time-period"
-                onClick={() => this.changeTimeperiod('hour')}
-              >
-                Hourly
-              </button>
-              <button
-                className="time-period"
-                onClick={() => this.changeTimeperiod('day')}
-              >
-                Daily
-              </button>
-              <button
-                className="time-period"
-                onClick={() => this.changeTimeperiod('month')}
-              >
-                Monthly
-              </button>
-            </div>
-            <hr style={underlineTimePeriodStyle} />
+            <TimePeriods
+              timePeriod={this.state.timePeriod}
+              changeTimePeriod={this.changeTimeperiod}
+            />
             {this.state.data.length > 0 ? (
-              <div>
-                <div className="bargraph-legend-holder">{barGraphStyles}</div>
-                <div className="graphHolder">
-                  <BarGraph
-                    rawData={barGraphData}
-                    timePeriod={this.state.timePeriod}
-                    colors={this.state.colorPalette}
-                  />
-                </div>
-              </div>
+              <BarGraphs
+                data={this.state.data}
+                exchangeType={this.state.exchangeType}
+                timePeriod={this.state.timePeriod}
+                partnerTypes={this.state.partnerTypes}
+                colorPalette={this.state.colorPalette}
+              />
             ) : null}
-            <div>{lineGraphs}</div>
+            <LineGraphs
+              data={this.state.data}
+              exchangeType={this.state.exchangeType}
+              timePeriod={this.state.timePeriod}
+              partnerTypes={this.state.partnerTypes}
+              colorPalette={this.state.colorPalette}
+            />
           </div>
         )}
       </div>
