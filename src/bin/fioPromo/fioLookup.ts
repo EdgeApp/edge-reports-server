@@ -35,12 +35,13 @@ const configFile: string = fs.readFileSync(
 const config = JSON.parse(configFile)
 
 // Returns all customers from ChangeNow who have purchased FIO
-export async function getFioTransactions(checkFrom): Promise<StandardTx[]> {
+export async function getFioTransactions(
+  dateFrom: Date,
+  dateTo: Date
+): Promise<StandardTx[]> {
   // Get public keys from offset
   const pluginConfig: PluginParams = {
-    settings: {
-      offset: checkFrom
-    },
+    settings: { dateFrom, dateTo, to: currencyCode },
     apiKeys: {
       changenowApiKey: config.changenowApiKey
     }
@@ -48,9 +49,7 @@ export async function getFioTransactions(checkFrom): Promise<StandardTx[]> {
 
   const txnList = await queryChangeNow(pluginConfig)
   // Return list of Fio Customers
-  return txnList.transactions.filter(
-    transaction => transaction.payoutCurrency === currencyCode
-  )
+  return txnList.transactions
 }
 
 export async function filterDomain( // Test
@@ -154,7 +153,6 @@ export const sendRewards = async (
 
   for (const address in rewardList) {
     const sendAmount = (fioMultiple * rewardList[address]).toString()
-    console.log(`reward address is: ${address} typeof is: ${typeof address}`)
     console.log(`Rewards amount is: ${rewardList[address]}`)
     console.log(`Amount to send: ${sendAmount} typeof is: ${typeof sendAmount}`) // Multiple * reward amount
 
@@ -185,7 +183,6 @@ export const sendRewards = async (
         transaction = await result.json()
 
         console.log(`Transaction is: ${JSON.stringify(transaction)}`)
-        console.log(`Transaction ID: ${transaction.txid}`)
 
         txIdList.push(transaction.txid)
       } catch (e) {
