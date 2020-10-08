@@ -35,42 +35,56 @@ const asChangeNowResult = asArray(asUnknown)
 const LIMIT = 100
 const ROLLBACK = 500
 
-export async function queryChangeNow(
+const makeUrl = (settings, apiKey): string => {
+  const options = Object.keys(settings)
+    .reduce((prev, key) => `${prev}${key}=${settings[key]}&`, '')
+    .slice(0, -1)
+  const url = `https://changenow.io/api/v1/transactions/${apiKey}?${options}`
+  return url
+}
+
+export const queryChangeNow = async (
   pluginParams: PluginParams
-): Promise<PluginResult> {
+): Promise<PluginResult> => {
   const ssFormatTxs: StandardTx[] = []
-  let apiKey = ''
-  let { offset = 0 } = pluginParams.settings
-  if (typeof pluginParams.apiKeys.changenowApiKey === 'string') {
-    apiKey = pluginParams.apiKeys.changenowApiKey
-  } else {
+  const settings = { ...pluginParams.settings }
+  if (typeof pluginParams.apiKeys.changenowApiKey !== 'string') {
     return {
-      settings: { offset },
+      settings,
       transactions: []
     }
   }
-  let url = `https://changenow.io/api/v1/transactions/${apiKey}?limit=${LIMIT}&offset=${offset}`
+
+  if (settings.limit == null) {
+    settings.limit = LIMIT
+  }
+  if (settings.offset == null) {
+    settings.offset = 0
+  }
+
   while (true) {
+    const url = makeUrl(settings, pluginParams.apiKeys.changenowApiKey)
     let jsonObj: ReturnType<typeof asChangeNowResult>
     try {
       const result = await fetch(url, {
         method: 'GET'
       })
-      jsonObj = asChangeNowResult(await result.json())
+      const seperate = await result.json()
+      jsonObj = asChangeNowResult(seperate)
     } catch (e) {
       datelog(e)
       break
     }
     const txs = jsonObj
     for (const rawtx of txs) {
-      const checkTx = asChangeNowRawTx(rawtx)
+      const checkTx = asChangeNowRawTx(rawtx) // Check RAW trasaction
       if (
         checkTx.status === 'finished' &&
         checkTx.payinHash != null &&
         checkTx.amountSend != null &&
         checkTx.amountReceive != null
       ) {
-        const tx = asChangeNowTx(rawtx)
+        const tx = asChangeNowTx(rawtx) // Set NORMAL trasaction
         const date = new Date(tx.updatedAt)
         const timestamp = date.getTime() / 1000
         const ssTx: StandardTx = {
@@ -96,14 +110,13 @@ export async function queryChangeNow(
       // datelog('length < 100, stopping query')
       break
     }
-    offset += LIMIT
-    url = `https://changenow.io/api/v1/transactions/${apiKey}?limit=${LIMIT}&offset=${offset}`
+    settings.offset += LIMIT
   }
-  if (offset >= ROLLBACK) {
-    offset -= ROLLBACK
+  if (settings.offset >= ROLLBACK) {
+    settings.offset -= ROLLBACK
   }
   const out: PluginResult = {
-    settings: { offset },
+    settings,
     transactions: ssFormatTxs
   }
   return out
