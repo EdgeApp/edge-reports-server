@@ -7,9 +7,9 @@ import {
   asUnknown
 } from 'cleaners'
 import fetch from 'node-fetch'
-import { datelog } from '../util'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import { datelog } from '../util'
 
 const asLibertyxTx = asObject({
   all_transactions_usd_sum: asOptional(asNumber),
@@ -17,6 +17,8 @@ const asLibertyxTx = asObject({
 })
 
 const asLibertyxResult = asObject({ stats: asArray(asUnknown) })
+
+const INCOMPLETE_DAY_RANGE = 3
 
 export async function queryLibertyx(
   pluginParams: PluginParams
@@ -46,8 +48,12 @@ export async function queryLibertyx(
     }
   }
 
-  for (const rawtx of result.stats) {
-    const tx = asLibertyxTx(rawtx)
+  for (const index in result.stats) {
+    if (parseInt(index) < INCOMPLETE_DAY_RANGE) {
+      continue
+    }
+    const rawTx = result.stats[index]
+    const tx = asLibertyxTx(rawTx)
     if (typeof tx.all_transactions_usd_sum !== 'number') {
       continue
     }
@@ -67,7 +73,7 @@ export async function queryLibertyx(
       timestamp: timestamp,
       isoDate: date.toISOString(),
       usdValue: tx.all_transactions_usd_sum,
-      rawTx: rawtx
+      rawTx
     }
     ssFormatTxs.push(ssTx)
   }
