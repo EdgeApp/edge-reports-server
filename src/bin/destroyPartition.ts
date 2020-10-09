@@ -1,7 +1,8 @@
-import nano from 'nano'
-import js from 'jsonfile'
 import { asObject, asString } from 'cleaners'
-import { datelog } from '../util'
+import js from 'jsonfile'
+import nano from 'nano'
+
+import { datelog, pagination } from '../util'
 
 const config = js.readFileSync('./config.json')
 const nanoDb = nano(config.couchDbFullpath)
@@ -20,17 +21,16 @@ const asPartitionedDoc = asObject({
 })
 
 async function main(partitionName: string): Promise<void> {
-  const transactions: Transactions[] = []
+  let transactions
   try {
-    await reportsTransactions.partitionedList(partitionName).then(body => {
-      body.rows.forEach(doc => {
-        asPartitionedDoc(doc)
-        transactions.push({
-          _id: doc.id,
-          _rev: doc.value.rev,
-          _deleted: true
-        })
-      })
+    const body = await reportsTransactions.partitionedList(partitionName)
+    transactions = body.rows.map(doc => {
+      asPartitionedDoc(doc)
+      return {
+        _id: doc.id,
+        _rev: doc.value.rev,
+        _deleted: true
+      }
     })
   } catch (e) {
     datelog(e)
@@ -43,7 +43,7 @@ async function main(partitionName: string): Promise<void> {
   }
 
   try {
-    await reportsTransactions.bulk({ docs: transactions })
+    await pagination(transactions, reportsTransactions)
     datelog(`Successfully Deleted: ${transactions.length} docs`)
     datelog(`Successfully Deleted: partition ${partitionName}`)
 

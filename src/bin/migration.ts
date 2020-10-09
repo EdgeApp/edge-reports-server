@@ -9,32 +9,14 @@ import {
   asString,
   asUnknown
 } from 'cleaners'
+import fs from 'fs'
 import js from 'jsonfile'
 import nano from 'nano'
 
 import { DbTx, StandardTx } from '../types'
-import { datelog } from '../util'
+import { datelog, pagination } from '../util'
 
 const config = js.readFileSync('./config.json')
-const banxaJSON = js.readFileSync('./cache/banRaw.json')
-const bitrefillJSON = js.readFileSync('./cache/brRaw.json')
-const bitsofgoldJSON = js.readFileSync('./cache/bogRaw.json')
-const bityJSON = js.readFileSync('./cache/bityRaw.json')
-const changellyJSON = js.readFileSync('./cache/chRaw.json')
-const changenowJSON = js.readFileSync('./cache/cnRaw.json')
-const coinswitchJSON = js.readFileSync('./cache/csRaw.json')
-const faastJSON = js.readFileSync('./cache/faastRaw.json')
-const foxJSON = js.readFileSync('./cache/foxRaw.json')
-const godexJSON = js.readFileSync('./cache/gxRaw.json')
-const libertyxJSON = js.readFileSync('./cache/libertyxRaw.json')
-const moonpayJSON = js.readFileSync('./cache/mnpRaw.json')
-const safelloJSON = js.readFileSync('./cache/safRaw.json')
-const shapeshiftJSON = js.readFileSync('./cache/ssRaw.json')
-const simplexJSON = js.readFileSync('./cache/simRaw.json')
-const switchainJSON = js.readFileSync('./cache/switchainRaw.json')
-const totleJSON = js.readFileSync('./cache/tlRaw.json')
-const transakJSON = js.readFileSync('./cache/tnkRaw.json')
-const wyreJSON = js.readFileSync('./cache/wyrRaw.json')
 
 const asPartitionTimestamp = asObject({
   doc: asObject({
@@ -86,28 +68,6 @@ const CURRENCY_CONVERSION = {
 
 const BATCH_ADVANCE = 1000
 
-const oldTransactions = [
-  banxaJSON,
-  bityJSON,
-  bitsofgoldJSON,
-  bitrefillJSON,
-  changellyJSON,
-  changenowJSON,
-  coinswitchJSON,
-  faastJSON,
-  foxJSON,
-  godexJSON,
-  libertyxJSON,
-  moonpayJSON,
-  safelloJSON,
-  shapeshiftJSON,
-  simplexJSON,
-  switchainJSON,
-  totleJSON,
-  transakJSON,
-  wyreJSON
-]
-
 const nanoDb = nano(config.couchDbFullpath)
 
 migration().catch(e => {
@@ -116,7 +76,12 @@ migration().catch(e => {
 
 async function migration(): Promise<void> {
   const reportsTransactions = nanoDb.use('reports_transactions')
-  for (const partnerJSON of oldTransactions) {
+  const partnerJSONNames: string[] = []
+  fs.readdirSync('./cache').forEach(file => {
+    partnerJSONNames.push(file)
+  })
+  for (const partnerJSONName of partnerJSONNames) {
+    const partnerJSON = js.readFileSync(`./cache/${partnerJSONName}`)
     const partner = asPartner(partnerJSON)
     const appAndPluginId = `edge_${partner.name}`
     let earliestTimestamp
@@ -247,17 +212,7 @@ async function migration(): Promise<void> {
       `Importing ${filteredTransactions.length} transactions for ${partner.name} before date ${earliestDate}.`
     )
     try {
-      const docs = await reportsTransactions.bulk({ docs: reformattedTxs })
-      let numErrors = 0
-      for (const doc of docs) {
-        if (doc.error != null) {
-          datelog(
-            `There was an error in the batch ${doc.error}.  id: ${doc.id}. revision: ${doc.rev}`
-          )
-          numErrors++
-        }
-      }
-      datelog(`total errors: ${numErrors}`)
+      await pagination(reformattedTxs, reportsTransactions)
     } catch (e) {
       datelog('Error doing bulk transaction insert', e)
       throw e
