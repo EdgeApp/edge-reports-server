@@ -2,7 +2,7 @@ import { asObject, asString } from 'cleaners'
 import js from 'jsonfile'
 import nano from 'nano'
 
-import { datelog } from '../util'
+import { datelog, pagination } from '../util'
 
 const config = js.readFileSync('./config.json')
 const nanoDb = nano(config.couchDbFullpath)
@@ -20,20 +20,17 @@ const asPartitionedDoc = asObject({
   value: asObject({ rev: asString })
 })
 
-const BATCH_ADVANCE = 1000
-
 async function main(partitionName: string): Promise<void> {
-  const transactions: Transactions[] = []
+  let transactions
   try {
-    await reportsTransactions.partitionedList(partitionName).then(body => {
-      body.rows.forEach(doc => {
-        asPartitionedDoc(doc)
-        transactions.push({
-          _id: doc.id,
-          _rev: doc.value.rev,
-          _deleted: true
-        })
-      })
+    const body = await reportsTransactions.partitionedList(partitionName)
+    transactions = body.rows.map(doc => {
+      asPartitionedDoc(doc)
+      return {
+        _id: doc.id,
+        _rev: doc.value.rev,
+        _deleted: true
+      }
     })
   } catch (e) {
     datelog(e)
@@ -46,30 +43,7 @@ async function main(partitionName: string): Promise<void> {
   }
 
   try {
-    let numErrors = 0
-    for (
-      let offset = 0;
-      offset < transactions.length;
-      offset += BATCH_ADVANCE
-    ) {
-      let advance = BATCH_ADVANCE
-      if (offset + BATCH_ADVANCE > transactions.length) {
-        advance = transactions.length - offset
-      }
-      const docs = await reportsTransactions.bulk({
-        docs: transactions.slice(offset, offset + advance)
-      })
-      datelog(`Deleted ${offset + advance} transactions.`)
-      for (const doc of docs) {
-        if (doc.error != null) {
-          datelog(
-            `There was an error in the batch ${doc.error}.  id: ${doc.id}. revision: ${doc.rev}`
-          )
-          numErrors++
-        }
-      }
-    }
-    datelog(`total errors: ${numErrors}`)
+    await pagination(transactions, reportsTransactions)
     datelog(`Successfully Deleted: ${transactions.length} docs`)
     datelog(`Successfully Deleted: partition ${partitionName}`)
 

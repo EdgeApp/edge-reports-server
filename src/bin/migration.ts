@@ -14,7 +14,7 @@ import js from 'jsonfile'
 import nano from 'nano'
 
 import { DbTx, StandardTx } from '../types'
-import { datelog } from '../util'
+import { datelog, pagination } from '../util'
 
 const config = js.readFileSync('./config.json')
 
@@ -212,30 +212,7 @@ async function migration(): Promise<void> {
       `Importing ${filteredTransactions.length} transactions for ${partner.name} before date ${earliestDate}.`
     )
     try {
-      let numErrors = 0
-      for (
-        let offset = 0;
-        offset < reformattedTxs.length;
-        offset += BATCH_ADVANCE
-      ) {
-        let advance = BATCH_ADVANCE
-        if (offset + BATCH_ADVANCE > reformattedTxs.length) {
-          advance = reformattedTxs.length - offset
-        }
-        const docs = await reportsTransactions.bulk({
-          docs: reformattedTxs.slice(offset, offset + advance)
-        })
-        datelog(`Inserted ${offset + advance} transactions.`)
-        for (const doc of docs) {
-          if (doc.error != null) {
-            datelog(
-              `There was an error in the batch ${doc.error}.  id: ${doc.id}. revision: ${doc.rev}`
-            )
-            numErrors++
-          }
-        }
-      }
-      datelog(`total errors: ${numErrors}`)
+      await pagination(reformattedTxs, reportsTransactions)
     } catch (e) {
       datelog('Error doing bulk transaction insert', e)
       throw e
