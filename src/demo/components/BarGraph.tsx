@@ -1,7 +1,16 @@
 import '../demo.css'
 
-import { ResponsiveBar } from '@nivo/bar'
 import React from 'react'
+import {
+  Bar,
+  CartesianGrid,
+  ComposedChart,
+  Line,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 
 interface Bucket {
   start: number
@@ -31,7 +40,7 @@ const BarGraph: any = (props: {
   colors: string[]
 }) => {
   const { rawData, timePeriod } = props
-  const keys = props.rawData.map(analyticsResult => {
+  const keys = props.rawData.map((analyticsResult) => {
     return (
       analyticsResult.pluginId.charAt(0).toUpperCase() +
       analyticsResult.pluginId.slice(1)
@@ -41,7 +50,6 @@ const BarGraph: any = (props: {
   for (let i = 0; i < rawData.length; i++) {
     colors[keys[i]] = props.colors[i]
   }
-  const getColor = (bar): any => colors[bar.id]
   const tickRate: string[] = []
   let tickSpace = 0
   tickSpace = Math.floor(rawData[0].result[timePeriod].length / 5)
@@ -89,69 +97,31 @@ const BarGraph: any = (props: {
     }
   }
 
-  const theme = {
-    axis: {
-      ticks: {
-        text: {
-          fill: '#333333',
-          fontSize: 14
-        }
-      }
-    },
-    legends: {
-      text: {
-        fill: '#333333',
-        fontSize: 18
-      }
-    }
-  }
+  const bars = rawData.map((obj, index) => {
+    const graphName =
+      obj.pluginId.charAt(0).toUpperCase() + obj.pluginId.slice(1)
+    return (
+      <Bar
+        yAxisId="left"
+        stackId="a"
+        dataKey={graphName}
+        barSize={20}
+        fill={data[0][`${graphName}Color`]}
+        onMouseOver={() => (tooltip = graphName)}
+        onMouseLeave={() => (tooltip = '')}
+        animationDuration={0}
+      />
+    )
+  })
 
-  return (
-    <>
-      <ResponsiveBar
-        data={data}
-        keys={keys}
-        indexBy="date"
-        theme={theme}
-        margin={{ top: 20, right: 65, bottom: 60, left: 80 }}
-        padding={0.24}
-        colors={getColor}
-        axisTop={null}
-        axisRight={null}
-        axisBottom={{
-          tickSize: 5,
-          tickValues: tickRate,
-          tickPadding: 15,
-          tickRotation: 0,
-          legend: '',
-          legendPosition: 'middle',
-          legendOffset: 36
-        }}
-        axisLeft={{
-          tickSize: 5,
-          tickPadding: 7,
-          tickRotation: 0,
-          legend: '',
-          legendPosition: 'middle',
-          legendOffset: -40
-        }}
-        enableLabel={false}
-        labelSkipWidth={12}
-        labelSkipHeight={12}
-        labelTextColor={{ from: 'color', modifiers: [['darker', 1.6]] }}
-        tooltip={input => {
-          const styleTwo = {
-            backgroundColor: 'rgb(255,255,255)',
-            fontFamily: 'Quicksand',
-            fontStyle: 'normal' as 'normal',
-            fontWeight: 'normal' as 'normal',
-            fontSize: '16px'
-          }
-          const usdAmount = input.value.toFixed(2)
-          const allUsdAmount = input.data.allUsd.toFixed(2)
+  let tooltip
+  const CustomTooltip = ({ active, payload }) => {
+    if (active && tooltip !== '') {
+      for (const bar of payload) {
+        if (bar.dataKey === tooltip) {
           const currencyPairs: JSX.Element[] = []
           let index = 0
-          for (const [key, value] of input.data.currencyPairs) {
+          for (const [key, value] of bar.payload.currencyPairs) {
             currencyPairs.push(
               <div key={index} className="currency-pair-holder">
                 <div className="currency-pair-name">{`${key}:`}</div>
@@ -163,23 +133,88 @@ const BarGraph: any = (props: {
             index++
             if (index === 15) break
           }
+          const verticalBlockHolder = {
+            display: 'flex' as 'flex',
+            flexDirection: 'column' as 'column',
+            borderRadius: '2px',
+            backgroundColor: 'rgb(255,255,255)',
+            border: '1px solid #BFBFBF',
+          }
+          const horizontalBlockHolder = {
+            display: 'flex' as 'flex',
+            flexDirection: 'row' as 'row',
+          }
+          const blocks = {
+            width: '10px',
+            height: '10px',
+          }
+          const styleTwo = {
+            backgroundColor: 'rgb(255,255,255)',
+            fontFamily: 'Quicksand',
+            fontStyle: 'normal' as 'normal',
+            fontWeight: 'normal' as 'normal',
+            fontSize: '16px',
+          }
           return (
-            <div style={styleTwo}>
-              <div>{`PluginId: ${input.id}`}</div>
-              <div>{`Date: ${input.indexValue}`}</div>
-              <div>{`Plugin USD: $${usdAmount}`}</div>
-              <div>{`Plugin Transactions: ${
-                input.data[`${input.id}NumTxs`]
-              }`}</div>
-              <hr className="divider" />
-              <div className="total-usd">{`Total USD: $${allUsdAmount}`}</div>
-              <div>{`Total Transactions: ${input.data.allTxs}`}</div>
-              <div className="currency-pairs">{currencyPairs}</div>
+            <div style={verticalBlockHolder}>
+              <div style={blocks} />
+              <div style={horizontalBlockHolder}>
+                <div style={blocks} />
+                <div style={styleTwo}>
+                  <div>{`PluginId: ${tooltip}`}</div>
+                  <div>{`Date: ${bar.payload.date}`}</div>
+                  <div>{`Plugin USD: $${bar.payload[tooltip].toFixed(2)}`}</div>
+                  <div>{`Plugin Transactions: ${
+                    bar.payload[`${tooltip}NumTxs`]
+                  }`}</div>
+                  <hr className="divider" />
+                  <div className="total-usd">{`Total USD: $${bar.payload.allUsd.toFixed(
+                    2
+                  )}`}</div>
+                  <div>{`Total Transactions: ${bar.payload.allTxs}`}</div>
+                  <div className="currency-pairs">{currencyPairs}</div>
+                </div>
+                <div style={blocks} />
+              </div>
+              <div style={blocks} />
             </div>
           )
-        }}
-        animate={false}
-      />
+        }
+      }
+    }
+
+    return null
+  }
+
+  return (
+    <>
+      <ResponsiveContainer>
+        <ComposedChart
+          data={data}
+          margin={{
+            top: 20,
+            right: 20,
+            bottom: 20,
+            left: 20,
+          }}
+          animationDuration={0}
+        >
+          <CartesianGrid stroke="#f5f5f5" />
+          <XAxis dataKey="date" />
+          <YAxis yAxisId="left" orientation="left" stroke="#000000" />
+          <YAxis yAxisId="right" orientation="right" stroke="#000000" />
+          <Tooltip content={<CustomTooltip />} />
+          {bars}
+          <Line
+            yAxisId="right"
+            type="monotone"
+            dataKey="allTxs"
+            dot={false}
+            stroke="#000000"
+            animationDuration={0}
+          />
+        </ComposedChart>
+      </ResponsiveContainer>
     </>
   )
 }
