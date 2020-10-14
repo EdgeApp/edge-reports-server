@@ -154,12 +154,10 @@ class App extends Component<
     if (this.state.apiKey !== '') {
       await this.getAppId()
       await this.getPluginIds()
+      await this.setPresetTimePeriods('setData1', 0, 0, -36, false)
       await this.getPresetDates(0, 0, 1, 0, false, false, true)
-      await Promise.all([
-        this.setPresetTimePeriods('setData1', 0, 0, -36, false),
-        this.setPresetTimePeriods('setData2', 0, -75, 0, false),
-        this.setPresetTimePeriods('setData3', -24, 0, 0, false),
-      ])
+      await this.setPresetTimePeriods('setData2', 0, -75, 0, false)
+      await this.setPresetTimePeriods('setData3', -24, 0, 0, false)
     }
   }
 
