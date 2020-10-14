@@ -8,8 +8,8 @@ import React, { Component } from 'react'
 import { Cookies, withCookies } from 'react-cookie'
 
 import ApiKeyScreen from './components/ApiKeyScreen'
-import BarGraphs from './components/BarGraphs'
-import LineGraphs from './components/LineGraphs'
+import Custom from './components/Custom'
+import Preset from './components/Preset'
 import Sidebar from './components/Sidebar'
 import TimePeriods from './components/TimePeriods'
 
@@ -47,6 +47,7 @@ class App extends Component<
     year: number
     month: number
     day: number
+    hour: number
     weekStart: number
     start: Date
     end: Date
@@ -58,11 +59,15 @@ class App extends Component<
     partnerTypes: any
     exchangeType: string
     colorPalette: string[]
+    view: string
     data: AnalyticsResult[]
+    setData1: any
+    setData2: any
+    setData3: any
   }
 > {
   static propTypes = {
-    cookies: instanceOf(Cookies).isRequired
+    cookies: instanceOf(Cookies).isRequired,
   }
 
   constructor(props) {
@@ -72,11 +77,13 @@ class App extends Component<
     const year = currentDate.getUTCFullYear()
     const month = currentDate.getUTCMonth()
     const day = currentDate.getUTCDate()
+    const hour = currentDate.getUTCHours()
     const weekStart = day - currentDate.getUTCDay()
     this.state = {
       year,
       month,
       day,
+      hour,
       weekStart,
       start: currentDate,
       end: currentDate,
@@ -105,7 +112,7 @@ class App extends Component<
         totle: 'Swap',
         transak: 'Fiat',
         simplex: 'Fiat',
-        wyre: 'Fiat'
+        wyre: 'Fiat',
       },
       exchangeType: 'All',
       colorPalette: [
@@ -132,10 +139,14 @@ class App extends Component<
         '#8b4513',
         '#b17f49',
         '#d6b989',
-        '#fff3d0'
+        '#fff3d0',
       ],
       timePeriod: 'day',
-      data: []
+      view: 'preset',
+      data: [],
+      setData1: [],
+      setData2: [],
+      setData3: [],
     }
   }
 
@@ -144,7 +155,16 @@ class App extends Component<
       await this.getAppId()
       await this.getPluginIds()
       await this.getPresetDates(0, 0, 1, 0, false, false, true)
+      await Promise.all([
+        this.setPresetTimePeriods('setData1', 0, 0, -36, false),
+        this.setPresetTimePeriods('setData2', 0, -75, 0, false),
+        this.setPresetTimePeriods('setData3', -24, 0, 0, false),
+      ])
     }
+  }
+
+  handleViewChange(view: string): void {
+    this.setState({ view })
   }
 
   handleStartChange(start: Date): void {
@@ -213,12 +233,12 @@ class App extends Component<
       'totle',
       'transak',
       'simplex',
-      'wyre'
+      'wyre',
     ]
     const url = `${API_PREFIX}/v1/getPluginIds?appId=${this.state.appId}`
     const response = await fetch(url)
     const json = await response.json()
-    const existingPartners = json.filter(pluginId =>
+    const existingPartners = json.filter((pluginId) =>
       partners.includes(pluginId)
     )
     this.setState({ pluginIds: existingPartners })
@@ -281,10 +301,10 @@ class App extends Component<
       const url = `${API_PREFIX}/v1/analytics/?start=${start}&end=${end}&appId=${this.state.appId}&pluginId=${pluginId}&timePeriod=monthdayhour`
       urls.push(url)
     }
-    const promises = urls.map(url => fetch(url).then(y => y.json()))
+    const promises = urls.map((url) => fetch(url).then((y) => y.json()))
     const newData = await Promise.all(promises)
     // discard all entries with 0 usdValue on every bucket
-    const trimmedData = newData.filter(data => {
+    const trimmedData = newData.filter((data) => {
       if (data.result.numAllTxs > 0) {
         return data
       }
@@ -303,6 +323,46 @@ class App extends Component<
     console.log(`getData time: ${time2 - time1} ms.`)
   }
 
+  async setPresetTimePeriods(
+    location: string,
+    startMonthModifier: number,
+    startDayModifier: number,
+    startHourModifier: number,
+    dropDay: boolean
+  ): Promise<void> {
+    let { year, month, day, hour } = this.state
+    if (dropDay === true) {
+      day = 1
+    }
+    const startDate = new Date(
+      Date.UTC(
+        year,
+        month + startMonthModifier,
+        day + startDayModifier,
+        hour + startHourModifier
+      )
+    ).toISOString()
+
+    const endDate = new Date(Date.UTC(year, month, day) - 1).toISOString()
+    const time1 = Date.now()
+    const urls: string[] = []
+    for (const pluginId of this.state.pluginIds) {
+      const url = `${API_PREFIX}/v1/analytics/?start=${startDate}&end=${endDate}&appId=${this.state.appId}&pluginId=${pluginId}&timePeriod=monthdayhour`
+      urls.push(url)
+    }
+    const promises = urls.map((url) => fetch(url).then((y) => y.json()))
+    const newData = await Promise.all(promises)
+    // discard all entries with 0 usdValue on every bucket
+    const trimmedData = newData.filter((data) => {
+      if (data.result.numAllTxs > 0) {
+        return data
+      }
+    })
+    this.setState({ [location]: trimmedData })
+    const time2 = Date.now()
+    console.log(`getData time: ${time2 - time1} ms.`)
+  }
+
   logout = (): void => {
     const { cookies } = this.props
     cookies.set('apiKey', '', { path: '/' })
@@ -310,7 +370,7 @@ class App extends Component<
       apiKey: '',
       apiKeyMessage: 'Enter API Key.',
       appId: '',
-      data: []
+      data: [],
     })
   }
 
@@ -322,38 +382,47 @@ class App extends Component<
             getData={this.getData}
             changeExchangeType={this.changeExchangetype}
             logout={this.logout}
+            viewChange={(e) => this.handleViewChange(e)}
             appId={this.state.appId}
             exchangeType={this.state.exchangeType}
+            view={this.state.view}
           />
         </div>
         {this.state.appId === '' ? (
           <ApiKeyScreen
             apiKeyMessage={this.state.apiKeyMessage}
-            handleApiKeyChange={e => this.handleApiKeyChange(e)}
+            handleApiKeyChange={(e) => this.handleApiKeyChange(e)}
             getAppId={this.getAppId}
           />
         ) : (
           <div className="graphs column">
-            <TimePeriods
-              timePeriod={this.state.timePeriod}
-              changeTimePeriod={this.changeTimeperiod}
-            />
-            {this.state.data.length > 0 ? (
-              <BarGraphs
-                data={this.state.data}
+            {this.state.data.length > 0 && this.state.view === 'custom' ? (
+              <div>
+                <TimePeriods
+                  timePeriod={this.state.timePeriod}
+                  changeTimePeriod={this.changeTimeperiod}
+                />
+                <Custom
+                  data={this.state.data}
+                  exchangeType={this.state.exchangeType}
+                  timePeriod={this.state.timePeriod}
+                  partnerTypes={this.state.partnerTypes}
+                  colorPalette={this.state.colorPalette}
+                />
+              </div>
+            ) : null}
+            {this.state.view === 'preset' ? (
+              <Preset
+                dataSets={[
+                  this.state.setData1,
+                  this.state.setData2,
+                  this.state.setData3,
+                ]}
                 exchangeType={this.state.exchangeType}
-                timePeriod={this.state.timePeriod}
                 partnerTypes={this.state.partnerTypes}
                 colorPalette={this.state.colorPalette}
               />
             ) : null}
-            <LineGraphs
-              data={this.state.data}
-              exchangeType={this.state.exchangeType}
-              timePeriod={this.state.timePeriod}
-              partnerTypes={this.state.partnerTypes}
-              colorPalette={this.state.colorPalette}
-            />
           </div>
         )}
       </div>

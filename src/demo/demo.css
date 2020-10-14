@@ -18,7 +18,15 @@ html, body {
     position: relative;
 }
 
-
+.loading-message {
+    text-align: center;
+    color: Grey;
+    margin-top: 16px;
+    font-family: Quicksand;
+    font-style: normal;
+    font-weight: normal;
+    font-size: 18px;
+}
 
 .legend-position {
     position: absolute;

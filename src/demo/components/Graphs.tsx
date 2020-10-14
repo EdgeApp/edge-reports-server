@@ -34,7 +34,7 @@ interface AnalyticsResult {
   end: number
 }
 
-const BarGraph: any = (props: {
+const Graphs: any = (props: {
   rawData: AnalyticsResult[]
   timePeriod: string
   colors: string[]
@@ -218,4 +218,4 @@ const BarGraph: any = (props: {
     </>
   )
 }
-export default BarGraph
+export default Graphs

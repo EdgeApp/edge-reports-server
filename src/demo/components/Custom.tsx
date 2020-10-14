@@ -2,7 +2,7 @@ import '../demo.css'
 
 import React from 'react'
 
-import BarGraph from './BarGraph'
+import Graphs from './Graphs'
 
 interface Bucket {
   start: number
@@ -26,7 +26,7 @@ interface AnalyticsResult {
   end: number
 }
 
-const BarGraphs: any = (props: {
+const Custom: any = (props: {
   data: AnalyticsResult[]
   exchangeType: string
   timePeriod: string
@@ -36,7 +36,7 @@ const BarGraphs: any = (props: {
   let barGraphData = props.data
   if (props.exchangeType !== 'All') {
     barGraphData = barGraphData.filter(
-      obj => props.partnerTypes[obj.pluginId] === props.exchangeType
+      (obj) => props.partnerTypes[obj.pluginId] === props.exchangeType
     )
   }
 
@@ -45,7 +45,7 @@ const BarGraphs: any = (props: {
       backgroundColor: props.colorPalette[index],
       marginLeft: '10px',
       width: '18px',
-      height: '18px'
+      height: '18px',
     }
     const capitilizedPluginId =
       obj.pluginId.charAt(0).toUpperCase() + obj.pluginId.slice(1)
@@ -57,19 +57,40 @@ const BarGraphs: any = (props: {
     )
   })
 
+  const barGraphs = barGraphData.map((object, key) => {
+    return (
+      <div key={key}>
+        {props.partnerTypes[object.pluginId] === props.exchangeType ||
+        props.exchangeType === 'All' ? (
+          <div>
+            <div className="bargraph-legend-holder">{barGraphStyles[key]}</div>
+            <div className="graphHolder">
+              <Graphs
+                rawData={[object]}
+                timePeriod={props.timePeriod}
+                colors={[props.colorPalette[key]]}
+              />
+            </div>
+          </div>
+        ) : null}
+      </div>
+    )
+  })
+
   return (
     <>
       <div>
         <div className="bargraph-legend-holder">{barGraphStyles}</div>
         <div className="graphHolder">
-          <BarGraph
+          <Graphs
             rawData={barGraphData}
             timePeriod={props.timePeriod}
             colors={props.colorPalette}
           />
         </div>
+        {barGraphs}
       </div>
     </>
   )
 }
-export default BarGraphs
+export default Custom
