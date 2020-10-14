@@ -18,7 +18,6 @@ import { moonpay } from './partners/moonpay'
 import { paytrie } from './partners/paytrie'
 import { safello } from './partners/safello'
 import { shapeshift } from './partners/shapeshift'
-import { sideshift } from './partners/sideshift'
 import { simplex } from './partners/simplex'
 import { switchain } from './partners/switchain'
 import { totle } from './partners/totle'
@@ -75,7 +74,6 @@ const partners = [
   paytrie,
   safello,
   shapeshift,
-  sideshift,
   switchain,
   totle,
   transak,
