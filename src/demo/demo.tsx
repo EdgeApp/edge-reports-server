@@ -328,6 +328,14 @@ class App extends Component<
     startHourModifier: number,
     dropDay: boolean
   ): Promise<void> {
+    let timePeriod
+    if (location === 'setData1') {
+      timePeriod = 'hour'
+    } else if (location === 'setData2') {
+      timePeriod = 'day'
+    } else {
+      timePeriod = 'month'
+    }
     let { year, month, day, hour } = this.state
     if (dropDay === true) {
       day = 1
@@ -345,7 +353,7 @@ class App extends Component<
     const time1 = Date.now()
     const urls: string[] = []
     for (const pluginId of this.state.pluginIds) {
-      const url = `${API_PREFIX}/v1/analytics/?start=${startDate}&end=${endDate}&appId=${this.state.appId}&pluginId=${pluginId}&timePeriod=monthdayhour`
+      const url = `${API_PREFIX}/v1/analytics/?start=${startDate}&end=${endDate}&appId=${this.state.appId}&pluginId=${pluginId}&timePeriod=${timePeriod}`
       urls.push(url)
     }
     const promises = urls.map((url) => fetch(url).then((y) => y.json()))
@@ -358,7 +366,7 @@ class App extends Component<
     })
     this.setState({ [location]: trimmedData })
     const time2 = Date.now()
-    console.log(`getData time: ${time2 - time1} ms.`)
+    console.log(`${location} time: ${time2 - time1} ms.`)
   }
 
   logout = (): void => {

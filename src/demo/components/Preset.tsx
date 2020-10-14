@@ -14,7 +14,6 @@ const Preset: any = (props: {
   colorPalette: string[]
 }) => {
   const graphs: JSX.Element[] = []
-  console.log(props.dataSets)
   for (const index in props.dataSets) {
     if (props.dataSets[index].length === 0) {
       graphs.push(
