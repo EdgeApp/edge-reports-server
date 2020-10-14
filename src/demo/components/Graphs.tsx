@@ -67,16 +67,18 @@ const Graphs: any = (props: {
     if (index % tickSpace === 0) {
       tickRate.push(date)
     }
-    const currencyPairs = {}
+    const currencyPairs: { [currencyPair: string]: number } = {}
     for (const bucket of rawData) {
       for (const [key, value] of Object.entries(
         bucket.result[timePeriod][index].currencyPairs
       )) {
-        if (currencyPairs[key] == null) {
-          currencyPairs[key] = value
-          continue
+        if (typeof value === 'number') {
+          if (currencyPairs[key] == null) {
+            currencyPairs[key] = value
+            continue
+          }
+          currencyPairs[key] += value
         }
-        currencyPairs[key] += value
       }
     }
     const currencyPairArray = Object.entries(currencyPairs).sort(
@@ -102,6 +104,7 @@ const Graphs: any = (props: {
       obj.pluginId.charAt(0).toUpperCase() + obj.pluginId.slice(1)
     return (
       <Bar
+        key={index}
         yAxisId="left"
         stackId="a"
         dataKey={graphName}
@@ -115,8 +118,8 @@ const Graphs: any = (props: {
   })
 
   let tooltip
-  const CustomTooltip = ({ active, payload }) => {
-    if (active && tooltip !== '') {
+  const CustomTooltip = ({ active, payload }): JSX.Element => {
+    if (active === true && tooltip !== '') {
       for (const bar of payload) {
         if (bar.dataKey === tooltip) {
           const currencyPairs: JSX.Element[] = []
@@ -183,7 +186,7 @@ const Graphs: any = (props: {
       }
     }
 
-    return null
+    return <></>
   }
 
   return (
@@ -203,6 +206,7 @@ const Graphs: any = (props: {
           <XAxis dataKey="date" />
           <YAxis yAxisId="left" orientation="left" stroke="#000000" />
           <YAxis yAxisId="right" orientation="right" stroke="#000000" />
+          {/* @ts-ignore */}
           <Tooltip content={<CustomTooltip />} />
           {bars}
           <Line

@@ -61,9 +61,9 @@ class App extends Component<
     colorPalette: string[]
     view: string
     data: AnalyticsResult[]
-    setData1: any
-    setData2: any
-    setData3: any
+    setData1: any[]
+    setData2: any[]
+    setData3: any[]
   }
 > {
   static propTypes = {
@@ -153,13 +153,6 @@ class App extends Component<
   async componentDidMount(): Promise<void> {
     if (this.state.apiKey !== '') {
       await this.getAppId()
-      await this.getPluginIds()
-      await this.setPresetTimePeriods('setData1', 0, 0, -36, false)
-      if (this.state.data.length === 0) {
-        await this.getPresetDates(0, 0, 1, 0, false, false, true)
-      }
-      await this.setPresetTimePeriods('setData2', 0, -75, 0, false)
-      await this.setPresetTimePeriods('setData3', -24, 0, 0, false)
     }
   }
 
@@ -204,11 +197,18 @@ class App extends Component<
       return
     }
     const { cookies } = this.props
-    cookies.set('apiKey', this.state.apiKey, { path: '/' })
+    const cookieTimePeriod = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+    cookies.set('apiKey', this.state.apiKey, {
+      path: '/',
+      expires: cookieTimePeriod,
+    })
     const appId = await response.json()
     this.setState({ appId })
     await this.getPluginIds()
+    await this.setPresetTimePeriods('setData1', 0, 0, -36, false)
     await this.getPresetDates(0, 0, 1, 0, false, false, true)
+    await this.setPresetTimePeriods('setData2', 0, -75, 0, false)
+    await this.setPresetTimePeriods('setData3', -24, 0, 0, false)
   }
 
   async getPluginIds(): Promise<void> {
@@ -324,7 +324,7 @@ class App extends Component<
   }
 
   async setPresetTimePeriods(
-    location: string,
+    location: 'setData1' | 'setData2' | 'setData3',
     startMonthModifier: number,
     startDayModifier: number,
     startHourModifier: number,
@@ -366,6 +366,7 @@ class App extends Component<
         return data
       }
     })
+    // @ts-ignore
     this.setState({ [location]: trimmedData })
     const time2 = Date.now()
     console.log(`${location} time: ${time2 - time1} ms.`)
@@ -379,6 +380,9 @@ class App extends Component<
       apiKeyMessage: 'Enter API Key.',
       appId: '',
       data: [],
+      setData1: [],
+      setData2: [],
+      setData3: [],
     })
   }
 
