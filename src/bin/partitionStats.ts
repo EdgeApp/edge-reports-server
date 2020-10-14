@@ -36,6 +36,7 @@ async function main(partitionName: string): Promise<void> {
       'edge_moonpay',
       'edge_safello',
       'edge_shapeshift',
+      'edge_sideshift',
       'edge_simplex',
       'edge_switchain',
       'edge_totle',
