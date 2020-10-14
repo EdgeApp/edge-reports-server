@@ -26,10 +26,15 @@ interface SidebarState {
 class Sidebar extends Component<SidebarProps, SidebarState> {
   constructor(props) {
     super(props)
-    const date = new Date()
+    const date = new Date(Date.now())
+    const year = date.getUTCFullYear()
+    const month = date.getUTCMonth()
+    const offset = date.getTimezoneOffset()
+    const start = new Date(Date.UTC(year, month, 1, 0, offset))
+    const end = new Date(Date.UTC(year, month + 1, 1, 0, offset) + -1)
     this.state = {
-      start: date,
-      end: date,
+      start,
+      end,
     }
   }
 
