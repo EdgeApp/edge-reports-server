@@ -89,7 +89,10 @@ export async function querySideshift(
     lastCheckedTimestamp -= QUERY_LOOKBACK
   }
 
-  if (!(typeof sideshiftAffiliateSecret === 'string')) {
+  if (
+    !(typeof sideshiftAffiliateSecret === 'string') ||
+    !(typeof sideshiftAffiliateId === 'string')
+  ) {
     return {
       settings: { lastCheckedTimestamp },
       transactions: []
