@@ -36,7 +36,7 @@ const Custom: any = (props: {
   let barGraphData = props.data
   if (props.exchangeType !== 'All') {
     barGraphData = barGraphData.filter(
-      (obj) => props.partnerTypes[obj.pluginId] === props.exchangeType
+      obj => props.partnerTypes[obj.pluginId] === props.exchangeType
     )
   }
 
@@ -45,7 +45,7 @@ const Custom: any = (props: {
       backgroundColor: props.colorPalette[index],
       marginLeft: '10px',
       width: '18px',
-      height: '18px',
+      height: '18px'
     }
     const capitilizedPluginId =
       obj.pluginId.charAt(0).toUpperCase() + obj.pluginId.slice(1)

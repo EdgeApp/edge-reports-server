@@ -34,7 +34,7 @@ class Sidebar extends Component<SidebarProps, SidebarState> {
     const end = new Date(Date.UTC(year, month + 1, 1, 0, offset) + -1)
     this.state = {
       start,
-      end,
+      end
     }
   }
 
@@ -130,7 +130,7 @@ class Sidebar extends Component<SidebarProps, SidebarState> {
       position: 'absolute' as 'absolute',
       width: etWidth,
       top: etPosition,
-      left: '26px',
+      left: '26px'
     }
     return (
       <>
@@ -355,14 +355,14 @@ class Sidebar extends Component<SidebarProps, SidebarState> {
               <div className="calendar-text">Start</div>
               <DatePicker
                 selected={this.state.start}
-                onChange={(e) => this.handleStartChange(e)}
+                onChange={e => this.handleStartChange(e)}
               />
             </div>
             <div className="date-picker">
               <div className="calendar-text">End</div>
               <DatePicker
                 selected={this.state.end}
-                onChange={(e) => this.handleEndChange(e)}
+                onChange={e => this.handleEndChange(e)}
               />
             </div>
             <div className="sidebar-container">

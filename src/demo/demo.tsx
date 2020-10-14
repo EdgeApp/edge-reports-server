@@ -67,7 +67,7 @@ class App extends Component<
   }
 > {
   static propTypes = {
-    cookies: instanceOf(Cookies).isRequired,
+    cookies: instanceOf(Cookies).isRequired
   }
 
   constructor(props) {
@@ -112,7 +112,7 @@ class App extends Component<
         totle: 'Swap',
         transak: 'Fiat',
         simplex: 'Fiat',
-        wyre: 'Fiat',
+        wyre: 'Fiat'
       },
       exchangeType: 'All',
       colorPalette: [
@@ -139,14 +139,14 @@ class App extends Component<
         '#8b4513',
         '#b17f49',
         '#d6b989',
-        '#fff3d0',
+        '#fff3d0'
       ],
       timePeriod: 'day',
       view: 'preset',
       data: [],
       setData1: [],
       setData2: [],
-      setData3: [],
+      setData3: []
     }
   }
 
@@ -200,7 +200,7 @@ class App extends Component<
     const cookieTimePeriod = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
     cookies.set('apiKey', this.state.apiKey, {
       path: '/',
-      expires: cookieTimePeriod,
+      expires: cookieTimePeriod
     })
     const appId = await response.json()
     this.setState({ appId })
@@ -233,12 +233,12 @@ class App extends Component<
       'totle',
       'transak',
       'simplex',
-      'wyre',
+      'wyre'
     ]
     const url = `${API_PREFIX}/v1/getPluginIds?appId=${this.state.appId}`
     const response = await fetch(url)
     const json = await response.json()
-    const existingPartners = json.filter((pluginId) =>
+    const existingPartners = json.filter(pluginId =>
       partners.includes(pluginId)
     )
     this.setState({ pluginIds: existingPartners })
@@ -301,10 +301,10 @@ class App extends Component<
       const url = `${API_PREFIX}/v1/analytics/?start=${start}&end=${end}&appId=${this.state.appId}&pluginId=${pluginId}&timePeriod=monthdayhour`
       urls.push(url)
     }
-    const promises = urls.map((url) => fetch(url).then((y) => y.json()))
+    const promises = urls.map(url => fetch(url).then(y => y.json()))
     const newData = await Promise.all(promises)
     // discard all entries with 0 usdValue on every bucket
-    const trimmedData = newData.filter((data) => {
+    const trimmedData = newData.filter(data => {
       if (data.result.numAllTxs > 0) {
         return data
       }
@@ -358,10 +358,10 @@ class App extends Component<
       const url = `${API_PREFIX}/v1/analytics/?start=${startDate}&end=${endDate}&appId=${this.state.appId}&pluginId=${pluginId}&timePeriod=${timePeriod}`
       urls.push(url)
     }
-    const promises = urls.map((url) => fetch(url).then((y) => y.json()))
+    const promises = urls.map(url => fetch(url).then(y => y.json()))
     const newData = await Promise.all(promises)
     // discard all entries with 0 usdValue on every bucket
-    const trimmedData = newData.filter((data) => {
+    const trimmedData = newData.filter(data => {
       if (data.result.numAllTxs > 0) {
         return data
       }
@@ -382,7 +382,7 @@ class App extends Component<
       data: [],
       setData1: [],
       setData2: [],
-      setData3: [],
+      setData3: []
     })
   }
 
@@ -394,7 +394,7 @@ class App extends Component<
             getData={this.getData}
             changeExchangeType={this.changeExchangetype}
             logout={this.logout}
-            viewChange={(e) => this.handleViewChange(e)}
+            viewChange={e => this.handleViewChange(e)}
             appId={this.state.appId}
             exchangeType={this.state.exchangeType}
             view={this.state.view}
@@ -403,7 +403,7 @@ class App extends Component<
         {this.state.appId === '' ? (
           <ApiKeyScreen
             apiKeyMessage={this.state.apiKeyMessage}
-            handleApiKeyChange={(e) => this.handleApiKeyChange(e)}
+            handleApiKeyChange={e => this.handleApiKeyChange(e)}
             getAppId={this.getAppId}
           />
         ) : (
@@ -428,7 +428,7 @@ class App extends Component<
                 dataSets={[
                   this.state.setData1,
                   this.state.setData2,
-                  this.state.setData3,
+                  this.state.setData3
                 ]}
                 exchangeType={this.state.exchangeType}
                 partnerTypes={this.state.partnerTypes}

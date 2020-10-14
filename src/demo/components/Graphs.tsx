@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   Tooltip,
   XAxis,
-  YAxis,
+  YAxis
 } from 'recharts'
 
 interface Bucket {
@@ -40,7 +40,7 @@ const Graphs: any = (props: {
   colors: string[]
 }) => {
   const { rawData, timePeriod } = props
-  const keys = props.rawData.map((analyticsResult) => {
+  const keys = props.rawData.map(analyticsResult => {
     return (
       analyticsResult.pluginId.charAt(0).toUpperCase() +
       analyticsResult.pluginId.slice(1)
@@ -141,22 +141,22 @@ const Graphs: any = (props: {
             flexDirection: 'column' as 'column',
             borderRadius: '2px',
             backgroundColor: 'rgb(255,255,255)',
-            border: '1px solid #BFBFBF',
+            border: '1px solid #BFBFBF'
           }
           const horizontalBlockHolder = {
             display: 'flex' as 'flex',
-            flexDirection: 'row' as 'row',
+            flexDirection: 'row' as 'row'
           }
           const blocks = {
             width: '10px',
-            height: '10px',
+            height: '10px'
           }
           const styleTwo = {
             backgroundColor: 'rgb(255,255,255)',
             fontFamily: 'Quicksand',
             fontStyle: 'normal' as 'normal',
             fontWeight: 'normal' as 'normal',
-            fontSize: '16px',
+            fontSize: '16px'
           }
           return (
             <div style={verticalBlockHolder}>
@@ -198,14 +198,19 @@ const Graphs: any = (props: {
             top: 20,
             right: 20,
             bottom: 20,
-            left: 20,
+            left: 20
           }}
           animationDuration={0}
         >
           <CartesianGrid stroke="#f5f5f5" />
           <XAxis dataKey="date" />
           <YAxis yAxisId="left" orientation="left" stroke="#000000" />
-          <YAxis yAxisId="right" orientation="right" stroke="#000000" />
+          <YAxis
+            yAxisId="right"
+            orientation="right"
+            stroke="#000000"
+            allowDecimals={false}
+          />
           {/* @ts-ignore */}
           <Tooltip content={<CustomTooltip />} />
           {bars}
