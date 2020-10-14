@@ -1,4 +1,4 @@
-import { asObject, asString } from 'cleaners'
+import { asArray, asObject, asString, asUnknown } from 'cleaners'
 import crypto from 'crypto'
 import fetch from 'node-fetch'
 
@@ -19,6 +19,8 @@ const asSideshiftTx = asObject({
   settleAmount: asString,
   createdAt: asString
 })
+
+const asSideshiftResult = asArray(asUnknown)
 
 const LIMIT = 500
 const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
@@ -47,7 +49,7 @@ async function fetchTransactions(
 
   try {
     const response = await fetch(url)
-    const orders = await response.json()
+    const orders = asSideshiftResult(await response.json())
 
     return orders.map(order => {
       const tx = asSideshiftTx(order)
