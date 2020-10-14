@@ -59,12 +59,14 @@ const Custom: any = (props: {
 
   const barGraphs = barGraphData.map((object, key) => {
     return (
-      <div key={key}>
+      <div key={key} className="individual-graph">
         {props.partnerTypes[object.pluginId] === props.exchangeType ||
         props.exchangeType === 'All' ? (
           <div>
-            <div className="bargraph-legend-holder">{barGraphStyles[key]}</div>
-            <div className="graphHolder">
+            <div className="individual-legend-holder">
+              {barGraphStyles[key]}
+            </div>
+            <div className="individual-partner-holder">
               <Graphs
                 rawData={[object]}
                 timePeriod={props.timePeriod}
@@ -88,7 +90,7 @@ const Custom: any = (props: {
             colors={props.colorPalette}
           />
         </div>
-        {barGraphs}
+        <div className="indivdual-graphs">{barGraphs}</div>
       </div>
     </>
   )

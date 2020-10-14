@@ -14,6 +14,11 @@ html, body {
     height: 800px;
 }
 
+.individual-partner-holder {
+    width: 100%;
+    height:400px;
+}
+
 .legend-holder {
     position: relative;
 }
@@ -93,6 +98,20 @@ html, body {
     margin-top: 10px;
     margin-left: 24px;
     display: inline-flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.individual-legend-holder {
+    width: 100%;
+    margin-top: 10px;
+    margin-left: 24px;
+    display: inline-flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.individual-graphs {
     flex-direction: row;
     flex-wrap: wrap;
 }
@@ -277,4 +296,9 @@ input:focus {
 .exchange-type-top {
     margin-top: 23px;
     position: relative;
+}
+
+.individual-graph {
+    width: 50%;
+    float: left;
 }
