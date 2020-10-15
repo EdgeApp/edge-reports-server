@@ -200,15 +200,15 @@ class App extends Component<
     const cookieTimePeriod = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
     cookies.set('apiKey', this.state.apiKey, {
       path: '/',
-      expires: cookieTimePeriod
+      expires: cookieTimePeriod,
     })
     const appId = await response.json()
     this.setState({ appId })
     await this.getPluginIds()
-    await this.setPresetTimePeriods('setData1', 0, 0, -36, false)
+    await this.setPresetTimePeriods('setData1', 0, 0, -36)
     await this.getPresetDates(0, 0, 1, 0, false, false, true)
-    await this.setPresetTimePeriods('setData2', 0, -75, 0, false)
-    await this.setPresetTimePeriods('setData3', -24, 0, 0, false)
+    await this.setPresetTimePeriods('setData2', 0, -75, 0)
+    await this.setPresetTimePeriods('setData3', -24, 0, 0)
   }
 
   async getPluginIds(): Promise<void> {
@@ -327,20 +327,19 @@ class App extends Component<
     location: 'setData1' | 'setData2' | 'setData3',
     startMonthModifier: number,
     startDayModifier: number,
-    startHourModifier: number,
-    dropDay: boolean
+    startHourModifier: number
   ): Promise<void> {
+    let { year, month, day, hour } = this.state
     let timePeriod
     if (location === 'setData1') {
       timePeriod = 'hour'
     } else if (location === 'setData2') {
       timePeriod = 'day'
+      day++
+      hour = 0
     } else {
       timePeriod = 'month'
-    }
-    let { year, month, day, hour } = this.state
-    if (dropDay === true) {
-      day = 1
+      hour = 0
     }
     const startDate = new Date(
       Date.UTC(
@@ -351,17 +350,17 @@ class App extends Component<
       )
     ).toISOString()
 
-    const endDate = new Date(Date.UTC(year, month, day) - 1).toISOString()
+    const endDate = new Date(Date.UTC(year, month, day, hour) - 1).toISOString()
     const time1 = Date.now()
     const urls: string[] = []
     for (const pluginId of this.state.pluginIds) {
       const url = `${API_PREFIX}/v1/analytics/?start=${startDate}&end=${endDate}&appId=${this.state.appId}&pluginId=${pluginId}&timePeriod=${timePeriod}`
       urls.push(url)
     }
-    const promises = urls.map(url => fetch(url).then(y => y.json()))
+    const promises = urls.map((url) => fetch(url).then((y) => y.json()))
     const newData = await Promise.all(promises)
     // discard all entries with 0 usdValue on every bucket
-    const trimmedData = newData.filter(data => {
+    const trimmedData = newData.filter((data) => {
       if (data.result.numAllTxs > 0) {
         return data
       }
