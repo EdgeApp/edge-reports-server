@@ -99,7 +99,7 @@ class App extends Component<
         bitrefill: 'Fiat',
         changelly: 'Swap',
         changenow: 'Swap',
-        coinswitch: 'Fiat',
+        coinswitch: 'Swap',
         faast: 'Swap',
         fox: 'Swap',
         godex: 'Swap',
@@ -108,11 +108,12 @@ class App extends Component<
         paytrie: 'Fiat',
         safello: 'Fiat',
         shapeshift: 'Swap',
+        sideshift: 'Swap',
         switchain: 'Swap',
         totle: 'Swap',
         transak: 'Fiat',
         simplex: 'Fiat',
-        wyre: 'Fiat'
+        wyre: 'Fiat',
       },
       exchangeType: 'All',
       colorPalette: [
@@ -229,16 +230,17 @@ class App extends Component<
       'paytrie',
       'safello',
       'shapeshift',
+      'sideshift',
       'switchain',
       'totle',
       'transak',
       'simplex',
-      'wyre'
+      'wyre',
     ]
     const url = `${API_PREFIX}/v1/getPluginIds?appId=${this.state.appId}`
     const response = await fetch(url)
     const json = await response.json()
-    const existingPartners = json.filter(pluginId =>
+    const existingPartners = json.filter((pluginId) =>
       partners.includes(pluginId)
     )
     this.setState({ pluginIds: existingPartners })
