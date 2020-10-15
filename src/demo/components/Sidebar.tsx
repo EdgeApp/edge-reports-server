@@ -378,35 +378,6 @@ class Sidebar extends Component<SidebarProps, SidebarState> {
                 Search
               </button>
             </div>
-            <hr className="divider" />
-            <div className="sidebar-container exchange-type-top">
-              <hr style={underlineExchangeTypeStyle} />
-              <button
-                onClick={async () => {
-                  await this.props.changeExchangeType('All')
-                }}
-              >
-                Totals
-              </button>
-            </div>
-            <div className="sidebar-container">
-              <button
-                onClick={async () => {
-                  await this.props.changeExchangeType('Fiat')
-                }}
-              >
-                Fiat
-              </button>
-            </div>
-            <div className="sidebar-container">
-              <button
-                onClick={async () => {
-                  await this.props.changeExchangeType('Swap')
-                }}
-              >
-                Swap
-              </button>
-            </div>
           </div>
         ) : (
           <div className="sidebar-container">
@@ -418,6 +389,35 @@ class Sidebar extends Component<SidebarProps, SidebarState> {
             </button>
           </div>
         )}
+        <hr className="divider" />
+        <div className="sidebar-container exchange-type-top">
+          <hr style={underlineExchangeTypeStyle} />
+          <button
+            onClick={async () => {
+              await this.props.changeExchangeType('All')
+            }}
+          >
+            Totals
+          </button>
+        </div>
+        <div className="sidebar-container">
+          <button
+            onClick={async () => {
+              await this.props.changeExchangeType('Fiat')
+            }}
+          >
+            Fiat
+          </button>
+        </div>
+        <div className="sidebar-container">
+          <button
+            onClick={async () => {
+              await this.props.changeExchangeType('Swap')
+            }}
+          >
+            Swap
+          </button>
+        </div>
         {this.props.appId !== '' ? (
           <div>
             <hr className="divider" />
