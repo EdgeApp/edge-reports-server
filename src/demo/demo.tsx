@@ -209,7 +209,7 @@ class App extends Component<
     await this.setPresetTimePeriods('setData1', 0, 0, -36)
     await this.getPresetDates(0, 0, 1, 0, false, false, true)
     await this.setPresetTimePeriods('setData2', 0, -75, 0)
-    await this.setPresetTimePeriods('setData3', -24, 0, 0)
+    await this.setPresetTimePeriods('setData3', -3, 0, 0)
   }
 
   async getPluginIds(): Promise<void> {
@@ -341,32 +341,59 @@ class App extends Component<
       hour = 0
     } else {
       timePeriod = 'month'
+      month -= 21
+      day = 1
       hour = 0
     }
-    const startDate = new Date(
-      Date.UTC(
-        year,
-        month + startMonthModifier,
-        day + startDayModifier,
-        hour + startHourModifier
-      )
-    ).toISOString()
-
-    const endDate = new Date(Date.UTC(year, month, day, hour) - 1).toISOString()
+    let counter = 0
+    let analyticsResults: AnalyticsResult[] = []
     const time1 = Date.now()
-    const urls: string[] = []
-    for (const pluginId of this.state.pluginIds) {
-      const url = `${API_PREFIX}/v1/analytics/?start=${startDate}&end=${endDate}&appId=${this.state.appId}&pluginId=${pluginId}&timePeriod=${timePeriod}`
-      urls.push(url)
-    }
-    const promises = urls.map((url) => fetch(url).then((y) => y.json()))
-    const newData = await Promise.all(promises)
-    // discard all entries with 0 usdValue on every bucket
-    const trimmedData = newData.filter((data) => {
+    do {
+      const startDate = new Date(
+        Date.UTC(
+          year,
+          month + startMonthModifier,
+          day + startDayModifier,
+          hour + startHourModifier
+        )
+      ).toISOString()
+
+      const endDate = new Date(
+        Date.UTC(year, month, day, hour) - 1
+      ).toISOString()
+      const urls: string[] = []
+      for (const pluginId of this.state.pluginIds) {
+        const url = `${API_PREFIX}/v1/analytics/?start=${startDate}&end=${endDate}&appId=${this.state.appId}&pluginId=${pluginId}&timePeriod=${timePeriod}`
+        urls.push(url)
+      }
+      const promises = urls.map((url) => fetch(url).then((y) => y.json()))
+      const newData = await Promise.all(promises)
+      // discard all entries with 0 usdValue on every bucket
+      if (analyticsResults.length === 0) {
+        analyticsResults = newData
+      } else {
+        analyticsResults = analyticsResults.map((analyticsResult, index) => {
+          analyticsResult.result.month = [
+            ...analyticsResult.result.month,
+            ...newData[index].result.month,
+          ]
+          analyticsResult.result.numAllTxs += newData[index].result.numAllTxs
+          return analyticsResult
+        })
+        month += 3
+      }
+      counter++
+      if (counter === 8) {
+        month++
+        startMonthModifier = -4
+      }
+    } while (timePeriod === 'month' && counter <= 8)
+    const trimmedData = analyticsResults.filter((data) => {
       if (data.result.numAllTxs > 0) {
         return data
       }
     })
+
     // @ts-ignore
     this.setState({ [location]: trimmedData })
     const time2 = Date.now()
