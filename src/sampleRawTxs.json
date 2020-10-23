@@ -394,6 +394,34 @@
     "type": "PRECISE",
     "userId": "e274af63-2a26-45bb-b6a6-202332dd9a2c"
   },
+  "sideshift": {
+    "id": "c421de9317bc18ab76ba",
+    "createdAt": "2020-10-07T15:04:07.846Z",
+    "expiresAt": "2020-10-07T15:19:07.104Z",
+    "depositMethodId": "bch",
+    "settleMethodId": "xmr",
+    "depositAsset": "BCH",
+    "settleAsset": "XMR",
+    "depositAddress": {
+      "address": "bitcoincash:qzaz9m2nku3m8hrq55lfgn5sxghzvg4xpsm85cr6h2"
+    },
+    "refundAddress": null,
+    "settleAddress": {
+      "address": "45AZiUFxa5hGwvMChQmdfjNr6HbktbtwhNhpsT4HYosQARXfJ5xWFwrSN7VWyk7ZFoLEYPUq7Qw2RRTTCfEVQFRG75QSUiC"
+    },
+    "extra": {},
+    "affiliateId": "Coq58fefL",
+    "invoiceAmount": "0.03685881",
+    "depositMin": "0.03685881",
+    "depositMax": "0.03685881",
+    "type": "fixed",
+    "settleAmount": "0.07353",
+    "settleRate": "1.99491",
+    "settleRateNominal": "219.16435588652246556599",
+    "settleRateSpread": "0.01",
+    "sessionId": null,
+    "quoteId": "1a618edd-f0f3-4c31-9f84-a0555e6974dc"
+  },
   "simplex": {
     "transaction_id": "f64b5e50-d935-11ea-b358-ed6259933d55",
     "created_at": 1596863644.775,
