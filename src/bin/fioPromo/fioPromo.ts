@@ -1,7 +1,7 @@
 import { program } from 'commander'
 
 import {
-  filterDomain,
+  filterAddress,
   getFioTransactions,
   getRewards,
   sendRewards

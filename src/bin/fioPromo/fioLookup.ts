@@ -1,11 +1,21 @@
 import { asArray, asObject, asString, asUnknown } from 'cleaners'
 import fs from 'fs'
 import fetch from 'node-fetch'
+import path from 'path'
 
 import { queryChangeNow } from '../../partners/changenow'
-import { getExchangeRate } from '../../ratesEngine'
 import { PluginParams, StandardTx } from '../../types'
+import { getExchangeRate } from '../../util'
 import { defaultSettings } from './fioInfo'
+
+let addressList: string[] = []
+try {
+  const buffer = fs.readFileSync(path.join(__dirname, '../../../twitterex.txt'))
+  const file = buffer.toString('utf8')
+  addressList = file.split('\n')
+} catch (e) {
+  console.log(e)
+}
 
 const asGetFioNames = asObject({
   fio_addresses: asArray(asUnknown)
@@ -22,7 +32,6 @@ const noNamesMessage: string = 'No FIO names'
 const {
   maxUSDReward,
   fioMultiple,
-  defaultDomain,
   currency,
   currencyCode,
   endpoint,
@@ -53,29 +62,28 @@ export async function getFioTransactions(
   return txnList.transactions
 }
 
-export async function filterDomain( // Test
-  fioList: StandardTx[],
-  domain: string = defaultDomain // By default check for @edge domains
+export async function filterAddress(
+  fioList: StandardTx[]
 ): Promise<StandardTx[]> {
   const txList: StandardTx[] = []
 
   for (const tx of fioList) {
     const { payoutAddress } = tx
     if (payoutAddress == null) continue
-    const result = await checkDomain(payoutAddress, domain)
+    const result = await checkAddress(payoutAddress)
     if (result) txList.push(tx)
   }
   return txList // only FIO addresses with an @edge Fio domain
 }
 
 // Does FIO public address have specified domain?
-export const checkDomain = async (
+export const checkAddress = async (
   pubkey: string | undefined,
-  domain: string = defaultDomain, // By default check for @edge domains
   urls: string = networks
 ): Promise<boolean> => {
   let fioInfo
   let error = ''
+  console.log(`Checking ${pubkey}`)
   for (const apiUrl of urls) {
     try {
       const result = await fetch(`${apiUrl}${endpoint}`, {
@@ -100,11 +108,12 @@ export const checkDomain = async (
     // No FIO names
     return false
   } else {
+    // Has FIO names
     const fioNames = asGetFioNames(fioInfo)
 
     for (const fioName of fioNames.fio_addresses) {
       const cleanFioName = asFioAddress(fioName)
-      if (cleanFioName.fio_address.includes(`@${domain}`)) {
+      if (addressList.includes(cleanFioName.fio_address)) {
         return true
       }
     }
@@ -134,19 +143,23 @@ export const getRewards = async (
 
   const now = new Date()
   const exchangeRate = await getExchangeRate(
-    currencyCode,
     'USD',
+    currencyCode,
     now.toString()
   )
 
   const cryptoMaxReward = exchangeRate * rewardMax
+
+  let totalReward = 0
   // Make sure every reward is under maximum
   for (const reward in rewards) {
     if (rewards[reward] >= cryptoMaxReward) {
       rewards[reward] = cryptoMaxReward
     }
+    totalReward += rewards[reward]
   }
 
+  console.log(`Total Rewards are: ${totalReward}`)
   return rewards
 }
 
@@ -155,15 +168,13 @@ export const sendRewards = async (
   rewardList: AddressReward,
   rewardCurrency: string = currency,
   devMode: boolean = false
-): Promise<string[]> => {
+): Promise<void> => {
   const txIdList: string[] = []
 
   const localhost = `http://localhost:8080`
 
   for (const address in rewardList) {
     const sendAmount = (fioMultiple * rewardList[address]).toString()
-    console.log(`Rewards amount is: ${rewardList[address]}`)
-    console.log(`Amount to send: ${sendAmount} typeof is: ${typeof sendAmount}`) // Multiple * reward amount
 
     let transaction = {
       txid: `dev mode - address: ${address}, amount: ${sendAmount}`
@@ -171,6 +182,7 @@ export const sendRewards = async (
 
     if (!devMode) {
       try {
+        console.log(`Reward for ${address} is: ${rewardList[address]}`)
         const result = await fetch(
           `${localhost}/spend/?type=${rewardCurrency}`,
           {
@@ -192,13 +204,11 @@ export const sendRewards = async (
         transaction = await result.json()
 
         console.log(`Transaction is: ${JSON.stringify(transaction)}`)
-
-        txIdList.push(transaction.txid)
       } catch (e) {
         console.log(e)
       }
     }
+    console.log(`Sent reward transaction IDs: ${transaction.txid}`)
+    txIdList.push(transaction.txid)
   }
-
-  return txIdList
 }
