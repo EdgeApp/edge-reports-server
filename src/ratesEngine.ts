@@ -1,9 +1,9 @@
 import { asArray, asObject, asUnknown } from 'cleaners'
-import { asDbTx, DbTx } from './types'
 import nano from 'nano'
+
 import config from '../config.json'
-import { datelog } from './util'
-import fetch from 'node-fetch'
+import { asDbTx, DbTx } from './types'
+import { datelog, getExchangeRate } from './util'
 
 const nanoDb = nano(config.couchDbFullpath)
 const QUERY_FREQ_MS = 1000
@@ -156,24 +156,5 @@ export async function updateTxValues(transaction: DbTx): Promise<void> {
   } else {
     datelog(`FAIL    id:${transaction._id} not updated`)
     transaction._id = undefined
-  }
-}
-
-async function getExchangeRate(
-  currencyA: string,
-  currencyB: string,
-  date: string
-): Promise<number> {
-  const url = `https://rates1.edge.app/v1/exchangeRate?currency_pair=${currencyA}_${currencyB}&date=${date}`
-  try {
-    const result = await fetch(url, { method: 'GET' })
-    const jsonObj = await result.json()
-    return parseFloat(jsonObj.exchangeRate)
-  } catch (e) {
-    datelog(
-      `Could not not get exchange rate for ${currencyA} and ${currencyB} at ${date}.`,
-      e
-    )
-    return 0
   }
 }
