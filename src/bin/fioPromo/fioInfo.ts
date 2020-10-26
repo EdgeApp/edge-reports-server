@@ -20,7 +20,7 @@ export const defaultSettings: any = {
     'https://fio.eosdublin.io:443',
     'https://fio.eosphere.io:443'
   ],
-  maxFioReward: 40,
+  maxUSDReward: 50,
   fioMultiple: 1000000000, // 1,000,000,000
   defaultDomain: 'edge',
   currency: 'fio',

@@ -3,6 +3,7 @@ import fs from 'fs'
 import fetch from 'node-fetch'
 
 import { queryChangeNow } from '../../partners/changenow'
+import { getExchangeRate } from '../../ratesEngine'
 import { PluginParams, StandardTx } from '../../types'
 import { defaultSettings } from './fioInfo'
 
@@ -19,7 +20,7 @@ interface AddressReward {
 
 const noNamesMessage: string = 'No FIO names'
 const {
-  maxFioReward,
+  maxUSDReward,
   fioMultiple,
   defaultDomain,
   currency,
@@ -112,10 +113,10 @@ export const checkDomain = async (
 }
 
 // Takes a list of public keys to be checked and returns a 2D array with keys and values
-export const getRewards = (
+export const getRewards = async (
   txList: StandardTx[],
-  rewardMax: number = maxFioReward
-): AddressReward => {
+  rewardMax: number = maxUSDReward
+): Promise<AddressReward> => {
   const rewards: AddressReward = {}
 
   // Get possible reward amounts
@@ -131,10 +132,18 @@ export const getRewards = (
     }
   }
 
+  const now = new Date()
+  const exchangeRate = await getExchangeRate(
+    currencyCode,
+    'USD',
+    now.toString()
+  )
+
+  const cryptoMaxReward = exchangeRate * rewardMax
   // Make sure every reward is under maximum
   for (const reward in rewards) {
-    if (rewards[reward] >= rewardMax) {
-      rewards[reward] = rewardMax
+    if (rewards[reward] >= cryptoMaxReward) {
+      rewards[reward] = cryptoMaxReward
     }
   }
 

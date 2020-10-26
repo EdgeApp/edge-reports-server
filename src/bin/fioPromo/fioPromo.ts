@@ -41,7 +41,7 @@ async function main(): Promise<null> {
   console.log(`@Edge Fio transactions: ${JSON.stringify(edgeFioTransactions)}`)
 
   // 4. Add up purchases up to 40 FIO
-  const rewards = getRewards(edgeFioTransactions)
+  const rewards = await getRewards(edgeFioTransactions)
   console.log(`Rewards are: ${JSON.stringify(rewards)}`)
 
   // 5. Send money
