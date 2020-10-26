@@ -13,7 +13,7 @@ async function main(): Promise<null> {
     .option(
       '-s, --start <date>',
       'Start checking for purchases from specified date',
-      `${new Date('2019-0-01')}`
+      `${new Date('2019-01-01')}`
     )
     .option(
       '-e, --end <date>',
@@ -34,19 +34,17 @@ async function main(): Promise<null> {
 
   // 2. Get FIO customers in specified time-frame
   const fioTransactions = await getFioTransactions(program.start, program.end)
-  console.log(`Fio transactions: ${JSON.stringify(fioTransactions)}`)
+  // console.log(`Fio transactions: ${JSON.stringify(fioTransactions)}`)
 
   // 3. Filter for @edge domains
-  const edgeFioTransactions = await filterDomain(fioTransactions)
-  console.log(`@Edge Fio transactions: ${JSON.stringify(edgeFioTransactions)}`)
+  const edgeFioTransactions = await filterAddress(fioTransactions)
+  // console.log(`@Edge Fio transactions: ${JSON.stringify(edgeFioTransactions)}`)
 
   // 4. Add up purchases up to 40 FIO
   const rewards = await getRewards(edgeFioTransactions)
-  console.log(`Rewards are: ${JSON.stringify(rewards)}`)
 
   // 5. Send money
-  const txIds = await sendRewards(rewards, currency, devMode)
-  console.log(`Sent reward transaction IDs: ${txIds}`)
+  await sendRewards(rewards, currency, devMode)
 
   return null
 }
