@@ -20,7 +20,7 @@ export const defaultSettings: any = {
     'https://fio.eosdublin.io:443',
     'https://fio.eosphere.io:443'
   ],
-  maxUSDReward: 50,
+  maxFioReward: 512, // 50 USD / Lowest Price of FIO on Oct 22 0.097694
   fioMultiple: 1000000000, // 1,000,000,000
   defaultDomain: 'edge',
   currency: 'fio',
