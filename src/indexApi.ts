@@ -1,5 +1,5 @@
 import bodyParser from 'body-parser'
-import { asArray, asNumber, asObject, asString } from 'cleaners'
+import { asArray, asMap, asNumber, asObject, asString } from 'cleaners'
 import cors from 'cors'
 import express from 'express'
 import nano from 'nano'
@@ -40,6 +40,20 @@ const asApp = asObject({
 })
 const asApps = asArray(asApp)
 
+const asPluginIdsReq = asObject({
+  appId: asString
+})
+const asPluginIdsDbReq = asObject({
+  pluginIds: asMap(asMap(asString))
+})
+
+const asAppIdReq = asObject({
+  apiKey: asString
+})
+const asAppIdDbReq = asObject({
+  appId: asString
+})
+
 const nanoDb = nano(config.couchDbFullpath)
 
 async function main(): Promise<void> {
@@ -50,6 +64,7 @@ async function main(): Promise<void> {
 
   app.use(bodyParser.json({ limit: '1mb' }))
   app.use(cors())
+  app.use('/', express.static('dist'))
 
   const query = {
     selector: {
@@ -100,25 +115,22 @@ async function main(): Promise<void> {
         'timestamp',
         'usdValue'
       ],
-      // proper api arcitechture should page forward instead of all in 1 chunk
+      use_index: 'timestamp-index',
+      sort: ['timestamp'],
       limit: 1000000
     }
 
     let result
     try {
       const r = await reportsTransactions.partitionedFind(appAndPluginId, query)
-      result = asDbReq(r)
+      result = asDbReq(r).docs
     } catch (e) {
       console.log(e)
       res.status(500).send(`Internal server error.`)
       return
     }
-    // TODO: put the sort within the query, need to add default indexs in the database.
-    const sortedTxs = result.docs.sort(function(a, b) {
-      return a.timestamp - b.timestamp
-    })
     const answer = getAnalytics(
-      sortedTxs,
+      result,
       queryStart,
       queryEnd,
       appId,
@@ -167,6 +179,52 @@ async function main(): Promise<void> {
       out.usdValue = result.usdValue
     }
     res.json(out)
+  })
+
+  app.get('/v1/getPluginIds/', async function(req, res) {
+    let queryResult
+    try {
+      queryResult = asPluginIdsReq(req.query)
+    } catch (e) {
+      res.status(400).send(`Missing Request fields.`)
+      return
+    }
+    const query = {
+      selector: {
+        appId: { $eq: queryResult.appId.toLowerCase() }
+      },
+      fields: ['pluginIds'],
+      limit: 1
+    }
+    let pluginNames
+    try {
+      const rawApp = await reportsApps.find(query)
+      const app = asPluginIdsDbReq(rawApp.docs[0])
+      pluginNames = Object.keys(app.pluginIds)
+    } catch (e) {
+      res.status(404).send(`App ID not found.`)
+      return
+    }
+    res.json(pluginNames)
+  })
+
+  app.get('/v1/getAppId/', async function(req, res) {
+    let queryResult
+    try {
+      queryResult = asAppIdReq(req.query)
+    } catch (e) {
+      res.status(400).send(`Missing Request fields.`)
+      return
+    }
+    let appId
+    try {
+      const dbResult = await reportsApps.get(queryResult.apiKey)
+      appId = asAppIdDbReq(dbResult).appId
+    } catch (e) {
+      res.status(400).send(`API KEY UNRECOGNIZED.`)
+      return
+    }
+    res.json(appId)
   })
 
   app.listen(config.httpPort, function() {
