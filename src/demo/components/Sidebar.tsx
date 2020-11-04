@@ -24,6 +24,10 @@ interface SidebarState {
   start: Date
   end: Date
 }
+interface Preset {
+  args: [number, number, number, number, boolean, boolean, boolean, boolean]
+  str: string
+}
 
 const DATE = new Date(Date.now())
 const YEAR = DATE.getUTCFullYear()
@@ -33,7 +37,7 @@ const jan = new Date(YEAR, 0, 1)
 const jul = new Date(YEAR, 6, 1)
 const OFFSET = Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset())
 
-const PRESETS = [
+const PRESETS: Preset[] = [
   { args: [0, -1, 0, 0, false, false, false, false], str: 'Yesterday' },
   { args: [0, 0, 0, 1, false, false, false, false], str: 'Today' },
   { args: [0, -7, 0, 0, false, false, true, false], str: 'Last Week' },
@@ -76,14 +80,14 @@ class Sidebar extends Component<SidebarProps, SidebarState> {
   }
 
   getPresetDates(
-    startMonthModifier: number,
-    startDayModifier: number,
-    endMonthModifier: number,
-    endDayModifier: number,
-    yearSearch: boolean,
-    quarterSearch: boolean,
-    weekSearch: boolean,
-    dropDay: boolean
+    startMonthModifier: number = 0,
+    startDayModifier: number = 0,
+    endMonthModifier: number = 0,
+    endDayModifier: number = 0,
+    yearSearch: boolean = false,
+    quarterSearch: boolean = false,
+    weekSearch: boolean = false,
+    dropDay: boolean = false
   ): void {
     let month = MONTH
     let day = DAY
