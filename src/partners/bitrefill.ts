@@ -9,9 +9,9 @@ import {
   asUnknown
 } from 'cleaners'
 import fetch from 'node-fetch'
-import { datelog } from '../util'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import { datelog } from '../util'
 
 const asBitrefillTx = asObject({
   paymentReceived: asBoolean,
@@ -25,6 +25,10 @@ const asBitrefillTx = asObject({
   receivedPaymentAltcoin: asOptional(asNumber),
   orderId: asString,
   usdPrice: asNumber
+})
+
+const asRawBitrefillTx = asObject({
+  status: asString
 })
 
 const asBitrefillResult = asObject({
@@ -80,6 +84,9 @@ export async function queryBitrefill(
     }
     const txs = jsonObj.orders
     for (const rawtx of txs) {
+      if (asRawBitrefillTx(rawtx).status === 'unpaid') {
+        continue
+      }
       const tx = asBitrefillTx(rawtx)
       if (
         tx.paymentReceived === true &&

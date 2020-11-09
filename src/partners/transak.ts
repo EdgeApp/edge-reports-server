@@ -4,13 +4,14 @@ import {
   asEither,
   asNumber,
   asObject,
+  asOptional,
   asString,
   asUnknown
 } from 'cleaners'
 import fetch from 'node-fetch'
-import { datelog } from '../util'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import { datelog } from '../util'
 
 const PAGE_LIMIT = 100
 const OFFSET_ROLLBACK = 500
@@ -18,7 +19,7 @@ const OFFSET_ROLLBACK = 500
 const asTransakOrder = asObject({
   status: asString,
   id: asString,
-  fromWalletAddress: asEither(asBoolean, asString),
+  fromWalletAddress: asOptional(asEither(asBoolean, asString)),
   fiatCurrency: asString,
   fiatAmount: asNumber,
   walletAddress: asString,
