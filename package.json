@@ -72,7 +72,7 @@
     "cleaners": "^0.2.1",
     "commander": "^6.1.0",
     "cors": "^2.8.5",
-    "date-fns": "^2.15.0",
+    "date-fns": "^2.16.1",
     "express": "^4.17.1",
     "nano": "^8.2.2",
     "node-fetch": "^2.6.1",
