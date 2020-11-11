@@ -147,6 +147,7 @@ export const apiKeyButton = {
 export const mainButton = {
   ...button,
   marginTop: '12px',
+  textAlign: 'left',
   marginLeft: '68px',
   marginBottom: '12px',
   color: 'white',
@@ -155,14 +156,16 @@ export const mainButton = {
 
 export const regularButton = {
   ...button,
+  width: '100%',
+  paddingTop: '12px',
+  textAlign: 'left',
   marginLeft: '20px',
   color: 'white',
   border: 'none'
 }
 
 export const sideBarContainer = {
-  marginTop: '12px',
-  width: '100%'
+  marginTop: '12px'
 }
 
 export const calendarContainer = {
@@ -177,8 +180,6 @@ export const dateContainer = {
 }
 
 export const exchangeTypeContainer = {
-  marginTop: '23px',
-  width: '100%',
   position: 'relative'
 }
 

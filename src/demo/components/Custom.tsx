@@ -33,7 +33,7 @@ const Custom: any = (props: {
   colorPalette: string[]
 }) => {
   let barGraphData = props.data
-  if (props.exchangeType !== 'All') {
+  if (props.exchangeType !== 'all') {
     barGraphData = barGraphData.filter(
       obj => props.partnerTypes[obj.pluginId] === props.exchangeType
     )
@@ -60,7 +60,7 @@ const Custom: any = (props: {
     return (
       <div key={key} style={styleSheet.smallLegendAndGraphHolder}>
         {props.partnerTypes[object.pluginId] === props.exchangeType ||
-        props.exchangeType === 'All' ? (
+        props.exchangeType === 'all' ? (
           <div>
             <div style={styleSheet.legendHolder}>{barGraphStyles[key]}</div>
             <div style={styleSheet.smallGraphHolder}>

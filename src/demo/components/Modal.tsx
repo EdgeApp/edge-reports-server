@@ -3,7 +3,7 @@ import React from 'react'
 import * as styleSheet from '../../styles/common/textStyles.js'
 
 interface ModalProps {
-  setModal: any
+  closeModal: any
   payload: any
   tooltip: string
   isSinglePartner: boolean
@@ -33,14 +33,15 @@ const styleTwo = {
 
 const closeModalButton = {
   textAlign: 'right' as 'right',
-  cursor: 'pointer'
+  cursor: 'pointer',
+  fontSize: '10px'
 }
 
 const Modal: any = (props: ModalProps) => {
-  const { setModal, payload, tooltip, isSinglePartner, isClosable } = props
+  const { closeModal, payload, tooltip, isSinglePartner, isClosable } = props
   if (tooltip === '') return null
   const bar = payload.find(({ dataKey }) => dataKey === tooltip)
-  const currencyPairs: JSX.Element[] = bar.payload.currencyPairs
+  const currencyPairs: JSX.Element[] = bar.payload.currencyPairsArray
     .map(([key, value], index) => (
       <div key={index} style={styleSheet.currencyPairHolder}>
         <div style={styleSheet.currencyPairName}>{`${key}:`}</div>
@@ -53,7 +54,7 @@ const Modal: any = (props: ModalProps) => {
   if (isClosable === true) {
     modalStyle = { ...styleTwo, paddingTop: '2px' }
     closable = (
-      <span style={closeModalButton} onClick={() => setModal(<></>)}>
+      <span style={closeModalButton} onClick={closeModal}>
         ❌
       </span>
     )

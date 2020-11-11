@@ -24,7 +24,7 @@ const Preset: any = (props: {
       continue
     }
     let barGraphData = props.dataSets[index]
-    if (props.exchangeType !== 'All') {
+    if (props.exchangeType !== 'all') {
       barGraphData = barGraphData.filter(
         obj => props.partnerTypes[obj.pluginId] === props.exchangeType
       )
