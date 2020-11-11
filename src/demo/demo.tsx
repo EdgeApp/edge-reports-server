@@ -2,6 +2,11 @@ import 'regenerator-runtime/runtime'
 import 'react-datepicker/dist/react-datepicker.css'
 import './demo.css'
 
+import add from 'date-fns/add'
+import startOfDay from 'date-fns/startOfDay'
+import startOfHour from 'date-fns/startOfHour'
+import startOfMonth from 'date-fns/startOfMonth'
+import sub from 'date-fns/sub'
 import fetch from 'node-fetch'
 import { instanceOf } from 'prop-types'
 import React, { Component } from 'react'
@@ -65,16 +70,43 @@ const COLOR_PALETTE = [
   '#fff3d0'
 ]
 
-const CURRENT_DATE = new Date(Date.now())
-const YEAR = CURRENT_DATE.getUTCFullYear()
-const MONTH = CURRENT_DATE.getUTCMonth()
-const DAY = CURRENT_DATE.getUTCDate()
-const HOUR = CURRENT_DATE.getUTCHours()
-const PRODUCTION = true
 let API_PREFIX = 'localhost:8000'
+const PRODUCTION = true
 if (PRODUCTION === true) {
   API_PREFIX = ''
 }
+const DATE = new Date(Date.now())
+const HOUR_RANGE_END = startOfHour(DATE)
+const DAY_RANGE_END = startOfDay(DATE)
+const MONTH_RANGE_END = add(startOfMonth(DATE), { months: 1 })
+const HOUR_RANGE_START = sub(HOUR_RANGE_END, { hours: 36 })
+const DAY_RANGE_START = sub(DAY_RANGE_END, { days: 75 })
+const MONTH_RANGE_START = sub(MONTH_RANGE_END, { months: 4 })
+const MONTH_RANGE_ARRAY = [[MONTH_RANGE_START, MONTH_RANGE_END]]
+for (let i = 0; i < 7; i++) {
+  const currentEnd = new Date(MONTH_RANGE_ARRAY[0][0])
+  const currentStart = sub(currentEnd, { months: 3 })
+  MONTH_RANGE_ARRAY.unshift([currentStart, currentEnd])
+}
+const PRESET_TIMERANGES = {
+  setData1: [
+    [
+      HOUR_RANGE_START.toISOString(),
+      new Date(HOUR_RANGE_END.getTime() - 1).toISOString()
+    ]
+  ],
+  setData2: [
+    [
+      DAY_RANGE_START.toISOString(),
+      new Date(DAY_RANGE_END.getTime() - 1).toISOString()
+    ]
+  ],
+  setData3: MONTH_RANGE_ARRAY.map(array => [
+    array[0].toISOString(),
+    new Date(array[1].getTime() - 1).toISOString()
+  ])
+}
+console.log(PRESET_TIMERANGES)
 
 interface Bucket {
   start: number
@@ -125,8 +157,8 @@ class App extends Component<
     super(props)
     const { cookies } = props
     this.state = {
-      start: CURRENT_DATE,
-      end: CURRENT_DATE,
+      start: DATE,
+      end: DATE,
       apiKey: cookies.get('apiKey'),
       apiKeyMessage: 'Enter API Key.',
       appId: '',
@@ -189,9 +221,7 @@ class App extends Component<
     const appId = await response.json()
     this.setState({ appId })
     await this.getPluginIds()
-    await this.setPresetTimePeriods('setData1', 0, 0, -36)
-    await this.setPresetTimePeriods('setData2', 0, -75, 0)
-    await this.setPresetTimePeriods('setData3', -3, 0, 0)
+    await this.setPresetTimePeriods()
   }
 
   async getPluginIds(): Promise<void> {
@@ -206,7 +236,7 @@ class App extends Component<
   }
 
   getData = async (start: string, end: string): Promise<void> => {
-    const time1 = Date.now()
+    console.time('getData')
     this.setState({ loading: true })
     const urls: string[] = []
     for (const pluginId of this.state.pluginIds) {
@@ -231,88 +261,47 @@ class App extends Component<
       timePeriod = 'month'
     }
     this.setState({ data: trimmedData, loading: false, timePeriod })
-    const time2 = Date.now()
-    console.log(`getData time: ${time2 - time1} ms.`)
+    console.timeEnd('getData')
   }
 
-  async setPresetTimePeriods(
-    location: 'setData1' | 'setData2' | 'setData3',
-    startMonthModifier: number,
-    startDayModifier: number,
-    startHourModifier: number
-  ): Promise<void> {
-    let month = MONTH
-    let day = DAY
-    let hour = HOUR
-    let timePeriod
-    if (location === 'setData1') {
-      timePeriod = 'hour'
-    } else if (location === 'setData2') {
-      timePeriod = 'day'
-      day++
-      hour = 0
-    } else {
-      timePeriod = 'month'
-      month -= 21
-      day = 1
-      hour = 0
-    }
-    let counter = 999
-    if (timePeriod === 'month') {
-      counter = 0
-    }
-    let analyticsResults: AnalyticsResult[] = []
-    const time1 = Date.now()
-    do {
-      const startDate = new Date(
-        Date.UTC(
-          YEAR,
-          month + startMonthModifier,
-          day + startDayModifier,
-          hour + startHourModifier
-        )
-      ).toISOString()
+  async setPresetTimePeriods(): Promise<void> {
+    for (const timeRange in PRESET_TIMERANGES) {
+      let analyticsResults: AnalyticsResult[] = []
+      console.time(`${timeRange}`)
+      for (const timeRanges of PRESET_TIMERANGES[timeRange]) {
+        const startDate = timeRanges[0]
+        const endDate = timeRanges[1]
+        const urls: string[] = []
+        for (const pluginId of this.state.pluginIds) {
+          const url = `${API_PREFIX}/v1/analytics/?start=${startDate}&end=${endDate}&appId=${this.state.appId}&pluginId=${pluginId}&timePeriod=hourdaymonth`
+          urls.push(url)
+        }
+        const promises = urls.map(url => fetch(url).then(y => y.json()))
+        const newData = await Promise.all(promises)
+        if (analyticsResults.length === 0) {
+          analyticsResults = newData
+        } else {
+          analyticsResults = analyticsResults.map((analyticsResult, index) => {
+            analyticsResult.result.month = [
+              ...analyticsResult.result.month,
+              ...newData[index].result.month
+            ]
+            analyticsResult.result.numAllTxs += newData[index].result.numAllTxs
+            return analyticsResult
+          })
+        }
+      }
 
-      const endDate = new Date(
-        Date.UTC(YEAR, month, day, hour) - 1
-      ).toISOString()
-      const urls: string[] = []
-      for (const pluginId of this.state.pluginIds) {
-        const url = `${API_PREFIX}/v1/analytics/?start=${startDate}&end=${endDate}&appId=${this.state.appId}&pluginId=${pluginId}&timePeriod=${timePeriod}`
-        urls.push(url)
-      }
-      const promises = urls.map(url => fetch(url).then(y => y.json()))
-      const newData = await Promise.all(promises)
-      // discard all entries with 0 usdValue on every bucket
-      if (analyticsResults.length === 0) {
-        analyticsResults = newData
-      } else {
-        analyticsResults = analyticsResults.map((analyticsResult, index) => {
-          analyticsResult.result.month = [
-            ...analyticsResult.result.month,
-            ...newData[index].result.month
-          ]
-          analyticsResult.result.numAllTxs += newData[index].result.numAllTxs
-          return analyticsResult
-        })
-        month += 3
-      }
-      counter++
-      if (counter === 8) {
-        month++
-        startMonthModifier = -4
-      }
-    } while (counter <= 8)
-    const trimmedData = analyticsResults.filter(data => {
-      if (data.result.numAllTxs > 0) {
-        return data
-      }
-    })
+      const trimmedData = analyticsResults.filter(data => {
+        if (data.result.numAllTxs > 0) {
+          return data
+        }
+      })
 
-    // @ts-ignore
-    this.setState({ [location]: trimmedData })
-    const time2 = Date.now()
-    console.log(`${location} time: ${time2 - time1} ms.`)
+      // @ts-ignore
+      this.setState({ [timeRange]: trimmedData })
+      console.timeEnd(`${timeRange}`)
+    }
   }
 
   logout = (): void => {
