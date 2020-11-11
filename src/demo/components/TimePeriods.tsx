@@ -9,18 +9,18 @@ interface TimePeriodsProps {
 
 const underLineTimePeriod = {
   month: {
-    tpPosition: '160px',
-    tpWidth: '66px',
+    marginLeft: '160px',
+    width: '66px',
     marginTop: '2px'
   },
   day: {
-    tpPosition: '95px',
-    tpWidth: '42px',
+    marginLeft: '95px',
+    width: '42px',
     marginTop: '2px'
   },
   hour: {
-    tpPosition: '16px',
-    tpWidth: '53px',
+    marginLeft: '16px',
+    width: '53px',
     marginTop: '2px'
   }
 }
