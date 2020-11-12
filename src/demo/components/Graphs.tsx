@@ -11,6 +11,7 @@ import {
 } from 'recharts'
 
 import * as styleSheet from '../../styles/common/textStyles.js'
+import Partners from '../partners.json'
 import Modal from './Modal'
 
 interface Bucket {
@@ -62,7 +63,6 @@ const parseDate = (timestamp: number, timePeriod: string): string => {
 const Graphs: any = (props: {
   rawData: AnalyticsResult[]
   timePeriod: string
-  colors: string[]
 }) => {
   let modal
   let tooltip = ''
@@ -83,7 +83,7 @@ const Graphs: any = (props: {
           stackId="a"
           dataKey={graphName}
           barSize={20}
-          fill={props.colors[index]}
+          fill={Partners[analytics.pluginId].color}
           onMouseOver={() => {
             tooltip = graphName
           }}
@@ -117,7 +117,7 @@ const Graphs: any = (props: {
         prev[i].allTxs += numTxs
         prev[i][graphName] = usdValue
         prev[i][`${graphName}NumTxs`] = numTxs
-        prev[i][`${graphName}Color`] = props.colors[index]
+        prev[i][`${graphName}Color`] = Partners[analytics.pluginId].color
       }
       return prev
     },

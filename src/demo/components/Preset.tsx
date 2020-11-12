@@ -1,17 +1,13 @@
 import React from 'react'
 
 import * as styleSheet from '../../styles/common/textStyles.js'
+import Partners from '../partners.json'
 import Graphs from './Graphs'
 
 const TIME_PERIODS = ['hour', 'day', 'month']
 const GRAPH_LABELS = ['36 Hours', '75 Days', '2 Years']
 
-const Preset: any = (props: {
-  dataSets: any
-  exchangeType: string
-  partnerTypes: any
-  colorPalette: string[]
-}) => {
+const Preset: any = (props: { dataSets: any; exchangeType: string }) => {
   const graphs: JSX.Element[] = []
   for (const index in props.dataSets) {
     if (props.dataSets[index].length === 0) {
@@ -26,13 +22,13 @@ const Preset: any = (props: {
     let barGraphData = props.dataSets[index]
     if (props.exchangeType !== 'all') {
       barGraphData = barGraphData.filter(
-        obj => props.partnerTypes[obj.pluginId] === props.exchangeType
+        obj => Partners[obj.pluginId].type === props.exchangeType
       )
     }
 
     const barGraphStyles = barGraphData.map((obj, index) => {
       const style = {
-        backgroundColor: props.colorPalette[index],
+        backgroundColor: Partners[obj.pluginId].color,
         marginLeft: '10px',
         width: '18px',
         height: '18px'
@@ -53,11 +49,7 @@ const Preset: any = (props: {
         <div style={styleSheet.loadingMessage}>{`${GRAPH_LABELS[index]}`}</div>
         <div style={styleSheet.legendHolder}>{barGraphStyles}</div>
         <div style={styleSheet.largeGraphHolder}>
-          <Graphs
-            rawData={barGraphData}
-            timePeriod={TIME_PERIODS[index]}
-            colors={props.colorPalette}
-          />
+          <Graphs rawData={barGraphData} timePeriod={TIME_PERIODS[index]} />
         </div>
       </div>
     )
