@@ -16,14 +16,7 @@ import Sidebar from './components/Sidebar'
 import TimePeriods from './components/TimePeriods'
 import Partners from './partners.json'
 
-let API_PREFIX = 'localhost:8000'
-const PRODUCTION = true
-if (PRODUCTION === true) {
-  API_PREFIX = ''
-}
-// seperate into util function
 const PRESET_TIMERANGES = getPresetDates()
-console.log(PRESET_TIMERANGES)
 
 interface Bucket {
   start: number
@@ -50,8 +43,6 @@ interface AnalyticsResult {
 class App extends Component<
   { cookies: any },
   {
-    start: Date
-    end: Date
     apiKey: string
     apiKeyMessage: string
     appId: string
@@ -74,8 +65,6 @@ class App extends Component<
     super(props)
     const { cookies } = props
     this.state = {
-      start: DATE,
-      end: DATE,
       apiKey: cookies.get('apiKey'),
       apiKeyMessage: 'Enter API Key.',
       appId: '',
@@ -102,14 +91,6 @@ class App extends Component<
     this.setState({ view })
   }
 
-  handleStartChange(start: Date): void {
-    this.setState({ start })
-  }
-
-  handleEndChange(end: Date): void {
-    this.setState({ end })
-  }
-
   handleApiKeyChange = (apiKey: any): void => {
     this.setState({ apiKey: apiKey.target.value })
   }
@@ -123,7 +104,7 @@ class App extends Component<
   }
 
   getAppId = async (): Promise<void> => {
-    const url = `${API_PREFIX}/v1/getAppId?apiKey=${this.state.apiKey}`
+    const url = `/v1/getAppId?apiKey=${this.state.apiKey}`
     const response = await fetch(url)
     if (response.status === 400) {
       this.setState({ apiKeyMessage: 'Invalid API Key.' })
@@ -142,8 +123,8 @@ class App extends Component<
   }
 
   async getPluginIds(): Promise<void> {
-    const partners = Object.keys(PARTNER_TYPES)
-    const url = `${API_PREFIX}/v1/getPluginIds?appId=${this.state.appId}`
+    const partners = Object.keys(Partners)
+    const url = `/v1/getPluginIds?appId=${this.state.appId}`
     const response = await fetch(url)
     const json = await response.json()
     const existingPartners = json.filter(pluginId =>
@@ -202,6 +183,7 @@ class App extends Component<
         }
       })
 
+      console.log('trimmedData', trimmedData)
       // @ts-ignore
       this.setState({ [timeRange]: trimmedData })
       console.timeEnd(`${timeRange}`)
@@ -222,6 +204,48 @@ class App extends Component<
     })
   }
 
+  renderGraphView = (): JSX.Element => {
+    if (this.state.view === 'preset') {
+      return (
+        <Preset
+          dataSets={[
+            this.state.setData1,
+            this.state.setData2,
+            this.state.setData3
+          ]}
+          exchangeType={this.state.exchangeType}
+        />
+      )
+    }
+    if (this.state.data.length === 0) return <></>
+    return (
+      <>
+        <TimePeriods
+          timePeriod={this.state.timePeriod}
+          changeTimePeriod={this.changeTimeperiod}
+        />
+        <Custom
+          data={this.state.data}
+          exchangeType={this.state.exchangeType}
+          timePeriod={this.state.timePeriod}
+        />
+      </>
+    )
+  }
+
+  renderMainView = (): JSX.Element => {
+    if (this.state.appId === '') {
+      return (
+        <ApiKeyScreen
+          apiKeyMessage={this.state.apiKeyMessage}
+          handleApiKeyChange={e => this.handleApiKeyChange(e)}
+          getAppId={this.getAppId}
+        />
+      )
+    }
+    return <div style={styleSheet.graphs}>{this.renderGraphView()}</div>
+  }
+
   render(): JSX.Element {
     return (
       <div style={styleSheet.row}>
@@ -237,43 +261,7 @@ class App extends Component<
             view={this.state.view}
           />
         </div>
-        {this.state.appId === '' ? (
-          <ApiKeyScreen
-            apiKeyMessage={this.state.apiKeyMessage}
-            handleApiKeyChange={e => this.handleApiKeyChange(e)}
-            getAppId={this.getAppId}
-          />
-        ) : (
-          <div style={styleSheet.graphs}>
-            {this.state.data.length > 0 && this.state.view === 'custom' ? (
-              <div>
-                <TimePeriods
-                  timePeriod={this.state.timePeriod}
-                  changeTimePeriod={this.changeTimeperiod}
-                />
-                <Custom
-                  data={this.state.data}
-                  exchangeType={this.state.exchangeType}
-                  timePeriod={this.state.timePeriod}
-                  partnerTypes={PARTNER_TYPES}
-                  colorPalette={COLOR_PALETTE}
-                />
-              </div>
-            ) : null}
-            {this.state.view === 'preset' ? (
-              <Preset
-                dataSets={[
-                  this.state.setData1,
-                  this.state.setData2,
-                  this.state.setData3
-                ]}
-                exchangeType={this.state.exchangeType}
-                partnerTypes={PARTNER_TYPES}
-                colorPalette={COLOR_PALETTE}
-              />
-            ) : null}
-          </div>
-        )}
+        {this.renderMainView()}
       </div>
     )
   }
