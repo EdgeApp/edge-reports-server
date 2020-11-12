@@ -44,9 +44,15 @@ const getPresetDates = function(): any {
   const DATE = new Date(Date.now())
   const HOUR_RANGE_END = startOfHour(DATE)
   const DAY_RANGE_END = startOfDay(DATE)
+  const TRUE_DAY_RANGE_END = sub(DAY_RANGE_END, {
+    minutes: DAY_RANGE_END.getTimezoneOffset()
+  })
   const MONTH_RANGE_END = add(startOfMonth(DATE), { months: 1 })
   const HOUR_RANGE_START = sub(HOUR_RANGE_END, { hours: 36 })
   const DAY_RANGE_START = sub(DAY_RANGE_END, { days: 75 })
+  const TRUE_DAY_RANGE_START = sub(DAY_RANGE_START, {
+    minutes: DAY_RANGE_START.getTimezoneOffset()
+  })
   const MONTH_RANGE_START = sub(MONTH_RANGE_END, { months: 4 })
   const MONTH_RANGE_ARRAY = [[MONTH_RANGE_START, MONTH_RANGE_END]]
   for (let i = 0; i < 7; i++) {
@@ -63,15 +69,60 @@ const getPresetDates = function(): any {
     ],
     setData2: [
       [
-        DAY_RANGE_START.toISOString(),
-        new Date(DAY_RANGE_END.getTime() - 1).toISOString()
+        TRUE_DAY_RANGE_START.toISOString(),
+        new Date(TRUE_DAY_RANGE_END.getTime() - 1).toISOString()
       ]
     ],
-    setData3: MONTH_RANGE_ARRAY.map(array => [
-      array[0].toISOString(),
-      new Date(array[1].getTime() - 1).toISOString()
-    ])
+    setData3: MONTH_RANGE_ARRAY.map(array => {
+      const start = sub(array[0], {
+        minutes: array[0].getTimezoneOffset()
+      }).toISOString()
+      const end = sub(array[1], {
+        minutes: array[1].getTimezoneOffset(),
+        seconds: 1
+      }).toISOString()
+
+      return [start, end]
+    })
   }
 }
 
-export { datelog, snooze, snoozeReject, pagination, getPresetDates }
+const getCustomData = async (
+  appId: string,
+  pluginIds: string[],
+  start: string,
+  end: string
+): Promise<any> => {
+  const urls: string[] = []
+  for (const pluginId of pluginIds) {
+    const url = `/v1/analytics/?start=${start}&end=${end}&appId=${appId}&pluginId=${pluginId}&timePeriod=monthdayhour`
+    urls.push(url)
+  }
+  const promises = urls.map(async url => fetch(url).then(async y => y.json()))
+  const newData = await Promise.all(promises)
+  // discard all entries with 0 usdValue on every bucket
+  const trimmedData = newData.filter(data => {
+    if (data.result.numAllTxs > 0) {
+      return data
+    }
+  })
+  const timeRange = new Date(end).getTime() - new Date(start).getTime()
+  let timePeriod
+  if (timeRange < 1000 * 60 * 60 * 24 * 3) {
+    timePeriod = 'hour'
+  } else if (timeRange < 1000 * 60 * 60 * 24 * 75) {
+    timePeriod = 'day'
+  } else {
+    timePeriod = 'month'
+  }
+  return { data: trimmedData, timePeriod }
+}
+
+export {
+  datelog,
+  snooze,
+  snoozeReject,
+  pagination,
+  getPresetDates,
+  getCustomData
+}

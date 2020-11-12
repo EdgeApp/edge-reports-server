@@ -8,7 +8,7 @@ import React, { Component } from 'react'
 import { Cookies, withCookies } from 'react-cookie'
 
 import * as styleSheet from '../styles/common/textStyles.js'
-import { getPresetDates } from '../util'
+import { getCustomData, getPresetDates } from '../util'
 import ApiKeyScreen from './components/ApiKeyScreen'
 import Custom from './components/Custom'
 import Preset from './components/Preset'
@@ -155,42 +155,29 @@ class App extends Component<
   getData = async (start: string, end: string): Promise<void> => {
     console.time('getData')
     this.setState({ loading: true })
-    const urls: string[] = []
-    for (const pluginId of this.state.pluginIds) {
-      const url = `${API_PREFIX}/v1/analytics/?start=${start}&end=${end}&appId=${this.state.appId}&pluginId=${pluginId}&timePeriod=monthdayhour`
-      urls.push(url)
-    }
-    const promises = urls.map(url => fetch(url).then(y => y.json()))
-    const newData = await Promise.all(promises)
-    // discard all entries with 0 usdValue on every bucket
-    const trimmedData = newData.filter(data => {
-      if (data.result.numAllTxs > 0) {
-        return data
-      }
-    })
-    const timeRange = new Date(end).getTime() - new Date(start).getTime()
-    let timePeriod
-    if (timeRange < 1000 * 60 * 60 * 24 * 3) {
-      timePeriod = 'hour'
-    } else if (timeRange < 1000 * 60 * 60 * 24 * 75) {
-      timePeriod = 'day'
-    } else {
-      timePeriod = 'month'
-    }
-    this.setState({ data: trimmedData, loading: false, timePeriod })
+    const { data, timePeriod } = await getCustomData(
+      this.state.appId,
+      this.state.pluginIds,
+      start,
+      end
+    )
+    this.setState({ data, loading: false, timePeriod })
     console.timeEnd('getData')
   }
 
   async setPresetTimePeriods(): Promise<void> {
     for (const timeRange in PRESET_TIMERANGES) {
-      let analyticsResults: AnalyticsResult[] = []
       console.time(`${timeRange}`)
+      let timePeriod = 'month'
+      if (timeRange === 'setData1') timePeriod = 'hour'
+      if (timeRange === 'setData2') timePeriod = 'day'
+      let analyticsResults: AnalyticsResult[] = []
       for (const timeRanges of PRESET_TIMERANGES[timeRange]) {
         const startDate = timeRanges[0]
         const endDate = timeRanges[1]
         const urls: string[] = []
         for (const pluginId of this.state.pluginIds) {
-          const url = `${API_PREFIX}/v1/analytics/?start=${startDate}&end=${endDate}&appId=${this.state.appId}&pluginId=${pluginId}&timePeriod=hourdaymonth`
+          const url = `/v1/analytics/?start=${startDate}&end=${endDate}&appId=${this.state.appId}&pluginId=${pluginId}&timePeriod=${timePeriod}`
           urls.push(url)
         }
         const promises = urls.map(url => fetch(url).then(y => y.json()))
