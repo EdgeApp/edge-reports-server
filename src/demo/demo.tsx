@@ -2,110 +2,27 @@ import 'regenerator-runtime/runtime'
 import 'react-datepicker/dist/react-datepicker.css'
 import './demo.css'
 
-import add from 'date-fns/add'
-import startOfDay from 'date-fns/startOfDay'
-import startOfHour from 'date-fns/startOfHour'
-import startOfMonth from 'date-fns/startOfMonth'
-import sub from 'date-fns/sub'
 import fetch from 'node-fetch'
 import { instanceOf } from 'prop-types'
 import React, { Component } from 'react'
 import { Cookies, withCookies } from 'react-cookie'
 
 import * as styleSheet from '../styles/common/textStyles.js'
+import { getPresetDates } from '../util'
 import ApiKeyScreen from './components/ApiKeyScreen'
 import Custom from './components/Custom'
 import Preset from './components/Preset'
 import Sidebar from './components/Sidebar'
 import TimePeriods from './components/TimePeriods'
-
-const PARTNER_TYPES = {
-  banxa: 'fiat',
-  bitaccess: 'fiat',
-  bitsofgold: 'fiat',
-  bity: 'fiat',
-  bitrefill: 'fiat',
-  changelly: 'swap',
-  changenow: 'swap',
-  coinswitch: 'swap',
-  faast: 'swap',
-  fox: 'swap',
-  godex: 'swap',
-  libertyx: 'fiat',
-  moonpay: 'fiat',
-  paytrie: 'fiat',
-  safello: 'fiat',
-  shapeshift: 'swap',
-  sideshift: 'swap',
-  switchain: 'swap',
-  totle: 'swap',
-  transak: 'fiat',
-  simplex: 'fiat',
-  wyre: 'fiat'
-}
-const COLOR_PALETTE = [
-  '#004c6d',
-  '#06759d',
-  '#06a1ce',
-  '#00cfff',
-  '#dc143c',
-  '#ed5e67',
-  '#f99093',
-  '#ffbec0',
-  '#006400',
-  '#4d953c',
-  '#86c972',
-  '#c1ffaa',
-  '#ff8c00',
-  '#fdb03b',
-  '#fccf6a',
-  '#ffeb9c',
-  '#4b0082',
-  '#8d4da9',
-  '#c892d2',
-  '#ffdaff',
-  '#8b4513',
-  '#b17f49',
-  '#d6b989',
-  '#fff3d0'
-]
+import Partners from './partners.json'
 
 let API_PREFIX = 'localhost:8000'
 const PRODUCTION = true
 if (PRODUCTION === true) {
   API_PREFIX = ''
 }
-const DATE = new Date(Date.now())
-const HOUR_RANGE_END = startOfHour(DATE)
-const DAY_RANGE_END = startOfDay(DATE)
-const MONTH_RANGE_END = add(startOfMonth(DATE), { months: 1 })
-const HOUR_RANGE_START = sub(HOUR_RANGE_END, { hours: 36 })
-const DAY_RANGE_START = sub(DAY_RANGE_END, { days: 75 })
-const MONTH_RANGE_START = sub(MONTH_RANGE_END, { months: 4 })
-const MONTH_RANGE_ARRAY = [[MONTH_RANGE_START, MONTH_RANGE_END]]
-for (let i = 0; i < 7; i++) {
-  const currentEnd = new Date(MONTH_RANGE_ARRAY[0][0])
-  const currentStart = sub(currentEnd, { months: 3 })
-  MONTH_RANGE_ARRAY.unshift([currentStart, currentEnd])
-}
-const PRESET_TIMERANGES = {
-  setData1: [
-    [
-      HOUR_RANGE_START.toISOString(),
-      new Date(HOUR_RANGE_END.getTime() - 1).toISOString()
-    ]
-  ],
-  setData2: [
-    [
-      DAY_RANGE_START.toISOString(),
-      new Date(DAY_RANGE_END.getTime() - 1).toISOString()
-    ]
-  ],
-  setData3: MONTH_RANGE_ARRAY.map(array => [
-    array[0].toISOString(),
-    new Date(array[1].getTime() - 1).toISOString()
-  ])
-}
+// seperate into util function
+const PRESET_TIMERANGES = getPresetDates()
 console.log(PRESET_TIMERANGES)
 
 interface Bucket {
