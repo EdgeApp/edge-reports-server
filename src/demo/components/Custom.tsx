@@ -1,6 +1,7 @@
 import React from 'react'
 
 import * as styleSheet from '../../styles/common/textStyles.js'
+import Partners from '../partners.json'
 import Graphs from './Graphs'
 
 interface Bucket {
@@ -29,46 +30,41 @@ const Custom: any = (props: {
   data: AnalyticsResult[]
   exchangeType: string
   timePeriod: string
-  partnerTypes: any
-  colorPalette: string[]
 }) => {
   let barGraphData = props.data
   if (props.exchangeType !== 'all') {
     barGraphData = barGraphData.filter(
-      obj => props.partnerTypes[obj.pluginId] === props.exchangeType
+      obj => Partners[obj.pluginId].type === props.exchangeType
     )
   }
 
-  const barGraphStyles = barGraphData.map((obj, index) => {
+  const barGraphStyles = barGraphData.map(analytic => {
     const style = {
-      backgroundColor: props.colorPalette[index],
+      backgroundColor: Partners[analytic.pluginId].color,
       marginLeft: '10px',
       width: '18px',
       height: '18px'
     }
-    const capitilizedPluginId =
-      obj.pluginId.charAt(0).toUpperCase() + obj.pluginId.slice(1)
+    const capitilizedPluginId = `${analytic.pluginId
+      .charAt(0)
+      .toUpperCase()}${analytic.pluginId.slice(1)}`
     return (
-      <div style={styleSheet.legendKeys} key={index}>
+      <div style={styleSheet.legendKeys} key={analytic.pluginId}>
         <div style={style} />
         <div style={styleSheet.legend}>{capitilizedPluginId}</div>
       </div>
     )
   })
 
-  const barGraphs = barGraphData.map((object, key) => {
+  const barGraphs = barGraphData.map((analytic, index) => {
     return (
-      <div key={key} style={styleSheet.smallLegendAndGraphHolder}>
-        {props.partnerTypes[object.pluginId] === props.exchangeType ||
+      <div key={analytic.pluginId} style={styleSheet.smallLegendAndGraphHolder}>
+        {Partners[analytic.pluginId].type === props.exchangeType ||
         props.exchangeType === 'all' ? (
           <div>
-            <div style={styleSheet.legendHolder}>{barGraphStyles[key]}</div>
+            <div style={styleSheet.legendHolder}>{barGraphStyles[index]}</div>
             <div style={styleSheet.smallGraphHolder}>
-              <Graphs
-                rawData={[object]}
-                timePeriod={props.timePeriod}
-                colors={[props.colorPalette[key]]}
-              />
+              <Graphs rawData={[analytic]} timePeriod={props.timePeriod} />
             </div>
           </div>
         ) : null}
@@ -81,11 +77,7 @@ const Custom: any = (props: {
       <div>
         <div style={styleSheet.legendHolder}>{barGraphStyles}</div>
         <div style={styleSheet.largeGraphHolder}>
-          <Graphs
-            rawData={barGraphData}
-            timePeriod={props.timePeriod}
-            colors={props.colorPalette}
-          />
+          <Graphs rawData={barGraphData} timePeriod={props.timePeriod} />
         </div>
         <div>{barGraphs}</div>
       </div>

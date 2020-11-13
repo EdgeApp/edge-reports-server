@@ -195,7 +195,7 @@ class Sidebar extends Component<SidebarProps, SidebarState> {
       </button>
     )
 
-    if (props.view === 'custom') return customButton
+    if (props.view === 'preset') return customButton
 
     const presetButton = (
       <button
@@ -261,7 +261,6 @@ class Sidebar extends Component<SidebarProps, SidebarState> {
 
   render(): JSX.Element {
     if (this.props.appId === '') return header
-
     return (
       <>
         {header}

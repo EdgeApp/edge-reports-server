@@ -1,4 +1,4 @@
-import bodyParser from 'body-parser'
+// import bodyParser from 'body-parser'
 import { asArray, asMap, asNumber, asObject, asString } from 'cleaners'
 import cors from 'cors'
 import express from 'express'
@@ -12,7 +12,7 @@ const asAnalyticsReq = asObject({
   start: asString,
   end: asString,
   appId: asString,
-  pluginId: asString,
+  pluginIds: asArray(asString),
   timePeriod: asString
 })
 
@@ -62,7 +62,8 @@ async function main(): Promise<void> {
   const reportsTransactions = nanoDb.use('reports_transactions')
   const reportsApps = nanoDb.use('reports_apps')
 
-  app.use(bodyParser.json({ limit: '1mb' }))
+  app.use(express.json())
+  // app.use(bodyParser.json({ type: 'application/json' }))
   app.use(cors())
   app.use('/', express.static('dist'))
 
@@ -76,15 +77,15 @@ async function main(): Promise<void> {
   const rawApps = await reportsApps.find(query)
   const apps = asApps(rawApps.docs)
 
-  app.get(`/v1/analytics/`, async function(req, res) {
+  app.post(`/v1/analytics/`, async function(req, res) {
     let analyticsQuery: ReturnType<typeof asAnalyticsReq>
     try {
-      analyticsQuery = asAnalyticsReq(req.query)
+      analyticsQuery = asAnalyticsReq(req.body)
     } catch {
       res.status(400).send(`Missing Request Fields`)
       return
     }
-    let { start, end, appId, pluginId, timePeriod } = analyticsQuery
+    let { start, end, appId, pluginIds, timePeriod } = analyticsQuery
     timePeriod = timePeriod.toLowerCase()
     const queryStart = new Date(start).getTime() / 1000
     const queryEnd = new Date(end).getTime() / 1000
@@ -102,7 +103,7 @@ async function main(): Promise<void> {
       res.status(400).send(`Start must be less than End`)
       return
     }
-    const appAndPluginId = `${appId}_${pluginId}`
+
     const query = {
       selector: {
         usdValue: { $gte: 0 },
@@ -119,25 +120,34 @@ async function main(): Promise<void> {
       sort: ['timestamp'],
       limit: 1000000
     }
-
-    let result
+    const results: any[] = []
+    const promises: Array<Promise<any>> = []
+    for (const pluginId of pluginIds) {
+      const appAndPluginId = `${appId}_${pluginId}`
+      const result = reportsTransactions
+        .partitionedFind(appAndPluginId, query)
+        .then(data => {
+          const analytic = getAnalytics(
+            asDbReq(data).docs,
+            queryStart,
+            queryEnd,
+            appId,
+            pluginId,
+            timePeriod
+          )
+          if (analytic.result.numAllTxs > 0) results.push(analytic)
+        })
+      promises.push(result)
+    }
     try {
-      const r = await reportsTransactions.partitionedFind(appAndPluginId, query)
-      result = asDbReq(r).docs
+      console.time('promiseAll')
+      await Promise.all(promises)
+      console.timeEnd('promiseAll')
+      return res.json(results)
     } catch (e) {
       console.log(e)
-      res.status(500).send(`Internal server error.`)
-      return
+      return res.status(500).send(`Internal server error.`)
     }
-    const answer = getAnalytics(
-      result,
-      queryStart,
-      queryEnd,
-      appId,
-      pluginId,
-      timePeriod
-    )
-    res.json(answer)
   })
 
   app.get('/v1/checkTx/', async function(req, res) {

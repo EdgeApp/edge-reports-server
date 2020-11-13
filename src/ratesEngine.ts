@@ -1,5 +1,6 @@
 import { asArray, asObject, asUnknown } from 'cleaners'
 import nano from 'nano'
+import fetch from 'node-fetch'
 
 import config from '../config.json'
 import { asDbTx, DbTx } from './types'
