@@ -44,6 +44,10 @@ interface AnalyticsResult {
   end: number
 }
 
+interface BarData {
+  [start: number]: Data
+}
+
 const parseDate = (timestamp: number, timePeriod: string): string => {
   const dateObj = new Date(timestamp * 1000)
   const y = dateObj.getUTCFullYear()
@@ -71,8 +75,8 @@ const Graphs: any = (props: {
 
   const bars: JSX.Element[] = []
 
-  const data: Data[] = rawData.reduce(
-    (prev: Data[], analytics: AnalyticsResult, index: number) => {
+  const data: BarData = rawData.reduce(
+    (prev: BarData, analytics: AnalyticsResult, index: number) => {
       const buckets = analytics.result[timePeriod]
       const graphName =
         analytics.pluginId.charAt(0).toUpperCase() + analytics.pluginId.slice(1)
@@ -98,8 +102,8 @@ const Graphs: any = (props: {
       )
       for (let i = 0; i < buckets.length; i++) {
         const { start, usdValue, numTxs, currencyPairs } = buckets[i]
-        if (prev[i] == null) {
-          prev[i] = {
+        if (prev[start] == null) {
+          prev[start] = {
             date: parseDate(start, timePeriod),
             allUsd: 0,
             allTxs: 0,
@@ -107,27 +111,30 @@ const Graphs: any = (props: {
           }
         } else {
           Object.keys(currencyPairs).forEach(currencyPair => {
-            if (prev[i].currencyPairs[currencyPair] == null) {
-              prev[i].currencyPairs[currencyPair] = currencyPairs[currencyPair]
+            if (prev[start].currencyPairs[currencyPair] == null) {
+              prev[start].currencyPairs[currencyPair] =
+                currencyPairs[currencyPair]
             } else
-              prev[i].currencyPairs[currencyPair] += currencyPairs[currencyPair]
+              prev[start].currencyPairs[currencyPair] +=
+                currencyPairs[currencyPair]
           })
         }
-        prev[i].allUsd += usdValue
-        prev[i].allTxs += numTxs
-        prev[i][graphName] = usdValue
-        prev[i][`${graphName}NumTxs`] = numTxs
-        prev[i][`${graphName}Color`] = Partners[analytics.pluginId].color
+        prev[start].allUsd += usdValue
+        prev[start].allTxs += numTxs
+        prev[start][graphName] = usdValue
+        prev[start][`${graphName}NumTxs`] = numTxs
+        prev[start][`${graphName}Color`] = Partners[analytics.pluginId].color
       }
       return prev
     },
-    []
+    {}
   )
-  data.forEach(result => {
+  for (const pluginDay in data) {
+    const result = data[pluginDay]
     result.currencyPairsArray = Object.entries(result.currencyPairs).sort(
       (a, b) => b[1] - a[1]
     )
-  })
+  }
 
   const CustomTooltip = (
     active,
@@ -153,7 +160,7 @@ const Graphs: any = (props: {
       <div style={styleSheet.modal}>{altModal}</div>
       <ResponsiveContainer>
         <ComposedChart
-          data={data}
+          data={Object.values(data)}
           margin={{
             top: 20,
             right: 20,
