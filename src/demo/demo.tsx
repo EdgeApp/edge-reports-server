@@ -8,7 +8,7 @@ import React, { Component } from 'react'
 import { Cookies, withCookies } from 'react-cookie'
 
 import * as styleSheet from '../styles/common/textStyles.js'
-import { getCustomData, getPresetDates } from '../util'
+import { getCustomData, getPresetDates, getTimeRange } from '../util'
 import ApiKeyScreen from './components/ApiKeyScreen'
 import Custom from './components/Custom'
 import Preset from './components/Preset'
@@ -38,6 +38,10 @@ interface AnalyticsResult {
   pluginId: string
   start: number
   end: number
+}
+
+interface TotalAnalytics {
+  [pluginId: string]: AnalyticsResult
 }
 
 class App extends Component<
@@ -136,13 +140,17 @@ class App extends Component<
   getData = async (start: string, end: string): Promise<void> => {
     console.time('getData')
     this.setState({ loading: true })
-    const { data, timePeriod } = await getCustomData(
+    const data = await getCustomData(
       this.state.appId,
       this.state.pluginIds,
       start,
       end
     )
-    this.setState({ data, loading: false, timePeriod })
+    this.setState({
+      data,
+      loading: false,
+      timePeriod: getTimeRange(start, end)
+    })
     console.timeEnd('getData')
   }
 
@@ -152,40 +160,32 @@ class App extends Component<
       let timePeriod = 'month'
       if (timeRange === 'setData1') timePeriod = 'hour'
       if (timeRange === 'setData2') timePeriod = 'day'
-      let analyticsResults: AnalyticsResult[] = []
+      const analyticsResults: TotalAnalytics = {}
       for (const timeRanges of PRESET_TIMERANGES[timeRange]) {
         const startDate = timeRanges[0]
         const endDate = timeRanges[1]
-        const urls: string[] = []
-        for (const pluginId of this.state.pluginIds) {
-          const url = `/v1/analytics/?start=${startDate}&end=${endDate}&appId=${this.state.appId}&pluginId=${pluginId}&timePeriod=${timePeriod}`
-          urls.push(url)
-        }
-        const promises = urls.map(url => fetch(url).then(y => y.json()))
-        const newData = await Promise.all(promises)
-        if (analyticsResults.length === 0) {
-          analyticsResults = newData
-        } else {
-          analyticsResults = analyticsResults.map((analyticsResult, index) => {
-            analyticsResult.result.month = [
-              ...analyticsResult.result.month,
-              ...newData[index].result.month
-            ]
-            analyticsResult.result.numAllTxs += newData[index].result.numAllTxs
-            return analyticsResult
-          })
-        }
+        const newData = await getCustomData(
+          this.state.appId,
+          this.state.pluginIds,
+          startDate,
+          endDate,
+          timePeriod
+        )
+        newData.forEach(analytic => {
+          const { pluginId } = analytic
+          if (analyticsResults[pluginId] == null) {
+            analyticsResults[pluginId] = analytic
+          } else {
+            const { result } = analyticsResults[pluginId]
+            result.month = [...result.month, ...analytic.result.month]
+            result.numAllTxs += analytic.result.numAllTxs
+          }
+        })
       }
+      const analyticsArray = Object.values(analyticsResults)
 
-      const trimmedData = analyticsResults.filter(data => {
-        if (data.result.numAllTxs > 0) {
-          return data
-        }
-      })
-
-      console.log('trimmedData', trimmedData)
       // @ts-ignore
-      this.setState({ [timeRange]: trimmedData })
+      this.setState({ [timeRange]: analyticsArray })
       console.timeEnd(`${timeRange}`)
     }
   }
