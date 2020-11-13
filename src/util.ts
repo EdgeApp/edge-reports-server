@@ -6,18 +6,21 @@ import sub from 'date-fns/sub'
 
 const BATCH_ADVANCE = 1000
 
-const datelog = function(...args: any): void {
+export const datelog = function(...args: any): void {
   const date = new Date().toISOString()
   console.log(date, ...args)
 }
 
-const snoozeReject = async (ms: number): Promise<void> =>
+export const snoozeReject = async (ms: number): Promise<void> =>
   new Promise((resolve: Function, reject: Function) => setTimeout(reject, ms))
 
-const snooze = async (ms: number): Promise<void> =>
+export const snooze = async (ms: number): Promise<void> =>
   new Promise((resolve: Function) => setTimeout(resolve, ms))
 
-const pagination = async (txArray: any[], partition: any): Promise<void> => {
+export const pagination = async (
+  txArray: any[],
+  partition: any
+): Promise<void> => {
   let numErrors = 0
   for (let offset = 0; offset < txArray.length; offset += BATCH_ADVANCE) {
     let advance = BATCH_ADVANCE
@@ -40,7 +43,7 @@ const pagination = async (txArray: any[], partition: any): Promise<void> => {
   datelog(`total errors: ${numErrors}`)
 }
 
-const getPresetDates = function(): any {
+export const getPresetDates = function(): any {
   const DATE = new Date(Date.now())
   const HOUR_RANGE_END = startOfHour(DATE)
   const DAY_RANGE_END = startOfDay(DATE)
@@ -87,42 +90,32 @@ const getPresetDates = function(): any {
   }
 }
 
-const getCustomData = async (
+export const getCustomData = async (
   appId: string,
   pluginIds: string[],
   start: string,
-  end: string
+  end: string,
+  timePeriod: string = 'hourdaymonth'
 ): Promise<any> => {
-  const urls: string[] = []
-  for (const pluginId of pluginIds) {
-    const url = `/v1/analytics/?start=${start}&end=${end}&appId=${appId}&pluginId=${pluginId}&timePeriod=monthdayhour`
-    urls.push(url)
-  }
-  const promises = urls.map(async url => fetch(url).then(async y => y.json()))
-  const newData = await Promise.all(promises)
-  // discard all entries with 0 usdValue on every bucket
-  const trimmedData = newData.filter(data => {
-    if (data.result.numAllTxs > 0) {
-      return data
-    }
+  const endPoint = '/v1/analytics/'
+  const query = { start, end, appId, pluginIds, timePeriod }
+  const response = await fetch(endPoint, {
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    method: 'POST',
+    body: JSON.stringify(query)
   })
-  const timeRange = new Date(end).getTime() - new Date(start).getTime()
-  let timePeriod
-  if (timeRange < 1000 * 60 * 60 * 24 * 3) {
-    timePeriod = 'hour'
-  } else if (timeRange < 1000 * 60 * 60 * 24 * 75) {
-    timePeriod = 'day'
-  } else {
-    timePeriod = 'month'
-  }
-  return { data: trimmedData, timePeriod }
+  return response.json()
 }
 
-export {
-  datelog,
-  snooze,
-  snoozeReject,
-  pagination,
-  getPresetDates,
-  getCustomData
+export const getTimeRange = (start: string, end: string): string => {
+  const timeRange = new Date(end).getTime() - new Date(start).getTime()
+  if (timeRange < 1000 * 60 * 60 * 24 * 3) {
+    return 'hour'
+  } else if (timeRange < 1000 * 60 * 60 * 24 * 75) {
+    return 'day'
+  } else {
+    return 'month'
+  }
 }
