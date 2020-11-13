@@ -38,33 +38,33 @@ const Custom: any = (props: {
     )
   }
 
-  const barGraphStyles = barGraphData.map((obj, index) => {
+  const barGraphStyles = barGraphData.map(analytic => {
     const style = {
-      backgroundColor: Partners[obj.pluginId].color,
+      backgroundColor: Partners[analytic.pluginId].color,
       marginLeft: '10px',
       width: '18px',
       height: '18px'
     }
-    const capitilizedPluginId = `${obj.pluginId
+    const capitilizedPluginId = `${analytic.pluginId
       .charAt(0)
-      .toUpperCase()}${obj.pluginId.slice(1)}`
+      .toUpperCase()}${analytic.pluginId.slice(1)}`
     return (
-      <div style={styleSheet.legendKeys} key={index}>
+      <div style={styleSheet.legendKeys} key={analytic.pluginId}>
         <div style={style} />
         <div style={styleSheet.legend}>{capitilizedPluginId}</div>
       </div>
     )
   })
 
-  const barGraphs = barGraphData.map((object, key) => {
+  const barGraphs = barGraphData.map((analytic, index) => {
     return (
-      <div key={key} style={styleSheet.smallLegendAndGraphHolder}>
-        {Partners[object.pluginId].type === props.exchangeType ||
+      <div key={analytic.pluginId} style={styleSheet.smallLegendAndGraphHolder}>
+        {Partners[analytic.pluginId].type === props.exchangeType ||
         props.exchangeType === 'all' ? (
           <div>
-            <div style={styleSheet.legendHolder}>{barGraphStyles[key]}</div>
+            <div style={styleSheet.legendHolder}>{barGraphStyles[index]}</div>
             <div style={styleSheet.smallGraphHolder}>
-              <Graphs rawData={[object]} timePeriod={props.timePeriod} />
+              <Graphs rawData={[analytic]} timePeriod={props.timePeriod} />
             </div>
           </div>
         ) : null}
