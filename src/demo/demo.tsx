@@ -7,7 +7,6 @@ import { instanceOf } from 'prop-types'
 import React, { Component } from 'react'
 import { Cookies, withCookies } from 'react-cookie'
 
-import * as styleSheet from '../styles/common/textStyles.js'
 import { getCustomData, getPresetDates, getTimeRange } from '../util'
 import ApiKeyScreen from './components/ApiKeyScreen'
 import Custom from './components/Custom'
@@ -42,6 +41,30 @@ interface AnalyticsResult {
 
 interface TotalAnalytics {
   [pluginId: string]: AnalyticsResult
+}
+
+const body = {
+  margin: 0,
+  padding: 0,
+  height: '100%'
+}
+
+const graphs = {
+  display: 'table-cell' as 'table-cell',
+  verticalAlign: 'top'
+}
+
+const sidebar = {
+  display: 'table-cell' as 'table-cell',
+  background: 'linear-gradient(90deg, #0C446A 0%, #0D2145 100%)',
+  width: '200px'
+}
+
+const row = {
+  width: '100%',
+  height: '100%',
+  display: 'table' as 'table',
+  tableLayout: 'fixed' as 'fixed'
 }
 
 class App extends Component<
@@ -85,7 +108,7 @@ class App extends Component<
   }
 
   async componentDidMount(): Promise<void> {
-    Object.assign(document.body.style, styleSheet.body)
+    Object.assign(document.body.style, body)
     if (this.state.apiKey !== '') {
       await this.getAppId()
     }
@@ -243,13 +266,13 @@ class App extends Component<
         />
       )
     }
-    return <div style={styleSheet.graphs}>{this.renderGraphView()}</div>
+    return <div style={graphs}>{this.renderGraphView()}</div>
   }
 
   render(): JSX.Element {
     return (
-      <div style={styleSheet.row}>
-        <div style={styleSheet.sidebar}>
+      <div style={row}>
+        <div style={sidebar}>
           <Sidebar
             getData={this.getData}
             changeExchangeType={this.changeExchangetype}

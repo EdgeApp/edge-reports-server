@@ -1,6 +1,6 @@
 import React from 'react'
 
-import * as styleSheet from '../../styles/common/textStyles.js'
+import { divider } from './Sidebar'
 
 interface ModalProps {
   closeModal: any
@@ -37,15 +37,36 @@ const closeModalButton = {
   fontSize: '10px'
 }
 
+const currencyPairHolder = {
+  display: 'flex' as 'flex',
+  flexDirection: 'row' as 'row'
+}
+
+const currencyPairName = {
+  width: '57%'
+}
+
+const currencyPairUsd = {
+  width: '43%'
+}
+
+const modalTotalUsd = {
+  marginTop: '16px'
+}
+
+const modalCurrencyPairs = {
+  marginTop: '10px'
+}
+
 const Modal: any = (props: ModalProps) => {
   const { closeModal, payload, tooltip, isSinglePartner, isClosable } = props
   if (tooltip === '') return null
   const bar = payload.find(({ dataKey }) => dataKey === tooltip)
   const currencyPairs: JSX.Element[] = bar.payload.currencyPairsArray
     .map(([key, value], index) => (
-      <div key={index} style={styleSheet.currencyPairHolder}>
-        <div style={styleSheet.currencyPairName}>{`${key}:`}</div>
-        <div style={styleSheet.currencyPairUsd}>{`$${value.toFixed(2)}`}</div>
+      <div key={index} style={currencyPairHolder}>
+        <div style={currencyPairName}>{`${key}:`}</div>
+        <div style={currencyPairUsd}>{`$${value.toFixed(2)}`}</div>
       </div>
     ))
     .slice(0, 15)
@@ -61,9 +82,9 @@ const Modal: any = (props: ModalProps) => {
   }
   const total = !isSinglePartner ? (
     <>
-      <div
-        style={styleSheet.modalTotalUsd}
-      >{`Total USD: $${bar.payload.allUsd.toFixed(2)}`}</div>
+      <div style={modalTotalUsd}>{`Total USD: $${bar.payload.allUsd.toFixed(
+        2
+      )}`}</div>
       <div>{`Total Transactions: ${bar.payload.allTxs}`}</div>
     </>
   ) : null
@@ -77,9 +98,9 @@ const Modal: any = (props: ModalProps) => {
             bar.payload[`${tooltip}NumTxs`]
           }`}</div>
           <div>{`Date: ${bar.payload.date}`}</div>
-          <hr style={styleSheet.divider} />
+          <hr style={divider} />
           {total}
-          <div style={styleSheet.modalCurrencyPairs}>{currencyPairs}</div>
+          <div style={modalCurrencyPairs}>{currencyPairs}</div>
         </div>
       </div>
     </div>
