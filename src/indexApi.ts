@@ -1,5 +1,12 @@
 // import bodyParser from 'body-parser'
-import { asArray, asMap, asNumber, asObject, asString } from 'cleaners'
+import {
+  asArray,
+  asMap,
+  asNumber,
+  asObject,
+  asOptional,
+  asString
+} from 'cleaners'
 import cors from 'cors'
 import express from 'express'
 import nano from 'nano'
@@ -16,11 +23,23 @@ const asAnalyticsReq = asObject({
   timePeriod: asString
 })
 
-const asCheckTxReq = asObject({
+const asCheckTxsReq = asObject({
   apiKey: asString,
-  pluginId: asString,
-  orderId: asString
+  data: asArray(
+    asObject({
+      pluginId: asString,
+      orderId: asString
+    })
+  )
 })
+
+const asCheckTxsFetch = asArray(
+  asObject({
+    key: asString,
+    doc: asOptional(asDbTx),
+    error: asOptional(asString)
+  })
+)
 
 const asDbReq = asObject({
   docs: asArray(
@@ -53,6 +72,15 @@ const asAppIdReq = asObject({
 const asAppIdDbReq = asObject({
   appId: asString
 })
+
+interface CheckTxsResponse {
+  pluginId: string
+  orderId: string
+  error?: string
+  usdValue?: number
+}
+
+const CHECKTXS_BATCH_LIMIT = 100
 
 const nanoDb = nano(config.couchDbFullpath)
 
@@ -150,45 +178,47 @@ async function main(): Promise<void> {
     }
   })
 
-  app.get('/v1/checkTx/', async function(req, res) {
+  app.post('/v1/checkTxs/', async function(req, res) {
     let queryResult
     try {
-      queryResult = asCheckTxReq(req.query)
+      queryResult = asCheckTxsReq(req.body)
     } catch (e) {
-      res.status(400).send(`Missing Request fields.`)
-      return
+      return res.status(400).send(`Missing Request fields.`)
     }
-    const searchedAppId = apps.find(app => app._id === req.query.apiKey)
+    if (queryResult.data.length > CHECKTXS_BATCH_LIMIT) {
+      return res.status(400).send(`Exceeded Limit of ${CHECKTXS_BATCH_LIMIT}`)
+    }
+    const searchedAppId = apps.find(app => app._id === queryResult.apiKey)
     if (typeof searchedAppId === 'undefined') {
-      res.status(404).send('Api Key has no match.')
-      return
+      return res.status(400).send(`API Key has no match.`)
     }
-    const appId = searchedAppId.appId
-    let result
+    const { appId } = searchedAppId
+    const keys = queryResult.data.map(tx => {
+      return `${appId}_${tx.pluginId}:${tx.orderId}`.toLowerCase()
+    })
     try {
-      const query = `${appId}_${queryResult.pluginId}:${queryResult.orderId}`
-      const dbResult = await reportsTransactions.get(query.toLowerCase())
-      result = asDbTx(dbResult)
+      const dbResult = await reportsTransactions.fetch({ keys })
+      const cleanedResult = asCheckTxsFetch(dbResult.rows)
+      const data: CheckTxsResponse[] = cleanedResult.map((result, index) => {
+        const tx: CheckTxsResponse = {
+          pluginId: queryResult.data[index].pluginId,
+          orderId: queryResult.data[index].orderId,
+          usdValue: undefined
+        }
+        if (result.error != null) {
+          return {
+            ...tx,
+            error: `Could not find transaction: ${result.key}`
+          }
+        }
+        if (result.doc != null) tx.usdValue = result.doc.usdValue
+        return tx
+      })
+      res.json({ appId, data })
     } catch (e) {
       console.log(e)
-      if (e != null && e.error === 'not_found') {
-        res.status(404).send(`Could not find transaction.`)
-        return
-      } else {
-        res.status(500).send(`Internal Server Error.`)
-        return
-      }
+      return res.status(500).send(`Internal Server Error.`)
     }
-    const out = {
-      appId: appId,
-      pluginId: queryResult.pluginId,
-      orderId: queryResult.orderId,
-      usdValue: undefined
-    }
-    if (result != null && result.usdValue != null) {
-      out.usdValue = result.usdValue
-    }
-    res.json(out)
   })
 
   app.get('/v1/getPluginIds/', async function(req, res) {
