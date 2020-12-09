@@ -13,7 +13,6 @@ import React, { Component } from 'react'
 import DatePicker from 'react-datepicker'
 import Loader from 'react-loader-spinner'
 
-import * as styleSheet from '../../styles/common/textStyles.js'
 // @ts-ignore
 import calendar from '../images/calendar.png'
 // @ts-ignore
@@ -57,6 +56,95 @@ const underlineExchangeTypeStyle = {
     width: '39px',
     top: '89px'
   }
+}
+
+export const divider = {
+  marginTop: '15px',
+  width: '72%',
+  borderTop: '.5px solid white'
+}
+
+const logoStyle = {
+  marginTop: '26px',
+  marginLeft: '26px',
+  marginBottom: '10px',
+  height: '28px',
+  width: '28px'
+}
+
+const titleText = {
+  marginLeft: '26px',
+  color: 'white',
+  fontSize: '24px'
+}
+
+const loader = {
+  textAlign: 'center' as 'center',
+  marginTop: '29px'
+}
+
+const exchangeTypeContainer = {
+  position: 'relative' as 'relative'
+}
+
+const regularButton = {
+  outline: 'none',
+  backgroundColor: 'transparent' as 'transparent',
+  fontSize: '16px',
+  cursor: 'pointer' as 'pointer',
+  width: '100%',
+  paddingTop: '12px',
+  textAlign: 'left' as 'left',
+  marginLeft: '20px',
+  color: 'white',
+  border: 'none'
+}
+
+const outlineButton = {
+  overflow: 'hidden' as 'hidden',
+  outline: 'none',
+  backgroundColor: 'transparent' as 'transparent',
+  fontSize: '16px',
+  cursor: 'pointer' as 'pointer',
+  marginTop: '12px',
+  marginLeft: '68px',
+  marginBottom: '12px',
+  color: 'white',
+  border: '1px solid white'
+}
+
+const dateContainer = {
+  marginLeft: '26px'
+}
+
+const calendarText = {
+  marginTop: '20px',
+  fontSize: '16px',
+  color: 'white'
+}
+
+const dateInput = {
+  marginLeft: '-2px',
+  fontSize: '16px',
+  backgroundColor: 'transparent' as 'transparent',
+  border: 'none',
+  color: 'white',
+  width: '100px'
+}
+
+const calendarContainer = {
+  position: 'relative' as 'relative',
+  marginTop: '10px',
+  marginLeft: '26px',
+  color: 'white'
+}
+
+const calendarStyle = {
+  position: 'absolute' as 'absolute',
+  top: '-3px',
+  left: '55px',
+  height: '24px',
+  width: '24px'
 }
 
 const PRESETS: Preset[] = [
@@ -111,14 +199,14 @@ const getISOString = (date: Date, end: boolean): string => {
 
 const header = (
   <>
-    <img style={styleSheet.logoStyle} src={logo} alt="Edge Logo" />
-    <div style={styleSheet.titleText}>Edge</div>
-    <div style={styleSheet.titleText}>Reports</div>
+    <img style={logoStyle} src={logo} alt="Edge Logo" />
+    <div style={titleText}>Edge</div>
+    <div style={titleText}>Reports</div>
   </>
 )
 
 const loading = (
-  <div style={styleSheet.sideBarLoadingMessage}>
+  <div style={loader}>
     <Loader type="Oval" color="white" height="30px" width="30px" />
   </div>
 )
@@ -143,10 +231,10 @@ class Sidebar extends Component<SidebarProps, SidebarState> {
   }
 
   renderExchangeButtons = (props: SidebarProps): JSX.Element => (
-    <div style={styleSheet.exchangeTypeContainer}>
+    <div style={exchangeTypeContainer}>
       <hr style={underlineExchangeTypeStyle[props.exchangeType]} />
       <button
-        style={styleSheet.regularButton}
+        style={regularButton}
         onClick={async () => {
           await props.changeExchangeType('all')
         }}
@@ -154,7 +242,7 @@ class Sidebar extends Component<SidebarProps, SidebarState> {
         Totals
       </button>
       <button
-        style={styleSheet.regularButton}
+        style={regularButton}
         onClick={async () => {
           await props.changeExchangeType('fiat')
         }}
@@ -162,7 +250,7 @@ class Sidebar extends Component<SidebarProps, SidebarState> {
         Fiat
       </button>
       <button
-        style={styleSheet.regularButton}
+        style={regularButton}
         onClick={async () => {
           await props.changeExchangeType('swap')
         }}
@@ -175,7 +263,7 @@ class Sidebar extends Component<SidebarProps, SidebarState> {
   presetButtons = PRESETS.map(({ args, str }, index) => (
     <button
       key={index}
-      style={styleSheet.regularButton}
+      style={regularButton}
       onClick={() => {
         const { start, end } = getPresetDates(...args)
         this.setState({ start, end })
@@ -188,7 +276,7 @@ class Sidebar extends Component<SidebarProps, SidebarState> {
   renderCustomView(props: SidebarProps): JSX.Element {
     const customButton = (
       <button
-        style={styleSheet.mainButton}
+        style={outlineButton}
         onClick={() => this.props.viewChange('custom')}
       >
         Custom
@@ -198,17 +286,14 @@ class Sidebar extends Component<SidebarProps, SidebarState> {
     if (props.view === 'preset') return customButton
 
     const presetButton = (
-      <button
-        style={styleSheet.mainButton}
-        onClick={() => props.viewChange('preset')}
-      >
+      <button style={outlineButton} onClick={() => props.viewChange('preset')}>
         Preset
       </button>
     )
 
     const searchButton = (
       <button
-        style={styleSheet.mainButton}
+        style={outlineButton}
         onClick={async () => {
           await props.getData(
             getISOString(this.state.start, false),
@@ -221,10 +306,10 @@ class Sidebar extends Component<SidebarProps, SidebarState> {
     )
 
     const startDate = (
-      <div style={styleSheet.dateContainer}>
-        <div style={styleSheet.calendarText}>Start</div>
+      <div style={dateContainer}>
+        <div style={calendarText}>Start</div>
         <DatePicker
-          customInput={<input style={styleSheet.dateInput} />}
+          customInput={<input style={dateInput} />}
           selected={this.state.start}
           onChange={e => this.handleStartChange(e)}
         />
@@ -232,10 +317,10 @@ class Sidebar extends Component<SidebarProps, SidebarState> {
     )
 
     const endDate = (
-      <div style={styleSheet.dateContainer}>
-        <div style={styleSheet.calendarText}>End</div>
+      <div style={dateContainer}>
+        <div style={calendarText}>End</div>
         <DatePicker
-          customInput={<input style={styleSheet.dateInput} />}
+          customInput={<input style={dateInput} />}
           selected={this.state.end}
           onChange={e => this.handleEndChange(e)}
         />
@@ -245,13 +330,13 @@ class Sidebar extends Component<SidebarProps, SidebarState> {
     return (
       <>
         {presetButton}
-        <div style={styleSheet.calendarContainer}>
+        <div style={calendarContainer}>
           <span>Range</span>
-          <img style={styleSheet.calendarStyle} src={calendar} alt="calendar" />
+          <img style={calendarStyle} src={calendar} alt="calendar" />
         </div>
-        <hr style={styleSheet.divider} />
+        <hr style={divider} />
         {this.presetButtons}
-        <hr style={styleSheet.divider} />
+        <hr style={divider} />
         {startDate}
         {endDate}
         {props.loading === false ? searchButton : loading}
@@ -265,13 +350,10 @@ class Sidebar extends Component<SidebarProps, SidebarState> {
       <>
         {header}
         {this.renderCustomView(this.props)}
-        <hr style={styleSheet.divider} />
+        <hr style={divider} />
         {this.renderExchangeButtons(this.props)}
-        <hr style={styleSheet.divider} />
-        <button
-          style={styleSheet.mainButton}
-          onClick={() => this.props.logout()}
-        >
+        <hr style={divider} />
+        <button style={outlineButton} onClick={() => this.props.logout()}>
           Logout
         </button>
       </>

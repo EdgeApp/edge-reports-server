@@ -1,17 +1,48 @@
 import React from 'react'
 import Loader from 'react-loader-spinner'
 
-import * as styleSheet from '../../styles/common/textStyles.js'
 import Partners from '../partners.json'
 import Graphs from './Graphs'
 
-const TIME_PERIODS = ['hour', 'day', 'month']
-const GRAPH_LABELS = ['36 Hours', '75 Days', '2 Years']
+export const legendKeys = {
+  marginTop: '2px',
+  display: 'flex',
+  flexDirection: 'row' as 'row'
+}
+
+export const legend = {
+  marginTop: '-6px',
+  marginLeft: '8px',
+  fontSize: '18px',
+  lineHeight: '30px'
+}
+
+const graphLabel = {
+  textAlign: 'center' as 'center',
+  fontSize: '18px',
+  marginTop: '16px',
+  color: 'grey'
+}
+
+export const legendHolder = {
+  width: '95%',
+  marginTop: '10px',
+  marginLeft: '24px',
+  display: 'inline-flex' as 'inline-flex',
+  flexWrap: 'wrap' as 'wrap'
+}
+
+export const largeGraphHolder = {
+  height: '800px'
+}
 
 const presetLoader = {
   textAlign: 'center' as 'center',
   marginTop: '20px'
 }
+
+const TIME_PERIODS = ['hour', 'day', 'month']
+const GRAPH_LABELS = ['36 Hours', '75 Days', '2 Years']
 
 const Preset: any = (props: { dataSets: any; exchangeType: string }) => {
   const graphs: JSX.Element[] = []
@@ -42,18 +73,18 @@ const Preset: any = (props: { dataSets: any; exchangeType: string }) => {
         .charAt(0)
         .toUpperCase()}${obj.pluginId.slice(1)}`
       return (
-        <div style={styleSheet.legendKeys} key={index}>
+        <div style={legendKeys} key={index}>
           <div style={style} />
-          <div style={styleSheet.legend}>{capitilizedPluginId}</div>
+          <div style={legend}>{capitilizedPluginId}</div>
         </div>
       )
     })
 
     graphs.push(
       <div key={index}>
-        <div style={styleSheet.loadingMessage}>{`${GRAPH_LABELS[index]}`}</div>
-        <div style={styleSheet.legendHolder}>{barGraphStyles}</div>
-        <div style={styleSheet.largeGraphHolder}>
+        <div style={graphLabel}>{`${GRAPH_LABELS[index]}`}</div>
+        <div style={legendHolder}>{barGraphStyles}</div>
+        <div style={largeGraphHolder}>
           <Graphs rawData={barGraphData} timePeriod={TIME_PERIODS[index]} />
         </div>
       </div>

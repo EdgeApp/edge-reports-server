@@ -1,10 +1,21 @@
 import React, { PureComponent } from 'react'
 
-import * as styleSheet from '../../styles/common/textStyles.js'
-
 interface TimePeriodsProps {
   timePeriod: string
   changeTimePeriod: any
+}
+
+const timePeriodHolder = {
+  marginLeft: '14px',
+  marginTop: '16px'
+}
+
+const timePeriodButton = {
+  backgroundColor: 'transparent',
+  fontSize: '16px',
+  cursor: 'pointer',
+  marginRight: '20px',
+  border: 'none'
 }
 
 const underLineTimePeriod = {
@@ -29,21 +40,21 @@ class TimePeriods extends PureComponent<TimePeriodsProps, {}> {
   render(): JSX.Element {
     return (
       <>
-        <div style={styleSheet.timePeriodHolder}>
+        <div style={timePeriodHolder}>
           <button
-            style={styleSheet.timePeriodButton}
+            style={timePeriodButton}
             onClick={() => this.props.changeTimePeriod('hour')}
           >
             Hourly
           </button>
           <button
-            style={styleSheet.timePeriodButton}
+            style={timePeriodButton}
             onClick={() => this.props.changeTimePeriod('day')}
           >
             Daily
           </button>
           <button
-            style={styleSheet.timePeriodButton}
+            style={timePeriodButton}
             onClick={() => this.props.changeTimePeriod('month')}
           >
             Monthly

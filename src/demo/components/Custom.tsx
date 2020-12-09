@@ -1,8 +1,8 @@
 import React from 'react'
 
-import * as styleSheet from '../../styles/common/textStyles.js'
 import Partners from '../partners.json'
 import Graphs from './Graphs'
+import { largeGraphHolder, legend, legendHolder, legendKeys } from './Preset'
 
 interface Bucket {
   start: number
@@ -24,6 +24,15 @@ interface AnalyticsResult {
   pluginId: string
   start: number
   end: number
+}
+
+const smallLegendAndGraphHolder = {
+  width: '50%',
+  float: 'left' as 'left'
+}
+
+const smallGraphHolder = {
+  height: '400px'
 }
 
 const Custom: any = (props: {
@@ -49,21 +58,21 @@ const Custom: any = (props: {
       .charAt(0)
       .toUpperCase()}${analytic.pluginId.slice(1)}`
     return (
-      <div style={styleSheet.legendKeys} key={analytic.pluginId}>
+      <div style={legendKeys} key={analytic.pluginId}>
         <div style={style} />
-        <div style={styleSheet.legend}>{capitilizedPluginId}</div>
+        <div style={legend}>{capitilizedPluginId}</div>
       </div>
     )
   })
 
   const barGraphs = barGraphData.map((analytic, index) => {
     return (
-      <div key={analytic.pluginId} style={styleSheet.smallLegendAndGraphHolder}>
+      <div key={analytic.pluginId} style={smallLegendAndGraphHolder}>
         {Partners[analytic.pluginId].type === props.exchangeType ||
         props.exchangeType === 'all' ? (
           <div>
-            <div style={styleSheet.legendHolder}>{barGraphStyles[index]}</div>
-            <div style={styleSheet.smallGraphHolder}>
+            <div style={legendHolder}>{barGraphStyles[index]}</div>
+            <div style={smallGraphHolder}>
               <Graphs rawData={[analytic]} timePeriod={props.timePeriod} />
             </div>
           </div>
@@ -75,8 +84,8 @@ const Custom: any = (props: {
   return (
     <>
       <div>
-        <div style={styleSheet.legendHolder}>{barGraphStyles}</div>
-        <div style={styleSheet.largeGraphHolder}>
+        <div style={legendHolder}>{barGraphStyles}</div>
+        <div style={largeGraphHolder}>
           <Graphs rawData={barGraphData} timePeriod={props.timePeriod} />
         </div>
         <div>{barGraphs}</div>

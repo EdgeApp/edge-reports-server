@@ -10,7 +10,6 @@ import {
   YAxis
 } from 'recharts'
 
-import * as styleSheet from '../../styles/common/textStyles.js'
 import Partners from '../partners.json'
 import Modal from './Modal'
 
@@ -62,6 +61,12 @@ const parseDate = (timestamp: number, timePeriod: string): string => {
     return `${y}-${m}-${d}:${h}`
   }
   throw new Error('bad timeperiod')
+}
+
+const modalStyle = {
+  position: 'absolute' as 'absolute',
+  zIndex: 1000,
+  left: '0px'
 }
 
 const Graphs: any = (props: {
@@ -157,7 +162,7 @@ const Graphs: any = (props: {
 
   return (
     <>
-      <div style={styleSheet.modal}>{altModal}</div>
+      <div style={modalStyle}>{altModal}</div>
       <ResponsiveContainer>
         <ComposedChart
           data={Object.values(data)}
