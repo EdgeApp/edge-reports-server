@@ -54,12 +54,6 @@ const graphs = {
   verticalAlign: 'top'
 }
 
-const sidebar = {
-  display: 'table-cell' as 'table-cell',
-  background: 'linear-gradient(90deg, #0C446A 0%, #0D2145 100%)',
-  width: '200px'
-}
-
 const row = {
   width: '100%',
   height: '100%',
@@ -272,18 +266,16 @@ class App extends Component<
   render(): JSX.Element {
     return (
       <div style={row}>
-        <div style={sidebar}>
-          <Sidebar
-            getData={this.getData}
-            changeExchangeType={this.changeExchangetype}
-            logout={this.logout}
-            viewChange={e => this.handleViewChange(e)}
-            loading={this.state.loading}
-            appId={this.state.appId}
-            exchangeType={this.state.exchangeType}
-            view={this.state.view}
-          />
-        </div>
+        <Sidebar
+          getData={this.getData}
+          changeExchangeType={this.changeExchangetype}
+          logout={this.logout}
+          viewChange={e => this.handleViewChange(e)}
+          loading={this.state.loading}
+          appId={this.state.appId}
+          exchangeType={this.state.exchangeType}
+          view={this.state.view}
+        />
         {this.renderMainView()}
       </div>
     )

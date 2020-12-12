@@ -10,13 +10,13 @@ import {
   sub
 } from 'date-fns'
 import React, { Component } from 'react'
-import DatePicker from 'react-datepicker'
-import Loader from 'react-loader-spinner'
 
 // @ts-ignore
 import calendar from '../images/calendar.png'
-// @ts-ignore
-import logo from '../images/logo.png'
+import { MainButton, SecondaryButton } from './Buttons'
+import Sidetab from './Sidetab'
+import Spinner from './Spinner'
+import TimePicker from './TimePicker'
 
 interface SidebarProps {
   getData: any
@@ -64,72 +64,8 @@ export const divider = {
   borderTop: '.5px solid white'
 }
 
-const logoStyle = {
-  marginTop: '26px',
-  marginLeft: '26px',
-  marginBottom: '10px',
-  height: '28px',
-  width: '28px'
-}
-
-const titleText = {
-  marginLeft: '26px',
-  color: 'white',
-  fontSize: '24px'
-}
-
-const loader = {
-  textAlign: 'center' as 'center',
-  marginTop: '29px'
-}
-
 const exchangeTypeContainer = {
   position: 'relative' as 'relative'
-}
-
-const regularButton = {
-  outline: 'none',
-  backgroundColor: 'transparent' as 'transparent',
-  fontSize: '16px',
-  cursor: 'pointer' as 'pointer',
-  width: '100%',
-  paddingTop: '12px',
-  textAlign: 'left' as 'left',
-  marginLeft: '20px',
-  color: 'white',
-  border: 'none'
-}
-
-const outlineButton = {
-  overflow: 'hidden' as 'hidden',
-  outline: 'none',
-  backgroundColor: 'transparent' as 'transparent',
-  fontSize: '16px',
-  cursor: 'pointer' as 'pointer',
-  marginTop: '12px',
-  marginLeft: '68px',
-  marginBottom: '12px',
-  color: 'white',
-  border: '1px solid white'
-}
-
-const dateContainer = {
-  marginLeft: '26px'
-}
-
-const calendarText = {
-  marginTop: '20px',
-  fontSize: '16px',
-  color: 'white'
-}
-
-const dateInput = {
-  marginLeft: '-2px',
-  fontSize: '16px',
-  backgroundColor: 'transparent' as 'transparent',
-  border: 'none',
-  color: 'white',
-  width: '100px'
 }
 
 const calendarContainer = {
@@ -197,20 +133,6 @@ const getISOString = (date: Date, end: boolean): string => {
   return timezonedDate.toISOString()
 }
 
-const header = (
-  <>
-    <img style={logoStyle} src={logo} alt="Edge Logo" />
-    <div style={titleText}>Edge</div>
-    <div style={titleText}>Reports</div>
-  </>
-)
-
-const loading = (
-  <div style={loader}>
-    <Loader type="Oval" color="white" height="30px" width="30px" />
-  </div>
-)
-
 class Sidebar extends Component<SidebarProps, SidebarState> {
   constructor(props) {
     super(props)
@@ -233,103 +155,65 @@ class Sidebar extends Component<SidebarProps, SidebarState> {
   renderExchangeButtons = (props: SidebarProps): JSX.Element => (
     <div style={exchangeTypeContainer}>
       <hr style={underlineExchangeTypeStyle[props.exchangeType]} />
-      <button
-        style={regularButton}
+      <SecondaryButton
+        label="Totals"
         onClick={async () => {
           await props.changeExchangeType('all')
         }}
-      >
-        Totals
-      </button>
-      <button
-        style={regularButton}
+      />
+      <SecondaryButton
+        label="Fiat"
         onClick={async () => {
           await props.changeExchangeType('fiat')
         }}
-      >
-        Fiat
-      </button>
-      <button
-        style={regularButton}
+      />
+      <SecondaryButton
+        label="Swap"
         onClick={async () => {
           await props.changeExchangeType('swap')
         }}
-      >
-        Swap
-      </button>
+      />
     </div>
   )
 
   presetButtons = PRESETS.map(({ args, str }, index) => (
-    <button
+    <SecondaryButton
       key={index}
-      style={regularButton}
+      label={str}
       onClick={() => {
         const { start, end } = getPresetDates(...args)
         this.setState({ start, end })
       }}
-    >
-      {str}
-    </button>
+    />
   ))
 
   renderCustomView(props: SidebarProps): JSX.Element {
-    const customButton = (
-      <button
-        style={outlineButton}
-        onClick={() => this.props.viewChange('custom')}
-      >
-        Custom
-      </button>
-    )
-
-    if (props.view === 'preset') return customButton
-
-    const presetButton = (
-      <button style={outlineButton} onClick={() => props.viewChange('preset')}>
-        Preset
-      </button>
-    )
+    if (props.view === 'preset')
+      return (
+        <MainButton
+          label="Custom"
+          onClick={() => this.props.viewChange('custom')}
+        />
+      )
 
     const searchButton = (
-      <button
-        style={outlineButton}
+      <MainButton
+        label="Search"
         onClick={async () => {
           await props.getData(
             getISOString(this.state.start, false),
             getISOString(this.state.end, true)
           )
         }}
-      >
-        Search
-      </button>
-    )
-
-    const startDate = (
-      <div style={dateContainer}>
-        <div style={calendarText}>Start</div>
-        <DatePicker
-          customInput={<input style={dateInput} />}
-          selected={this.state.start}
-          onChange={e => this.handleStartChange(e)}
-        />
-      </div>
-    )
-
-    const endDate = (
-      <div style={dateContainer}>
-        <div style={calendarText}>End</div>
-        <DatePicker
-          customInput={<input style={dateInput} />}
-          selected={this.state.end}
-          onChange={e => this.handleEndChange(e)}
-        />
-      </div>
+      />
     )
 
     return (
       <>
-        {presetButton}
+        <MainButton
+          label="Preset"
+          onClick={() => this.props.viewChange('preset')}
+        />
         <div style={calendarContainer}>
           <span>Range</span>
           <img style={calendarStyle} src={calendar} alt="calendar" />
@@ -337,26 +221,30 @@ class Sidebar extends Component<SidebarProps, SidebarState> {
         <hr style={divider} />
         {this.presetButtons}
         <hr style={divider} />
-        {startDate}
-        {endDate}
-        {props.loading === false ? searchButton : loading}
+        <TimePicker
+          label="Start"
+          date={this.state.start}
+          onChange={e => this.handleStartChange(e)}
+        />
+        <TimePicker
+          label="End"
+          date={this.state.end}
+          onChange={e => this.handleEndChange(e)}
+        />
+        {props.loading === false ? searchButton : <Spinner />}
       </>
     )
   }
 
   render(): JSX.Element {
-    if (this.props.appId === '') return header
     return (
-      <>
-        {header}
+      <Sidetab serverName="Reports" appId={this.props.appId}>
         {this.renderCustomView(this.props)}
         <hr style={divider} />
         {this.renderExchangeButtons(this.props)}
         <hr style={divider} />
-        <button style={outlineButton} onClick={() => this.props.logout()}>
-          Logout
-        </button>
-      </>
+        <MainButton label="Logout" onClick={() => this.props.logout()} />
+      </Sidetab>
     )
   }
 }
