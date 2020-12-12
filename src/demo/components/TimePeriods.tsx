@@ -1,5 +1,7 @@
 import React, { PureComponent } from 'react'
 
+import { TimePeriodButton } from './Buttons'
+
 interface TimePeriodsProps {
   timePeriod: string
   changeTimePeriod: any
@@ -8,14 +10,6 @@ interface TimePeriodsProps {
 const timePeriodHolder = {
   marginLeft: '14px',
   marginTop: '16px'
-}
-
-const timePeriodButton = {
-  backgroundColor: 'transparent',
-  fontSize: '16px',
-  cursor: 'pointer',
-  marginRight: '20px',
-  border: 'none'
 }
 
 const underLineTimePeriod = {
@@ -41,24 +35,18 @@ class TimePeriods extends PureComponent<TimePeriodsProps, {}> {
     return (
       <>
         <div style={timePeriodHolder}>
-          <button
-            style={timePeriodButton}
+          <TimePeriodButton
+            label="Hourly"
             onClick={() => this.props.changeTimePeriod('hour')}
-          >
-            Hourly
-          </button>
-          <button
-            style={timePeriodButton}
+          />
+          <TimePeriodButton
+            label="Daily"
             onClick={() => this.props.changeTimePeriod('day')}
-          >
-            Daily
-          </button>
-          <button
-            style={timePeriodButton}
+          />
+          <TimePeriodButton
+            label="Monthly"
             onClick={() => this.props.changeTimePeriod('month')}
-          >
-            Monthly
-          </button>
+          />
         </div>
         <hr style={underLineTimePeriod[this.props.timePeriod]} />
       </>
