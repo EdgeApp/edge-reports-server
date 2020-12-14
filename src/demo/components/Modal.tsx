@@ -66,7 +66,7 @@ const Modal: any = (props: ModalProps) => {
     .map(([key, value], index) => (
       <div key={index} style={currencyPairHolder}>
         <div style={currencyPairName}>{`${key}:`}</div>
-        <div style={currencyPairUsd}>{`$${value.toFixed(2)}`}</div>
+        <div style={currencyPairUsd}>{`$${Math.floor(value)}`}</div>
       </div>
     ))
     .slice(0, 15)
@@ -82,8 +82,8 @@ const Modal: any = (props: ModalProps) => {
   }
   const total = !isSinglePartner ? (
     <>
-      <div style={modalTotalUsd}>{`Total USD: $${bar.payload.allUsd.toFixed(
-        2
+      <div style={modalTotalUsd}>{`Total USD: $${Math.floor(
+        bar.payload.allUsd
       )}`}</div>
       <div>{`Total Transactions: ${bar.payload.allTxs}`}</div>
     </>
@@ -93,7 +93,7 @@ const Modal: any = (props: ModalProps) => {
       {closable}
       <div style={horizontalBlockHolder}>
         <div style={modalStyle}>
-          <div>{`${tooltip} USD: $${bar.payload[tooltip].toFixed(2)}`}</div>
+          <div>{`${tooltip} USD: $${Math.floor(bar.payload[tooltip])}`}</div>
           <div>{`${tooltip} Transactions: ${
             bar.payload[`${tooltip}NumTxs`]
           }`}</div>
