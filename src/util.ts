@@ -45,8 +45,8 @@ export const pagination = async (
 
 export const getPresetDates = function(): any {
   const DATE = new Date(Date.now())
-  const HOUR_RANGE_END = startOfHour(DATE)
-  const DAY_RANGE_END = startOfDay(DATE)
+  const HOUR_RANGE_END = add(startOfHour(DATE), { hours: 1 })
+  const DAY_RANGE_END = add(startOfDay(DATE), { days: 1 })
   const TRUE_DAY_RANGE_END = sub(DAY_RANGE_END, {
     minutes: DAY_RANGE_END.getTimezoneOffset()
   })
