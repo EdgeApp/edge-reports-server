@@ -13,6 +13,11 @@ const timePeriodHolder = {
 }
 
 const underLineTimePeriod = {
+  quarter: {
+    marginLeft: '251px',
+    width: '70px',
+    marginTop: '2px'
+  },
   month: {
     marginLeft: '160px',
     width: '66px',
@@ -46,6 +51,10 @@ class TimePeriods extends PureComponent<TimePeriodsProps, {}> {
           <TimePeriodButton
             label="Monthly"
             onClick={() => this.props.changeTimePeriod('month')}
+          />
+          <TimePeriodButton
+            label="Quarterly"
+            onClick={() => this.props.changeTimePeriod('quarter')}
           />
         </div>
         <hr style={underLineTimePeriod[this.props.timePeriod]} />

@@ -27,9 +27,10 @@ const mainButton = {
 }
 
 const timePeriodButton = {
-  backgroundColor: 'transparent',
+  outline: 'none',
+  backgroundColor: 'transparent' as 'transparent',
   fontSize: '16px',
-  cursor: 'pointer',
+  cursor: 'pointer' as 'pointer',
   marginRight: '20px',
   border: 'none'
 }

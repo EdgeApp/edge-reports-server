@@ -1,3 +1,4 @@
+import eachQuarterOfInterval from 'date-fns/eachQuarterOfInterval'
 import React, { useState } from 'react'
 import {
   Bar,
@@ -53,7 +54,7 @@ const parseDate = (timestamp: number, timePeriod: string): string => {
   const m = dateObj.getUTCMonth() + 1
   const d = dateObj.getUTCDate()
   const h = dateObj.getUTCHours()
-  if (timePeriod === 'month') {
+  if (timePeriod === 'month' || timePeriod === 'quarter') {
     return `${y}-${m}`
   } else if (timePeriod === 'day') {
     return `${y}-${m}-${d}`
@@ -82,7 +83,58 @@ const Graphs: any = (props: {
 
   const data: BarData = rawData.reduce(
     (prev: BarData, analytics: AnalyticsResult, index: number) => {
-      const buckets = analytics.result[timePeriod]
+      let buckets: Bucket[] = []
+      if (timePeriod !== 'quarter') buckets = analytics.result[timePeriod]
+      else {
+        const timezoneOffsetStart =
+          new Date(analytics.start).getTimezoneOffset() * 60 * 1000
+        const timezoneOffsetEnd =
+          new Date(analytics.end).getTimezoneOffset() * 60 * 1000
+
+        const quarterIntervals = eachQuarterOfInterval({
+          start: new Date(analytics.start * 1000 + timezoneOffsetStart),
+          end: new Date(analytics.end * 1000 + timezoneOffsetEnd)
+        })
+        buckets = quarterIntervals.map(date => {
+          const timezoneOffset = date.getTimezoneOffset() * 60 * 1000
+          const realTimestamp = date.getTime() - timezoneOffset
+          return {
+            start: realTimestamp / 1000,
+            usdValue: 0,
+            numTxs: 0,
+            isoDate: new Date(realTimestamp).toISOString(),
+            currencyCodes: {},
+            currencyPairs: {}
+          }
+        })
+        let i = 0
+        let position = 0
+        while (position < analytics.result.month.length) {
+          if (i + 1 < buckets.length) {
+            if (
+              analytics.result.month[position].start >= buckets[i + 1].start
+            ) {
+              i++
+              continue
+            }
+          }
+          buckets[i].usdValue += analytics.result.month[position].usdValue
+          buckets[i].numTxs += analytics.result.month[position].numTxs
+          for (const currencyPair in analytics.result.month[position]
+            .currencyPairs) {
+            if (buckets[i].currencyPairs[currencyPair] == null)
+              buckets[i].currencyPairs[currencyPair] =
+                analytics.result.month[position].currencyPairs[currencyPair]
+          }
+          for (const currencyCode in analytics.result.month[position]
+            .currencyCodes) {
+            if (buckets[i].currencyCodes[currencyCode] == null)
+              buckets[i].currencyCodes[currencyCode] =
+                analytics.result.month[position].currencyCodes[currencyCode]
+          }
+          position++
+        }
+      }
       const graphName =
         analytics.pluginId.charAt(0).toUpperCase() + analytics.pluginId.slice(1)
       bars.push(
