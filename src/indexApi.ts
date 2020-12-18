@@ -1,19 +1,12 @@
 // import bodyParser from 'body-parser'
-import {
-  asArray,
-  asMap,
-  asNumber,
-  asObject,
-  asOptional,
-  asString
-} from 'cleaners'
+import { asArray, asMap, asObject, asOptional, asString } from 'cleaners'
 import cors from 'cors'
 import express from 'express'
 import nano from 'nano'
 
 import config from '../config.json'
-import { getAnalytics } from './apiAnalytics'
 import { asDbTx } from './types'
+import { cacheAnalytic, getAnalytic } from './util'
 
 const asAnalyticsReq = asObject({
   start: asString,
@@ -40,18 +33,6 @@ const asCheckTxsFetch = asArray(
     error: asOptional(asString)
   })
 )
-
-const asDbReq = asObject({
-  docs: asArray(
-    asObject({
-      orderId: asString,
-      depositCurrency: asString,
-      payoutCurrency: asString,
-      timestamp: asNumber,
-      usdValue: asNumber
-    })
-  )
-})
 
 const asApp = asObject({
   _id: asString,
@@ -132,50 +113,24 @@ async function main(): Promise<void> {
       return
     }
 
-    const query = {
-      selector: {
-        usdValue: { $gte: 0 },
-        timestamp: { $gte: queryStart, $lt: queryEnd }
-      },
-      fields: [
-        'orderId',
-        'depositCurrency',
-        'payoutCurrency',
-        'timestamp',
-        'usdValue'
-      ],
-      use_index: 'timestamp-index',
-      sort: ['timestamp'],
-      limit: 1000000
-    }
-    const results: any[] = []
-    const promises: Array<Promise<any>> = []
-    for (const pluginId of pluginIds) {
-      const appAndPluginId = `${appId}_${pluginId}`
-      const result = reportsTransactions
-        .partitionedFind(appAndPluginId, query)
-        .then(data => {
-          const analytic = getAnalytics(
-            asDbReq(data).docs,
-            queryStart,
-            queryEnd,
-            appId,
-            pluginId,
-            timePeriod
-          )
-          if (analytic.result.numAllTxs > 0) results.push(analytic)
-        })
-      promises.push(result)
-    }
-    try {
-      console.time('promiseAll')
-      await Promise.all(promises)
-      console.timeEnd('promiseAll')
-      return res.json(results)
-    } catch (e) {
-      console.log(e)
-      return res.status(500).send(`Internal server error.`)
-    }
+    const result = await cacheAnalytic(
+      queryStart,
+      queryEnd,
+      appId,
+      pluginIds,
+      timePeriod
+    )
+
+    // const result = await getAnalytic(
+    //   queryStart,
+    //   queryEnd,
+    //   appId,
+    //   pluginIds,
+    //   timePeriod,
+    //   reportsTransactions
+    // )
+
+    res.json(result)
   })
 
   app.post('/v1/checkTxs/', async function(req, res) {

@@ -1,11 +1,49 @@
+import { asArray, asNumber, asObject, asString } from 'cleaners'
 import add from 'date-fns/add'
 import eachQuarterOfInterval from 'date-fns/eachQuarterOfInterval'
 import startOfDay from 'date-fns/startOfDay'
 import startOfHour from 'date-fns/startOfHour'
 import startOfMonth from 'date-fns/startOfMonth'
 import sub from 'date-fns/sub'
+import nano from 'nano'
 
+import config from '../config.json'
+import { getAnalytics } from './apiAnalytics'
 import { AnalyticsResult, Bucket } from './demo/components/Graphs'
+
+const asDbReq = asObject({
+  docs: asArray(
+    asObject({
+      orderId: asString,
+      depositCurrency: asString,
+      payoutCurrency: asString,
+      timestamp: asNumber,
+      usdValue: asNumber
+    })
+  )
+})
+
+interface Bucket {
+  start: number
+  usdValue: number
+  numTxs: number
+  isoDate: string
+  currencyCodes: { [currencyCode: string]: number }
+  currencyPairs: { [currencyPair: string]: number }
+}
+
+interface AnalyticsResult {
+  result: {
+    hour: Bucket[]
+    day: Bucket[]
+    month: Bucket[]
+    numAllTxs: number
+  }
+  app: string
+  pluginId: string
+  start: number
+  end: number
+}
 
 const BATCH_ADVANCE = 1000
 
@@ -165,4 +203,133 @@ export const createQuarterBuckets = (analytics: AnalyticsResult): Bucket[] => {
     addObject(currencyCodes, buckets[i].currencyCodes)
   }
   return buckets
+}
+
+export const getAnalytic = async (
+  start: number,
+  end: number,
+  appId: string,
+  pluginIds: string[],
+  timePeriod: string,
+  transactionDatabase: any
+): Promise<any> => {
+  const query = {
+    selector: {
+      usdValue: { $gte: 0 },
+      timestamp: { $gte: start, $lt: end }
+    },
+    fields: [
+      'orderId',
+      'depositCurrency',
+      'payoutCurrency',
+      'timestamp',
+      'usdValue'
+    ],
+    use_index: 'timestamp-index',
+    sort: ['timestamp'],
+    limit: 1000000
+  }
+  const results: any[] = []
+  const promises: Array<Promise<any>> = []
+  try {
+    for (const pluginId of pluginIds) {
+      const appAndPluginId = `${appId}_${pluginId}`
+      const result = transactionDatabase
+        .partitionedFind(appAndPluginId, query)
+        .then(data => {
+          const analytic = getAnalytics(
+            asDbReq(data).docs,
+            start,
+            end,
+            appId,
+            pluginId,
+            timePeriod
+          )
+          if (analytic.result.numAllTxs > 0) results.push(analytic)
+        })
+      promises.push(result)
+    }
+    console.time('promiseAll')
+    await Promise.all(promises)
+    console.timeEnd('promiseAll')
+    return results.sort((a, b) => {
+      if (a.pluginId < b.pluginId) {
+        return -1
+      }
+      if (a.pluginId > b.pluginId) {
+        return 1
+      }
+      return 0
+    })
+  } catch (e) {
+    console.log(e)
+    return `Internal server error.`
+  }
+}
+
+export const cacheAnalytic = async (
+  start: number,
+  end: number,
+  appId: string,
+  pluginIds: string[],
+  timePeriod: string
+): Promise<any> => {
+  const nanoDb = nano(config.couchDbFullpath)
+  const reportsHour = nanoDb.use('reports_hour')
+  const reportsDay = nanoDb.use('reports_day')
+  const reportsMonth = nanoDb.use('reports_month')
+  const timePeriods: string[] = []
+  if (timePeriod.includes('hour')) timePeriods.push('hour')
+  if (timePeriod.includes('day')) timePeriods.push('day')
+  if (timePeriod.includes('month')) timePeriods.push('month')
+  const analyticResultArray: AnalyticsResult[] = []
+  for (const pluginId of pluginIds) {
+    const analyticResult: AnalyticsResult = {
+      start,
+      end,
+      app: appId,
+      pluginId,
+      result: { hour: [], day: [], month: [], numAllTxs: 0 }
+    }
+    for (timePeriod of timePeriods) {
+      let database
+      if (timePeriod === 'hour') database = reportsHour
+      else if (timePeriod === 'day') database = reportsDay
+      else {
+        database = reportsMonth
+      }
+      const query = {
+        selector: {
+          usdValue: { $gte: 0 },
+          timestamp: { $gte: start, $lt: end }
+        },
+        use_index: 'timestamp-index',
+        sort: ['timestamp'],
+        limit: 1000000
+      }
+      try {
+        const appAndPluginId = `${appId}_${pluginId}`
+        const result = await database.partitionedFind(appAndPluginId, query)
+        analyticResult.result[timePeriod] = result.docs.map(cacheObj => {
+          analyticResult.result.numAllTxs += cacheObj.numTxs
+          return {
+            start: cacheObj.timestamp,
+            usdValue: cacheObj.usdValue,
+            numTxs: cacheObj.numTxs,
+            isoDate: new Date(cacheObj.timestamp).toISOString(),
+            currencyCodes: cacheObj.currencyCodes,
+            currencyPairs: cacheObj.currencyPairs
+          }
+        })
+        console.time(`${pluginId} ${timePeriod} cache fetched`)
+        console.timeEnd(`${pluginId} ${timePeriod} cache fetched`)
+      } catch (e) {
+        console.log(e)
+        return `Internal server error.`
+      }
+    }
+    analyticResult.result.numAllTxs /= timePeriods.length
+    analyticResultArray.push(analyticResult)
+  }
+  return analyticResultArray
 }
