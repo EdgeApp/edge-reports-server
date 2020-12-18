@@ -2,6 +2,7 @@ import { asArray, asMap, asObject, asString } from 'cleaners'
 import nano from 'nano'
 
 import config from '../config.json'
+import { cacheEngine } from './cacheEngine'
 import { banxa } from './partners/banxa'
 import { bitaccess } from './partners/bitaccess'
 import { bitrefill } from './partners/bitrefill'
@@ -146,6 +147,8 @@ export async function queryEngine(): Promise<void> {
     const partnerStatus = await Promise.all(promiseArray)
     // log how long every app + plugin took to run
     datelog(partnerStatus)
+    // run cache on new transactions
+    await cacheEngine().catch(e => console.log(e))
     datelog(`Snoozing for ${QUERY_FREQ_MS} milliseconds`)
     await snooze(QUERY_FREQ_MS)
   }
