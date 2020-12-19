@@ -35,8 +35,20 @@ const timePeriodButton = {
   border: 'none'
 }
 
+const underlineBlack = {
+  display: 'inline-block',
+  borderBottom: '1px solid black',
+  paddingBottom: '2px'
+}
+
+const underlineWhite = {
+  ...underlineBlack,
+  borderBottom: '1px solid white'
+}
+
 interface buttonProps {
   label: string
+  underline?: boolean
   onClick: () => void
 }
 
@@ -54,7 +66,11 @@ export class SecondaryButton extends PureComponent<buttonProps, {}> {
   render(): JSX.Element {
     return (
       <button style={secondaryButton} onClick={() => this.props.onClick()}>
-        {this.props.label}
+        {this.props.underline === true ? (
+          <div style={underlineWhite}>{this.props.label}</div>
+        ) : (
+          this.props.label
+        )}
       </button>
     )
   }
@@ -64,7 +80,11 @@ export class TimePeriodButton extends PureComponent<buttonProps, {}> {
   render(): JSX.Element {
     return (
       <button style={timePeriodButton} onClick={() => this.props.onClick()}>
-        {this.props.label}
+        {this.props.underline === true ? (
+          <div style={underlineBlack}>{this.props.label}</div>
+        ) : (
+          this.props.label
+        )}
       </button>
     )
   }

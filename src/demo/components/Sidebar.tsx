@@ -37,35 +37,16 @@ interface Preset {
   str: string
 }
 
-const underlineExchangeTypeStyle = {
-  all: {
-    position: 'absolute' as 'absolute',
-    left: '26px',
-    width: '41px',
-    top: '24px'
-  },
-  fiat: {
-    position: 'absolute' as 'absolute',
-    left: '26px',
-    width: '26px',
-    top: '56px'
-  },
-  swap: {
-    position: 'absolute' as 'absolute',
-    left: '26px',
-    width: '39px',
-    top: '89px'
-  }
+const allowExchangeTypes = {
+  all: 'Totals',
+  fiat: 'Fiat',
+  swap: 'Swap'
 }
 
 export const divider = {
   marginTop: '15px',
   width: '72%',
   borderTop: '.5px solid white'
-}
-
-const exchangeTypeContainer = {
-  position: 'relative' as 'relative'
 }
 
 const calendarContainer = {
@@ -153,27 +134,16 @@ class Sidebar extends Component<SidebarProps, SidebarState> {
   }
 
   renderExchangeButtons = (props: SidebarProps): JSX.Element => (
-    <div style={exchangeTypeContainer}>
-      <hr style={underlineExchangeTypeStyle[props.exchangeType]} />
-      <SecondaryButton
-        label="Totals"
-        onClick={async () => {
-          await props.changeExchangeType('all')
-        }}
-      />
-      <SecondaryButton
-        label="Fiat"
-        onClick={async () => {
-          await props.changeExchangeType('fiat')
-        }}
-      />
-      <SecondaryButton
-        label="Swap"
-        onClick={async () => {
-          await props.changeExchangeType('swap')
-        }}
-      />
-    </div>
+    <>
+      {Object.entries(allowExchangeTypes).map(([exchangeType, label]) => (
+        <SecondaryButton
+          key={exchangeType}
+          underline={props.exchangeType === exchangeType}
+          label={label}
+          onClick={() => props.changeExchangeType(exchangeType)}
+        />
+      ))}
+    </>
   )
 
   presetButtons = PRESETS.map(({ args, str }, index) => (

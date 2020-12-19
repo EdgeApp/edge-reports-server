@@ -12,53 +12,26 @@ const timePeriodHolder = {
   marginTop: '16px'
 }
 
-const underLineTimePeriod = {
-  quarter: {
-    marginLeft: '251px',
-    width: '70px',
-    marginTop: '2px'
-  },
-  month: {
-    marginLeft: '160px',
-    width: '66px',
-    marginTop: '2px'
-  },
-  day: {
-    marginLeft: '95px',
-    width: '42px',
-    marginTop: '2px'
-  },
-  hour: {
-    marginLeft: '16px',
-    width: '53px',
-    marginTop: '2px'
-  }
+const allowTimePeriods = {
+  hour: 'Hourly',
+  day: 'Daily',
+  month: 'Monthly',
+  quarter: 'Quarterly'
 }
 
 class TimePeriods extends PureComponent<TimePeriodsProps, {}> {
   render(): JSX.Element {
     return (
-      <>
-        <div style={timePeriodHolder}>
+      <div style={timePeriodHolder}>
+        {Object.entries(allowTimePeriods).map(([timePeriod, label]) => (
           <TimePeriodButton
-            label="Hourly"
-            onClick={() => this.props.changeTimePeriod('hour')}
+            key={timePeriod}
+            underline={this.props.timePeriod === timePeriod}
+            label={label}
+            onClick={() => this.props.changeTimePeriod(timePeriod)}
           />
-          <TimePeriodButton
-            label="Daily"
-            onClick={() => this.props.changeTimePeriod('day')}
-          />
-          <TimePeriodButton
-            label="Monthly"
-            onClick={() => this.props.changeTimePeriod('month')}
-          />
-          <TimePeriodButton
-            label="Quarterly"
-            onClick={() => this.props.changeTimePeriod('quarter')}
-          />
-        </div>
-        <hr style={underLineTimePeriod[this.props.timePeriod]} />
-      </>
+        ))}
+      </div>
     )
   }
 }
