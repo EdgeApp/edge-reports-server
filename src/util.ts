@@ -1,8 +1,11 @@
 import add from 'date-fns/add'
+import eachQuarterOfInterval from 'date-fns/eachQuarterOfInterval'
 import startOfDay from 'date-fns/startOfDay'
 import startOfHour from 'date-fns/startOfHour'
 import startOfMonth from 'date-fns/startOfMonth'
 import sub from 'date-fns/sub'
+
+import { AnalyticsResult, Bucket } from './demo/components/Graphs'
 
 const BATCH_ADVANCE = 1000
 
@@ -41,6 +44,14 @@ export const pagination = async (
     }
   }
   datelog(`total errors: ${numErrors}`)
+}
+
+export const addObject = (origin: any, destination: any): void => {
+  Object.keys(origin).forEach(originKey => {
+    if (destination[originKey] == null) {
+      destination[originKey] = origin[originKey]
+    } else destination[originKey] += origin[originKey]
+  })
 }
 
 export const getPresetDates = function(): any {
@@ -118,4 +129,41 @@ export const getTimeRange = (start: string, end: string): string => {
   } else {
     return 'month'
   }
+}
+
+export const createQuarterBuckets = (analytics: AnalyticsResult): Bucket[] => {
+  const timezoneOffsetStart =
+    new Date(analytics.start).getTimezoneOffset() * 60 * 1000
+  const timezoneOffsetEnd =
+    new Date(analytics.end).getTimezoneOffset() * 60 * 1000
+
+  const quarterIntervals = eachQuarterOfInterval({
+    start: new Date(analytics.start * 1000 + timezoneOffsetStart),
+    end: new Date(analytics.end * 1000 + timezoneOffsetEnd)
+  })
+  const buckets = quarterIntervals.map(date => {
+    const timezoneOffset = date.getTimezoneOffset() * 60 * 1000
+    const realTimestamp = date.getTime() - timezoneOffset
+    return {
+      start: realTimestamp / 1000,
+      usdValue: 0,
+      numTxs: 0,
+      isoDate: new Date(realTimestamp).toISOString(),
+      currencyCodes: {},
+      currencyPairs: {}
+    }
+  })
+  let i = 0
+  for (const month of analytics.result.month) {
+    const { usdValue, numTxs, currencyPairs, currencyCodes } = month
+    if (i + 1 < buckets.length && month.start >= buckets[i + 1].start) {
+      i++
+      continue
+    }
+    buckets[i].usdValue += usdValue
+    buckets[i].numTxs += numTxs
+    addObject(currencyPairs, buckets[i].currencyPairs)
+    addObject(currencyCodes, buckets[i].currencyCodes)
+  }
+  return buckets
 }
