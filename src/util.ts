@@ -125,7 +125,14 @@ export const getCustomData = async (
   timePeriod: string = 'hourdaymonth'
 ): Promise<any> => {
   const endPoint = '/v1/analytics/'
-  const query = { start, end, appId, pluginIds, timePeriod }
+  let trueTimePeriod = timePeriod
+  if (
+    new Date(end).getTime() - new Date(start).getTime() > 60 * 60 * 24 * 7 &&
+    timePeriod === 'hourdaymonth'
+  ) {
+    trueTimePeriod = 'daymonth'
+  }
+  const query = { start, end, appId, pluginIds, timePeriod: trueTimePeriod }
   const response = await fetch(endPoint, {
     headers: {
       'Content-Type': 'application/json'
