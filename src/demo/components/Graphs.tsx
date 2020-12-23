@@ -10,10 +10,11 @@ import {
   YAxis
 } from 'recharts'
 
+import { addObject, createQuarterBuckets } from '../../util'
 import Partners from '../partners.json'
 import Modal from './Modal'
 
-interface Bucket {
+export interface Bucket {
   start: number
   usdValue: number
   numTxs: number
@@ -30,7 +31,7 @@ interface Data {
   currencyPairs: { [currencyPair: string]: number }
 }
 
-interface AnalyticsResult {
+export interface AnalyticsResult {
   result: {
     hour: Bucket[]
     day: Bucket[]
@@ -53,7 +54,7 @@ const parseDate = (timestamp: number, timePeriod: string): string => {
   const m = dateObj.getUTCMonth() + 1
   const d = dateObj.getUTCDate()
   const h = dateObj.getUTCHours()
-  if (timePeriod === 'month') {
+  if (timePeriod === 'month' || timePeriod === 'quarter') {
     return `${y}-${m}`
   } else if (timePeriod === 'day') {
     return `${y}-${m}-${d}`
@@ -82,7 +83,10 @@ const Graphs: any = (props: {
 
   const data: BarData = rawData.reduce(
     (prev: BarData, analytics: AnalyticsResult, index: number) => {
-      const buckets = analytics.result[timePeriod]
+      const buckets: Bucket[] =
+        timePeriod === 'quarter'
+          ? createQuarterBuckets(analytics)
+          : analytics.result[timePeriod]
       const graphName =
         analytics.pluginId.charAt(0).toUpperCase() + analytics.pluginId.slice(1)
       bars.push(
@@ -115,14 +119,7 @@ const Graphs: any = (props: {
             currencyPairs: { ...currencyPairs }
           }
         } else {
-          Object.keys(currencyPairs).forEach(currencyPair => {
-            if (prev[start].currencyPairs[currencyPair] == null) {
-              prev[start].currencyPairs[currencyPair] =
-                currencyPairs[currencyPair]
-            } else
-              prev[start].currencyPairs[currencyPair] +=
-                currencyPairs[currencyPair]
-          })
+          addObject(currencyPairs, prev[start].currencyPairs)
         }
         prev[start].allUsd += usdValue
         prev[start].allTxs += numTxs
