@@ -1,10 +1,10 @@
 import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
-import { datelog } from '../util'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import { datelog } from '../util'
 
-const asFoxTx = asObject({
+const asFoxExchangeTx = asObject({
   orderId: asString,
   depositCoin: asString,
   depositCoinAmount: asNumber,
@@ -15,11 +15,11 @@ const asFoxTx = asObject({
   createdAt: asNumber
 })
 
-const asFoxRawTx = asObject({
+const asFoxExchangeRawTx = asObject({
   status: asString
 })
 
-const asFoxTxs = asObject({
+const asFoxExchangeTxs = asObject({
   data: asObject({
     items: asArray(asUnknown)
   })
@@ -28,7 +28,7 @@ const asFoxTxs = asObject({
 const LIMIT = 100
 const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 3 // 3 days ago
 
-export async function queryFox(
+export async function queryFoxExchange(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
   const ssFormatTxs: StandardTx[] = []
@@ -73,7 +73,7 @@ export async function queryFox(
         }
       )
       if (res.ok === true) {
-        txs = asFoxTxs(await res.json())
+        txs = asFoxExchangeTxs(await res.json())
       }
     } catch (e) {
       datelog(e)
@@ -81,10 +81,10 @@ export async function queryFox(
     }
 
     for (const rawtx of txs.data.items) {
-      if (asFoxRawTx(rawtx).status === 'complete') {
+      if (asFoxExchangeRawTx(rawtx).status === 'complete') {
         let tx
         try {
-          tx = asFoxTx(rawtx)
+          tx = asFoxExchangeTx(rawtx)
         } catch (e) {
           datelog(e)
           throw e
@@ -130,10 +130,10 @@ export async function queryFox(
   return out
 }
 
-export const fox: PartnerPlugin = {
+export const foxExchange: PartnerPlugin = {
   // queryFunc will take PluginSettings as arg and return PluginResult
-  queryFunc: queryFox,
+  queryFunc: queryFoxExchange,
   // results in a PluginResult
-  pluginName: 'Fox',
-  pluginId: 'fox'
+  pluginName: 'FoxExchange',
+  pluginId: 'foxExchange'
 }
