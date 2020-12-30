@@ -158,7 +158,6 @@ export const createQuarterBuckets = (analytics: AnalyticsResult): Bucket[] => {
     const { usdValue, numTxs, currencyPairs, currencyCodes } = month
     if (i + 1 < buckets.length && month.start >= buckets[i + 1].start) {
       i++
-      continue
     }
     buckets[i].usdValue += usdValue
     buckets[i].numTxs += numTxs
