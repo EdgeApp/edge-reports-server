@@ -2,7 +2,7 @@ import { asArray, asMap, asObject, asString } from 'cleaners'
 import js from 'jsonfile'
 import nano from 'nano'
 
-import { asDbTx } from '../types'
+import { asDbTx, DbTx } from '../types'
 import { datelog } from '../util'
 
 const asApp = asObject({
@@ -14,15 +14,13 @@ const asApp = asObject({
 })
 const asApps = asArray(asApp)
 
-const asPartitionResult = asObject({
-  rows: asArray(
-    asObject({ id: asString, value: asObject({ rev: asString }), doc: asDbTx })
-  )
-})
+const asDbQueryResult = asObject({ docs: asArray(asDbTx), bookmark: asString })
 
 const PLUGIN_ID_MAP = {
   fox: 'foxExchange'
 }
+
+const PAGINATION = 100
 
 const config = js.readFileSync('./config.json')
 const nanoDb = nano(config.couchDbFullpath)
@@ -44,39 +42,77 @@ async function fixPluginIds(): Promise<void> {
     for (const app of apps) {
       for (const pluginId in PLUGIN_ID_MAP) {
         const partition = `${app.appId}_${pluginId}`
-        const result = await reportsTransactions.partitionedList(partition, {
-          // @ts-ignore
-          include_docs: true
-        })
-        const oldTxs = asPartitionResult(result).rows
-        if (oldTxs.length === 0) {
+        let bookmark
+        const queryResults: any[] = []
+        while (true) {
+          const query = {
+            selector: {
+              _id: { $exists: true }
+            },
+            bookmark,
+            limit: PAGINATION
+          }
+          const result = await reportsTransactions.partitionedFind(
+            partition,
+            query
+          )
+          if (
+            typeof result.bookmark === 'string' &&
+            result.docs.length === PAGINATION
+          ) {
+            bookmark = result.bookmark
+          } else {
+            bookmark = undefined
+          }
+          try {
+            asDbQueryResult(result)
+          } catch (e) {
+            datelog(`Invalid Query Result for ${partition}`, e)
+            continue
+          }
+          queryResults.push(...result.docs)
+          if (result.docs.length < PAGINATION) break
+        }
+        if (queryResults.length === 0) {
           datelog(
             `Bad partition ${pluginId} does not exist within app ${app.appId}.`
           )
           return
+        } else {
+          datelog(
+            `Gathered ${queryResults.length} docs from partition ${partition}`
+          )
         }
 
-        const newTxs = oldTxs.map(tx => {
-          return {
-            ...tx.doc,
-            _id: `${app.appId}_${PLUGIN_ID_MAP[pluginId]}:${tx.doc.orderId}`,
-            _rev: undefined
-          }
-        })
-        await reportsTransactions.bulk({ docs: newTxs })
-        datelog(
-          `Successfully inserted new partition ${PLUGIN_ID_MAP[pluginId]}`
-        )
+        for (let i = 0; i < queryResults.length; i += PAGINATION) {
+          const currentBatch: DbTx[] = queryResults.slice(i, i + PAGINATION)
+          const newTxs = currentBatch.map(tx => {
+            return {
+              ...tx,
+              _id: `${app.appId}_${PLUGIN_ID_MAP[pluginId]}:${tx.orderId}`,
+              _rev: undefined
+            }
+          })
+          await reportsTransactions.bulk({ docs: newTxs })
+          datelog(
+            `Successfully inserted ${i +
+              currentBatch.length} documents of new partition ${
+              PLUGIN_ID_MAP[pluginId]
+            }`
+          )
 
-        const deleteTxs = oldTxs.map(tx => {
-          return {
-            _id: tx.id,
-            _rev: tx.value.rev,
-            _deleted: true
-          }
-        })
-        await reportsTransactions.bulk({ docs: deleteTxs })
-        datelog(`Successfully deleted old partition ${pluginId}`)
+          const deleteTxs = currentBatch.map(tx => {
+            return {
+              ...tx,
+              _deleted: true
+            }
+          })
+          await reportsTransactions.bulk({ docs: deleteTxs })
+          datelog(
+            `Successfully deleted ${i +
+              currentBatch.length} documents of old partition ${pluginId}`
+          )
+        }
 
         if (app.pluginIds[pluginId] != null) {
           app.pluginIds[PLUGIN_ID_MAP[pluginId]] = app.pluginIds[pluginId]
