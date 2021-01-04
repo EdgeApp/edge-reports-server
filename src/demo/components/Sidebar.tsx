@@ -99,6 +99,7 @@ const getPresetDates = (
   const result = { start: date, end: date }
   if (lastOrThis === 'last') {
     result.start = sub(date, { [timePeriod]: amount })
+    if (amount === 90) result.end = add(date, { [timePeriod]: 1 })
   } else if (lastOrThis === 'this') {
     result.end = add(date, { [timePeriod]: amount })
   }
