@@ -127,7 +127,8 @@ export const getCustomData = async (
   const endPoint = '/v1/analytics/'
   let trueTimePeriod = timePeriod
   if (
-    new Date(end).getTime() - new Date(start).getTime() > 60 * 60 * 24 * 7 &&
+    new Date(end).getTime() - new Date(start).getTime() >
+      1000 * 60 * 60 * 24 * 7 &&
     timePeriod === 'hourdaymonth'
   ) {
     trueTimePeriod = 'daymonth'
