@@ -70,12 +70,20 @@ const modalStyle = {
   left: '0px'
 }
 
+const totalsStyle = {
+  fontSize: '18px',
+  textAlign: 'center' as 'center',
+  marginTop: '-20px'
+}
+
 const Graphs: any = (props: {
   rawData: AnalyticsResult[]
   timePeriod: string
 }) => {
   let modal
   let tooltip = ''
+  let totalUsd = 0
+  let totalTxs = 0
   const [altModal, setModal] = useState(<></>)
   const { rawData, timePeriod } = props
 
@@ -122,7 +130,9 @@ const Graphs: any = (props: {
           addObject(currencyPairs, prev[start].currencyPairs)
         }
         prev[start].allUsd += usdValue
+        totalUsd += usdValue
         prev[start].allTxs += numTxs
+        totalTxs += numTxs
         prev[start][graphName] = usdValue
         prev[start][`${graphName}NumTxs`] = numTxs
         prev[start][`${graphName}Color`] = Partners[analytics.pluginId].color
@@ -199,6 +209,9 @@ const Graphs: any = (props: {
           />
         </ComposedChart>
       </ResponsiveContainer>
+      <div style={totalsStyle}>
+        Txs: {totalTxs}, Volume: ${Math.floor(totalUsd)}
+      </div>
     </>
   )
 }
