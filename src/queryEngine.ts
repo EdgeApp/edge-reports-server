@@ -12,7 +12,7 @@ import { changelly } from './partners/changelly'
 import { changenow } from './partners/changenow'
 import { coinswitch } from './partners/coinswitch'
 import { faast } from './partners/faast'
-import { fox } from './partners/fox'
+import { foxExchange } from './partners/foxExchange'
 import { godex } from './partners/godex'
 import { libertyx } from './partners/libertyx'
 import { moonpay } from './partners/moonpay'
@@ -69,7 +69,7 @@ const partners = [
   changenow,
   coinswitch,
   faast,
-  fox,
+  foxExchange,
   godex,
   libertyx,
   moonpay,
