@@ -10,34 +10,13 @@ import { Cookies, withCookies } from 'react-cookie'
 import { getCustomData, getPresetDates, getTimeRange } from '../util'
 import ApiKeyScreen from './components/ApiKeyScreen'
 import Custom from './components/Custom'
+import { AnalyticsResult } from './components/Graphs'
 import Preset from './components/Preset'
 import Sidebar from './components/Sidebar'
 import TimePeriods from './components/TimePeriods'
 import Partners from './partners.json'
 
 const PRESET_TIMERANGES = getPresetDates()
-
-interface Bucket {
-  start: number
-  usdValue: number
-  numTxs: number
-  isoDate: string
-  currencyCodes: { [currencyCode: string]: number }
-  currencyPairs: { [currencyPair: string]: number }
-}
-
-interface AnalyticsResult {
-  result: {
-    hour: Bucket[]
-    day: Bucket[]
-    month: Bucket[]
-    numAllTxs: number
-  }
-  app: string
-  pluginId: string
-  start: number
-  end: number
-}
 
 interface TotalAnalytics {
   [pluginId: string]: AnalyticsResult
