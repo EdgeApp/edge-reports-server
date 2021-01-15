@@ -1,30 +1,8 @@
 import React from 'react'
 
 import Partners from '../partners.json'
-import Graphs from './Graphs'
+import Graphs, { AnalyticsResult } from './Graphs'
 import { largeGraphHolder, legend, legendHolder, legendKeys } from './Preset'
-
-interface Bucket {
-  start: number
-  usdValue: number
-  numTxs: number
-  isoDate: string
-  currencyCodes: { [currencyCode: string]: number }
-  currencyPairs: { [currencyPair: string]: number }
-}
-
-interface AnalyticsResult {
-  result: {
-    hour: Bucket[]
-    day: Bucket[]
-    month: Bucket[]
-    numAllTxs: number
-  }
-  app: string
-  pluginId: string
-  start: number
-  end: number
-}
 
 const smallLegendAndGraphHolder = {
   width: '50%',

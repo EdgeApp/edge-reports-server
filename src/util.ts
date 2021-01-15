@@ -23,28 +23,6 @@ const asDbReq = asObject({
   )
 })
 
-interface Bucket {
-  start: number
-  usdValue: number
-  numTxs: number
-  isoDate: string
-  currencyCodes: { [currencyCode: string]: number }
-  currencyPairs: { [currencyPair: string]: number }
-}
-
-interface AnalyticsResult {
-  result: {
-    hour: Bucket[]
-    day: Bucket[]
-    month: Bucket[]
-    numAllTxs: number
-  }
-  app: string
-  pluginId: string
-  start: number
-  end: number
-}
-
 const BATCH_ADVANCE = 1000
 
 export const datelog = function(...args: any): void {
