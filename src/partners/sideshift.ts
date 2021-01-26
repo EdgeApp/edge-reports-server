@@ -1,4 +1,4 @@
-import { asArray, asObject, asString, asUnknown } from 'cleaners'
+import { asArray, asMaybe, asObject, asString, asUnknown } from 'cleaners'
 import crypto from 'crypto'
 import fetch from 'node-fetch'
 
@@ -7,9 +7,7 @@ import { datelog } from '../util'
 
 const asSideshiftTx = asObject({
   id: asString,
-  depositAddress: asObject({
-    address: asString
-  }),
+  depositAddress: asObject({ address: asMaybe(asString) }),
   depositAsset: asString,
   invoiceAmount: asString,
   settleAddress: asObject({
@@ -49,16 +47,18 @@ async function fetchTransactions(
 
   try {
     const response = await fetch(url)
-    const orders = asSideshiftResult(await response.json())
+    const jsonObj = await response.json()
+    const orders = asSideshiftResult(jsonObj)
 
     return orders.map(order => {
       const tx = asSideshiftTx(order)
+      const depositAddress = tx.depositAddress.address ?? undefined
 
       return {
         status: 'complete',
         orderId: tx.id,
         depositTxid: undefined,
-        depositAddress: tx.depositAddress.address,
+        depositAddress,
         depositCurrency: tx.depositAsset.toUpperCase(),
         depositAmount: Number(tx.invoiceAmount),
         payoutTxid: undefined,
@@ -84,10 +84,13 @@ export async function querySideshift(
     apiKeys: { sideshiftAffiliateId, sideshiftAffiliateSecret }
   } = pluginParams
   let {
-    settings: { lastCheckedTimestamp, offset }
+    settings: { lastCheckedTimestamp = 0, offset = 0 }
   } = pluginParams
 
-  if (typeof lastCheckedTimestamp === 'number') {
+  if (
+    typeof lastCheckedTimestamp === 'number' &&
+    lastCheckedTimestamp > QUERY_LOOKBACK
+  ) {
     lastCheckedTimestamp -= QUERY_LOOKBACK
   }
 
