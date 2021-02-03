@@ -30,7 +30,7 @@ async function main(partitionName: string): Promise<void> {
       'edge_changenow',
       'edge_coinswitch',
       'edge_faast',
-      'edge_fox',
+      'edge_foxExchange',
       'edge_godex',
       'edge_libertyx',
       'edge_moonpay',
