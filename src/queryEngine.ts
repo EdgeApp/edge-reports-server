@@ -165,7 +165,7 @@ async function insertTransactions(
   for (const transaction of transactions) {
     // TODO: Add batching for more than 500 transactions
     transaction.orderId = transaction.orderId.toLowerCase()
-    const key = `${pluginId}:${transaction.orderId}`.toLowerCase()
+    const key = `${pluginId}:${transaction.orderId}`
     const result = await dbTransactions.get(key).catch(e => {
       if (e != null && e.error === 'not_found') {
         return {}
