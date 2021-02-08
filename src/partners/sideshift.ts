@@ -132,7 +132,7 @@ export async function querySideshift(
   }
 
   return {
-    settings: { lastCheckedTimestamp: prevMaxTimestamp, offset },
+    settings: { lastCheckedTimestamp: prevMaxTimestamp, offset: 0 },
     transactions: txs
   }
 }
