@@ -20,7 +20,6 @@ const asSideshiftTx = asObject({
 
 const asSideshiftResult = asArray(asUnknown)
 
-const LIMIT = 500
 const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
 
 function affiliateSignature(
@@ -37,13 +36,12 @@ function affiliateSignature(
 async function fetchTransactions(
   affiliateId: string,
   affiliateSecret: string,
-  offset: number,
-  limit: number
+  lastCheckedTimestamp: number
 ): Promise<StandardTx[]> {
   const time = Date.now()
 
   const signature = affiliateSignature(affiliateId, affiliateSecret, time)
-  const url = `https://sideshift.ai/api/affiliate/completedOrders?limit=${limit}&offset=${offset}&affiliateId=${affiliateId}&time=${time}&signature=${signature}`
+  const url = `https://sideshift.ai/api/affiliate/completedOrders?affiliateId=${affiliateId}&since=${lastCheckedTimestamp}&currentTime=${time}&signature=${signature}`
 
   try {
     const response = await fetch(url)
@@ -65,7 +63,7 @@ async function fetchTransactions(
         payoutAddress: tx.settleAddress.address,
         payoutCurrency: tx.settleAsset.toUpperCase(),
         payoutAmount: Number(tx.settleAmount),
-        timestamp: new Date(tx.createdAt).getTime() / 1000,
+        timestamp: new Date(tx.createdAt).getTime(),
         isoDate: tx.createdAt,
         usdValue: undefined,
         rawTx: order
@@ -84,7 +82,7 @@ export async function querySideshift(
     apiKeys: { sideshiftAffiliateId, sideshiftAffiliateSecret }
   } = pluginParams
   let {
-    settings: { lastCheckedTimestamp = 0, offset = 0 }
+    settings: { lastCheckedTimestamp = 0 }
   } = pluginParams
 
   if (
@@ -106,33 +104,18 @@ export async function querySideshift(
 
   const txs: StandardTx[] = []
 
-  let prevMaxTimestamp = 0
+  const newTxs = await fetchTransactions(
+    sideshiftAffiliateId,
+    sideshiftAffiliateSecret,
+    lastCheckedTimestamp
+  )
 
-  while (true) {
-    const newTxs = await fetchTransactions(
-      sideshiftAffiliateId,
-      sideshiftAffiliateSecret,
-      offset,
-      LIMIT
-    )
-
-    txs.push(...newTxs)
-
-    offset += newTxs.length
-
-    const newTxMaxTimestamp = Math.max(...newTxs.map(tx => tx.timestamp))
-
-    if (newTxMaxTimestamp > prevMaxTimestamp) {
-      prevMaxTimestamp = newTxMaxTimestamp
-    }
-
-    if (lastCheckedTimestamp > newTxMaxTimestamp || newTxs.length < LIMIT) {
-      break
-    }
-  }
+  txs.push(...newTxs)
 
   return {
-    settings: { lastCheckedTimestamp: prevMaxTimestamp, offset },
+    settings: {
+      lastCheckedTimestamp: Math.max(...newTxs.map(tx => tx.timestamp))
+    },
     transactions: txs
   }
 }
