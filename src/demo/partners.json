@@ -40,6 +40,10 @@
         "type": "swap",
         "color": "#4d953c"
     },
+    "gebo": {
+        "type": "fiat",
+        "color": "#f4c2c2"
+    },
     "godex": { 
         "type": "swap",
         "color": "#86c972"

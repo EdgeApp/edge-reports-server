@@ -13,6 +13,7 @@ import { changenow } from './partners/changenow'
 import { coinswitch } from './partners/coinswitch'
 import { faast } from './partners/faast'
 import { foxExchange } from './partners/foxExchange'
+import { gebo } from './partners/gebo'
 import { godex } from './partners/godex'
 import { libertyx } from './partners/libertyx'
 import { moonpay } from './partners/moonpay'
@@ -70,6 +71,7 @@ const partners = [
   coinswitch,
   faast,
   foxExchange,
+  gebo,
   godex,
   libertyx,
   moonpay,
