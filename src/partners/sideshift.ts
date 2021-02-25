@@ -63,7 +63,7 @@ async function fetchTransactions(
         payoutAddress: tx.settleAddress.address,
         payoutCurrency: tx.settleAsset.toUpperCase(),
         payoutAmount: Number(tx.settleAmount),
-        timestamp: new Date(tx.createdAt).getTime(),
+        timestamp: new Date(tx.createdAt).getTime() / 1000,
         isoDate: tx.createdAt,
         usdValue: undefined,
         rawTx: order
