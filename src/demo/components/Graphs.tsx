@@ -72,8 +72,11 @@ const modalStyle = {
 
 const totalsStyle = {
   fontSize: '18px',
-  textAlign: 'center' as 'center',
-  marginTop: '-20px'
+  textAlign: 'center' as 'center'
+}
+
+const graphHolder = {
+  height: '90%'
 }
 
 const Graphs: any = (props: {
@@ -169,49 +172,51 @@ const Graphs: any = (props: {
 
   return (
     <>
-      <div style={modalStyle}>{altModal}</div>
-      <ResponsiveContainer>
-        <ComposedChart
-          data={Object.values(data)}
-          margin={{
-            top: 20,
-            right: 20,
-            bottom: 20,
-            left: 20
-          }}
-          animationDuration={0}
-        >
-          <CartesianGrid stroke="#f5f5f5" />
-          <XAxis dataKey="date" />
-          <YAxis yAxisId="left" orientation="left" stroke="#000000" />
-          <YAxis
-            yAxisId="right"
-            orientation="right"
-            stroke="#000000"
-            allowDecimals={false}
-          />
-          {/* @ts-ignore */}
-          <Tooltip
-            animationDuration={0}
-            content={({ active, payload }) => {
-              modal = CustomTooltip(active, payload, true)
-              return CustomTooltip(active, payload)
+      <div style={graphHolder}>
+        <div style={modalStyle}>{altModal}</div>
+        <ResponsiveContainer>
+          <ComposedChart
+            data={Object.values(data)}
+            margin={{
+              top: 20,
+              right: 20,
+              bottom: 0,
+              left: 20
             }}
-          />
-          {bars}
-          <Line
-            yAxisId="right"
-            type="monotone"
-            dataKey="allTxs"
-            dot={false}
-            stroke="#000000"
             animationDuration={0}
-          />
-        </ComposedChart>
-      </ResponsiveContainer>
-      <div style={totalsStyle}>
-        Txs: {totalTxs}, Volume: ${Math.floor(totalUsd)}
+          >
+            <CartesianGrid stroke="#f5f5f5" />
+            <XAxis dataKey="date" />
+            <YAxis yAxisId="left" orientation="left" stroke="#000000" />
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              stroke="#000000"
+              allowDecimals={false}
+            />
+            {/* @ts-ignore */}
+            <Tooltip
+              animationDuration={0}
+              content={({ active, payload }) => {
+                modal = CustomTooltip(active, payload, true)
+                return CustomTooltip(active, payload)
+              }}
+            />
+            {bars}
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="allTxs"
+              dot={false}
+              stroke="#000000"
+              animationDuration={0}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
       </div>
+      <p style={totalsStyle}>
+        Txs: {totalTxs}, Volume: ${Math.floor(totalUsd)}
+      </p>
     </>
   )
 }
