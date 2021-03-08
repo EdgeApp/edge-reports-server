@@ -1,9 +1,11 @@
 import React from 'react'
+import { Redirect, withRouter } from 'react-router-dom'
 
 interface ApiKeyScreenProps {
   apiKeyMessage: string
   handleApiKeyChange: any
   getAppId: any
+  appId: string
 }
 
 const apiKeyMessage = {
@@ -35,6 +37,9 @@ const apiKeyButton = {
 }
 
 const ApiKeyScreen: any = (props: ApiKeyScreenProps) => {
+  if (typeof props.appId === 'string' && props.appId.length > 0) {
+    return <Redirect to={{ pathname: '/preset' }} />
+  }
   return (
     <ul>
       <li style={apiKeyMessage}>{props.apiKeyMessage}</li>
@@ -50,4 +55,4 @@ const ApiKeyScreen: any = (props: ApiKeyScreenProps) => {
     </ul>
   )
 }
-export default ApiKeyScreen
+export default withRouter(ApiKeyScreen)
