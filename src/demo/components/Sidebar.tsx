@@ -10,23 +10,22 @@ import {
   sub
 } from 'date-fns'
 import React, { Component } from 'react'
+import { Link, NavLink, withRouter } from 'react-router-dom'
 
+import { getPresetDates } from '../../util'
 // @ts-ignore
 import calendar from '../images/calendar.png'
 import { MainButton, SecondaryButton } from './Buttons'
 import Sidetab from './Sidetab'
-import Spinner from './Spinner'
 import TimePicker from './TimePicker'
 
 interface SidebarProps {
+  location: any
   getData: any
   changeExchangeType: any
   logout: any
-  viewChange: any
-  loading: boolean
   appId: string
   exchangeType: string
-  view: string
 }
 interface SidebarState {
   start: Date
@@ -90,7 +89,7 @@ const getStartingDate = (timePeriod: string, amount: number): Date => {
   return currentDate
 }
 
-const getPresetDates = (
+const presetDates = (
   lastOrThis: string,
   timePeriod: string,
   amount: number
@@ -152,39 +151,44 @@ class Sidebar extends Component<SidebarProps, SidebarState> {
       key={index}
       label={str}
       onClick={() => {
-        const { start, end } = getPresetDates(...args)
+        const { start, end } = presetDates(...args)
         this.setState({ start, end })
       }}
     />
   ))
 
   renderCustomView(props: SidebarProps): JSX.Element {
-    if (props.view === 'preset')
+    const { pathname } = this.props.location
+    if (pathname === '/preset') {
+      const PRESET_TIMERANGES = getPresetDates()
       return (
-        <MainButton
-          label="Custom"
-          onClick={() => this.props.viewChange('custom')}
-        />
+        <Link
+          to={`/custom/${PRESET_TIMERANGES.setData1[0][0]}/${PRESET_TIMERANGES.setData1[0][1]}`}
+        >
+          <MainButton
+            label="Custom"
+            onClick={() => {
+              return null
+            }}
+          />
+        </Link>
       )
+    }
 
-    const searchButton = (
-      <MainButton
-        label="Search"
-        onClick={async () => {
-          await props.getData(
-            getISOString(this.state.start, false),
-            getISOString(this.state.end, true)
-          )
-        }}
-      />
-    )
+    const start = getISOString(this.state.start, false)
+    const end = getISOString(this.state.end, true)
+    const uri = `/custom/${start}/${end}`
 
     return (
       <>
-        <MainButton
-          label="Preset"
-          onClick={() => this.props.viewChange('preset')}
-        />
+        <Link to="/preset">
+          <MainButton
+            label="Preset"
+            onClick={() => {
+              return null
+            }}
+          />
+        </Link>
         <div style={calendarContainer}>
           <span>Range</span>
           <img style={calendarStyle} src={calendar} alt="calendar" />
@@ -202,7 +206,14 @@ class Sidebar extends Component<SidebarProps, SidebarState> {
           date={this.state.end}
           onChange={e => this.handleEndChange(e)}
         />
-        {props.loading === false ? searchButton : <Spinner />}
+        <Link to={uri}>
+          <MainButton
+            label="Search"
+            onClick={() => {
+              return null
+            }}
+          />
+        </Link>
       </>
     )
   }
@@ -214,9 +225,11 @@ class Sidebar extends Component<SidebarProps, SidebarState> {
         <hr style={divider} />
         {this.renderExchangeButtons(this.props)}
         <hr style={divider} />
-        <MainButton label="Logout" onClick={() => this.props.logout()} />
+        <NavLink to="/">
+          <MainButton label="Logout" onClick={() => this.props.logout()} />
+        </NavLink>
       </Sidetab>
     )
   }
 }
-export default Sidebar
+export default withRouter(Sidebar)

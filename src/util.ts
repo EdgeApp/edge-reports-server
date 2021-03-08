@@ -10,6 +10,7 @@ import nano from 'nano'
 import config from '../config.json'
 import { getAnalytics } from './apiAnalytics'
 import { AnalyticsResult, Bucket } from './demo/components/Graphs'
+import Partners from './demo/partners.json'
 
 const asDbReq = asObject({
   docs: asArray(
@@ -74,15 +75,15 @@ export const getPresetDates = function(): any {
   const DATE = new Date(Date.now())
   const HOUR_RANGE_END = add(startOfHour(DATE), { hours: 1 })
   const DAY_RANGE_END = add(startOfDay(DATE), { days: 1 })
-  const TRUE_DAY_RANGE_END = sub(DAY_RANGE_END, {
-    minutes: DAY_RANGE_END.getTimezoneOffset()
-  })
+  // const TRUE_DAY_RANGE_END = sub(DAY_RANGE_END, {
+  //   minutes: DAY_RANGE_END.getTimezoneOffset()
+  // })
   const MONTH_RANGE_END = add(startOfMonth(DATE), { months: 1 })
   const HOUR_RANGE_START = sub(HOUR_RANGE_END, { hours: 36 })
   const DAY_RANGE_START = sub(DAY_RANGE_END, { days: 75 })
-  const TRUE_DAY_RANGE_START = sub(DAY_RANGE_START, {
-    minutes: DAY_RANGE_START.getTimezoneOffset()
-  })
+  // const TRUE_DAY_RANGE_START = sub(DAY_RANGE_START, {
+  //   minutes: DAY_RANGE_START.getTimezoneOffset()
+  // })
   const MONTH_RANGE_START = sub(MONTH_RANGE_END, { months: 4 })
   const MONTH_RANGE_ARRAY = [[MONTH_RANGE_START, MONTH_RANGE_END]]
   for (let i = 0; i < 7; i++) {
@@ -99,8 +100,8 @@ export const getPresetDates = function(): any {
     ],
     setData2: [
       [
-        TRUE_DAY_RANGE_START.toISOString(),
-        new Date(TRUE_DAY_RANGE_END.getTime() - 1).toISOString()
+        DAY_RANGE_START.toISOString(),
+        new Date(DAY_RANGE_END.getTime() - 1).toISOString()
       ]
     ],
     setData3: MONTH_RANGE_ARRAY.map(array => {
@@ -351,4 +352,35 @@ const addGraphTotals = (
     0
   )
   return { totalTxs, totalUsd }
+}
+
+interface AppIdResponse {
+  appId: string
+  redirect: boolean
+}
+
+interface PluginIdsResponse {
+  pluginIds: string[]
+}
+
+export const getAppId = async (apiKey: string): Promise<AppIdResponse> => {
+  const url = `/v1/getAppId?apiKey=${apiKey}`
+  const response = await fetch(url)
+  const appId = await response.json()
+  let redirect = false
+  if (appId == null || appId === '') {
+    redirect = true
+  }
+  return { appId, redirect }
+}
+
+export const getPluginIds = async (
+  appId: string
+): Promise<PluginIdsResponse> => {
+  const partners = Object.keys(Partners)
+  const url = `/v1/getPluginIds?appId=${appId}`
+  const response = await fetch(url)
+  const json = await response.json()
+  const existingPartners = json.filter(pluginId => partners.includes(pluginId))
+  return { pluginIds: existingPartners }
 }
