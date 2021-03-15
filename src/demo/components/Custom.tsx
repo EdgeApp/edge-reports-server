@@ -2,7 +2,13 @@ import React, { Component } from 'react'
 import Loader from 'react-loader-spinner'
 import { Redirect, withRouter } from 'react-router-dom'
 
-import { getAppId, getCustomData, getPluginIds, getTimeRange } from '../../util'
+import {
+  calculateGraphTotals,
+  getAppId,
+  getCustomData,
+  getPluginIds,
+  getTimeRange
+} from '../../util'
 import Partners from '../partners.json'
 import Graphs, { AnalyticsResult } from './Graphs'
 import { largeGraphHolder, legend, legendHolder, legendKeys } from './Preset'
@@ -19,6 +25,23 @@ const smallGraphHolder = {
 const customLoader = {
   textAlign: 'center' as 'center',
   marginTop: '30px'
+}
+
+const totalsStyle = {
+  fontSize: '18px',
+  listStyleType: 'none' as 'none',
+  textAlign: 'left' as 'left'
+}
+
+const partnerTotalsHeaderStyle = {
+  fontSize: '20px',
+  marginTop: '10px',
+  textAlign: 'center' as 'center'
+}
+
+const partnerTotalsTableStyle = {
+  margin: '0 auto',
+  marginTop: '10px'
 }
 
 interface CustomProps {
@@ -121,7 +144,13 @@ class Custom extends Component<CustomProps, CustomState> {
       )
     })
 
+    const list: any[] = []
+
     const barGraphs = barGraphData.map((analytic, index) => {
+      const graphTotals = calculateGraphTotals(analytic)
+      graphTotals.partnerId =
+        analytic.pluginId.charAt(0).toUpperCase() + analytic.pluginId.slice(1)
+      list.push(graphTotals)
       return (
         <div key={analytic.pluginId} style={smallLegendAndGraphHolder}>
           {Partners[analytic.pluginId].type === this.props.exchangeType ||
@@ -140,6 +169,16 @@ class Custom extends Component<CustomProps, CustomState> {
       )
     })
 
+    const displayTable = list.map((partnerTotal, index) => {
+      return (
+        <tr style={totalsStyle} key={index}>
+          <th>{partnerTotal.partnerId}</th>
+          <th>{Math.floor(partnerTotal.totalUsd)}</th>
+          <th>{partnerTotal.totalTxs}</th>
+        </tr>
+      )
+    })
+
     return (
       <>
         <div>
@@ -148,6 +187,15 @@ class Custom extends Component<CustomProps, CustomState> {
             <Graphs rawData={barGraphData} timePeriod={this.props.timePeriod} />
           </div>
           <div>{barGraphs}</div>
+          <div style={partnerTotalsHeaderStyle}>All Partner Totals</div>
+          <table style={partnerTotalsTableStyle}>
+            <tr>
+              <th>Partner Name</th>
+              <th>Total USD</th>
+              <th>Total Transactions</th>
+            </tr>
+            {displayTable}
+          </table>
         </div>
       </>
     )
