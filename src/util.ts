@@ -319,3 +319,36 @@ export const cacheAnalytic = async (
   }
   return analyticResultArray
 }
+
+interface GraphTotals {
+  totalTxs: number
+  totalUsd: number
+  partnerId?: string
+}
+
+export const calculateGraphTotals = (
+  analyticsResult: AnalyticsResult
+): GraphTotals => {
+  if (analyticsResult.result.month.length > 0) {
+    return addGraphTotals(analyticsResult, 'month')
+  } else if (analyticsResult.result.day.length > 0) {
+    return addGraphTotals(analyticsResult, 'day')
+  } else if (analyticsResult.result.hour.length > 0) {
+    return addGraphTotals(analyticsResult, 'hour')
+  } else return { totalTxs: 0, totalUsd: 0 }
+}
+
+const addGraphTotals = (
+  analyticsResult: AnalyticsResult,
+  timePeriod: string
+): GraphTotals => {
+  const totalTxs = analyticsResult.result[timePeriod].reduce(
+    (a: number, b: Bucket) => a + b.numTxs,
+    0
+  )
+  const totalUsd = analyticsResult.result[timePeriod].reduce(
+    (a: number, b: Bucket) => a + b.usdValue,
+    0
+  )
+  return { totalTxs, totalUsd }
+}

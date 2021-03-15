@@ -1,5 +1,6 @@
 import React from 'react'
 
+import { calculateGraphTotals } from '../../util'
 import Partners from '../partners.json'
 import Graphs, { AnalyticsResult } from './Graphs'
 import { largeGraphHolder, legend, legendHolder, legendKeys } from './Preset'
@@ -11,6 +12,18 @@ const smallLegendAndGraphHolder = {
 
 const smallGraphHolder = {
   height: '400px'
+}
+
+const totalsStyle = {
+  fontSize: '18px',
+  listStyleType: 'none' as 'none',
+  textAlign: 'left' as 'left'
+}
+
+const partnerTotalsHeaderStyle = {
+  fontSize: '20px',
+  marginTop: '10px',
+  textAlign: 'center' as 'center'
 }
 
 const Custom: any = (props: {
@@ -43,7 +56,13 @@ const Custom: any = (props: {
     )
   })
 
+  const list: any[] = []
+
   const barGraphs = barGraphData.map((analytic, index) => {
+    const graphTotals = calculateGraphTotals(analytic)
+    graphTotals.partnerId =
+      analytic.pluginId.charAt(0).toUpperCase() + analytic.pluginId.slice(1)
+    list.push(graphTotals)
     return (
       <div key={analytic.pluginId} style={smallLegendAndGraphHolder}>
         {Partners[analytic.pluginId].type === props.exchangeType ||
@@ -59,6 +78,15 @@ const Custom: any = (props: {
     )
   })
 
+  const displayList = list.map((partnerTotal, index) => {
+    return (
+      <li style={totalsStyle} key={index}>
+        {partnerTotal.partnerId}: Txs: {partnerTotal.totalTxs}, Volume: $
+        {Math.floor(partnerTotal.totalUsd)}
+      </li>
+    )
+  })
+
   return (
     <>
       <div>
@@ -67,6 +95,8 @@ const Custom: any = (props: {
           <Graphs rawData={barGraphData} timePeriod={props.timePeriod} />
         </div>
         <div>{barGraphs}</div>
+        <div style={partnerTotalsHeaderStyle}>All Partner Totals</div>
+        <ul>{displayList}</ul>
       </div>
     </>
   )
