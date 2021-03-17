@@ -80,6 +80,7 @@
     "react-cookie": "^4.0.3",
     "react-datepicker": "^3.3.0",
     "react-loader-spinner": "^3.1.14",
+    "react-router-dom": "^5.2.0",
     "recharts": "^1.8.5",
     "web3": "^1.2.11"
   }
