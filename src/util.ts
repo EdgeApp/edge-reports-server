@@ -351,3 +351,38 @@ export const getPluginIds = async (
   const existingPartners = json.filter(pluginId => partners.includes(pluginId))
   return { pluginIds: existingPartners }
 }
+interface GraphTotals {
+  totalTxs: number
+  totalUsd: number
+  partnerId?: string
+}
+
+export const calculateGraphTotals = (
+  analyticsResult: AnalyticsResult
+): GraphTotals => {
+  if (analyticsResult.result.month.length > 0) {
+    return addGraphTotals(analyticsResult, 'month')
+  }
+  if (analyticsResult.result.day.length > 0) {
+    return addGraphTotals(analyticsResult, 'day')
+  }
+  if (analyticsResult.result.hour.length > 0) {
+    return addGraphTotals(analyticsResult, 'hour')
+  }
+  return { totalTxs: 0, totalUsd: 0 }
+}
+
+const addGraphTotals = (
+  analyticsResult: AnalyticsResult,
+  timePeriod: string
+): GraphTotals => {
+  const totalTxs = analyticsResult.result[timePeriod].reduce(
+    (a: number, b: Bucket) => a + b.numTxs,
+    0
+  )
+  const totalUsd = analyticsResult.result[timePeriod].reduce(
+    (a: number, b: Bucket) => a + b.usdValue,
+    0
+  )
+  return { totalTxs, totalUsd }
+}
