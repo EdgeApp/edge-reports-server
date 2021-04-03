@@ -8,7 +8,7 @@ import {
   getPluginIds,
   getPresetDates
 } from '../../util'
-import Partners from '../partners.json'
+import Partners from '../partners'
 import Graphs, { AnalyticsResult } from './Graphs'
 
 const PRESET_TIMERANGES = getPresetDates()

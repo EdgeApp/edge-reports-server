@@ -11,7 +11,7 @@ import {
 } from 'recharts'
 
 import { addObject, createQuarterBuckets } from '../../util'
-import Partners from '../partners.json'
+import Partners from '../partners'
 import Modal from './Modal'
 
 export interface Bucket {

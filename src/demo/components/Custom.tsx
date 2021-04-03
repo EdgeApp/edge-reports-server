@@ -9,7 +9,7 @@ import {
   getPluginIds,
   getTimeRange
 } from '../../util'
-import Partners from '../partners.json'
+import Partners from '../partners'
 import Graphs, { AnalyticsResult } from './Graphs'
 import { largeGraphHolder, legend, legendHolder, legendKeys } from './Preset'
 
