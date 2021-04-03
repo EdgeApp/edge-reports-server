@@ -10,7 +10,7 @@ import nano from 'nano'
 import config from '../config.json'
 import { getAnalytics } from './apiAnalytics'
 import { AnalyticsResult, Bucket } from './demo/components/Graphs'
-import Partners from './demo/partners.json'
+import Partners from './demo/partners'
 
 const asDbReq = asObject({
   docs: asArray(

@@ -13,7 +13,7 @@ import Custom from './components/Custom'
 import Preset from './components/Preset'
 import Sidebar from './components/Sidebar'
 import TimePeriods from './components/TimePeriods'
-import Partners from './partners.json'
+import Partners from './partners'
 
 const body = {
   margin: 0,
