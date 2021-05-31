@@ -3,8 +3,8 @@ import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
 import Web3 from 'web3'
 
-import { datelog } from '../util'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import { datelog } from '../util'
 
 const asCurrentBlockResult = asNumber
 
@@ -294,14 +294,12 @@ const PRIMARY_ABI: any = [
     type: 'function'
   }
 ]
-const PARITY_NODE_WEBSOCKET = 'wss://node.totlesystem.com'
-const web3 = new Web3(
-  new Web3.providers.WebsocketProvider(PARITY_NODE_WEBSOCKET)
-)
 
 export async function queryTotle(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const nodeEndpoint = pluginParams.apiKeys.nodeEndpoint // Grab node endpoint from 'reports_apps' database
+  const web3 = new Web3(nodeEndpoint) // Create new Web3 instance using node endpoint
   const ssFormatTxs: StandardTx[] = []
   let partnerContractAddress
   let offset = 7000000

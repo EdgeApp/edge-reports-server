@@ -56,7 +56,7 @@ export async function queryTransak(
   let done = false
 
   while (!done) {
-    const url = `https://api.transak.com/api/v1/partners/orders/?partnerAPISecret=${apiKey}&limit=${PAGE_LIMIT}&skip=${offset}`
+    const url = `https://api.transak.com/api/v2/partners/orders/?partnerAPISecret=${apiKey}&limit=${PAGE_LIMIT}&skip=${offset}`
     try {
       const result = await fetch(url)
       resultJSON = asTransakResult(await result.json())
