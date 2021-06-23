@@ -1,4 +1,5 @@
 import { asArray, asNumber, asObject, asString } from 'cleaners'
+import { getTimezoneOffset } from 'date-fns-tz'
 import add from 'date-fns/add'
 import eachQuarterOfInterval from 'date-fns/eachQuarterOfInterval'
 import startOfDay from 'date-fns/startOfDay'
@@ -157,18 +158,24 @@ export const getTimeRange = (start: string, end: string): string => {
 }
 
 export const createQuarterBuckets = (analytics: AnalyticsResult): Bucket[] => {
-  const timezoneOffsetStart =
-    new Date(analytics.start).getTimezoneOffset() * 60 * 1000
-  const timezoneOffsetEnd =
-    new Date(analytics.end).getTimezoneOffset() * 60 * 1000
+  const localTimezoneDbName = Intl.DateTimeFormat().resolvedOptions().timeZone // Use 'Intl' object to get local timezone name
+  // The 'getTimezoneOffset' helper requires two parameters to account for DST, and it returns offset in milliseconds
+  const timezoneOffsetStart = getTimezoneOffset(
+    localTimezoneDbName,
+    new Date(analytics.start * 1000)
+  )
+  const timezoneOffsetEnd = getTimezoneOffset(
+    localTimezoneDbName,
+    new Date(analytics.end * 1000)
+  )
 
   const quarterIntervals = eachQuarterOfInterval({
-    start: new Date(analytics.start * 1000 + timezoneOffsetStart),
-    end: new Date(analytics.end * 1000 + timezoneOffsetEnd)
+    start: new Date(analytics.start * 1000 - timezoneOffsetStart),
+    end: new Date(analytics.end * 1000 - timezoneOffsetEnd)
   })
   const buckets = quarterIntervals.map(date => {
-    const timezoneOffset = date.getTimezoneOffset() * 60 * 1000
-    const realTimestamp = date.getTime() - timezoneOffset
+    const timezoneOffset = getTimezoneOffset(localTimezoneDbName, date)
+    const realTimestamp = date.getTime() + timezoneOffset
     return {
       start: realTimestamp / 1000,
       usdValue: 0,
