@@ -10,6 +10,7 @@ import { HashRouter, Route, Switch } from 'react-router-dom'
 
 import ApiKeyScreen from './components/ApiKeyScreen'
 import Custom from './components/Custom'
+import { MainScene } from './components/MainScene'
 import Preset from './components/Preset'
 import Sidebar from './components/Sidebar'
 import TimePeriods from './components/TimePeriods'
@@ -124,51 +125,53 @@ class App extends Component<
               appId={this.state.appId}
               exchangeType={this.state.exchangeType}
             />
-            <Route
-              exact
-              path="/"
-              children={
-                <ApiKeyScreen
-                  apiKeyMessage={this.state.apiKeyMessage}
-                  handleApiKeyChange={e => this.handleApiKeyChange(e)}
-                  getAppId={this.getAppId}
-                  appId={this.state.appId}
-                />
-              }
-            />
-            <Route
-              exact
-              path="/preset"
-              children={
-                <Preset
-                  apiKey={this.state.apiKey}
-                  exchangeType={this.state.exchangeType}
-                />
-              }
-            />
-            <Route
-              exact
-              path="/custom/:start?/:end?"
-              children={props => {
-                return props.match != null ? (
-                  <>
-                    <TimePeriods
-                      timePeriod={this.state.timePeriod}
-                      changeTimePeriod={this.changeTimeperiod}
-                    />
-                    <Custom
-                      key={`${props.match.params.start}/${props.match.params.end}`}
-                      apiKey={this.state.apiKey}
-                      exchangeType={this.state.exchangeType}
-                      changeTimePeriod={this.changeTimeperiod}
-                      timePeriod={this.state.timePeriod}
-                    />
-                  </>
-                ) : (
-                  <></>
-                )
-              }}
-            />
+            <MainScene>
+              <Route
+                exact
+                path="/"
+                children={
+                  <ApiKeyScreen
+                    apiKeyMessage={this.state.apiKeyMessage}
+                    handleApiKeyChange={e => this.handleApiKeyChange(e)}
+                    getAppId={this.getAppId}
+                    appId={this.state.appId}
+                  />
+                }
+              />
+              <Route
+                exact
+                path="/preset"
+                children={
+                  <Preset
+                    apiKey={this.state.apiKey}
+                    exchangeType={this.state.exchangeType}
+                  />
+                }
+              />
+              <Route
+                exact
+                path="/custom/:start?/:end?"
+                children={props => {
+                  return props.match != null ? (
+                    <>
+                      <TimePeriods
+                        timePeriod={this.state.timePeriod}
+                        changeTimePeriod={this.changeTimeperiod}
+                      />
+                      <Custom
+                        key={`${props.match.params.start}/${props.match.params.end}`}
+                        apiKey={this.state.apiKey}
+                        exchangeType={this.state.exchangeType}
+                        changeTimePeriod={this.changeTimeperiod}
+                        timePeriod={this.state.timePeriod}
+                      />
+                    </>
+                  ) : (
+                    <></>
+                  )
+                }}
+              />
+            </MainScene>
           </div>
         </Switch>
       </HashRouter>
