@@ -187,7 +187,12 @@ const Graphs: any = (props: {
           >
             <CartesianGrid stroke="#f5f5f5" />
             <XAxis dataKey="date" />
-            <YAxis yAxisId="left" orientation="left" stroke="#000000" />
+            <YAxis
+              yAxisId="left"
+              orientation="left"
+              stroke="#000000"
+              width={105}
+            />
             <YAxis
               yAxisId="right"
               orientation="right"
