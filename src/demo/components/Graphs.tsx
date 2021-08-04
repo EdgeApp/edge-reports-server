@@ -23,7 +23,7 @@ export interface Bucket {
   currencyPairs: { [currencyPair: string]: number }
 }
 
-interface Data {
+export interface Data {
   date: string
   allUsd: number
   allTxs: number
