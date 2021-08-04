@@ -6,7 +6,9 @@ import nano from 'nano'
 
 import config from '../config.json'
 import { asDbTx } from './types'
-import { cacheAnalytic, getAnalytic } from './util'
+import { cacheAnalytic } from './util'
+
+const SIX_DAYS_IN_MINUTES = 6 * 24 * 60 * 60
 
 const asAnalyticsReq = asObject({
   start: asString,
@@ -94,9 +96,10 @@ async function main(): Promise<void> {
       res.status(400).send(`Missing Request Fields`)
       return
     }
-    let { start, end, appId, pluginIds, timePeriod } = analyticsQuery
-    timePeriod = timePeriod.toLowerCase()
-    const queryStart = new Date(start).getTime() / 1000
+    const { start, end, appId, pluginIds } = analyticsQuery
+    const timePeriod = analyticsQuery.timePeriod.toLowerCase()
+    const queryOffset = timePeriod === 'day' ? SIX_DAYS_IN_MINUTES : 0
+    const queryStart = new Date(start).getTime() / 1000 - queryOffset
     const queryEnd = new Date(end).getTime() / 1000
     if (
       !(queryStart > 0) ||
@@ -120,15 +123,6 @@ async function main(): Promise<void> {
       pluginIds,
       timePeriod
     )
-
-    // const result = await getAnalytic(
-    //   queryStart,
-    //   queryEnd,
-    //   appId,
-    //   pluginIds,
-    //   timePeriod,
-    //   reportsTransactions
-    // )
 
     res.json(result)
   })
