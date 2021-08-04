@@ -10,7 +10,7 @@ import {
   YAxis
 } from 'recharts'
 
-import { addObject, createQuarterBuckets } from '../../util'
+import { addObject, createQuarterBuckets, sevenDayDataMerge } from '../../util'
 import Partners from '../partners'
 import Modal from './Modal'
 
@@ -29,6 +29,10 @@ export interface Data {
   allTxs: number
   currencyPairsArray?: Array<[string, number]>
   currencyPairs: { [currencyPair: string]: number }
+}
+
+export interface DataPlusSevenDayAve extends Data {
+  sevenDayAve: number
 }
 
 export interface AnalyticsResult {
@@ -170,13 +174,18 @@ const Graphs: any = (props: {
     return <></>
   }
 
+  const dataArray = Object.values(data)
   return (
     <>
       <div style={graphHolder}>
         <div style={modalStyle}>{altModal}</div>
         <ResponsiveContainer>
           <ComposedChart
-            data={Object.values(data)}
+            data={
+              props.timePeriod === 'day'
+                ? sevenDayDataMerge(dataArray)
+                : dataArray
+            }
             margin={{
               top: 20,
               right: 20,
@@ -213,9 +222,22 @@ const Graphs: any = (props: {
               type="monotone"
               dataKey="allTxs"
               dot={false}
-              stroke="#000000"
+              stroke="#4E4E4E"
               animationDuration={0}
+              strokeWidth={5}
             />
+            {props.timePeriod === 'day' && (
+              // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+              <Line
+                yAxisId="left"
+                type="natural"
+                dataKey="sevenDayAve"
+                dot={false}
+                stroke="#F4b183"
+                animationDuration={0}
+                strokeWidth={5}
+              />
+            )}
           </ComposedChart>
         </ResponsiveContainer>
       </div>
