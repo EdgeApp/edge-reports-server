@@ -10,8 +10,15 @@ import nano from 'nano'
 
 import config from '../config.json'
 import { getAnalytics } from './apiAnalytics'
-import { AnalyticsResult, Bucket } from './demo/components/Graphs'
+import {
+  AnalyticsResult,
+  Bucket,
+  Data,
+  DataPlusSevenDayAve
+} from './demo/components/Graphs'
 import Partners from './demo/partners'
+
+export const SIX_DAYS = 6
 
 const asDbReq = asObject({
   docs: asArray(
@@ -392,4 +399,44 @@ const addGraphTotals = (
     0
   )
   return { totalTxs, totalUsd }
+}
+
+export const movingAveDataSort = (
+  data: Data[]
+): Array<{ date: string; allUsd: number }> => {
+  const aveArray: Array<{ date: string; allUsd: number }> = []
+  if (!Array.isArray(data)) return aveArray
+  for (let i = 0; i < data.length; i++) {
+    let sevenDaySum: number = 0
+    for (let j = i; j >= i - SIX_DAYS; j--) {
+      if (j < 0) {
+        continue
+      }
+      const currentData: Data = data[j]
+      sevenDaySum += currentData.allUsd
+    }
+    if (typeof sevenDaySum !== 'number' || isNaN(sevenDaySum)) return []
+    const sevenDayAve: number = Math.round(sevenDaySum / 7)
+    aveArray.push({ date: data[i].date, allUsd: sevenDayAve })
+  }
+  return aveArray
+}
+
+export const sevenDayDataMerge = (data: Data[]): DataPlusSevenDayAve[] => {
+  const sevenDayDataArr: DataPlusSevenDayAve[] = []
+  const sevenDayData = movingAveDataSort(data)
+  if (!Array.isArray(data) || sevenDayData.length === 0) {
+    return sevenDayDataArr
+  }
+  data.forEach(object => {
+    const sevenDayIndex = sevenDayData.findIndex(
+      obj => obj.date === object.date
+    )
+    const sevenDayAve = sevenDayData[sevenDayIndex].allUsd
+    sevenDayDataArr.push({
+      ...object,
+      sevenDayAve: sevenDayAve
+    })
+  })
+  return sevenDayDataArr.slice(SIX_DAYS)
 }
