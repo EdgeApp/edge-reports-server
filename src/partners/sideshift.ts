@@ -7,7 +7,8 @@ import { datelog } from '../util'
 
 const asSideshiftTx = asObject({
   id: asString,
-  depositAddress: asObject({ address: asMaybe(asString) }),
+  depositAddress: asMaybe(asObject({ address: asMaybe(asString) })),
+  prevDepositAddresses: asMaybe(asObject({ address: asMaybe(asString) })),
   depositAsset: asString,
   invoiceAmount: asString,
   settleAddress: asObject({
@@ -50,7 +51,8 @@ async function fetchTransactions(
 
     return orders.map(order => {
       const tx = asSideshiftTx(order)
-      const depositAddress = tx.depositAddress.address ?? undefined
+      const depositAddress =
+        tx.depositAddress?.address ?? tx.prevDepositAddresses?.address
 
       return {
         status: 'complete',
