@@ -8,7 +8,7 @@ import config from '../config.json'
 import { asDbTx } from './types'
 import { cacheAnalytic } from './util'
 
-const SIX_DAYS_IN_MINUTES = 6 * 24 * 60 * 60
+const SIX_DAYS_IN_SECONDS = 6 * 24 * 60 * 60
 
 const asAnalyticsReq = asObject({
   start: asString,
@@ -98,7 +98,7 @@ async function main(): Promise<void> {
     }
     const { start, end, appId, pluginIds } = analyticsQuery
     const timePeriod = analyticsQuery.timePeriod.toLowerCase()
-    const queryOffset = timePeriod === 'day' ? SIX_DAYS_IN_MINUTES : 0
+    const queryOffset = timePeriod.includes('day') ? SIX_DAYS_IN_SECONDS : 0
     const queryStart = new Date(start).getTime() / 1000 - queryOffset
     const queryEnd = new Date(end).getTime() / 1000
     if (
