@@ -34,6 +34,8 @@ const asDbReq = asObject({
 
 const BATCH_ADVANCE = 1000
 
+const SIX_DAYS_IN_SECONDS = 6 * 24 * 60 * 60
+
 export const datelog = function(...args: any): void {
   const date = new Date().toISOString()
   console.log(date, ...args)
@@ -292,17 +294,20 @@ export const cacheAnalytic = async (
       pluginId,
       result: { hour: [], day: [], month: [], numAllTxs: 0 }
     }
+    let startForDayTimePeriod
     for (timePeriod of timePeriods) {
       let database
       if (timePeriod === 'hour') database = reportsHour
-      else if (timePeriod === 'day') database = reportsDay
-      else {
+      else if (timePeriod === 'day') {
+        database = reportsDay
+        startForDayTimePeriod = start - SIX_DAYS_IN_SECONDS
+      } else {
         database = reportsMonth
       }
       const query = {
         selector: {
           usdValue: { $gte: 0 },
-          timestamp: { $gte: start, $lt: end }
+          timestamp: { $gte: startForDayTimePeriod ?? start, $lt: end }
         },
         use_index: 'timestamp-index',
         sort: ['timestamp'],

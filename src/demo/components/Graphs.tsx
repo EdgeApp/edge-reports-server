@@ -224,7 +224,6 @@ const Graphs: any = (props: {
               dot={false}
               stroke="#4E4E4E"
               animationDuration={0}
-              strokeWidth={5}
             />
             {props.timePeriod === 'day' && (
               // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
@@ -235,7 +234,6 @@ const Graphs: any = (props: {
                 dot={false}
                 stroke="#F4b183"
                 animationDuration={0}
-                strokeWidth={5}
               />
             )}
           </ComposedChart>
