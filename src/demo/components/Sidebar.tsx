@@ -5,14 +5,15 @@ import {
   startOfDay,
   startOfMonth,
   startOfQuarter,
+  startOfToday,
   startOfWeek,
   startOfYear,
+  startOfYesterday,
   sub
 } from 'date-fns'
 import React, { Component } from 'react'
 import { Link, NavLink, withRouter } from 'react-router-dom'
 
-import { getPresetDates } from '../../util'
 // @ts-ignore
 import calendar from '../images/calendar.png'
 import { MainButton, SecondaryButton } from './Buttons'
@@ -117,8 +118,8 @@ const getISOString = (date: Date, end: boolean): string => {
 class Sidebar extends Component<SidebarProps, SidebarState> {
   constructor(props) {
     super(props)
-    const start = new Date(Date.now() - 24 * 60 * 60 * 1000)
-    const end = new Date()
+    const start = startOfYesterday()
+    const end = startOfToday()
     this.state = {
       start,
       end
@@ -158,13 +159,14 @@ class Sidebar extends Component<SidebarProps, SidebarState> {
   ))
 
   renderCustomView(props: SidebarProps): JSX.Element {
+    const start = getISOString(this.state.start, false)
+    const end = getISOString(this.state.end, true)
+    const uri = `/custom/${start}/${end}`
+
     const { pathname } = this.props.location
     if (pathname === '/preset') {
-      const PRESET_TIMERANGES = getPresetDates()
       return (
-        <Link
-          to={`/custom/${PRESET_TIMERANGES.setData1[0][0]}/${PRESET_TIMERANGES.setData1[0][1]}`}
-        >
+        <Link to={uri}>
           <MainButton
             label="Custom"
             onClick={() => {
@@ -174,10 +176,6 @@ class Sidebar extends Component<SidebarProps, SidebarState> {
         </Link>
       )
     }
-
-    const start = getISOString(this.state.start, false)
-    const end = getISOString(this.state.end, true)
-    const uri = `/custom/${start}/${end}`
 
     return (
       <>
