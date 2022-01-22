@@ -76,7 +76,7 @@
     "date-fns-tz": "^1.1.4",
     "express": "^4.17.1",
     "nano": "^8.2.2",
-    "node-fetch": "^2.6.1",
+    "node-fetch": "^3.1.1",
     "prop-types": ">= 15.5.10 < 16.0.0",
     "react-cookie": "^4.0.3",
     "react-datepicker": "^3.3.0",
