@@ -18,7 +18,7 @@ const asGodexTx = asObject({
 
 const asGodexResult = asArray(asUnknown)
 
-const LIMIT = 500
+const LIMIT = 100
 const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
 
 export async function queryGodex(
@@ -46,9 +46,9 @@ export async function queryGodex(
   let newestTimestamp = 0
   try {
     while (!done) {
-      const url = `https://api.godex.io/api/v1/affiliate/history?status=success&limit=${LIMIT}&offset=${offset}`
+      const url = `https://api.nrnb.io/api/v1/affiliate/history?status=success&limit=${LIMIT}&offset=${offset}`
       const headers = {
-        Authorization: apiKey
+        'public-key': apiKey
       }
 
       const result = await fetch(url, { method: 'GET', headers: headers })
