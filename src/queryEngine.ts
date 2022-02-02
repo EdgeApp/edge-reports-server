@@ -15,6 +15,7 @@ import { faast } from './partners/faast'
 import { foxExchange } from './partners/foxExchange'
 import { gebo } from './partners/gebo'
 import { godex } from './partners/godex'
+import { letsexchange } from './partners/letsexchange'
 import { libertyx } from './partners/libertyx'
 import { moonpay } from './partners/moonpay'
 import { paytrie } from './partners/paytrie'
@@ -73,6 +74,7 @@ const partners = [
   foxExchange,
   gebo,
   godex,
+  letsexchange,
   libertyx,
   moonpay,
   paytrie,

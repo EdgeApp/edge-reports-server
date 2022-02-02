@@ -47,6 +47,10 @@ export default {
     type: 'swap',
     color: '#86c972'
   },
+  letsexchange: {
+    type: 'swap',
+    color: '#c0f060'
+  },
   libertyx: {
     type: 'fiat',
     color: '#c1ffaa'
