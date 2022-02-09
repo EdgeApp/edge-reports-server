@@ -3,6 +3,7 @@ import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { datelog } from '../util'
+import ApiKeyScreen from "../demo/components/ApiKeyScreen";
 
 const asLetsExchangeTx = asObject({
   transaction_id: asString,
@@ -46,7 +47,7 @@ export async function queryLetsExchange(
   let newestTimestamp = 0
   try {
     while (!done) {
-      const url = `https://api.letsexchange.io/api/v1/affiliate/history/TEFfWjFDyDkhnrlR?limit=${LIMIT}&page=${page}&status=success&types=0`
+      const url = `https://api.letsexchange.io/api/v1/affiliate/history/${apiKey}?limit=${LIMIT}&page=${page}&status=success&types=0`
       const headers = {}
 
       const result = await fetch(url, { method: 'GET', headers: headers })
