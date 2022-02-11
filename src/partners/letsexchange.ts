@@ -3,7 +3,6 @@ import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { datelog } from '../util'
-import ApiKeyScreen from "../demo/components/ApiKeyScreen";
 
 const asLetsExchangeTx = asObject({
   transaction_id: asString,
