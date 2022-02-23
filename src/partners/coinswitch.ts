@@ -8,9 +8,9 @@ import {
   asUnknown
 } from 'cleaners'
 import fetch from 'node-fetch'
-import { datelog } from '../util'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import { datelog } from '../util'
 
 const asCoinswitchTx = asObject({
   status: asString,
@@ -118,9 +118,17 @@ export async function queryCoinSwitch(
   return out
 }
 
+async function queryDummy(pluginParams: PluginParams): Promise<PluginResult> {
+  await Promise.resolve()
+  return {
+    settings: pluginParams.settings,
+    transactions: []
+  }
+}
+
 export const coinswitch: PartnerPlugin = {
   // queryFunc will take PluginSettings as arg and return PluginResult
-  queryFunc: queryCoinSwitch,
+  queryFunc: queryDummy,
   // results in a PluginResult
   pluginName: 'CoinSwitch',
   pluginId: 'coinswitch'

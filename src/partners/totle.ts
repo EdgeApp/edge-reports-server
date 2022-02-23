@@ -429,9 +429,18 @@ export async function queryTotle(
   return out
 }
 
+async function queryDummy(pluginParams: PluginParams): Promise<PluginResult> {
+  await Promise.resolve() // Makes ts happy
+  return {
+    settings: pluginParams.settings,
+    transactions: []
+  }
+}
+
 export const totle: PartnerPlugin = {
   // queryFunc will take PluginSettings as arg and return PluginResult
-  queryFunc: queryTotle,
+  // queryFunc: queryTotle,
+  queryFunc: queryDummy,
   // results in a PluginResult
   pluginName: 'Totle',
   pluginId: 'totle'

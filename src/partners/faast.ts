@@ -115,9 +115,17 @@ export async function queryFaast(
   return out
 }
 
+async function queryDummy(pluginParams: PluginParams): Promise<PluginResult> {
+  await Promise.resolve() // Makes ts happy
+  return {
+    settings: pluginParams.settings,
+    transactions: []
+  }
+}
+
 export const faast: PartnerPlugin = {
   // queryFunc will take PluginSettings as arg and return PluginResult
-  queryFunc: queryFaast,
+  queryFunc: queryDummy,
   // results in a PluginResult
   pluginName: 'Faast',
   pluginId: 'faast'
