@@ -33,6 +33,7 @@ async function main(partitionName: string): Promise<void> {
       'edge_foxExchange',
       'edge_gebo',
       'edge_godex',
+      'edge_letsexchange',
       'edge_libertyx',
       'edge_moonpay',
       'edge_safello',
