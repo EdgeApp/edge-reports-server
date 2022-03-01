@@ -314,6 +314,28 @@ const rawTxs = {
     bonus: 0.00004554195,
     execution_time: null
   },
+  letsexchange: {
+    id: 154332,
+    status: 'success',
+    transaction_id: '60b0cca8704a0',
+    coin_from: 'THETA',
+    coin_to: 'BTC',
+    deposit_amount: '14.798',
+    real_deposit_amount_btc: '0.00910839',
+    withdrawal_amount: '0.00260474',
+    deposit: '0x330d44d55c1c39c2ae4d5b5e9500ea93fa351864',
+    rate: '0.00017601',
+    fee: '0',
+    withdrawal: '19imrZggdYBrPvWKsAsu9Dtd1HM6yqrxzf',
+    user_id: null,
+    hash_in: 'efa319d3aa158130070f87a5d7fc3cd6cfbd625fff6cb06df1ea4dca621c0c1b',
+    affiliate_id: 'TEFfWjFDyDkhnrlR',
+    created_at: '1597324216',
+    profit: null,
+    type: null,
+    bonus: 0.00004554195,
+    execution_time: null
+  },
   libertyx: {
     all_transactions_count: 1,
     all_transactions_usd_sum: 20,
