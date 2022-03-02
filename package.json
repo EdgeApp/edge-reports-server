@@ -33,6 +33,28 @@
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": "eslint"
   },
+  "dependencies": {
+    "@types/node": "^14.0.22",
+    "api-changelly": "git://github.com/changelly/api-changelly.git#8e350f3",
+    "axios": "^0.19.2",
+    "biggystring": "^3.0.2",
+    "body-parser": "^1.19.0",
+    "cleaners": ">=0.2.1",
+    "commander": "^6.1.0",
+    "cors": "^2.8.5",
+    "date-fns": "^2.16.1",
+    "date-fns-tz": "^1.1.4",
+    "express": "^4.17.1",
+    "nano": "^8.2.2",
+    "node-fetch": "^2.6.1",
+    "prop-types": ">= 15.5.10 < 16.0.0",
+    "react-cookie": "^4.0.3",
+    "react-datepicker": "^3.3.0",
+    "react-loader-spinner": "^3.1.14",
+    "react-router-dom": "^5.2.0",
+    "recharts": "^1.8.5",
+    "web3": "^1.2.11"
+  },
   "devDependencies": {
     "@babel/core": "^7.8.4",
     "@babel/preset-react": "^7.8.3",
@@ -62,27 +84,5 @@
     "react-dom": "^16.9.0",
     "sucrase": "^3.20.0",
     "typescript": "^3.8.2"
-  },
-  "dependencies": {
-    "@types/node": "^14.0.22",
-    "api-changelly": "git://github.com/changelly/api-changelly.git#8e350f3",
-    "axios": "^0.19.2",
-    "biggystring": "^3.0.2",
-    "body-parser": "^1.19.0",
-    "cleaners": ">=0.2.1",
-    "commander": "^6.1.0",
-    "cors": "^2.8.5",
-    "date-fns": "^2.16.1",
-    "date-fns-tz": "^1.1.4",
-    "express": "^4.17.1",
-    "nano": "^8.2.2",
-    "node-fetch": "^2.6.1",
-    "prop-types": ">= 15.5.10 < 16.0.0",
-    "react-cookie": "^4.0.3",
-    "react-datepicker": "^3.3.0",
-    "react-loader-spinner": "^3.1.14",
-    "react-router-dom": "^5.2.0",
-    "recharts": "^1.8.5",
-    "web3": "^1.2.11"
   }
 }
