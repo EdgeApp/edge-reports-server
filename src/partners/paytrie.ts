@@ -1,8 +1,8 @@
 import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
-import { datelog } from '../util'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import { datelog } from '../util'
 
 const asPaytrieTx = asObject({
   inputTXID: asString,

@@ -147,8 +147,10 @@ export async function cacheEngine(): Promise<void> {
               })
               const _revs = await database.fetchRevs({ keys: documentIds })
               for (let i = 0; i < _revs.rows.length; i++) {
-                if (_revs.rows[i].error == null &&
-                  _revs.rows[i].value.deleted !== true) {
+                if (
+                  _revs.rows[i].error == null &&
+                  _revs.rows[i].value.deleted !== true
+                ) {
                   cacheResult[i]._rev = _revs.rows[i].value.rev
                 }
               }

@@ -8,9 +8,9 @@ import {
   asUnknown
 } from 'cleaners'
 import fetch from 'node-fetch'
-import { datelog } from '../util'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import { datelog } from '../util'
 
 const asCoinswitchTx = asObject({
   status: asString,

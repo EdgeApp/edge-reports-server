@@ -1,7 +1,6 @@
 import React, { PureComponent } from 'react'
 
-// @ts-ignore
-import logo from '../images/logo.png'
+const logo = new URL('../images/logo.png', import.meta.url).toString()
 
 interface SidetabProps {
   appId?: string

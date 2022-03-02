@@ -1,5 +1,5 @@
 # Build output:
-/.cache/
+/.parcel-cache/
 /cache/
 /dist/
 /lib/

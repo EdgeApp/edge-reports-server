@@ -14,11 +14,11 @@ import {
 import React, { Component } from 'react'
 import { Link, NavLink, withRouter } from 'react-router-dom'
 
-// @ts-ignore
-import calendar from '../images/calendar.png'
 import { MainButton, SecondaryButton } from './Buttons'
 import Sidetab from './Sidetab'
 import TimePicker from './TimePicker'
+
+const calendar = new URL('../images/calendar.png', import.meta.url).toString()
 
 interface SidebarProps {
   location: any
