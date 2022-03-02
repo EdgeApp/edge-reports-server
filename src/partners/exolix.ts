@@ -120,5 +120,5 @@ export const exolix: PartnerPlugin = {
   queryFunc: queryExolix,
   // results in a PluginResult
   pluginName: 'Exolix',
-  pluginId: 'Exolix'
+  pluginId: 'exolix'
 }
