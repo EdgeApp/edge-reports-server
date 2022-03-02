@@ -1,9 +1,9 @@
 import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import crypto from 'crypto'
 import fetch from 'node-fetch'
-import { datelog, snooze } from '../util'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import { datelog, snooze } from '../util'
 
 const asBanxaTx = asObject({
   created_at: asString,
