@@ -42,8 +42,11 @@ const CURRENCY_CONVERSION = {
   USDT20: 'USDT',
   USDTERC20: 'USDT',
   BCHABC: 'BCH',
-  BCHSV: 'BSV'
+  BCHSV: 'BSV',
+  FTMMAINNET: 'FTM',
+  BNBMAINNET: 'BNB'
 }
+
 const DB_NAMES = [
   { name: 'reports_apps' },
   {
