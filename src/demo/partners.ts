@@ -31,6 +31,10 @@ export default {
     type: 'swap',
     color: '#ffbec0'
   },
+  exolix: {
+    type: 'swap',
+    color: '#888400'
+  },
   faast: {
     type: 'swap',
     color: '#006400'
