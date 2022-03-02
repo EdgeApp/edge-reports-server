@@ -11,6 +11,7 @@ import { bity } from './partners/bity'
 import { changelly } from './partners/changelly'
 import { changenow } from './partners/changenow'
 import { coinswitch } from './partners/coinswitch'
+import { exolix } from './partners/exolix'
 import { faast } from './partners/faast'
 import { foxExchange } from './partners/foxExchange'
 import { gebo } from './partners/gebo'
@@ -70,6 +71,7 @@ const partners = [
   changelly,
   changenow,
   coinswitch,
+  exolix,
   faast,
   foxExchange,
   gebo,
