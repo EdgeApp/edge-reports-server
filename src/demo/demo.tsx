@@ -2,7 +2,6 @@ import 'regenerator-runtime/runtime'
 import 'react-datepicker/dist/react-datepicker.css'
 import './demo.css'
 
-import fetch from 'node-fetch'
 import { instanceOf } from 'prop-types'
 import React, { Component } from 'react'
 import { Cookies, withCookies } from 'react-cookie'
