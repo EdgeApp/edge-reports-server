@@ -10,9 +10,7 @@ import { bitsofgold } from './partners/bitsofgold'
 import { bity } from './partners/bity'
 import { changelly } from './partners/changelly'
 import { changenow } from './partners/changenow'
-import { coinswitch } from './partners/coinswitch'
 import { exolix } from './partners/exolix'
-import { faast } from './partners/faast'
 import { foxExchange } from './partners/foxExchange'
 import { gebo } from './partners/gebo'
 import { godex } from './partners/godex'
@@ -21,11 +19,9 @@ import { libertyx } from './partners/libertyx'
 import { moonpay } from './partners/moonpay'
 import { paytrie } from './partners/paytrie'
 import { safello } from './partners/safello'
-import { shapeshift } from './partners/shapeshift'
 import { sideshift } from './partners/sideshift'
 import { simplex } from './partners/simplex'
 import { switchain } from './partners/switchain'
-import { totle } from './partners/totle'
 import { transak } from './partners/transak'
 import { wyre } from './partners/wyre'
 import { asProgressSettings, DbTx, StandardTx } from './types'
@@ -73,9 +69,7 @@ const partners = [
   bitrefill,
   changelly,
   changenow,
-  coinswitch,
   exolix,
-  faast,
   foxExchange,
   gebo,
   godex,
@@ -84,10 +78,8 @@ const partners = [
   moonpay,
   paytrie,
   safello,
-  shapeshift,
   sideshift,
   switchain,
-  totle,
   transak,
   simplex,
   wyre
@@ -215,7 +207,7 @@ async function runPlugin(
     const plugin = partners.find(partner => partner.pluginId === pluginId)
     // if current plugin is not within the list of partners skip to next
     if (plugin === undefined) {
-      errorText = `Plugin Name ${pluginId} for app: ${app.appId} not found`
+      errorText = `Missing or disabled plugin for partner: ${pluginId}, app: ${app.appId}`
       datelog(errorText)
       return errorText
     }
