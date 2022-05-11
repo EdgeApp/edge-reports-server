@@ -15,8 +15,9 @@ const asLetsExchangeTx = asObject({
   created_at: asString
 })
 
-const asLetsExchangeResult = asArray(asUnknown)
-
+const asLetsExchangeResult = asObject({
+  data: asArray(asUnknown)
+})
 const LIMIT = 100
 const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
 
@@ -47,7 +48,7 @@ export async function queryLetsExchange(
 
     const result = await fetch(url, { method: 'GET' })
     const resultJSON = await result.json()
-    const txs = asLetsExchangeResult(resultJSON)
+    const { data: txs } = asLetsExchangeResult(resultJSON)
 
     for (const rawTx of txs) {
       const tx = asLetsExchangeTx(rawTx)
