@@ -167,7 +167,7 @@ async function getExchangeRate(
   currencyB: string,
   date: string
 ): Promise<number> {
-  const url = `https://rates1.edge.app/v1/exchangeRate?currency_pair=${currencyA}_${currencyB}&date=${date}`
+  const url = `https://rates2.edge.app/v1/exchangeRate?currency_pair=${currencyA}_${currencyB}&date=${date}`
   try {
     const result = await fetch(url, { method: 'GET' })
     const jsonObj = await result.json()
