@@ -3,7 +3,12 @@ import nano from 'nano'
 import fetch from 'node-fetch'
 
 import config from '../config.json'
-import { asDbTx, DbTx } from './types'
+import {
+  asDbCurrencyCodeMappings,
+  asDbTx,
+  CurrencyCodeMappings,
+  DbTx
+} from './types'
 import { datelog } from './util'
 
 const nanoDb = nano(config.couchDbFullpath)
@@ -19,8 +24,14 @@ export async function ratesEngine(): Promise<void> {
   const dbTransactions: nano.DocumentScope<DbTx> = nanoDb.db.use(
     'reports_transactions'
   )
+  const dbSettings: nano.DocumentScope<unknown> = nanoDb.db.use(
+    'reports_settings'
+  )
   let bookmark
   while (true) {
+    const result2 = await dbSettings.get('currencyCodeMappings')
+    const { mappings } = asDbCurrencyCodeMappings(result2)
+
     const query = {
       selector: {
         $or: [
@@ -59,7 +70,7 @@ export async function ratesEngine(): Promise<void> {
         datelog('Bad Transaction', doc)
         continue
       }
-      const p = updateTxValues(doc).catch(e => {
+      const p = updateTxValues(doc, mappings).catch(e => {
         datelog('updateTx failed', e)
       })
       promiseArray.push(p)
@@ -80,9 +91,19 @@ export async function ratesEngine(): Promise<void> {
   }
 }
 
-export async function updateTxValues(transaction: DbTx): Promise<void> {
+export async function updateTxValues(
+  transaction: DbTx,
+  mappings: CurrencyCodeMappings
+): Promise<void> {
   let success = false
   const date: string = transaction.isoDate
+  if (mappings[transaction.depositCurrency] != null) {
+    transaction.depositCurrency = mappings[transaction.depositCurrency]
+  }
+  if (mappings[transaction.payoutCurrency] != null) {
+    transaction.payoutCurrency = mappings[transaction.payoutCurrency]
+  }
+
   if (transaction.payoutAmount === 0) {
     const exchangeRate = await getExchangeRate(
       transaction.depositCurrency,
