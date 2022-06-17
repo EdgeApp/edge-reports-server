@@ -155,7 +155,9 @@ export async function updateTxValues(transaction: DbTx): Promise<void> {
   if (success) {
     datelog(`SUCCESS id:${transaction._id} updated`)
   } else {
-    datelog(`FAIL    id:${transaction._id} not updated`)
+    datelog(
+      `FAIL    id:${transaction._id} not updated ${transaction.isoDate} ${transaction.depositCurrency} ${transaction.payoutCurrency}`
+    )
     transaction._id = undefined
   }
 }
