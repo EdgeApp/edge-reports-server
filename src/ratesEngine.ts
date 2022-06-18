@@ -37,7 +37,9 @@ export async function ratesEngine(): Promise<void> {
         $or: [
           { usdValue: { $exists: false } },
           { usdValue: { $eq: null } },
-          { payoutAmount: { $eq: 0 } }
+          {
+            $and: [{ payoutAmount: { $eq: 0 } }, { depositAmount: { $gt: 0 } }]
+          }
         ]
       },
       bookmark,
