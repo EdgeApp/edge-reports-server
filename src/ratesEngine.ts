@@ -185,12 +185,21 @@ export async function updateTxValues(
   }
 }
 
+const dateRoundDownHour = (dateString: string): string => {
+  const date = new Date(dateString)
+  date.setMinutes(0)
+  date.setSeconds(0)
+  date.setMilliseconds(0)
+  return new Date(date).toISOString()
+}
+
 async function getExchangeRate(
   currencyA: string,
   currencyB: string,
   date: string
 ): Promise<number> {
-  const url = `https://rates2.edge.app/v1/exchangeRate?currency_pair=${currencyA}_${currencyB}&date=${date}`
+  const hourDate = dateRoundDownHour(date)
+  const url = `https://rates2.edge.app/v1/exchangeRate?currency_pair=${currencyA}_${currencyB}&date=${hourDate}`
   try {
     const result = await fetch(url, { method: 'GET' })
     const jsonObj = await result.json()
