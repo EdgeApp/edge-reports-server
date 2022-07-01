@@ -3,7 +3,12 @@ import nano from 'nano'
 import fetch from 'node-fetch'
 
 import config from '../config.json'
-import { asDbTx, DbTx } from './types'
+import {
+  asDbCurrencyCodeMappings,
+  asDbTx,
+  CurrencyCodeMappings,
+  DbTx
+} from './types'
 import { datelog } from './util'
 
 const nanoDb = nano(config.couchDbFullpath)
@@ -19,14 +24,22 @@ export async function ratesEngine(): Promise<void> {
   const dbTransactions: nano.DocumentScope<DbTx> = nanoDb.db.use(
     'reports_transactions'
   )
+  const dbSettings: nano.DocumentScope<unknown> = nanoDb.db.use(
+    'reports_settings'
+  )
   let bookmark
   while (true) {
+    const result2 = await dbSettings.get('currencyCodeMappings')
+    const { mappings } = asDbCurrencyCodeMappings(result2)
+
     const query = {
       selector: {
         $or: [
           { usdValue: { $exists: false } },
           { usdValue: { $eq: null } },
-          { payoutAmount: { $eq: 0 } }
+          {
+            $and: [{ payoutAmount: { $eq: 0 } }, { depositAmount: { $gt: 0 } }]
+          }
         ]
       },
       bookmark,
@@ -59,7 +72,7 @@ export async function ratesEngine(): Promise<void> {
         datelog('Bad Transaction', doc)
         continue
       }
-      const p = updateTxValues(doc).catch(e => {
+      const p = updateTxValues(doc, mappings).catch(e => {
         datelog('updateTx failed', e)
       })
       promiseArray.push(p)
@@ -80,9 +93,19 @@ export async function ratesEngine(): Promise<void> {
   }
 }
 
-export async function updateTxValues(transaction: DbTx): Promise<void> {
+export async function updateTxValues(
+  transaction: DbTx,
+  mappings: CurrencyCodeMappings
+): Promise<void> {
   let success = false
   const date: string = transaction.isoDate
+  if (mappings[transaction.depositCurrency] != null) {
+    transaction.depositCurrency = mappings[transaction.depositCurrency]
+  }
+  if (mappings[transaction.payoutCurrency] != null) {
+    transaction.payoutCurrency = mappings[transaction.payoutCurrency]
+  }
+
   if (transaction.payoutAmount === 0) {
     const exchangeRate = await getExchangeRate(
       transaction.depositCurrency,
@@ -155,7 +178,9 @@ export async function updateTxValues(transaction: DbTx): Promise<void> {
   if (success) {
     datelog(`SUCCESS id:${transaction._id} updated`)
   } else {
-    datelog(`FAIL    id:${transaction._id} not updated`)
+    datelog(
+      `FAIL    id:${transaction._id} not updated ${transaction.isoDate} ${transaction.depositCurrency} ${transaction.payoutCurrency}`
+    )
     transaction._id = undefined
   }
 }
@@ -165,7 +190,7 @@ async function getExchangeRate(
   currencyB: string,
   date: string
 ): Promise<number> {
-  const url = `https://rates1.edge.app/v1/exchangeRate?currency_pair=${currencyA}_${currencyB}&date=${date}`
+  const url = `https://rates2.edge.app/v1/exchangeRate?currency_pair=${currencyA}_${currencyB}&date=${date}`
   try {
     const result = await fetch(url, { method: 'GET' })
     const jsonObj = await result.json()

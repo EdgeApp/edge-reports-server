@@ -45,6 +45,7 @@ const CURRENCY_CONVERSION = {
 
 const DB_NAMES = [
   { name: 'reports_apps' },
+  { name: 'reports_settings' },
   {
     name: 'reports_transactions',
     options: { partitioned: true },

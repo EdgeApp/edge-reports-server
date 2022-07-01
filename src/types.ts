@@ -52,6 +52,13 @@ export const asProgressSettings = asObject({
   progressCache: asMap((raw: any): any => raw)
 })
 
+export const asCurrencyCodeMappings = asMap(asString)
+export const asDbCurrencyCodeMappings = asObject({
+  mappings: asCurrencyCodeMappings
+})
+
+export type CurrencyCodeMappings = ReturnType<typeof asCurrencyCodeMappings>
+export type DbCurrencyCodeMappings = ReturnType<typeof asDbCurrencyCodeMappings>
 export type DbTx = ReturnType<typeof asDbTx>
 export type StandardTx = ReturnType<typeof asStandardTx>
 export type PluginParams = ReturnType<typeof asPluginParams>

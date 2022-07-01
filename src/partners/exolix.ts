@@ -29,7 +29,7 @@ const asExolixResult = asObject({
 })
 
 const PAGE_LIMIT = 100
-const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
+const QUERY_LOOKBACK = 60 * 60 * 24 * 1 // 1 days
 
 export async function queryExolix(
   pluginParams: PluginParams
