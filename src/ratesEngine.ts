@@ -29,6 +29,7 @@ export async function ratesEngine(): Promise<void> {
   )
   let bookmark
   while (true) {
+    datelog('Querying missing rates')
     const result2 = await dbSettings.get('currencyCodeMappings')
     const { mappings } = asDbCurrencyCodeMappings(result2)
 
@@ -194,6 +195,9 @@ async function getExchangeRate(
   try {
     const result = await fetch(url, { method: 'GET' })
     const jsonObj = await result.json()
+    datelog(
+      `Rate for ${currencyA} -> ${currencyB} ${date}: ${jsonObj.exchangeRate}`
+    )
     return parseFloat(jsonObj.exchangeRate)
   } catch (e) {
     datelog(

@@ -71,9 +71,9 @@ export async function queryBanxa(
     let page = 1
     let attempt = 1
     while (true) {
-      datelog(
-        `BANXA: Calling API with date ${currentQuery}, result size ${PAGE_LIMIT} and offset ${page} for attempt ${attempt}`
-      )
+      // datelog(
+      //   `BANXA: Calling API with date ${currentQuery}, result size ${PAGE_LIMIT} and offset ${page} for attempt ${attempt}`
+      // )
       const apiResponse = await callBanxaAPI(
         currentQuery,
         PAGE_LIMIT,

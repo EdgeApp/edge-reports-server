@@ -117,6 +117,7 @@ export async function queryEngine(): Promise<void> {
   const dbApps = nanoDb.db.use('reports_apps')
 
   while (true) {
+    datelog('Starting query loop...')
     // get the contents of all reports_apps docs
     const query = {
       selector: {
@@ -221,7 +222,7 @@ async function runPlugin(
     const plugin = partners.find(partner => partner.pluginId === pluginId)
     // if current plugin is not within the list of partners skip to next
     if (plugin === undefined) {
-      errorText = `Missing or disabled plugin for partner: ${pluginId}, app: ${app.appId}`
+      errorText = `Missing or disabled plugin ${app.appId.toLowerCase()}_${pluginId}`
       datelog(errorText)
       return errorText
     }
@@ -231,7 +232,9 @@ async function runPlugin(
     const progressCacheFileName = `${app.appId.toLowerCase()}:${pluginId}`
     const out = await dbProgress.get(progressCacheFileName).catch(e => {
       if (e.error != null && e.error === 'not_found') {
-        datelog('Previous Progress Record Not Found')
+        datelog(
+          `Previous Progress Record Not Found ${app.appId.toLowerCase()}_${pluginId}`
+        )
         return {}
       } else {
         console.log(e)
@@ -253,7 +256,7 @@ async function runPlugin(
     // set apiKeys and settings for use in partner's function
     const apiKeys = app.pluginIds[pluginId]
     const settings = progressSettings.progressCache
-    datelog(`Querying partner: ${pluginId}, app: ${app.appId}`)
+    datelog(`Querying ${app.appId.toLowerCase()}_${pluginId}`)
     // run the plugin function
     const result = await promiseTimeout(
       'queryFunc',
@@ -262,6 +265,7 @@ async function runPlugin(
         settings
       })
     )
+    datelog(`Successful query: ${app.appId.toLowerCase()}_${pluginId}`)
 
     await promiseTimeout(
       'insertTransactions',
@@ -275,11 +279,11 @@ async function runPlugin(
     )
     // Returning a successful completion message
     const completionTime = (Date.now() - start) / 1000
-    const successfulCompletionMessage = `Finished updating database with transactions and settings for partner: ${pluginId}, app: ${app.appId} in ${completionTime} seconds.`
+    const successfulCompletionMessage = `Successful update: ${app.appId.toLowerCase()}_${pluginId} in ${completionTime} seconds.`
     datelog(successfulCompletionMessage)
     return successfulCompletionMessage
   } catch (e) {
-    errorText = `Error running partner: ${pluginId}, app: ${app.appId}.  Error message: ${e}`
+    errorText = `Error: ${app.appId.toLowerCase()}_${pluginId}. Error message: ${e}`
     datelog(errorText)
     return errorText
   }
