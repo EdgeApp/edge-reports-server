@@ -85,7 +85,7 @@ const partners = [
   simplex,
   wyre
 ]
-const QUERY_FREQ_MS = 29 * 60 * 1000
+const QUERY_FREQ_MS = 60 * 1000
 const MAX_CONCURRENT_QUERIES = 3
 const snooze: Function = async (ms: number) =>
   new Promise((resolve: Function) => setTimeout(resolve, ms))
