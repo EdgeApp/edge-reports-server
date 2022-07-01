@@ -32,7 +32,7 @@ const asDbReq = asObject({
   )
 })
 
-const BATCH_ADVANCE = 1000
+const BATCH_ADVANCE = 100
 
 const SIX_DAYS_IN_SECONDS = 6 * 24 * 60 * 60
 
