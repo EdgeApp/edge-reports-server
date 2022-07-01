@@ -1,4 +1,4 @@
-import { asObject, asString } from 'cleaners'
+import { asNumber, asObject, asOptional, asString } from 'cleaners'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
@@ -21,19 +21,36 @@ export type WyreTx = ReturnType<typeof asWyreTx>
 
 const asWyreResult = asString
 
+const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 7 // 7 days
+
+const asWyreParams = asObject({
+  apiKeys: asObject({ apiKey: asString }),
+  settings: asOptional(asObject({ lastTxTimestamp: asNumber }), {
+    lastTxTimestamp: 0
+  })
+})
+
 export async function queryWyre(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
   const ssFormatTxs: StandardTx[] = []
-  let apiKey
-  if (typeof pluginParams.apiKeys.apiKey === 'string') {
-    apiKey = pluginParams.apiKeys.apiKey
-  } else {
+
+  // lastTxTimestamp is in JS milliseconds
+  let apiKey, lastTxTimestamp
+
+  try {
+    const { apiKeys, settings } = asWyreParams(pluginParams)
+    apiKey = apiKeys.apiKey
+    lastTxTimestamp = settings.lastTxTimestamp
+  } catch (e) {
     return {
-      settings: {},
+      settings: { lastTxTimestamp: 0 },
       transactions: []
     }
   }
+
+  let newestTxTimestamp = lastTxTimestamp - QUERY_LOOKBACK
+  if (newestTxTimestamp < 0) newestTxTimestamp = 0
 
   const parseTxStr = (txStr): WyreTx => {
     const txItems = txStr.split(',')
@@ -65,6 +82,13 @@ export async function queryWyre(
     const tx = asWyreTx(parseTxStr(txStr))
     if (tx.status === 'COMPLETED' && tx.sourceCurrency !== tx.destCurrency) {
       const date = new Date(tx.createdAt)
+      const dateMs = date.getTime()
+      if (dateMs < lastTxTimestamp) {
+        continue
+      }
+      if (dateMs > newestTxTimestamp) {
+        newestTxTimestamp = dateMs
+      }
 
       const ssTx: StandardTx = {
         status: 'complete',
@@ -77,17 +101,18 @@ export async function queryWyre(
         payoutAddress: undefined,
         payoutCurrency: tx.destCurrency,
         payoutAmount: parseFloat(tx.destAmount),
-        timestamp: date.getTime() / 1000,
+        timestamp: dateMs / 1000,
         isoDate: date.toISOString(),
         usdValue: parseFloat(tx.usdEquiv),
         rawTx: txStr
       }
+
       ssFormatTxs.push(ssTx)
     }
   }
 
   const out: PluginResult = {
-    settings: {},
+    settings: { lastTxTimestamp: newestTxTimestamp },
     transactions: ssFormatTxs
   }
   return out
