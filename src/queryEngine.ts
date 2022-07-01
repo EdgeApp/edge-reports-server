@@ -25,7 +25,7 @@ import { switchain } from './partners/switchain'
 import { transak } from './partners/transak'
 import { wyre } from './partners/wyre'
 import { asProgressSettings, DbTx, StandardTx } from './types'
-import { datelog, pagination } from './util'
+import { datelog, pagination, promiseTimeout } from './util'
 
 const asApp = asObject({
   appId: asString,
@@ -86,6 +86,7 @@ const partners = [
   wyre
 ]
 const QUERY_FREQ_MS = 29 * 60 * 1000
+const MAX_CONCURRENT_QUERIES = 3
 const snooze: Function = async (ms: number) =>
   new Promise((resolve: Function) => setTimeout(resolve, ms))
 
@@ -126,11 +127,13 @@ export async function queryEngine(): Promise<void> {
     }
     const rawApps = await dbApps.find(query)
     const apps = asApps(rawApps.docs)
-    const promiseArray: Array<Promise<string>> = []
+    let promiseArray: Array<Promise<string>> = []
     let remainingPlugins: String[] = []
     // loop over every app
     for (const app of apps) {
+      let partnerStatus: string[] = []
       // loop over every pluginId that app uses
+      remainingPlugins = Object.keys(app.pluginIds)
       for (const pluginId in app.pluginIds) {
         remainingPlugins.push(pluginId)
         promiseArray.push(
@@ -143,9 +146,16 @@ export async function queryEngine(): Promise<void> {
             }
           })
         )
+        if (promiseArray.length >= MAX_CONCURRENT_QUERIES) {
+          const status = await Promise.all(promiseArray)
+          // log how long every app + plugin took to run
+          datelog(status)
+          partnerStatus = [...partnerStatus, ...status]
+          promiseArray = []
+        }
       }
+      datelog(partnerStatus)
     }
-    // await the conclusion of every app + plugin combo created above.
     const partnerStatus = await Promise.all(promiseArray)
     // log how long every app + plugin took to run
     datelog(partnerStatus)
@@ -189,7 +199,10 @@ async function insertTransactions(
     transactionsArray.push(newObj)
   }
   try {
-    await pagination(transactionsArray, dbTransactions)
+    await promiseTimeout(
+      'pagination',
+      pagination(transactionsArray, dbTransactions)
+    )
   } catch (e) {
     datelog('Error doing bulk transaction insert', e)
     throw e
@@ -242,17 +255,24 @@ async function runPlugin(
     const settings = progressSettings.progressCache
     datelog(`Querying partner: ${pluginId}, app: ${app.appId}`)
     // run the plugin function
-    const result = await plugin.queryFunc({
-      apiKeys,
-      settings
-    })
-    datelog(
-      `Updating database with transactions and settings for partner: ${pluginId}, app: ${app.appId}`
+    const result = await promiseTimeout(
+      'queryFunc',
+      plugin.queryFunc({
+        apiKeys,
+        settings
+      })
     )
-    await insertTransactions(result.transactions, `${app.appId}_${pluginId}`)
+
+    await promiseTimeout(
+      'insertTransactions',
+      insertTransactions(result.transactions, `${app.appId}_${pluginId}`)
+    )
     progressSettings.progressCache = result.settings
     progressSettings._id = progressCacheFileName
-    await dbProgress.insert(progressSettings)
+    await promiseTimeout(
+      'dbProgress.insert',
+      dbProgress.insert(progressSettings)
+    )
     // Returning a successful completion message
     const completionTime = (Date.now() - start) / 1000
     const successfulCompletionMessage = `Finished updating database with transactions and settings for partner: ${pluginId}, app: ${app.appId} in ${completionTime} seconds.`

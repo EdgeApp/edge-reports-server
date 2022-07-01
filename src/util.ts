@@ -36,6 +36,17 @@ const BATCH_ADVANCE = 100
 
 const SIX_DAYS_IN_SECONDS = 6 * 24 * 60 * 60
 
+export const promiseTimeout = async <T>(
+  msg: string,
+  p: Promise<T>
+): Promise<T> => {
+  return new Promise((resolve, reject) => {
+    datelog('STARTING', msg)
+    setTimeout(() => reject(new Error(msg)), 60000 * 5)
+    p.then(v => resolve(v)).catch(e => reject(e))
+  })
+}
+
 export const datelog = function(...args: any): void {
   const date = new Date().toISOString()
   console.log(date, ...args)
@@ -47,9 +58,9 @@ export const snoozeReject = async (ms: number): Promise<void> =>
 export const snooze = async (ms: number): Promise<void> =>
   new Promise((resolve: Function) => setTimeout(resolve, ms))
 
-export const pagination = async (
+export const pagination = async <T>(
   txArray: any[],
-  partition: any
+  partition: nano.DocumentScope<T>
 ): Promise<void> => {
   let numErrors = 0
   for (let offset = 0; offset < txArray.length; offset += BATCH_ADVANCE) {
@@ -57,9 +68,12 @@ export const pagination = async (
     if (offset + BATCH_ADVANCE > txArray.length) {
       advance = txArray.length - offset
     }
-    const docs = await partition.bulk({
-      docs: txArray.slice(offset, offset + advance)
-    })
+    const docs = await promiseTimeout(
+      'partition.bulk',
+      partition.bulk({
+        docs: txArray.slice(offset, offset + advance)
+      })
+    )
     datelog(`Processed ${offset + advance} txArray.`)
     for (const doc of docs) {
       if (doc.error != null) {
