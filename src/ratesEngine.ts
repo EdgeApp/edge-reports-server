@@ -87,7 +87,6 @@ export async function ratesEngine(): Promise<void> {
       await dbTransactions.bulk({ docs: successfulDocs })
     } catch (e) {
       datelog('Error doing bulk usdValue insert', e)
-      throw e
     }
     datelog(`Snoozing for ${QUERY_FREQ_MS} milliseconds`)
     await snooze(QUERY_FREQ_MS)
