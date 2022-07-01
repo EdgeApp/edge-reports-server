@@ -13,7 +13,7 @@ import { datelog } from './util'
 
 const nanoDb = nano(config.couchDbFullpath)
 const QUERY_FREQ_MS = 1000
-const QUERY_LIMIT = 50
+const QUERY_LIMIT = 500
 const snooze: Function = async (ms: number) =>
   new Promise((resolve: Function) => setTimeout(resolve, ms))
 
