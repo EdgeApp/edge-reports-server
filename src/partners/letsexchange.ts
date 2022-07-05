@@ -36,6 +36,11 @@ export async function queryLetsExchange(
 
   if (typeof pluginParams.settings.affiliateId === 'string') {
     affiliateId = pluginParams.settings.affiliateId;
+  } else {
+    return {
+      settings: { lookbackTimestamp },
+      transactions: []
+    }
   }
 
   if (typeof pluginParams.apiKeys.apiKey === 'string') {
