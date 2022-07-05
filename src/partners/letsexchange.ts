@@ -26,12 +26,18 @@ export async function queryLetsExchange(
 ): Promise<PluginResult> {
   const ssFormatTxs: StandardTx[] = []
   let apiKey: string
+  let affiliateId: string
   let page = 0
   let lookbackTimestamp = 0
 
   if (typeof pluginParams.settings.latestTimeStamp === 'number') {
     lookbackTimestamp = pluginParams.settings.latestTimeStamp - QUERY_LOOKBACK
   }
+
+  if (typeof pluginParams.settings.affiliateId === 'string') {
+    affiliateId = pluginParams.settings.affiliateId;
+  }
+
   if (typeof pluginParams.apiKeys.apiKey === 'string') {
     apiKey = pluginParams.apiKeys.apiKey
   } else {
@@ -44,9 +50,12 @@ export async function queryLetsExchange(
   let done = false
   let newestTimestamp = 0
   while (!done) {
-    const url = `https://api.letsexchange.io/api/v1/affiliate/history/${apiKey}?limit=${LIMIT}&page=${page}&status=success&types=0`
+    const url = `https://api.letsexchange.io/api/v1/affiliate/history/${affiliateId}?limit=${LIMIT}&page=${page}&status=success&types=0`
+    const headers = {
+      Authorization: 'Bearer ' + apiKey
+    }
 
-    const result = await fetch(url, { method: 'GET' })
+    const result = await fetch(url, { method: 'GET', headers: headers })
     const resultJSON = await result.json()
     const { data: txs } = asLetsExchangeResult(resultJSON)
 
