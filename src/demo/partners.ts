@@ -19,6 +19,10 @@ export default {
     type: 'fiat',
     color: '#dc143c'
   },
+  changehero: {
+    type: 'swap',
+    color: '#2f80ed'
+  },
   changelly: {
     type: 'swap',
     color: '#ed5e67'

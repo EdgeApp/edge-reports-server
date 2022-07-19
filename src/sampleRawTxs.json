@@ -145,6 +145,26 @@
     "timestamp_created": "2020-04-04T15:31:16",
     "timestamp_executed": "2020-04-07T06:15:02"
   },
+  "changehero": {
+    "id": "3j1b4ad1o9j47ivy6a",
+    "status": "finished",
+    "currencyFrom": "edg",
+    "currencyTo": "eth",
+    "payinHash": "0xc280caf791ea6d27fa138c3cc987dc5721e24f91ebfd2effdd71378bcaf57974",
+    "payoutHash": "0x00e9ff9308be15b04c2503faebac556d4c3f108e16d3076adda2579d47450409",
+    "refundHash": null,
+    "payinAddress": "0x174d9c4aa22991dcc40afb7dd73a377a978c6d28",
+    "payinExtraId": null,
+    "payoutAddress": "0x074d9c4aa22890dcc40afb7dd73b377a978c5d29",
+    "payoutExtraId": null,
+    "amountExpectedFrom": "1000",
+    "amountExpectedTo": "0.02",
+    "amountFrom": "1094.0000000000000000000000",
+    "amountTo": "0.0215934600000000000000",
+    "refundReason": null,
+    "networkFee": "0.0005500000000000000000",
+    "createdAt": 1556480419
+  },
   "changelly": {
     "id": "95q4mmh635fo8144",
     "trackUrl": "https://changelly.com/track/95q4mmh635fo8144",
