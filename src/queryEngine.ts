@@ -25,7 +25,7 @@ import { switchain } from './partners/switchain'
 import { transak } from './partners/transak'
 import { wyre } from './partners/wyre'
 import { asProgressSettings, DbTx, StandardTx } from './types'
-import { datelog, pagination, promiseTimeout } from './util'
+import { datelog, pagination, promiseTimeout, standardizeNames } from './util'
 
 const asApp = asObject({
   appId: asString,
@@ -34,14 +34,6 @@ const asApp = asObject({
 const asApps = asArray(asApp)
 
 const nanoDb = nano(config.couchDbFullpath)
-const CURRENCY_CONVERSION = {
-  USDT20: 'USDT',
-  USDTERC20: 'USDT',
-  BCHABC: 'BCH',
-  BCHSV: 'BSV',
-  FTMMAINNET: 'FTM',
-  BNBMAINNET: 'BNB'
-}
 
 const DB_NAMES = [
   { name: 'reports_apps' },
@@ -287,11 +279,4 @@ async function runPlugin(
     datelog(errorText)
     return errorText
   }
-}
-
-const standardizeNames = (field: string): string => {
-  if (CURRENCY_CONVERSION[field] !== undefined) {
-    return CURRENCY_CONVERSION[field]
-  }
-  return field
 }

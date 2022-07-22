@@ -20,6 +20,17 @@ import Partners from './demo/partners'
 
 export const SIX_DAYS = 6
 
+const CURRENCY_CONVERSION = {
+  USDT20: 'USDT',
+  USDTERC20: 'USDT',
+  BCHABC: 'BCH',
+  BCHSV: 'BSV',
+  FTMMAINNET: 'FTM',
+  BNBMAINNET: 'BNB',
+  AVAXC: 'AVAX',
+  POLYGON: 'MATIC'
+}
+
 const asDbReq = asObject({
   docs: asArray(
     asObject({
@@ -35,6 +46,13 @@ const asDbReq = asObject({
 const BATCH_ADVANCE = 100
 
 const SIX_DAYS_IN_SECONDS = 6 * 24 * 60 * 60
+
+export const standardizeNames = (field: string): string => {
+  if (CURRENCY_CONVERSION[field] !== undefined) {
+    return CURRENCY_CONVERSION[field]
+  }
+  return field
+}
 
 export const promiseTimeout = async <T>(
   msg: string,

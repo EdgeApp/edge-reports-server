@@ -9,7 +9,7 @@ import {
   CurrencyCodeMappings,
   DbTx
 } from './types'
-import { datelog } from './util'
+import { datelog, standardizeNames } from './util'
 
 const nanoDb = nano(config.couchDbFullpath)
 const QUERY_FREQ_MS = 1000
@@ -194,11 +194,13 @@ const dateRoundDownHour = (dateString: string): string => {
 }
 
 async function getExchangeRate(
-  currencyA: string,
-  currencyB: string,
+  ca: string,
+  cb: string,
   date: string
 ): Promise<number> {
   const hourDate = dateRoundDownHour(date)
+  const currencyA = standardizeNames(ca)
+  const currencyB = standardizeNames(cb)
   const url = `https://rates2.edge.app/v1/exchangeRate?currency_pair=${currencyA}_${currencyB}&date=${hourDate}`
   try {
     const result = await fetch(url, { method: 'GET' })
