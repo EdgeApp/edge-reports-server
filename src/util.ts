@@ -47,6 +47,18 @@ export const promiseTimeout = async <T>(
   })
 }
 
+export const smartIsoDateFromTimestamp = (
+  timestamp: number
+): { timestamp: number; isoDate } => {
+  if (timestamp > 9999999999) {
+    timestamp = timestamp / 1000
+  }
+  return {
+    timestamp,
+    isoDate: new Date(timestamp * 1000).toISOString()
+  }
+}
+
 export const datelog = function(...args: any): void {
   const date = new Date().toISOString()
   console.log(date, ...args)
