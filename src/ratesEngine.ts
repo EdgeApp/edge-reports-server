@@ -13,7 +13,7 @@ import { datelog, standardizeNames } from './util'
 
 const nanoDb = nano(config.couchDbFullpath)
 const QUERY_FREQ_MS = 1000
-const QUERY_LIMIT = 500
+const QUERY_LIMIT = 5
 const snooze: Function = async (ms: number) =>
   new Promise((resolve: Function) => setTimeout(resolve, ms))
 
@@ -88,8 +88,12 @@ export async function ratesEngine(): Promise<void> {
     } catch (e) {
       datelog('Error doing bulk usdValue insert', e)
     }
-    datelog(`Snoozing for ${QUERY_FREQ_MS} milliseconds`)
-    await snooze(QUERY_FREQ_MS)
+    if (bookmark == null) {
+      datelog(`Snoozing for ${QUERY_FREQ_MS} milliseconds`)
+      await snooze(QUERY_FREQ_MS)
+    } else {
+      datelog(`Fetching bookmark ${bookmark}`)
+    }
   }
 }
 
