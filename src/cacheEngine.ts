@@ -6,6 +6,8 @@ import nano from 'nano'
 import config from '../config.json'
 import { datelog, getAnalytic } from './util'
 
+const BULK_WRITE_SIZE = 50
+
 const asApp = asObject({
   _id: asString,
   appId: asString,
@@ -155,12 +157,30 @@ export async function cacheEngine(): Promise<void> {
                 }
               }
             }
-            await database.bulk({ docs: cacheResult })
+
+            datelog(
+              `Update cache db ${timePeriod} cache for ${app.appId}_${key}. length = ${cacheResult.length}`
+            )
+
+            for (
+              let start = 0;
+              start < cacheResult.length;
+              start += BULK_WRITE_SIZE
+            ) {
+              const end =
+                start + BULK_WRITE_SIZE > cacheResult.length
+                  ? cacheResult.length
+                  : start + BULK_WRITE_SIZE
+              // datelog(`Bulk writing docs ${start} to ${end - 1}`)
+              const docs = cacheResult.slice(start, end)
+              await database.bulk({ docs })
+            }
+
             datelog(
               `Finished updating ${timePeriod} cache for ${app.appId}_${key}`
             )
           } catch (e) {
-            datelog('Error doing bulk usdValue insert', e)
+            datelog('Error doing bulk cache update', e)
             throw e
           }
         }
