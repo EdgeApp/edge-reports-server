@@ -23,10 +23,12 @@ const asTransakOrder = asObject({
   fiatCurrency: asString,
   fiatAmount: asNumber,
   walletAddress: asString,
-  cryptocurrency: asString,
+  cryptoCurrency: asString,
   cryptoAmount: asNumber,
   completedAt: asString
 })
+
+type TransakOrder = ReturnType<typeof asTransakOrder>
 
 const asRawTxOrder = asObject({
   status: asString
@@ -68,7 +70,14 @@ export async function queryTransak(
 
     for (const rawtx of txs) {
       if (asRawTxOrder(rawtx).status === 'COMPLETED') {
-        const tx = asTransakOrder(rawtx)
+        let tx: TransakOrder
+        try {
+          tx = asTransakOrder(rawtx)
+        } catch (e) {
+          datelog(e)
+          datelog(rawtx)
+          throw e
+        }
         const date = new Date(tx.completedAt)
         const depositAddress =
           typeof tx.fromWalletAddress === 'string'
@@ -83,7 +92,7 @@ export async function queryTransak(
           depositAmount: tx.fiatAmount,
           payoutTxid: undefined,
           payoutAddress: tx.walletAddress,
-          payoutCurrency: tx.cryptocurrency,
+          payoutCurrency: tx.cryptoCurrency,
           payoutAmount: tx.cryptoAmount,
           timestamp: date.getTime() / 1000,
           isoDate: date.toISOString(),

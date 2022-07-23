@@ -10,6 +10,7 @@ import {
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import { smartIsoDateFromTimestamp } from '../util'
 
 const asExolixTx = asObject({
   id: asString,
@@ -71,8 +72,7 @@ export async function queryExolix(
     const txs = result.data
     for (const rawTx of txs) {
       const tx = asExolixTx(rawTx)
-      const timestamp = tx.created_at
-      const isoDate = new Date(timestamp * 1000).toISOString()
+      const { isoDate, timestamp } = smartIsoDateFromTimestamp(tx.created_at)
       if (tx.status === 'success') {
         const ssTx: StandardTx = {
           status: 'complete',

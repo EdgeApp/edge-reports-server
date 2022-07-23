@@ -25,7 +25,7 @@ import { switchain } from './partners/switchain'
 import { transak } from './partners/transak'
 import { wyre } from './partners/wyre'
 import { asProgressSettings, DbTx, StandardTx } from './types'
-import { datelog, pagination } from './util'
+import { datelog, pagination, promiseTimeout, standardizeNames } from './util'
 
 const asApp = asObject({
   appId: asString,
@@ -34,14 +34,6 @@ const asApp = asObject({
 const asApps = asArray(asApp)
 
 const nanoDb = nano(config.couchDbFullpath)
-const CURRENCY_CONVERSION = {
-  USDT20: 'USDT',
-  USDTERC20: 'USDT',
-  BCHABC: 'BCH',
-  BCHSV: 'BSV',
-  FTMMAINNET: 'FTM',
-  BNBMAINNET: 'BNB'
-}
 
 const DB_NAMES = [
   { name: 'reports_apps' },
@@ -85,7 +77,8 @@ const partners = [
   simplex,
   wyre
 ]
-const QUERY_FREQ_MS = 29 * 60 * 1000
+const QUERY_FREQ_MS = 60 * 1000
+const MAX_CONCURRENT_QUERIES = 3
 const snooze: Function = async (ms: number) =>
   new Promise((resolve: Function) => setTimeout(resolve, ms))
 
@@ -116,6 +109,7 @@ export async function queryEngine(): Promise<void> {
   const dbApps = nanoDb.db.use('reports_apps')
 
   while (true) {
+    datelog('Starting query loop...')
     // get the contents of all reports_apps docs
     const query = {
       selector: {
@@ -126,11 +120,13 @@ export async function queryEngine(): Promise<void> {
     }
     const rawApps = await dbApps.find(query)
     const apps = asApps(rawApps.docs)
-    const promiseArray: Array<Promise<string>> = []
+    let promiseArray: Array<Promise<string>> = []
     let remainingPlugins: String[] = []
     // loop over every app
     for (const app of apps) {
+      let partnerStatus: string[] = []
       // loop over every pluginId that app uses
+      remainingPlugins = Object.keys(app.pluginIds)
       for (const pluginId in app.pluginIds) {
         remainingPlugins.push(pluginId)
         promiseArray.push(
@@ -143,9 +139,16 @@ export async function queryEngine(): Promise<void> {
             }
           })
         )
+        if (promiseArray.length >= MAX_CONCURRENT_QUERIES) {
+          const status = await Promise.all(promiseArray)
+          // log how long every app + plugin took to run
+          datelog(status)
+          partnerStatus = [...partnerStatus, ...status]
+          promiseArray = []
+        }
       }
+      datelog(partnerStatus)
     }
-    // await the conclusion of every app + plugin combo created above.
     const partnerStatus = await Promise.all(promiseArray)
     // log how long every app + plugin took to run
     datelog(partnerStatus)
@@ -189,7 +192,10 @@ async function insertTransactions(
     transactionsArray.push(newObj)
   }
   try {
-    await pagination(transactionsArray, dbTransactions)
+    await promiseTimeout(
+      'pagination',
+      pagination(transactionsArray, dbTransactions)
+    )
   } catch (e) {
     datelog('Error doing bulk transaction insert', e)
     throw e
@@ -208,7 +214,7 @@ async function runPlugin(
     const plugin = partners.find(partner => partner.pluginId === pluginId)
     // if current plugin is not within the list of partners skip to next
     if (plugin === undefined) {
-      errorText = `Missing or disabled plugin for partner: ${pluginId}, app: ${app.appId}`
+      errorText = `Missing or disabled plugin ${app.appId.toLowerCase()}_${pluginId}`
       datelog(errorText)
       return errorText
     }
@@ -218,7 +224,9 @@ async function runPlugin(
     const progressCacheFileName = `${app.appId.toLowerCase()}:${pluginId}`
     const out = await dbProgress.get(progressCacheFileName).catch(e => {
       if (e.error != null && e.error === 'not_found') {
-        datelog('Previous Progress Record Not Found')
+        datelog(
+          `Previous Progress Record Not Found ${app.appId.toLowerCase()}_${pluginId}`
+        )
         return {}
       } else {
         console.log(e)
@@ -240,34 +248,35 @@ async function runPlugin(
     // set apiKeys and settings for use in partner's function
     const apiKeys = app.pluginIds[pluginId]
     const settings = progressSettings.progressCache
-    datelog(`Querying partner: ${pluginId}, app: ${app.appId}`)
+    datelog(`Querying ${app.appId.toLowerCase()}_${pluginId}`)
     // run the plugin function
-    const result = await plugin.queryFunc({
-      apiKeys,
-      settings
-    })
-    datelog(
-      `Updating database with transactions and settings for partner: ${pluginId}, app: ${app.appId}`
+    const result = await promiseTimeout(
+      'queryFunc',
+      plugin.queryFunc({
+        apiKeys,
+        settings
+      })
     )
-    await insertTransactions(result.transactions, `${app.appId}_${pluginId}`)
+    datelog(`Successful query: ${app.appId.toLowerCase()}_${pluginId}`)
+
+    await promiseTimeout(
+      'insertTransactions',
+      insertTransactions(result.transactions, `${app.appId}_${pluginId}`)
+    )
     progressSettings.progressCache = result.settings
     progressSettings._id = progressCacheFileName
-    await dbProgress.insert(progressSettings)
+    await promiseTimeout(
+      'dbProgress.insert',
+      dbProgress.insert(progressSettings)
+    )
     // Returning a successful completion message
     const completionTime = (Date.now() - start) / 1000
-    const successfulCompletionMessage = `Finished updating database with transactions and settings for partner: ${pluginId}, app: ${app.appId} in ${completionTime} seconds.`
+    const successfulCompletionMessage = `Successful update: ${app.appId.toLowerCase()}_${pluginId} in ${completionTime} seconds.`
     datelog(successfulCompletionMessage)
     return successfulCompletionMessage
   } catch (e) {
-    errorText = `Error running partner: ${pluginId}, app: ${app.appId}.  Error message: ${e}`
+    errorText = `Error: ${app.appId.toLowerCase()}_${pluginId}. Error message: ${e}`
     datelog(errorText)
     return errorText
   }
-}
-
-const standardizeNames = (field: string): string => {
-  if (CURRENCY_CONVERSION[field] !== undefined) {
-    return CURRENCY_CONVERSION[field]
-  }
-  return field
 }

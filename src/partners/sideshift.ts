@@ -9,19 +9,20 @@ const asSideshiftTx = asObject({
   id: asString,
   depositAddress: asMaybe(asObject({ address: asMaybe(asString) })),
   prevDepositAddresses: asMaybe(asObject({ address: asMaybe(asString) })),
-  depositAsset: asString,
+  depositMethodId: asString,
   invoiceAmount: asString,
   settleAddress: asObject({
     address: asString
   }),
-  settleAsset: asString,
+  settleMethodId: asString,
   settleAmount: asString,
   createdAt: asString
 })
 
+type SideshiftTx = ReturnType<typeof asSideshiftTx>
 const asSideshiftResult = asArray(asUnknown)
 
-const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
+const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 
 function affiliateSignature(
   affiliateId: string,
@@ -50,7 +51,14 @@ async function fetchTransactions(
     const orders = asSideshiftResult(jsonObj)
 
     return orders.map(order => {
-      const tx = asSideshiftTx(order)
+      let tx: SideshiftTx
+      try {
+        tx = asSideshiftTx(order)
+      } catch (e) {
+        datelog(e)
+        datelog(JSON.stringify(order, null, 2))
+        throw e
+      }
       const depositAddress =
         tx.depositAddress?.address ?? tx.prevDepositAddresses?.address
 
@@ -59,11 +67,11 @@ async function fetchTransactions(
         orderId: tx.id,
         depositTxid: undefined,
         depositAddress,
-        depositCurrency: tx.depositAsset.toUpperCase(),
+        depositCurrency: tx.depositMethodId.toUpperCase(),
         depositAmount: Number(tx.invoiceAmount),
         payoutTxid: undefined,
         payoutAddress: tx.settleAddress.address,
-        payoutCurrency: tx.settleAsset.toUpperCase(),
+        payoutCurrency: tx.settleMethodId.toUpperCase(),
         payoutAmount: Number(tx.settleAmount),
         timestamp: new Date(tx.createdAt).getTime() / 1000,
         isoDate: tx.createdAt,
@@ -116,7 +124,7 @@ export async function querySideshift(
 
   return {
     settings: {
-      lastCheckedTimestamp: Math.max(...newTxs.map(tx => tx.timestamp))
+      lastCheckedTimestamp: Math.max(...newTxs.map(tx => tx.timestamp)) * 1000
     },
     transactions: txs
   }

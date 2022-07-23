@@ -9,11 +9,11 @@ import {
   CurrencyCodeMappings,
   DbTx
 } from './types'
-import { datelog } from './util'
+import { datelog, standardizeNames } from './util'
 
 const nanoDb = nano(config.couchDbFullpath)
 const QUERY_FREQ_MS = 1000
-const QUERY_LIMIT = 50
+const QUERY_LIMIT = 5
 const snooze: Function = async (ms: number) =>
   new Promise((resolve: Function) => setTimeout(resolve, ms))
 
@@ -29,6 +29,7 @@ export async function ratesEngine(): Promise<void> {
   )
   let bookmark
   while (true) {
+    datelog('Querying missing rates')
     const result2 = await dbSettings.get('currencyCodeMappings')
     const { mappings } = asDbCurrencyCodeMappings(result2)
 
@@ -86,10 +87,13 @@ export async function ratesEngine(): Promise<void> {
       await dbTransactions.bulk({ docs: successfulDocs })
     } catch (e) {
       datelog('Error doing bulk usdValue insert', e)
-      throw e
     }
-    datelog(`Snoozing for ${QUERY_FREQ_MS} milliseconds`)
-    await snooze(QUERY_FREQ_MS)
+    if (bookmark == null) {
+      datelog(`Snoozing for ${QUERY_FREQ_MS} milliseconds`)
+      await snooze(QUERY_FREQ_MS)
+    } else {
+      datelog(`Fetching bookmark ${bookmark}`)
+    }
   }
 }
 
@@ -185,15 +189,29 @@ export async function updateTxValues(
   }
 }
 
+const dateRoundDownHour = (dateString: string): string => {
+  const date = new Date(dateString)
+  date.setMinutes(0)
+  date.setSeconds(0)
+  date.setMilliseconds(0)
+  return new Date(date).toISOString()
+}
+
 async function getExchangeRate(
-  currencyA: string,
-  currencyB: string,
+  ca: string,
+  cb: string,
   date: string
 ): Promise<number> {
-  const url = `https://rates2.edge.app/v1/exchangeRate?currency_pair=${currencyA}_${currencyB}&date=${date}`
+  const hourDate = dateRoundDownHour(date)
+  const currencyA = standardizeNames(ca)
+  const currencyB = standardizeNames(cb)
+  const url = `https://rates2.edge.app/v1/exchangeRate?currency_pair=${currencyA}_${currencyB}&date=${hourDate}`
   try {
     const result = await fetch(url, { method: 'GET' })
     const jsonObj = await result.json()
+    datelog(
+      `Rate for ${currencyA} -> ${currencyB} ${date}: ${jsonObj.exchangeRate}`
+    )
     return parseFloat(jsonObj.exchangeRate)
   } catch (e) {
     datelog(

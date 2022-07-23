@@ -4,12 +4,12 @@ import fetch from 'node-fetch'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { datelog } from '../util'
 
-const asCurrencies = asArray(
-  asObject({
-    id: asString,
-    code: asString
-  })
-)
+const asMoonpayCurrency = asObject({
+  id: asString,
+  type: asString,
+  name: asString,
+  code: asString
+})
 
 const asMoonpayTx = asObject({
   cryptoTransactionId: asString,
@@ -19,8 +19,12 @@ const asMoonpayTx = asObject({
   createdAt: asString,
   id: asString,
   baseCurrencyId: asString,
-  currencyId: asString
+  currencyId: asString,
+  currency: asMoonpayCurrency,
+  baseCurrency: asMoonpayCurrency
 })
+
+type MoonpayTx = ReturnType<typeof asMoonpayTx>
 
 const asMoonpayRawTx = asObject({
   status: asString
@@ -37,7 +41,6 @@ export async function queryMoonpay(
   const ssFormatTxs: StandardTx[] = []
   let apiKey
   let headers
-  let currencies
   let latestTimestamp = 0
   if (typeof pluginParams.settings.latestTimestamp === 'number') {
     latestTimestamp = pluginParams.settings.latestTimestamp
@@ -45,16 +48,8 @@ export async function queryMoonpay(
 
   if (typeof pluginParams.apiKeys.apiKey === 'string') {
     apiKey = pluginParams.apiKeys.apiKey
-    try {
-      const currenciesUrl = 'https://api.moonpay.io/v2/currencies'
-      const currenciesResult = await fetch(currenciesUrl)
-      currencies = asCurrencies(await currenciesResult.json())
-      headers = {
-        Authorization: `Api-Key ${apiKey}`
-      }
-    } catch (e) {
-      datelog(e)
-      throw e
+    headers = {
+      Authorization: `Api-Key ${apiKey}`
     }
   } else {
     return {
@@ -81,22 +76,18 @@ export async function queryMoonpay(
 
     for (const rawtx of txs) {
       if (asMoonpayRawTx(rawtx).status === 'completed') {
-        const tx = asMoonpayTx(rawtx)
-
-        const baseCurrency = currencies.find(
-          cur => cur.id === tx.baseCurrencyId
-        )
-        const outputCurrency = currencies.find(cur => cur.id === tx.currencyId)
-
-        if (typeof baseCurrency === 'undefined') {
-          throw new Error(
-            `baseCurrency not defined for Moonpay tx ID: ${tx.id}`
-          )
+        let tx: MoonpayTx
+        try {
+          tx = asMoonpayTx(rawtx)
+        } catch (e) {
+          datelog(e)
+          datelog(rawtx)
+          throw e
         }
-        if (typeof outputCurrency === 'undefined') {
-          throw new Error(
-            `outputCurrency not defined for Moonpay tx ID: ${tx.id}`
-          )
+
+        if (tx.currency != null) {
+          if (tx.baseCurrencyId === tx.currency.id) {
+          }
         }
 
         const date = new Date(tx.createdAt)
@@ -106,11 +97,11 @@ export async function queryMoonpay(
           orderId: tx.id,
           depositTxid: undefined,
           depositAddress: undefined,
-          depositCurrency: baseCurrency.code.toUpperCase(),
+          depositCurrency: tx.baseCurrency.code.toUpperCase(),
           depositAmount: tx.baseCurrencyAmount,
           payoutTxid: tx.cryptoTransactionId,
           payoutAddress: tx.walletAddress,
-          payoutCurrency: outputCurrency.code.toUpperCase(),
+          payoutCurrency: tx.currency.code.toUpperCase(),
           payoutAmount: tx.quoteCurrencyAmount,
           timestamp: timestamp / 1000,
           isoDate: tx.createdAt,
