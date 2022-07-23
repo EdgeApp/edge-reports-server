@@ -8,6 +8,7 @@ import { bitaccess } from './partners/bitaccess'
 import { bitrefill } from './partners/bitrefill'
 import { bitsofgold } from './partners/bitsofgold'
 import { bity } from './partners/bity'
+import { changehero } from './partners/changehero'
 import { changelly } from './partners/changelly'
 import { changenow } from './partners/changenow'
 import { exolix } from './partners/exolix'
@@ -62,6 +63,7 @@ const partners = [
   bitrefill,
   changelly,
   changenow,
+  changehero,
   exolix,
   foxExchange,
   gebo,
