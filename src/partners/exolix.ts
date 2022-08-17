@@ -15,14 +15,23 @@ import { smartIsoDateFromTimestamp } from '../util'
 const asExolixTx = asObject({
   id: asString,
   status: asString,
-  coin_from: asString,
-  coin_to: asString,
-  amount_from: asString,
-  amount_to: asString,
-  deposit_address: asString,
-  destination_address: asString,
-  input_hash: asEither(asString, asNull),
-  created_at: asNumber
+  coinFrom: asObject({
+    coinCode: asString,
+  }),
+  coinTo: asObject({
+    coinCode: asString,
+  }),
+  amount: asNumber,
+  amountTo: asNumber,
+  depositAddress: asString,
+  withdrawalAddress: asString,
+  hashIn: asObject({
+    hash: asEither(asString, asNull)
+  }),
+  hashOut: asObject({
+    hash: asEither(asString, asNull)
+  }),
+  createdAt: asString
 })
 
 const asExolixResult = asObject({
@@ -30,6 +39,7 @@ const asExolixResult = asObject({
 })
 
 const PAGE_LIMIT = 100
+const STATUS_SUCCESS = 'success'
 const QUERY_LOOKBACK = 60 * 60 * 24 * 1 // 1 days
 
 export async function queryExolix(
@@ -56,7 +66,7 @@ export async function queryExolix(
   let page = 1
   while (!done) {
     let result
-    const request = `https://exolix.com/api/history?page=${page}&per_page=${PAGE_LIMIT}`
+    const request = `https://exolix.com/api/v2/transactions?page=${page}&size=${PAGE_LIMIT}&statuses=${STATUS_SUCCESS}`
     const options = {
       method: 'GET',
       headers: {
@@ -72,32 +82,31 @@ export async function queryExolix(
     const txs = result.data
     for (const rawTx of txs) {
       const tx = asExolixTx(rawTx)
-      const { isoDate, timestamp } = smartIsoDateFromTimestamp(tx.created_at)
-      if (tx.status === 'success') {
-        const ssTx: StandardTx = {
-          status: 'complete',
-          orderId: tx.id,
-          depositTxid: tx.input_hash ?? '',
-          depositAddress: tx.deposit_address,
-          depositCurrency: tx.coin_from,
-          depositAmount: parseFloat(tx.amount_from),
-          payoutTxid: undefined,
-          payoutAddress: tx.destination_address,
-          payoutCurrency: tx.coin_to,
-          payoutAmount: parseFloat(tx.amount_to),
-          timestamp,
-          isoDate,
-          usdValue: undefined,
-          rawTx
-        }
+      const dateInMillis = Date.parse(tx.createdAt) || 0
+      const { isoDate, timestamp } = smartIsoDateFromTimestamp(dateInMillis)
+      const ssTx: StandardTx = {
+        status: 'complete',
+        orderId: tx.id,
+        depositTxid: tx.hashIn?.hash ?? '',
+        depositAddress: tx.depositAddress,
+        depositCurrency: tx.coinFrom.coinCode,
+        depositAmount: tx.amount,
+        payoutTxid: tx.hashOut?.hash ?? '',
+        payoutAddress: tx.withdrawalAddress,
+        payoutCurrency: tx.coinTo.coinCode,
+        payoutAmount: tx.amountTo,
+        timestamp,
+        isoDate,
+        usdValue: undefined,
+        rawTx
+      }
 
-        ssFormatTxs.push(ssTx)
-        if (latestTimestamp - QUERY_LOOKBACK > timestamp) {
-          done = true
-        }
-        if (timestamp > newestTimestamp) {
-          newestTimestamp = timestamp
-        }
+      ssFormatTxs.push(ssTx)
+      if (latestTimestamp - QUERY_LOOKBACK > timestamp) {
+        done = true
+      }
+      if (timestamp > newestTimestamp) {
+        newestTimestamp = timestamp
       }
     }
     page++
