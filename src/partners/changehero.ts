@@ -48,7 +48,7 @@ const API_URL = 'https://api.changehero.io/v2/'
 const MAX_ATTEMPTS = 3
 const LIMIT = 300
 const TIMEOUT = 20000
-const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
+// const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
 const EMPTY_STRING = ''
 
 async function getTransactionsPromised(
@@ -109,9 +109,9 @@ export async function queryChangeHero(
 
   const ssFormatTxs: StandardTx[] = []
   let newLatestTimeStamp = latestTimeStamp
-  let done = false
+  // const done = false
   try {
-    while (!done) {
+    while (true) {
       datelog(`Query changeHero offset: ${offset}`)
 
       const response: any = await getTransactionsPromised(
@@ -152,17 +152,17 @@ export async function queryChangeHero(
           if (tx.createdAt > newLatestTimeStamp) {
             newLatestTimeStamp = tx.createdAt
           }
-          if (
-            tx.createdAt < latestTimeStamp - QUERY_LOOKBACK &&
-            done === false &&
-            firstAttempt === false
-          ) {
-            datelog(
-              `ChangeHero done: date ${tx.createdAt} < ${latestTimeStamp -
-                QUERY_LOOKBACK}`
-            )
-            done = true
-          }
+          // if (
+          //   tx.createdAt < latestTimeStamp - QUERY_LOOKBACK &&
+          //   done === false &&
+          //   firstAttempt === false
+          // ) {
+          //   datelog(
+          //     `ChangeHero done: date ${tx.createdAt} < ${latestTimeStamp -
+          //       QUERY_LOOKBACK}`
+          //   )
+          //   done = true
+          // }
         }
       }
       offset += LIMIT
