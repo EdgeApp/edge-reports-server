@@ -263,6 +263,7 @@ export const getAnalytic = async (
   const query = {
     selector: {
       usdValue: { $gte: 0 },
+      status: { $eq: 'complete' },
       timestamp: { $gte: start, $lt: end }
     },
     fields: [
@@ -296,9 +297,9 @@ export const getAnalytic = async (
         })
       promises.push(result)
     }
-    console.time('promiseAll')
+    console.time(`${appId} promiseAll`)
     await Promise.all(promises)
-    console.timeEnd('promiseAll')
+    console.timeEnd(`${appId} promiseAll`)
     return results.sort((a, b) => {
       if (a.pluginId < b.pluginId) {
         return -1

@@ -87,6 +87,10 @@ export default {
     type: 'swap',
     color: '#8d4da9'
   },
+  thorchain: {
+    type: 'swap',
+    color: '#c892d2'
+  },
   totle: {
     type: 'swap',
     color: '#c892d2'

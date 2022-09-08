@@ -23,6 +23,7 @@ import { safello } from './partners/safello'
 import { sideshift } from './partners/sideshift'
 import { simplex } from './partners/simplex'
 import { switchain } from './partners/switchain'
+import { thorchain } from './partners/thorchain'
 import { transak } from './partners/transak'
 import { wyre } from './partners/wyre'
 import { asProgressSettings, DbTx, StandardTx } from './types'
@@ -75,6 +76,7 @@ const partners = [
   safello,
   sideshift,
   switchain,
+  thorchain,
   transak,
   simplex,
   wyre
