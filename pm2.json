@@ -2,13 +2,13 @@
   "apps": [
     {
       "name": "reportsQuery",
-      "script": "lib/indexEngine.js",
+      "script": "lib/indexQuery.js",
       "error_file": "logs/reportsQuery.error.log",
       "out_file": "logs/reportsQuery.out.log"
     },
     {
       "name": "reportsRates",
-      "script": "lib/indexRatesEngine.js",
+      "script": "lib/indexRates.js",
       "error_file": "logs/reportsRates.error.log",
       "out_file": "logs/reportsRates.out.log"
     },
@@ -17,6 +17,12 @@
       "script": "lib/indexApi.js",
       "error_file": "logs/reportsApi.error.log",
       "out_file": "logs/reportsApi.out.log"
+    },
+    {
+      "name": "reportsCache",
+      "script": "lib/indexCache.js",
+      "error_file": "logs/reportsCache.error.log",
+      "out_file": "logs/reportsCache.out.log"
     }
   ]
 }
