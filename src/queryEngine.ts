@@ -2,7 +2,6 @@ import { asArray, asMap, asObject, asString } from 'cleaners'
 import nano from 'nano'
 
 import config from '../config.json'
-import { cacheEngine } from './cacheEngine'
 import { banxa } from './partners/banxa'
 import { bitaccess } from './partners/bitaccess'
 import { bitrefill } from './partners/bitrefill'
@@ -23,6 +22,7 @@ import { safello } from './partners/safello'
 import { sideshift } from './partners/sideshift'
 import { simplex } from './partners/simplex'
 import { switchain } from './partners/switchain'
+import { thorchain } from './partners/thorchain'
 import { transak } from './partners/transak'
 import { wyre } from './partners/wyre'
 import { asProgressSettings, DbTx, StandardTx } from './types'
@@ -75,6 +75,7 @@ const partners = [
   safello,
   sideshift,
   switchain,
+  thorchain,
   transak,
   simplex,
   wyre
@@ -154,8 +155,6 @@ export async function queryEngine(): Promise<void> {
     const partnerStatus = await Promise.all(promiseArray)
     // log how long every app + plugin took to run
     datelog(partnerStatus)
-    // run cache on new transactions
-    await cacheEngine().catch(e => console.log(e))
     datelog(`Snoozing for ${QUERY_FREQ_MS} milliseconds`)
     await snooze(QUERY_FREQ_MS)
   }
