@@ -6,6 +6,8 @@ import nano from 'nano'
 import config from '../config.json'
 import { datelog, getAnalytic, snooze } from './util'
 
+const CACHE_UPDATE_LOOKBACK_MONTHS = 3
+
 const BULK_WRITE_SIZE = 50
 const UPDATE_FREQUENCY_MS = 1000 * 60 * 30
 const asApp = asObject({
@@ -98,7 +100,9 @@ export async function cacheEngine(): Promise<void> {
     try {
       await reportsMonth.get('initialized:initialized')
       const monthStart = startOfMonth(new Date(Date.now()))
-      start = sub(monthStart, { months: 1 }).getTime() / 1000
+      start =
+        sub(monthStart, { months: CACHE_UPDATE_LOOKBACK_MONTHS }).getTime() /
+        1000
     } catch (e) {
       start = new Date(2017, 1, 20).getTime() / 1000
     }
