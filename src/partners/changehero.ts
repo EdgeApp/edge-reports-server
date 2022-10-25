@@ -46,7 +46,7 @@ const asChangeHeroResult = asObject({
 
 const API_URL = 'https://api.changehero.io/v2/'
 const MAX_ATTEMPTS = 3
-const LIMIT = 300
+const LIMIT = 100
 const TIMEOUT = 20000
 // const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
 const EMPTY_STRING = ''
