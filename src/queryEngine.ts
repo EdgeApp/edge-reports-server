@@ -84,6 +84,7 @@ const partners = [
 ]
 const QUERY_FREQ_MS = 60 * 1000
 const MAX_CONCURRENT_QUERIES = 3
+const BULK_FETCH_SIZE = 50
 const snooze: Function = async (ms: number) =>
   new Promise((resolve: Function) => setTimeout(resolve, ms))
 
@@ -162,47 +163,68 @@ export async function queryEngine(): Promise<void> {
   }
 }
 
-async function insertTransactions(
-  transactions: StandardTx[],
-  pluginId: string
-): Promise<any> {
-  const dbTransactions: nano.DocumentScope<DbTx> = nanoDb.db.use(
-    'reports_transactions'
+const filterAddNewTxs = async (
+  pluginId: string,
+  dbTransactions: nano.DocumentScope<StandardTx>,
+  docIds: string[],
+  transactions: StandardTx[]
+): Promise<void> => {
+  if (docIds.length < 1 || transactions.length < 1) return
+  const queryResults = await dbTransactions.fetch(
+    { keys: docIds },
+    { include_docs: false }
   )
-  const transactionsArray: StandardTx[] = []
-  for (const transaction of transactions) {
-    // TODO: Add batching for more than 500 transactions
-    transaction.orderId = transaction.orderId.toLowerCase()
-    const key = `${pluginId}:${transaction.orderId}`
-    const result = await dbTransactions.get(key).catch(e => {
-      if (e != null && e.error === 'not_found') {
-        return {}
-      } else {
-        throw e
+
+  const newDocs: DbTx[] = []
+  for (const docId of docIds) {
+    if (
+      queryResults.rows.find(doc => 'id' in doc && doc.id === docId) == null
+    ) {
+      // Get the full transaction
+      const orderId = docId.split(':')[1] ?? ''
+      const tx = transactions.find(tx => tx.orderId === orderId)
+      if (tx == null) {
+        throw new Error(`Cant find tx from docId ${docId}`)
       }
-    })
-    // no duplicate transactions
-    if (Object.keys(result).length > 0) {
-      continue
+      const newObj = { _id: docId, _rev: undefined, ...tx }
+
+      // replace all fields with non-standard names
+      newObj.depositCurrency = standardizeNames(newObj.depositCurrency)
+      newObj.payoutCurrency = standardizeNames(newObj.payoutCurrency)
+
+      datelog(`new doc id: ${newObj._id}`)
+      newDocs.push(newObj)
     }
-    const newObj = { _rev: undefined, ...result, ...transaction, _id: key }
-
-    // replace all fields with non-standard names
-    newObj.depositCurrency = standardizeNames(newObj.depositCurrency)
-    newObj.payoutCurrency = standardizeNames(newObj.payoutCurrency)
-
-    datelog(`id: ${newObj._id}. revision: ${newObj._rev}`)
-    transactionsArray.push(newObj)
   }
+
   try {
-    await promiseTimeout(
-      'pagination',
-      pagination(transactionsArray, dbTransactions)
-    )
+    await promiseTimeout('pagination', pagination(newDocs, dbTransactions))
   } catch (e) {
     datelog('Error doing bulk transaction insert', e)
     throw e
   }
+}
+
+async function insertTransactions(
+  transactions: StandardTx[],
+  pluginId: string
+): Promise<any> {
+  const dbTransactions: nano.DocumentScope<StandardTx> = nanoDb.db.use(
+    'reports_transactions'
+  )
+  let docIds: string[] = []
+  for (const transaction of transactions) {
+    transaction.orderId = transaction.orderId.toLowerCase()
+    const key = `${pluginId}:${transaction.orderId}`
+    docIds.push(key)
+
+    // Collect a batch of docIds
+    if (docIds.length < BULK_FETCH_SIZE) continue
+
+    await filterAddNewTxs(pluginId, dbTransactions, docIds, transactions)
+    docIds = []
+  }
+  await filterAddNewTxs(pluginId, dbTransactions, docIds, transactions)
 }
 
 async function runPlugin(
