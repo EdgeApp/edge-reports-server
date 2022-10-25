@@ -1,7 +1,6 @@
 import axios from 'axios'
 import {
   asArray,
-  asBoolean,
   asNumber,
   asObject,
   asOptional,
@@ -10,7 +9,7 @@ import {
 } from 'cleaners'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog } from '../util'
+import { datelog, smartIsoDateFromTimestamp } from '../util'
 
 const asChangeHeroTx = asObject({
   id: asString,
@@ -27,9 +26,7 @@ const asChangeHeroTx = asObject({
 
 const asChangeHeroPluginParams = asObject({
   settings: asObject({
-    offset: asOptional(asNumber, 0),
-    latestTimeStamp: asOptional(asNumber, 0),
-    firstAttempt: asOptional(asBoolean, false)
+    latestIsoDate: asOptional(asString, '0')
   }),
   apiKeys: asObject({
     apiKey: asOptional(asString)
@@ -48,7 +45,7 @@ const API_URL = 'https://api.changehero.io/v2/'
 const MAX_ATTEMPTS = 3
 const LIMIT = 100
 const TIMEOUT = 20000
-// const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
+const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 const EMPTY_STRING = ''
 
 async function getTransactionsPromised(
@@ -101,17 +98,22 @@ export async function queryChangeHero(
 ): Promise<PluginResult> {
   const { settings, apiKeys } = asChangeHeroPluginParams(pluginParams)
   const { apiKey } = apiKeys
-  let { latestTimeStamp, offset, firstAttempt } = settings
+  let offset = 0
+  let { latestIsoDate } = settings
 
   if (typeof apiKey !== 'string') {
-    return { settings: { latestTimeStamp }, transactions: [] }
+    return { settings: { latestIsoDate }, transactions: [] }
   }
 
   const ssFormatTxs: StandardTx[] = []
-  let newLatestTimeStamp = latestTimeStamp
-  // const done = false
+  let previousTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
+  if (previousTimestamp < 0) previousTimestamp = 0
+  const previousLatestIsoDate = new Date(previousTimestamp).toISOString()
+
   try {
-    while (true) {
+    let done = false
+    while (!done) {
+      let oldestIsoDate = '999999999999999999999999999999999999'
       datelog(`Query changeHero offset: ${offset}`)
 
       const response: any = await getTransactionsPromised(
@@ -126,7 +128,6 @@ export async function queryChangeHero(
       const txs = asChangeHeroResult(response.data).result
       if (txs.length === 0) {
         datelog(`ChangeHero done at offset ${offset}`)
-        firstAttempt = false
         break
       }
       for (const rawTx of txs) {
@@ -144,27 +145,26 @@ export async function queryChangeHero(
             payoutCurrency: tx.currencyTo.toUpperCase(),
             payoutAmount: parseFloat(tx.amountTo),
             timestamp: tx.createdAt,
-            isoDate: new Date(tx.createdAt * 1000).toISOString(),
+            isoDate: smartIsoDateFromTimestamp(tx.createdAt).isoDate,
             usdValue: undefined,
             rawTx
           }
           ssFormatTxs.push(ssTx)
-          if (tx.createdAt > newLatestTimeStamp) {
-            newLatestTimeStamp = tx.createdAt
+          if (ssTx.isoDate > latestIsoDate) {
+            latestIsoDate = ssTx.isoDate
           }
-          // if (
-          //   tx.createdAt < latestTimeStamp - QUERY_LOOKBACK &&
-          //   done === false &&
-          //   firstAttempt === false
-          // ) {
-          //   datelog(
-          //     `ChangeHero done: date ${tx.createdAt} < ${latestTimeStamp -
-          //       QUERY_LOOKBACK}`
-          //   )
-          //   done = true
-          // }
+          if (ssTx.isoDate < oldestIsoDate) {
+            oldestIsoDate = ssTx.isoDate
+          }
+          if (ssTx.isoDate < previousLatestIsoDate && !done) {
+            datelog(
+              `ChangeHero done: date ${ssTx.isoDate} < ${previousLatestIsoDate}`
+            )
+            done = true
+          }
         }
       }
+      datelog(`oldestIsoDate ${oldestIsoDate}`)
       offset += LIMIT
     }
   } catch (e) {
@@ -172,9 +172,7 @@ export async function queryChangeHero(
   }
   const out = {
     settings: {
-      latestTimeStamp: newLatestTimeStamp,
-      firstAttempt,
-      offset: firstAttempt ? offset : 0
+      latestIsoDate
     },
     transactions: ssFormatTxs
   }
