@@ -39,7 +39,7 @@
     "axios": "^0.21.2",
     "biggystring": "^3.0.2",
     "body-parser": "^1.19.0",
-    "cleaners": ">=0.2.1",
+    "cleaners": "^0.3.13",
     "commander": "^6.1.0",
     "cors": "^2.8.5",
     "date-fns": "^2.16.1",
