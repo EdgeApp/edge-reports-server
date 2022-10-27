@@ -106,5 +106,9 @@ export default {
   wyre: {
     type: 'fiat',
     color: '#b17f49'
+  },
+  xanpool: {
+    type: 'fiat',
+    color: '#444444'
   }
 } as const

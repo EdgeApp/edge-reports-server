@@ -25,6 +25,7 @@ import { switchain } from './partners/switchain'
 import { thorchain } from './partners/thorchain'
 import { transak } from './partners/transak'
 import { wyre } from './partners/wyre'
+import { xanpool } from './partners/xanpool'
 import { asProgressSettings, DbTx, StandardTx } from './types'
 import { datelog, pagination, promiseTimeout, standardizeNames } from './util'
 
@@ -78,7 +79,8 @@ const partners = [
   thorchain,
   transak,
   simplex,
-  wyre
+  wyre,
+  xanpool
 ]
 const QUERY_FREQ_MS = 60 * 1000
 const MAX_CONCURRENT_QUERIES = 3
