@@ -1,0 +1,94 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "indexQuery",
+      "args": [
+        "-r",
+        "sucrase/register",
+        "${workspaceFolder}/src/indexQuery.ts",
+
+      ],
+      "internalConsoleOptions": "openOnSessionStart",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "indexRates",
+      "args":[
+        "-r",
+        "sucrase/register",
+        "${workspaceFolder}/src/indexRates.js",
+      ],
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "indexApi",
+      "args": [
+        "-r",
+        "sucrase/register",
+        "${workspaceFolder}/src/indexApi.ts",
+
+      ],
+      "internalConsoleOptions": "openOnSessionStart",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "indexCache",
+      "args":[
+        "-r",
+        "sucrase/register",
+        "${workspaceFolder}/src/indexCache.js",
+      ],
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "testpartner",
+      "args": [
+        "-r",
+        "sucrase/register",
+        "${workspaceFolder}/src/bin/testpartner.ts",
+
+      ],
+      "internalConsoleOptions": "openOnSessionStart",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "partnerTotals",
+      "args": [
+        "-r",
+        "sucrase/register",
+        "${workspaceFolder}/src/bin/partnerTotals.ts",
+
+      ],
+      "internalConsoleOptions": "openOnSessionStart",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    }
+  ]
+}
