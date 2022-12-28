@@ -3,27 +3,27 @@ const deprecated = '#444444'
 export default {
   banxa: {
     type: 'fiat',
-    color: '#004c6d'
+    color: '#58BFB9'
   },
   bitaccess: {
     type: 'fiat',
-    color: '#06759d'
+    color: '#CF7135'
   },
   bitsofgold: {
     type: 'fiat',
-    color: '#06a1ce'
+    color: '#EEC544'
   },
   bity: {
     type: 'fiat',
-    color: '#00cfff'
+    color: '#285FF6'
   },
   bitrefill: {
     type: 'fiat',
-    color: '#dc143c'
+    color: '#EA332E'
   },
   changehero: {
     type: 'swap',
-    color: '#2f80ed'
+    color: '#4D90EF'
   },
   changelly: {
     type: 'swap',
@@ -31,7 +31,7 @@ export default {
   },
   changenow: {
     type: 'swap',
-    color: '#f99093'
+    color: '#00ff00'
   },
   coinswitch: {
     type: 'swap',
@@ -39,7 +39,7 @@ export default {
   },
   exolix: {
     type: 'swap',
-    color: '#888400'
+    color: '#8BEDC2'
   },
   faast: {
     type: 'swap',
@@ -55,23 +55,23 @@ export default {
   },
   godex: {
     type: 'swap',
-    color: '#86c972'
+    color: '#F8F852'
   },
   letsexchange: {
     type: 'swap',
-    color: '#c0f060'
+    color: '#1A1438'
   },
   libertyx: {
     type: 'fiat',
-    color: '#c1ffaa'
+    color: '#2551E8'
   },
   moonpay: {
     type: 'fiat',
-    color: '#ff8c00'
+    color: '#7214F5'
   },
   paytrie: {
     type: 'fiat',
-    color: '#fdb03b'
+    color: '#99A5DE'
   },
   safello: {
     type: 'fiat',
@@ -83,7 +83,7 @@ export default {
   },
   sideshift: {
     type: 'swap',
-    color: '#4b0082'
+    color: '#E35852'
   },
   swapuz: {
     type: 'swap',
@@ -95,7 +95,7 @@ export default {
   },
   thorchain: {
     type: 'swap',
-    color: '#c892d2'
+    color: '#6ADAC5'
   },
   totle: {
     type: 'swap',
@@ -103,11 +103,11 @@ export default {
   },
   transak: {
     type: 'fiat',
-    color: '#ffdaff'
+    color: '#356AD8'
   },
   simplex: {
     type: 'fiat',
-    color: '#8b4513'
+    color: '#D12D4A'
   },
   wyre: {
     type: 'fiat',
@@ -115,6 +115,6 @@ export default {
   },
   xanpool: {
     type: 'fiat',
-    color: '#0000cc'
+    color: '#46228B'
   }
 } as const
