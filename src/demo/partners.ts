@@ -1,3 +1,5 @@
+const deprecated = '#444444'
+
 export default {
   banxa: {
     type: 'fiat',
@@ -25,7 +27,7 @@ export default {
   },
   changelly: {
     type: 'swap',
-    color: '#ed5e67'
+    color: deprecated
   },
   changenow: {
     type: 'swap',
@@ -33,7 +35,7 @@ export default {
   },
   coinswitch: {
     type: 'swap',
-    color: '#ffbec0'
+    color: deprecated
   },
   exolix: {
     type: 'swap',
@@ -41,15 +43,15 @@ export default {
   },
   faast: {
     type: 'swap',
-    color: '#006400'
+    color: deprecated
   },
   foxExchange: {
     type: 'swap',
-    color: '#4d953c'
+    color: deprecated
   },
   gebo: {
     type: 'fiat',
-    color: '#f4c2c2'
+    color: deprecated
   },
   godex: {
     type: 'swap',
@@ -73,11 +75,11 @@ export default {
   },
   safello: {
     type: 'fiat',
-    color: '#fccf6a'
+    color: deprecated
   },
   shapeshift: {
     type: 'swap',
-    color: '#ffeb9c'
+    color: deprecated
   },
   sideshift: {
     type: 'swap',
@@ -85,7 +87,7 @@ export default {
   },
   switchain: {
     type: 'swap',
-    color: '#8d4da9'
+    color: deprecated
   },
   thorchain: {
     type: 'swap',
@@ -93,7 +95,7 @@ export default {
   },
   totle: {
     type: 'swap',
-    color: '#c892d2'
+    color: deprecated
   },
   transak: {
     type: 'fiat',
@@ -105,10 +107,10 @@ export default {
   },
   wyre: {
     type: 'fiat',
-    color: '#b17f49'
+    color: deprecated
   },
   xanpool: {
     type: 'fiat',
-    color: '#444444'
+    color: '#0000cc'
   }
 } as const
