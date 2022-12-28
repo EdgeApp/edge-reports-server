@@ -2,6 +2,7 @@ import { asArray, asMap, asObject, asString } from 'cleaners'
 import nano from 'nano'
 
 import config from '../config.json'
+import { pagination } from './dbutils'
 import { banxa } from './partners/banxa'
 import { bitaccess } from './partners/bitaccess'
 import { bitrefill } from './partners/bitrefill'
@@ -28,8 +29,7 @@ import { transak } from './partners/transak'
 import { wyre } from './partners/wyre'
 import { xanpool } from './partners/xanpool'
 import { asProgressSettings, DbTx, StandardTx } from './types'
-import { datelog, pagination, promiseTimeout, standardizeNames } from './util'
-
+import { datelog, promiseTimeout, standardizeNames } from './util'
 const asApp = asObject({
   appId: asString,
   pluginIds: asMap(asMap(asString))
@@ -96,7 +96,7 @@ export async function queryEngine(): Promise<void> {
   datelog(result)
   // if database does not exist, create it
   for (const dbName of DB_NAMES) {
-    if (!result.includes(dbName.name)) {
+    if (result.includes(dbName.name) === false) {
       await nanoDb.db.create(dbName.name, dbName.options)
     }
     if (dbName.indexes !== undefined) {

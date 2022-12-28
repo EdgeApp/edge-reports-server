@@ -4,7 +4,8 @@ import sub from 'date-fns/sub'
 import nano from 'nano'
 
 import config from '../config.json'
-import { datelog, getAnalytic, snooze } from './util'
+import { getAnalytic } from './dbutils'
+import { datelog, snooze } from './util'
 
 const CACHE_UPDATE_LOOKBACK_MONTHS = 3
 
@@ -70,7 +71,7 @@ export async function cacheEngine(): Promise<void> {
   datelog(result)
   // if database does not exist, create it
   for (const dbName of DB_NAMES) {
-    if (!result.includes(dbName.name)) {
+    if (result.includes(dbName.name) === false) {
       await nanoDb.db.create(dbName.name, dbName.options)
     }
     if (dbName.indexes !== undefined) {

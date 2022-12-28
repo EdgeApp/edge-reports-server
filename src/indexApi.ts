@@ -5,8 +5,8 @@ import express from 'express'
 import nano from 'nano'
 
 import config from '../config.json'
+import { cacheAnalytic } from './dbutils'
 import { asDbTx } from './types'
-import { cacheAnalytic } from './util'
 
 const asAnalyticsReq = asObject({
   start: asString,

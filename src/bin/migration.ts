@@ -13,8 +13,9 @@ import fs from 'fs'
 import js from 'jsonfile'
 import nano from 'nano'
 
+import { pagination } from '../dbutils'
 import { DbTx, StandardTx } from '../types'
-import { datelog, pagination } from '../util'
+import { datelog } from '../util'
 
 const config = js.readFileSync('./config.json')
 
