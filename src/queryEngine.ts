@@ -130,10 +130,13 @@ export async function queryEngine(): Promise<void> {
     let remainingPlugins: String[] = []
     // loop over every app
     for (const app of apps) {
+      if (config.soloAppId != null && config.soloAppId !== app.appId) continue
       let partnerStatus: string[] = []
       // loop over every pluginId that app uses
       remainingPlugins = Object.keys(app.pluginIds)
       for (const pluginId in app.pluginIds) {
+        if (config.soloPluginId != null && config.soloPluginId !== pluginId)
+          continue
         remainingPlugins.push(pluginId)
         promiseArray.push(
           runPlugin(app, pluginId, dbProgress).finally(() => {
