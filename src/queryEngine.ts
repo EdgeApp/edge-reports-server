@@ -21,6 +21,7 @@ import { paytrie } from './partners/paytrie'
 import { safello } from './partners/safello'
 import { sideshift } from './partners/sideshift'
 import { simplex } from './partners/simplex'
+import { swapuz } from './partners/swapuz'
 import { switchain } from './partners/switchain'
 import { thorchain } from './partners/thorchain'
 import { transak } from './partners/transak'
@@ -75,10 +76,11 @@ const partners = [
   paytrie,
   safello,
   sideshift,
+  simplex,
+  swapuz,
   switchain,
   thorchain,
   transak,
-  simplex,
   wyre,
   xanpool
 ]

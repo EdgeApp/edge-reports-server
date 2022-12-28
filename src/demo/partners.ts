@@ -85,6 +85,10 @@ export default {
     type: 'swap',
     color: '#4b0082'
   },
+  swapuz: {
+    type: 'swap',
+    color: '#56BD7C'
+  },
   switchain: {
     type: 'swap',
     color: deprecated
