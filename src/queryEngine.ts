@@ -183,7 +183,9 @@ const filterAddNewTxs = async (
   const newDocs: DbTx[] = []
   for (const docId of docIds) {
     if (
-      queryResults.rows.find(doc => 'id' in doc && doc.id === docId) == null
+      queryResults.rows.find(
+        doc => 'id' in doc && doc.id === docId && doc.doc != null
+      ) == null
     ) {
       // Get the full transaction
       const orderId = docId.split(':')[1] ?? ''
