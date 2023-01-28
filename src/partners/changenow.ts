@@ -14,8 +14,8 @@ import { datelog } from '../util'
 const asChangeNowTx = asObject({
   id: asString,
   updatedAt: asString,
-  payinHash: asString,
-  payoutHash: asString,
+  payinHash: asOptional(asString),
+  payoutHash: asOptional(asString),
   payinAddress: asString,
   fromCurrency: asString,
   amountSend: asNumber,
@@ -26,7 +26,6 @@ const asChangeNowTx = asObject({
 
 const asChangeNowRawTx = asObject({
   status: asString,
-  payinHash: asOptional(asString),
   amountSend: asOptional(asNumber),
   amountReceive: asOptional(asNumber)
 })
@@ -80,7 +79,6 @@ export const queryChangeNow = async (
       const checkTx = asChangeNowRawTx(rawtx) // Check RAW trasaction
       if (
         checkTx.status === 'finished' &&
-        checkTx.payinHash != null &&
         checkTx.amountSend != null &&
         checkTx.amountReceive != null
       ) {
