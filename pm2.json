@@ -3,26 +3,26 @@
     {
       "name": "reportsQuery",
       "script": "lib/indexQuery.js",
-      "error_file": "logs/reportsQuery.error.log",
-      "out_file": "logs/reportsQuery.out.log"
+      "error_file": "/var/log/pm2/reportsQuery.error.log",
+      "out_file": "/var/log/pm2/reportsQuery.out.log"
     },
     {
       "name": "reportsRates",
       "script": "lib/indexRates.js",
-      "error_file": "logs/reportsRates.error.log",
-      "out_file": "logs/reportsRates.out.log"
+      "error_file": "/var/log/pm2/reportsRates.error.log",
+      "out_file": "/var/log/pm2/reportsRates.out.log"
     },
     {
       "name": "reportsApi",
       "script": "lib/indexApi.js",
-      "error_file": "logs/reportsApi.error.log",
-      "out_file": "logs/reportsApi.out.log"
+      "error_file": "/var/log/pm2/reportsApi.error.log",
+      "out_file": "/var/log/pm2/reportsApi.out.log"
     },
     {
       "name": "reportsCache",
       "script": "lib/indexCache.js",
-      "error_file": "logs/reportsCache.error.log",
-      "out_file": "logs/reportsCache.out.log"
+      "error_file": "/var/log/pm2/reportsCache.error.log",
+      "out_file": "/var/log/pm2/reportsCache.out.log"
     }
   ]
 }
