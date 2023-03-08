@@ -1,5 +1,12 @@
 import { div } from 'biggystring'
-import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
+import {
+  asArray,
+  asNumber,
+  asObject,
+  asOptional,
+  asString,
+  asUnknown
+} from 'cleaners'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
@@ -36,10 +43,6 @@ const asThorchainTx = asObject({
   type: asString
 })
 
-const asApiKeys = asObject({
-  thorchainAddress: asString
-})
-
 const asSettings = asObject({
   offset: asNumber
 })
@@ -47,10 +50,18 @@ const asSettings = asObject({
 const asThorchainResult = asObject({
   actions: asArray(asUnknown)
 })
+
+const asThorchainPluginParams = asObject({
+  apiKeys: asObject({ thorchainAddress: asString }),
+  settings: asObject({
+    latestIsoDate: asOptional(asString, '1970-01-01T00:00:00.000Z')
+  })
+})
+
 type Settings = ReturnType<typeof asSettings>
 type ThorchainResult = ReturnType<typeof asThorchainResult>
 
-const ROLLBACK = 500
+const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 const LIMIT = 50
 const THORCHAIN_MULTIPLIER = 100000000
 
@@ -59,22 +70,21 @@ export const queryThorchain = async (
 ): Promise<PluginResult> => {
   const ssFormatTxs: StandardTx[] = []
 
+  const { settings, apiKeys } = asThorchainPluginParams(pluginParams)
+  const { thorchainAddress } = apiKeys
+  let { latestIsoDate } = settings
+
+  let previousTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
+  if (previousTimestamp < 0) previousTimestamp = 0
+  const previousLatestIsoDate = new Date(previousTimestamp).toISOString()
+
+  let done = false
+  let oldestIsoDate = new Date(99999999999999).toISOString()
+
   let offset = 0
-  let thorchainAddress
-  try {
-    thorchainAddress = asApiKeys(pluginParams.apiKeys).thorchainAddress
-    offset = asSettings(pluginParams.settings).offset
-  } catch (e) {}
 
-  if (thorchainAddress == null) {
-    return {
-      settings: { offset },
-      transactions: []
-    }
-  }
-
-  while (true) {
-    const url = `https://midgard.ninerealms.com/v2/actions?address=${thorchainAddress}&type=swap,refund&affiliate=ej&limit=50&offset=${offset}&limit=${LIMIT}`
+  while (!done) {
+    const url = `https://midgard.ninerealms.com/v2/actions?address=${thorchainAddress}&type=swap,refund&affiliate=ej&offset=${offset}&limit=${LIMIT}`
     let jsonObj: ThorchainResult
     try {
       const result = await fetch(url, {
@@ -96,12 +106,12 @@ export const queryThorchain = async (
         status: txStatus
       } = asThorchainTx(rawTx) // Check RAW trasaction
 
-      let status = 'complete'
+      const status = 'complete'
       if (txStatus !== 'success') {
-        status = 'failed'
+        continue
       }
       if (pools.length !== 2) {
-        status = 'failed'
+        continue
       }
 
       const srcAsset = txIns[0].coins[0].asset
@@ -113,7 +123,7 @@ export const queryThorchain = async (
       // If there is a match between source and dest asset that means a refund was made
       // and the transaction failed
       if (match != null) {
-        status = 'failed'
+        continue
       }
 
       const timestampMs = div(date, '1000000', 16)
@@ -128,7 +138,7 @@ export const queryThorchain = async (
 
       const txOut = txOuts.find(o => o.coins[0].asset !== 'THOR.RUNE')
       if (txOut == null) {
-        status = 'failed'
+        continue
       }
 
       let payoutCurrency
@@ -173,17 +183,27 @@ export const queryThorchain = async (
       } else {
         matchTx.depositAmount += ssTx.depositAmount
       }
+      if (ssTx.isoDate > latestIsoDate) {
+        latestIsoDate = ssTx.isoDate
+      }
+      if (ssTx.isoDate < oldestIsoDate) {
+        oldestIsoDate = ssTx.isoDate
+      }
+      if (ssTx.isoDate < previousLatestIsoDate && !done) {
+        datelog(
+          `Thorchain done: date ${ssTx.isoDate} < ${previousLatestIsoDate}`
+        )
+        done = true
+      }
     }
+
     if (txs.length < LIMIT) {
       break
     }
     offset += LIMIT
   }
-  if (offset >= ROLLBACK) {
-    offset -= ROLLBACK
-  }
   const out: PluginResult = {
-    settings: { offset },
+    settings: { latestIsoDate },
     transactions: ssFormatTxs
   }
   return out

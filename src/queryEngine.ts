@@ -2,6 +2,7 @@ import { asArray, asMap, asObject, asString } from 'cleaners'
 import nano from 'nano'
 
 import config from '../config.json'
+import { pagination } from './dbutils'
 import { banxa } from './partners/banxa'
 import { bitaccess } from './partners/bitaccess'
 import { bitrefill } from './partners/bitrefill'
@@ -21,14 +22,14 @@ import { paytrie } from './partners/paytrie'
 import { safello } from './partners/safello'
 import { sideshift } from './partners/sideshift'
 import { simplex } from './partners/simplex'
+import { swapuz } from './partners/swapuz'
 import { switchain } from './partners/switchain'
 import { thorchain } from './partners/thorchain'
 import { transak } from './partners/transak'
 import { wyre } from './partners/wyre'
 import { xanpool } from './partners/xanpool'
 import { asProgressSettings, DbTx, StandardTx } from './types'
-import { datelog, pagination, promiseTimeout, standardizeNames } from './util'
-
+import { datelog, promiseTimeout, standardizeNames } from './util'
 const asApp = asObject({
   appId: asString,
   pluginIds: asMap(asMap(asString))
@@ -75,10 +76,11 @@ const partners = [
   paytrie,
   safello,
   sideshift,
+  simplex,
+  swapuz,
   switchain,
   thorchain,
   transak,
-  simplex,
   wyre,
   xanpool
 ]
@@ -94,7 +96,7 @@ export async function queryEngine(): Promise<void> {
   datelog(result)
   // if database does not exist, create it
   for (const dbName of DB_NAMES) {
-    if (!result.includes(dbName.name)) {
+    if (result.includes(dbName.name) === false) {
       await nanoDb.db.create(dbName.name, dbName.options)
     }
     if (dbName.indexes !== undefined) {
@@ -130,10 +132,13 @@ export async function queryEngine(): Promise<void> {
     let remainingPlugins: String[] = []
     // loop over every app
     for (const app of apps) {
+      if (config.soloAppId != null && config.soloAppId !== app.appId) continue
       let partnerStatus: string[] = []
       // loop over every pluginId that app uses
       remainingPlugins = Object.keys(app.pluginIds)
       for (const pluginId in app.pluginIds) {
+        if (config.soloPluginId != null && config.soloPluginId !== pluginId)
+          continue
         remainingPlugins.push(pluginId)
         promiseArray.push(
           runPlugin(app, pluginId, dbProgress).finally(() => {
@@ -178,7 +183,9 @@ const filterAddNewTxs = async (
   const newDocs: DbTx[] = []
   for (const docId of docIds) {
     if (
-      queryResults.rows.find(doc => 'id' in doc && doc.id === docId) == null
+      queryResults.rows.find(
+        doc => 'id' in doc && doc.id === docId && doc.doc != null
+      ) == null
     ) {
       // Get the full transaction
       const orderId = docId.split(':')[1] ?? ''

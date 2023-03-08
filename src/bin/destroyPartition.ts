@@ -2,7 +2,8 @@ import { asObject, asString } from 'cleaners'
 import js from 'jsonfile'
 import nano from 'nano'
 
-import { datelog, pagination } from '../util'
+import { pagination } from '../dbutils'
+import { datelog } from '../util'
 
 const config = js.readFileSync('./config.json')
 const nanoDb = nano(config.couchDbFullpath)

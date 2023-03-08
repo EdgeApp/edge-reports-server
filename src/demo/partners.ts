@@ -1,114 +1,120 @@
+const deprecated = '#444444'
+
 export default {
   banxa: {
     type: 'fiat',
-    color: '#004c6d'
+    color: '#58BFB9'
   },
   bitaccess: {
     type: 'fiat',
-    color: '#06759d'
+    color: '#CF7135'
   },
   bitsofgold: {
     type: 'fiat',
-    color: '#06a1ce'
+    color: '#EEC544'
   },
   bity: {
     type: 'fiat',
-    color: '#00cfff'
+    color: '#285FF6'
   },
   bitrefill: {
     type: 'fiat',
-    color: '#dc143c'
+    color: '#EA332E'
   },
   changehero: {
     type: 'swap',
-    color: '#2f80ed'
+    color: '#4D90EF'
   },
   changelly: {
     type: 'swap',
-    color: '#ed5e67'
+    color: deprecated
   },
   changenow: {
     type: 'swap',
-    color: '#f99093'
+    color: '#00ff00'
   },
   coinswitch: {
     type: 'swap',
-    color: '#ffbec0'
+    color: deprecated
   },
   exolix: {
     type: 'swap',
-    color: '#888400'
+    color: '#8BEDC2'
   },
   faast: {
     type: 'swap',
-    color: '#006400'
+    color: deprecated
   },
   foxExchange: {
     type: 'swap',
-    color: '#4d953c'
+    color: deprecated
   },
   gebo: {
     type: 'fiat',
-    color: '#f4c2c2'
+    color: deprecated
   },
   godex: {
     type: 'swap',
-    color: '#86c972'
+    color: '#F8F852'
   },
   letsexchange: {
     type: 'swap',
-    color: '#c0f060'
+    color: '#1A1438'
   },
   libertyx: {
     type: 'fiat',
-    color: '#c1ffaa'
+    color: '#2551E8'
   },
   moonpay: {
     type: 'fiat',
-    color: '#ff8c00'
+    color: '#7214F5'
   },
   paytrie: {
     type: 'fiat',
-    color: '#fdb03b'
+    color: '#99A5DE'
   },
   safello: {
     type: 'fiat',
-    color: '#fccf6a'
+    color: deprecated
   },
   shapeshift: {
     type: 'swap',
-    color: '#ffeb9c'
+    color: deprecated
   },
   sideshift: {
     type: 'swap',
-    color: '#4b0082'
+    color: '#E35852'
+  },
+  swapuz: {
+    type: 'swap',
+    color: '#56BD7C'
   },
   switchain: {
     type: 'swap',
-    color: '#8d4da9'
+    color: deprecated
   },
   thorchain: {
     type: 'swap',
-    color: '#c892d2'
+    color: '#6ADAC5'
   },
   totle: {
     type: 'swap',
-    color: '#c892d2'
+    color: deprecated
   },
   transak: {
     type: 'fiat',
-    color: '#ffdaff'
+    color: '#356AD8'
   },
   simplex: {
     type: 'fiat',
-    color: '#8b4513'
+    color: '#D12D4A'
   },
   wyre: {
     type: 'fiat',
-    color: '#b17f49'
+    color: deprecated
   },
   xanpool: {
     type: 'fiat',
-    color: '#444444'
+    color: '#46228B'
   }
 } as const
