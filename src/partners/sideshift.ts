@@ -1,4 +1,11 @@
-import { asArray, asMaybe, asObject, asString, asUnknown } from 'cleaners'
+import {
+  asArray,
+  asMaybe,
+  asObject,
+  asOptional,
+  asString,
+  asUnknown
+} from 'cleaners'
 import crypto from 'crypto'
 import fetch from 'node-fetch'
 
@@ -17,6 +24,16 @@ const asSideshiftTx = asObject({
   settleMethodId: asString,
   settleAmount: asString,
   createdAt: asString
+})
+
+const asSideshiftPluginParams = asObject({
+  apiKeys: asObject({
+    sideshiftAffiliateId: asString,
+    sideshiftAffiliateSecret: asString
+  }),
+  settings: asObject({
+    latestIsoDate: asOptional(asString, '1970-01-01T00:00:00.000Z')
+  })
 })
 
 type SideshiftTx = ReturnType<typeof asSideshiftTx>
@@ -88,29 +105,12 @@ async function fetchTransactions(
 export async function querySideshift(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
-  const {
-    apiKeys: { sideshiftAffiliateId, sideshiftAffiliateSecret }
-  } = pluginParams
-  let {
-    settings: { lastCheckedTimestamp = 0 }
-  } = pluginParams
+  const { settings, apiKeys } = asSideshiftPluginParams(pluginParams)
+  const { sideshiftAffiliateId, sideshiftAffiliateSecret } = apiKeys
+  const { latestIsoDate } = settings
 
-  if (
-    typeof lastCheckedTimestamp === 'number' &&
-    lastCheckedTimestamp > QUERY_LOOKBACK
-  ) {
-    lastCheckedTimestamp -= QUERY_LOOKBACK
-  }
-
-  if (
-    !(typeof sideshiftAffiliateSecret === 'string') ||
-    !(typeof sideshiftAffiliateId === 'string')
-  ) {
-    return {
-      settings: { lastCheckedTimestamp },
-      transactions: []
-    }
-  }
+  let lastCheckedTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
+  if (lastCheckedTimestamp < 0) lastCheckedTimestamp = 0
 
   const txs: StandardTx[] = []
 
@@ -121,13 +121,16 @@ export async function querySideshift(
   )
 
   txs.push(...newTxs)
+  const newLastCheckedTimestamp =
+    Math.max(...newTxs.map(tx => tx.timestamp)) * 1000
 
-  return {
+  const out = {
     settings: {
-      lastCheckedTimestamp: Math.max(...newTxs.map(tx => tx.timestamp)) * 1000
+      latestIsoDate: new Date(newLastCheckedTimestamp)
     },
     transactions: txs
   }
+  return out
 }
 
 export const sideshift: PartnerPlugin = {
