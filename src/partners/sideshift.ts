@@ -61,45 +61,52 @@ async function fetchTransactions(
 
   const signature = affiliateSignature(affiliateId, affiliateSecret, time)
   const url = `https://sideshift.ai/api/affiliate/completedOrders?affiliateId=${affiliateId}&since=${lastCheckedTimestamp}&currentTime=${time}&signature=${signature}`
+  let tries = 5
+  while (--tries > 0) {
+    try {
+      const response = await fetch(url)
+      const jsonObj = await response.json()
+      const orders = asSideshiftResult(jsonObj)
+      const out: StandardTx[] = []
+      for (const order of orders) {
+        let tx: SideshiftTx
+        try {
+          tx = asSideshiftTx(order)
+        } catch (e) {
+          datelog(e)
+          datelog(JSON.stringify(order, null, 2))
+          throw e
+        }
+        const depositAddress =
+          tx.depositAddress?.address ?? tx.prevDepositAddresses?.address
 
-  try {
-    const response = await fetch(url)
-    const jsonObj = await response.json()
-    const orders = asSideshiftResult(jsonObj)
-
-    return orders.map(order => {
-      let tx: SideshiftTx
-      try {
-        tx = asSideshiftTx(order)
-      } catch (e) {
-        datelog(e)
-        datelog(JSON.stringify(order, null, 2))
-        throw e
+        out.push({
+          status: 'complete',
+          orderId: tx.id,
+          depositTxid: undefined,
+          depositAddress,
+          depositCurrency: tx.depositMethodId.toUpperCase(),
+          depositAmount: Number(tx.invoiceAmount),
+          payoutTxid: undefined,
+          payoutAddress: tx.settleAddress.address,
+          payoutCurrency: tx.settleMethodId.toUpperCase(),
+          payoutAmount: Number(tx.settleAmount),
+          timestamp: new Date(tx.createdAt).getTime() / 1000,
+          isoDate: tx.createdAt,
+          usdValue: undefined,
+          rawTx: order
+        })
       }
-      const depositAddress =
-        tx.depositAddress?.address ?? tx.prevDepositAddresses?.address
-
-      return {
-        status: 'complete',
-        orderId: tx.id,
-        depositTxid: undefined,
-        depositAddress,
-        depositCurrency: tx.depositMethodId.toUpperCase(),
-        depositAmount: Number(tx.invoiceAmount),
-        payoutTxid: undefined,
-        payoutAddress: tx.settleAddress.address,
-        payoutCurrency: tx.settleMethodId.toUpperCase(),
-        payoutAmount: Number(tx.settleAmount),
-        timestamp: new Date(tx.createdAt).getTime() / 1000,
-        isoDate: tx.createdAt,
-        usdValue: undefined,
-        rawTx: order
+      return out
+    } catch (e) {
+      const err: any = e
+      datelog(err)
+      if (err.code !== 'ETIMEDOUT') {
+        throw err
       }
-    })
-  } catch (e) {
-    datelog(e)
-    throw e
+    }
   }
+  throw new Error('Failed to fetch transactions')
 }
 
 export async function querySideshift(
@@ -114,19 +121,24 @@ export async function querySideshift(
 
   const txs: StandardTx[] = []
 
-  const newTxs = await fetchTransactions(
-    sideshiftAffiliateId,
-    sideshiftAffiliateSecret,
-    lastCheckedTimestamp
-  )
+  while (true) {
+    const newTxs = await fetchTransactions(
+      sideshiftAffiliateId,
+      sideshiftAffiliateSecret,
+      lastCheckedTimestamp
+    )
 
-  txs.push(...newTxs)
-  const newLastCheckedTimestamp =
-    Math.max(...newTxs.map(tx => tx.timestamp)) * 1000
+    txs.push(...newTxs)
+    lastCheckedTimestamp = Math.max(...newTxs.map(tx => tx.timestamp)) * 1000
+    if (newTxs.length < 3) {
+      console.log('break')
+      break
+    }
+  }
 
   const out = {
     settings: {
-      latestIsoDate: new Date(newLastCheckedTimestamp)
+      latestIsoDate: new Date(lastCheckedTimestamp)
     },
     transactions: txs
   }
