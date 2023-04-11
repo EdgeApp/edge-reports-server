@@ -14,8 +14,8 @@ import { datelog } from '../util'
 const asChangeNowTx = asObject({
   id: asString,
   updatedAt: asString,
-  payinHash: asString,
-  payoutHash: asString,
+  payinHash: asOptional(asString),
+  payoutHash: asOptional(asString),
   payinAddress: asString,
   fromCurrency: asString,
   amountSend: asNumber,
@@ -26,7 +26,6 @@ const asChangeNowTx = asObject({
 
 const asChangeNowRawTx = asObject({
   status: asString,
-  payinHash: asOptional(asString),
   amountSend: asOptional(asNumber),
   amountReceive: asOptional(asNumber)
 })
@@ -65,6 +64,7 @@ export const queryChangeNow = async (
   while (true) {
     const url = makeUrl(settings, pluginParams.apiKeys.changenowApiKey)
     let jsonObj: ReturnType<typeof asChangeNowResult>
+    let retry = 3
     try {
       const result = await fetch(url, {
         method: 'GET'
@@ -72,7 +72,11 @@ export const queryChangeNow = async (
       const seperate = await result.json()
       jsonObj = asChangeNowResult(seperate)
     } catch (e) {
+      const error: any = e
       datelog(e)
+      if (error.code === 'ETIMEDOUT' && --retry >= 0) {
+        continue
+      }
       break
     }
     const txs = jsonObj
@@ -80,7 +84,6 @@ export const queryChangeNow = async (
       const checkTx = asChangeNowRawTx(rawtx) // Check RAW trasaction
       if (
         checkTx.status === 'finished' &&
-        checkTx.payinHash != null &&
         checkTx.amountSend != null &&
         checkTx.amountReceive != null
       ) {
