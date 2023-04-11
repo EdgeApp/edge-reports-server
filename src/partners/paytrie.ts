@@ -50,7 +50,10 @@ export async function queryPaytrie(
       },
       method: 'post'
     }
-  ).catch(err => datelog(err))
+  ).catch(err => {
+    datelog(err)
+    throw err
+  })
 
   const orders = asPaytrieTxs(await apiResponse.json())
 
