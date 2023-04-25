@@ -16,10 +16,10 @@ const asExolixTx = asObject({
   id: asString,
   status: asString,
   coinFrom: asObject({
-    coinCode: asString,
+    coinCode: asString
   }),
   coinTo: asObject({
-    coinCode: asString,
+    coinCode: asString
   }),
   amount: asNumber,
   amountTo: asNumber,
@@ -82,7 +82,7 @@ export async function queryExolix(
     const txs = result.data
     for (const rawTx of txs) {
       const tx = asExolixTx(rawTx)
-      const dateInMillis = Date.parse(tx.createdAt) || 0
+      const dateInMillis = Date.parse(tx.createdAt)
       const { isoDate, timestamp } = smartIsoDateFromTimestamp(dateInMillis)
       const ssTx: StandardTx = {
         status: 'complete',
