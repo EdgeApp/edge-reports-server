@@ -65,6 +65,10 @@ async function fetchTransactions(
   while (--tries > 0) {
     try {
       const response = await fetch(url)
+      if (response.ok === false) {
+        const text = await response.text()
+        throw new Error(text)
+      }
       const jsonObj = await response.json()
       const orders = asSideshiftResult(jsonObj)
       const out: StandardTx[] = []

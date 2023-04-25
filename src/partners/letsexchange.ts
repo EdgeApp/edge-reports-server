@@ -2,6 +2,7 @@ import { asArray, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import { datelog } from '../util'
 
 const asLetsExchangeTx = asObject({
   transaction_id: asString,
@@ -47,6 +48,11 @@ export async function queryLetsExchange(
     const url = `https://api.letsexchange.io/api/v1/affiliate/history/${apiKey}?limit=${LIMIT}&page=${page}&status=success&types=0`
 
     const result = await fetch(url, { method: 'GET' })
+    if (result.ok === false) {
+      const text = await result.text()
+      datelog(text)
+      throw new Error(text)
+    }
     const resultJSON = await result.json()
     const { data: txs } = asLetsExchangeResult(resultJSON)
 
