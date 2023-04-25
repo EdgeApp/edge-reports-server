@@ -383,7 +383,7 @@ export async function queryTotle(
             await web3.eth.getTransactionReceipt(swapEvent.transactionHash)
           )
 
-          const ssTx = {
+          const ssTx: StandardTx = {
             status: 'complete',
             orderId: receipt.transactionHash,
             depositTxid: receipt.transactionHash,

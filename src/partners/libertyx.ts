@@ -59,7 +59,7 @@ export async function queryLibertyx(
     }
     const date = new Date(tx.date_us_eastern)
     const timestamp = date.getTime() / 1000
-    const ssTx = {
+    const ssTx: StandardTx = {
       status: 'complete',
       orderId: tx.date_us_eastern,
       depositTxid: undefined,

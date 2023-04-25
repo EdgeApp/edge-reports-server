@@ -53,7 +53,7 @@ export async function queryShapeshift(
     for (const rawTx of txs) {
       if (asRawShapeshiftTx(rawTx).status === 'complete') {
         const tx = asShapeshiftTx(rawTx)
-        const ssTx = {
+        const ssTx: StandardTx = {
           status: 'complete',
           orderId: tx.orderId,
           depositTxid: tx.inputTXID,

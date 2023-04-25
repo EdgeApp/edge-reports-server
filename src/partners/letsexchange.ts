@@ -59,7 +59,7 @@ export async function queryLetsExchange(
     for (const rawTx of txs) {
       const tx = asLetsExchangeTx(rawTx)
       const timestamp = parseInt(tx.created_at)
-      const ssTx = {
+      const ssTx: StandardTx = {
         status: 'complete',
         orderId: tx.hash_in,
         depositTxid: tx.hash_in,

@@ -58,7 +58,7 @@ export async function queryGodex(
       for (const rawtx of txs) {
         const tx = asGodexTx(rawtx)
         const timestamp = parseInt(tx.created_at)
-        const ssTx = {
+        const ssTx: StandardTx = {
           status: 'complete',
           orderId: tx.hash_in,
           depositTxid: tx.hash_in,

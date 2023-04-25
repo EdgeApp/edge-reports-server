@@ -94,10 +94,10 @@ async function queryXanpool(pluginParams: PluginParams): Promise<PluginResult> {
           crypto,
           depositWallets
         } = asXanpoolTx(rawTx)
-        let ssTx: StandardTx | undefined
+        let ssTx: StandardTx
         if (type === 'buy') {
           ssTx = {
-            status: status === 'completed' ? 'complete' : status,
+            status: status === 'completed' ? 'complete' : 'expired',
             orderId: id,
             depositTxid: undefined,
             depositAddress: undefined,
@@ -115,7 +115,7 @@ async function queryXanpool(pluginParams: PluginParams): Promise<PluginResult> {
           }
         } else if (type === 'sell') {
           ssTx = {
-            status: status === 'completed' ? 'complete' : status,
+            status: status === 'completed' ? 'complete' : 'expired',
             orderId: id,
             depositTxid: blockchainTxId,
             depositAddress: Object.values(depositWallets ?? {})[0],

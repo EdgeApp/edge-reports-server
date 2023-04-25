@@ -133,7 +133,7 @@ async function migration(): Promise<void> {
             .map(async tx => {
               if (appAndPluginId === `edge_shapeshift`) {
                 const cleanedShapeshiftTx = asShapeshiftTx(tx)
-                const newTx = {
+                const newTx: StandardTx = {
                   status: 'complete',
                   orderId: cleanedShapeshiftTx.orderId,
                   depositTxid: cleanedShapeshiftTx.inputTXID,
@@ -180,7 +180,7 @@ async function migration(): Promise<void> {
                 typeof cleanedOldTx.outputAmount === 'number'
                   ? cleanedOldTx.outputAmount
                   : parseFloat(cleanedOldTx.outputAmount)
-              const newTx = {
+              const newTx: StandardTx = {
                 orderId: cleanedOldTx.inputTXID,
                 depositTxid: undefined,
                 depositAddress,

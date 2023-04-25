@@ -92,7 +92,7 @@ export async function queryMoonpay(
 
         const date = new Date(tx.createdAt)
         const timestamp = date.getTime()
-        const ssTx = {
+        const ssTx: StandardTx = {
           status: 'complete',
           orderId: tx.id,
           depositTxid: undefined,
