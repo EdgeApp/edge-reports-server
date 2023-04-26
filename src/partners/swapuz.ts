@@ -112,19 +112,19 @@ export const querySwapuz = async (
       const text = await response.text()
       throw new Error(text)
     }
-    const reply = await response.json()
-    const jsonObj = asSwapuzResult(reply)
-    const { currentPage, maxPage, result: txs } = jsonObj.result
-    for (const rawTx of txs) {
-      const { id, status: statusNum, dTxId, wTxId } = asSwapuzRawTx(rawTx)
+    try {
+      const reply = await response.json()
+      const jsonObj = asSwapuzResult(reply)
+      const { currentPage, maxPage, result: txs } = jsonObj.result
+      for (const rawTx of txs) {
+        const { id, status: statusNum, dTxId, wTxId } = asSwapuzRawTx(rawTx)
 
-      // Status === 6 seems to be the "complete" status
-      let status: Status = 'other'
-      if (statusNum === 6 && dTxId != null && wTxId != null) {
-        status = 'complete'
-      }
+        // Status === 6 seems to be the "complete" status
+        let status: Status = 'other'
+        if (statusNum === 6 && dTxId != null && wTxId != null) {
+          status = 'complete'
+        }
 
-      try {
         const { amount, amountResult, createDate, from, to } = asSwapuzTx(rawTx)
         const date = new Date(createDate)
         const timestamp = date.getTime() / 1000
@@ -158,17 +158,16 @@ export const querySwapuz = async (
           )
           done = true
         }
-      } catch (e) {
-        const err: any = e
-        datelog(err.message)
       }
-    }
-    // console.log(
-    //   `Swapuz page=${page}/${maxPage} oldestIsoDate: ${oldestIsoDate}`
-    // )
+      datelog(`Swapuz page=${page}/${maxPage} oldestIsoDate: ${oldestIsoDate}`)
 
-    if (currentPage >= maxPage) {
-      break
+      if (currentPage >= maxPage) {
+        break
+      }
+    } catch (e) {
+      const err: any = e
+      datelog(err.message)
+      throw e
     }
   }
   const out: PluginResult = {
