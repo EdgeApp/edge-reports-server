@@ -8,8 +8,13 @@ import {
 } from 'cleaners'
 import fetch from 'node-fetch'
 
-import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog } from '../util'
+import {
+  PartnerPlugin,
+  PluginParams,
+  PluginResult,
+  StandardTx,
+  Status
+} from '../types'
 import { datelog, retryFetch } from '../util'
 
 const asSwapuzLogin = asObject({
@@ -111,22 +116,21 @@ export const querySwapuz = async (
     const jsonObj = asSwapuzResult(reply)
     const { currentPage, maxPage, result: txs } = jsonObj.result
     for (const rawTx of txs) {
-      const { id, status, dTxId, wTxId } = asSwapuzRawTx(rawTx)
+      const { id, status: statusNum, dTxId, wTxId } = asSwapuzRawTx(rawTx)
 
       // Status === 6 seems to be the "complete" status
-      if (status === 6) {
-        if (dTxId == null) {
-          continue
-        }
-        if (wTxId == null) {
-          continue
-        }
+      let status: Status = 'other'
+      if (statusNum === 6 && dTxId != null && wTxId != null) {
+        status = 'complete'
+      }
+
+      try {
         const { amount, amountResult, createDate, from, to } = asSwapuzTx(rawTx)
         const date = new Date(createDate)
         const timestamp = date.getTime() / 1000
 
         const ssTx: StandardTx = {
-          status: 'complete',
+          status,
           orderId: id.toString(),
           depositTxid: dTxId,
           depositCurrency: from.toUpperCase(),
@@ -154,6 +158,9 @@ export const querySwapuz = async (
           )
           done = true
         }
+      } catch (e) {
+        const err: any = e
+        datelog(err.message)
       }
     }
     // console.log(
