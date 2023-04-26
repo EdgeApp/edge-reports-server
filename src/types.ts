@@ -68,6 +68,15 @@ export const asDbCurrencyCodeMappings = asObject({
   mappings: asCurrencyCodeMappings
 })
 
+export const asStandardPluginParams = asObject({
+  settings: asObject({
+    latestIsoDate: asOptional(asString, '0')
+  }),
+  apiKeys: asObject({
+    apiKey: asOptional(asString)
+  })
+})
+
 export type CurrencyCodeMappings = ReturnType<typeof asCurrencyCodeMappings>
 export type DbCurrencyCodeMappings = ReturnType<typeof asDbCurrencyCodeMappings>
 export type DbTx = ReturnType<typeof asDbTx>
