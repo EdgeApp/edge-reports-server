@@ -1,8 +1,16 @@
-import { asArray, asObject, asString, asUnknown } from 'cleaners'
-import fetch from 'node-fetch'
+import { asArray, asObject, asOptional, asString, asUnknown } from 'cleaners'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog } from '../util'
+import { datelog, retryFetch, smartIsoDateFromTimestamp } from '../util'
+
+const asGodexPluginParams = asObject({
+  settings: asObject({
+    latestIsoDate: asOptional(asString, '0')
+  }),
+  apiKeys: asObject({
+    apiKey: asOptional(asString)
+  })
+})
 
 const asGodexTx = asObject({
   transaction_id: asString,
@@ -24,40 +32,39 @@ const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
 export async function queryGodex(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
-  const ssFormatTxs: StandardTx[] = []
-  let apiKey
-  let offset = 0
-  let lastCheckedTimestamp = 0
+  const { settings, apiKeys } = asGodexPluginParams(pluginParams)
+  const { apiKey } = apiKeys
+  let { latestIsoDate } = settings
+  // let latestIsoDate = '2023-01-04T19:36:46.000Z'
 
-  if (typeof pluginParams.settings.latestTimeStamp === 'number') {
-    lastCheckedTimestamp =
-      pluginParams.settings.latestTimeStamp - QUERY_LOOKBACK
+  if (typeof apiKey !== 'string') {
+    return { settings: { latestIsoDate }, transactions: [] }
   }
-  if (typeof pluginParams.apiKeys.apiKey === 'string') {
-    apiKey = pluginParams.apiKeys.apiKey
-  } else {
-    return {
-      settings: { lastCheckedTimestamp: lastCheckedTimestamp },
-      transactions: []
-    }
-  }
+
+  const ssFormatTxs: StandardTx[] = []
+  let previousTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
+  if (previousTimestamp < 0) previousTimestamp = 0
+  const previousLatestIsoDate = new Date(previousTimestamp).toISOString()
 
   let done = false
-  let newestTimestamp = 0
+  let offset = 0
   try {
     while (!done) {
+      let oldestIsoDate = '999999999999999999999999999999999999'
+
       const url = `https://api.nrnb.io/api/v1/affiliate/history?status=success&limit=${LIMIT}&offset=${offset}`
       const headers = {
         'public-key': apiKey
       }
 
-      const result = await fetch(url, { method: 'GET', headers: headers })
+      const result = await retryFetch(url, { method: 'GET', headers: headers })
       const resultJSON = await result.json()
       const txs = asGodexResult(resultJSON)
 
       for (const rawtx of txs) {
         const tx = asGodexTx(rawtx)
-        const timestamp = parseInt(tx.created_at)
+        const ts = parseInt(tx.created_at)
+        const { isoDate, timestamp } = smartIsoDateFromTimestamp(ts)
         const ssTx: StandardTx = {
           status: 'complete',
           orderId: tx.hash_in,
@@ -69,19 +76,24 @@ export async function queryGodex(
           payoutAddress: tx.withdrawal,
           payoutCurrency: tx.coin_to.toUpperCase(),
           payoutAmount: parseFloat(tx.withdrawal_amount),
-          timestamp: timestamp,
-          isoDate: new Date(timestamp * 1000).toISOString(),
+          timestamp,
+          isoDate,
           usdValue: undefined,
           rawTx: rawtx
         }
         ssFormatTxs.push(ssTx)
-        if (timestamp > newestTimestamp) {
-          newestTimestamp = timestamp
+        if (isoDate > latestIsoDate) {
+          latestIsoDate = isoDate
         }
-        if (lastCheckedTimestamp > timestamp) {
+        if (isoDate < oldestIsoDate) {
+          oldestIsoDate = isoDate
+        }
+        if (isoDate < previousLatestIsoDate && !done) {
+          datelog(`Godex done: date ${isoDate} < ${previousLatestIsoDate}`)
           done = true
         }
       }
+      // datelog(`godex oldestIsoDate ${oldestIsoDate}`)
 
       offset += LIMIT
       // this is if the end of the database is reached
@@ -94,7 +106,7 @@ export async function queryGodex(
     throw e
   }
   const out: PluginResult = {
-    settings: { latestTimeStamp: newestTimestamp },
+    settings: { latestIsoDate },
     transactions: ssFormatTxs
   }
   return out
