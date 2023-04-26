@@ -10,6 +10,7 @@ import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { datelog } from '../util'
+import { datelog, retryFetch } from '../util'
 
 const asSwapuzLogin = asObject({
   result: asObject({
@@ -98,7 +99,7 @@ export const querySwapuz = async (
   while (!done) {
     page++
     const url = `https://api.swapuz.com/api/partner/partnerPaginator?page=${page}`
-    const response = await fetch(url, {
+    const response = await retryFetch(url, {
       method: 'GET',
       headers
     })
