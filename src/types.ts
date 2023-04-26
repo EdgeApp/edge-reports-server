@@ -25,7 +25,14 @@ export interface PartnerPlugin {
   pluginId: string
 }
 
-const asStatus = asValue('complete', 'pending', 'expired', 'blocked')
+const asStatus = asValue(
+  'complete',
+  'pending',
+  'expired',
+  'blocked',
+  'refunded',
+  'other'
+)
 const standardTxFields = {
   orderId: asString,
   depositTxid: asOptional(asString),

@@ -5,16 +5,32 @@ import {
   asNumber,
   asObject,
   asString,
-  asUnknown
+  asUnknown,
+  asValue
 } from 'cleaners'
 import fetch from 'node-fetch'
 
-import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import {
+  PartnerPlugin,
+  PluginParams,
+  PluginResult,
+  StandardTx,
+  Status
+} from '../types'
 import { smartIsoDateFromTimestamp } from '../util'
+
+const asExolixStatus = asValue(
+  'success',
+  'wait',
+  'overdue',
+  'refunded',
+  'confirmed',
+  'sending'
+)
 
 const asExolixTx = asObject({
   id: asString,
-  status: asString,
+  status: asExolixStatus,
   coinFrom: asObject({
     coinCode: asString
   }),
@@ -39,8 +55,17 @@ const asExolixResult = asObject({
 })
 
 const PAGE_LIMIT = 100
-const STATUS_SUCCESS = 'success'
 const QUERY_LOOKBACK = 60 * 60 * 24 * 1 // 1 days
+
+type ExolixStatus = ReturnType<typeof asExolixStatus>
+const statusMap: { [key in ExolixStatus]: Status } = {
+  success: 'complete',
+  wait: 'pending',
+  overdue: 'expired',
+  refunded: 'refunded',
+  confirmed: 'other',
+  sending: 'other'
+}
 
 export async function queryExolix(
   pluginParams: PluginParams
@@ -66,7 +91,7 @@ export async function queryExolix(
   let page = 1
   while (!done) {
     let result
-    const request = `https://exolix.com/api/v2/transactions?page=${page}&size=${PAGE_LIMIT}&statuses=${STATUS_SUCCESS}`
+    const request = `https://exolix.com/api/v2/transactions?page=${page}&size=${PAGE_LIMIT}`
     const options = {
       method: 'GET',
       headers: {
@@ -85,7 +110,7 @@ export async function queryExolix(
       const dateInMillis = Date.parse(tx.createdAt)
       const { isoDate, timestamp } = smartIsoDateFromTimestamp(dateInMillis)
       const ssTx: StandardTx = {
-        status: 'complete',
+        status: statusMap[tx.status],
         orderId: tx.id,
         depositTxid: tx.hashIn?.hash ?? '',
         depositAddress: tx.depositAddress,
