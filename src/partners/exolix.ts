@@ -4,6 +4,7 @@ import {
   asNull,
   asNumber,
   asObject,
+  asOptional,
   asString,
   asUnknown,
   asValue
@@ -16,7 +17,16 @@ import {
   StandardTx,
   Status
 } from '../types'
-import { retryFetch, smartIsoDateFromTimestamp } from '../util'
+import { datelog, retryFetch, smartIsoDateFromTimestamp } from '../util'
+
+const asExolixPluginParams = asObject({
+  settings: asObject({
+    latestIsoDate: asOptional(asString, '0')
+  }),
+  apiKeys: asObject({
+    apiKey: asOptional(asString)
+  })
+})
 
 const asExolixStatus = asValue(
   'success',
@@ -54,8 +64,9 @@ const asExolixResult = asObject({
 })
 
 const PAGE_LIMIT = 100
-const QUERY_LOOKBACK = 60 * 60 * 24 * 1 // 1 days
+const QUERY_LOOKBACK = 60 * 60 * 24 * 3 // 3 days
 
+type ExolixTx = ReturnType<typeof asExolixTx>
 type ExolixStatus = ReturnType<typeof asExolixStatus>
 const statusMap: { [key in ExolixStatus]: Status } = {
   success: 'complete',
@@ -66,29 +77,29 @@ const statusMap: { [key in ExolixStatus]: Status } = {
   sending: 'other'
 }
 
+type Response = ReturnType<typeof fetch>
+
 export async function queryExolix(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
-  const ssFormatTxs: StandardTx[] = []
-  let apiKey: string
-  let latestTimestamp = 0
-  if (typeof pluginParams.settings.latestTimestamp === 'number') {
-    latestTimestamp = pluginParams.settings.latestTimestamp
+  const { settings, apiKeys } = asExolixPluginParams(pluginParams)
+  const { apiKey } = apiKeys
+  let { latestIsoDate } = settings
+
+  if (typeof apiKey !== 'string') {
+    return { settings: { latestIsoDate }, transactions: [] }
   }
 
-  if (typeof pluginParams.apiKeys.apiKey === 'string') {
-    apiKey = pluginParams.apiKeys.apiKey
-  } else {
-    return {
-      settings: { latestTimestamp },
-      transactions: []
-    }
-  }
+  const ssFormatTxs: StandardTx[] = []
+  let previousTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
+  if (previousTimestamp < 0) previousTimestamp = 0
+  const previousLatestIsoDate = new Date(previousTimestamp).toISOString()
 
   let done = false
-  let newestTimestamp = 0
   let page = 1
+
   while (!done) {
+    let oldestIsoDate = '999999999999999999999999999999999999'
     let result
     const request = `https://exolix.com/api/v2/transactions?page=${page}&size=${PAGE_LIMIT}`
     const options = {
@@ -107,7 +118,13 @@ export async function queryExolix(
 
     const txs = result.data
     for (const rawTx of txs) {
-      const tx = asExolixTx(rawTx)
+      let tx: ExolixTx
+      try {
+        tx = asExolixTx(rawTx)
+      } catch (e) {
+        datelog(e)
+        throw e
+      }
       const dateInMillis = Date.parse(tx.createdAt)
       const { isoDate, timestamp } = smartIsoDateFromTimestamp(dateInMillis)
       const ssTx: StandardTx = {
@@ -128,14 +145,19 @@ export async function queryExolix(
       }
 
       ssFormatTxs.push(ssTx)
-      if (latestTimestamp - QUERY_LOOKBACK > timestamp) {
-        done = true
+      if (isoDate > latestIsoDate) {
+        latestIsoDate = isoDate
       }
-      if (timestamp > newestTimestamp) {
-        newestTimestamp = timestamp
+      if (isoDate < oldestIsoDate) {
+        oldestIsoDate = isoDate
+      }
+      if (isoDate < previousLatestIsoDate && !done) {
+        datelog(`Exolix done: date ${isoDate} < ${previousLatestIsoDate}`)
+        done = true
       }
     }
     page++
+    // datelog(`oldestIsoDate ${oldestIsoDate}`)
 
     // reached end of database
     if (txs.length < PAGE_LIMIT) {
@@ -144,7 +166,7 @@ export async function queryExolix(
   }
 
   const out: PluginResult = {
-    settings: { latestTimestamp: newestTimestamp },
+    settings: { latestIsoDate },
     transactions: ssFormatTxs
   }
   return out
