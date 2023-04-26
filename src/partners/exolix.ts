@@ -8,7 +8,6 @@ import {
   asUnknown,
   asValue
 } from 'cleaners'
-import fetch from 'node-fetch'
 
 import {
   PartnerPlugin,
@@ -17,7 +16,7 @@ import {
   StandardTx,
   Status
 } from '../types'
-import { smartIsoDateFromTimestamp } from '../util'
+import { retryFetch, smartIsoDateFromTimestamp } from '../util'
 
 const asExolixStatus = asValue(
   'success',
@@ -99,7 +98,9 @@ export async function queryExolix(
         Authorization: `${apiKey}`
       }
     }
-    const response = await fetch(request, options)
+
+    const response = await retryFetch(request, options)
+
     if (response.ok === true) {
       result = asExolixResult(await response.json())
     }

@@ -5,6 +5,7 @@ import startOfDay from 'date-fns/startOfDay'
 import startOfHour from 'date-fns/startOfHour'
 import startOfMonth from 'date-fns/startOfMonth'
 import sub from 'date-fns/sub'
+import fetch, { RequestInfo, RequestInit, Response } from 'node-fetch'
 
 import {
   AnalyticsResult,
@@ -307,4 +308,27 @@ export const sevenDayDataMerge = (data: Data[]): DataPlusSevenDayAve[] => {
     })
   })
   return sevenDayDataArr.slice(SIX_DAYS)
+}
+
+export const retryFetch = async (
+  request: RequestInfo,
+  init: RequestInit,
+  maxRetries = 5
+): Promise<Response> => {
+  let retries = 0
+  let err: any
+
+  while (retries++ < 5) {
+    try {
+      const response = await fetch(request, init)
+      return response
+    } catch (e) {
+      err = e
+      if (err.code.includes('ETIMEDOUT') === false) {
+        throw err
+      }
+      await snooze(5000 * retries)
+    }
+  }
+  throw err
 }
