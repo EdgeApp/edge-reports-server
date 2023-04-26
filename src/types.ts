@@ -27,6 +27,7 @@ export interface PartnerPlugin {
 
 const asStatus = asValue(
   'complete',
+  'processing',
   'pending',
   'expired',
   'blocked',

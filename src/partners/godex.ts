@@ -1,6 +1,20 @@
-import { asArray, asObject, asOptional, asString, asUnknown } from 'cleaners'
+import {
+  asArray,
+  asMaybe,
+  asObject,
+  asOptional,
+  asString,
+  asUnknown,
+  asValue
+} from 'cleaners'
 
-import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import {
+  PartnerPlugin,
+  PluginParams,
+  PluginResult,
+  StandardTx,
+  Status
+} from '../types'
 import { datelog, retryFetch, smartIsoDateFromTimestamp } from '../util'
 
 const asGodexPluginParams = asObject({
@@ -12,9 +26,23 @@ const asGodexPluginParams = asObject({
   })
 })
 
+const asGodexStatus = asMaybe(
+  asValue(
+    'success',
+    'wait',
+    'overdue',
+    'refund',
+    'exchanging',
+    'sending_confirmation',
+    'other'
+  ),
+  'other'
+)
+
 const asGodexTx = asObject({
+  status: asGodexStatus,
   transaction_id: asString,
-  hash_in: asString,
+  hash_in: asOptional(asString, ''),
   deposit: asString,
   coin_from: asString,
   deposit_amount: asString,
@@ -26,8 +54,20 @@ const asGodexTx = asObject({
 
 const asGodexResult = asArray(asUnknown)
 
+type GodexTx = ReturnType<typeof asGodexTx>
+type GodexStatus = ReturnType<typeof asGodexStatus>
+
 const LIMIT = 100
 const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
+const statusMap: { [key in GodexStatus]: Status } = {
+  success: 'complete',
+  wait: 'pending',
+  overdue: 'expired',
+  refund: 'refunded',
+  exchanging: 'processing',
+  sending_confirmation: 'other',
+  other: 'other'
+}
 
 export async function queryGodex(
   pluginParams: PluginParams
@@ -52,7 +92,7 @@ export async function queryGodex(
     while (!done) {
       let oldestIsoDate = '999999999999999999999999999999999999'
 
-      const url = `https://api.nrnb.io/api/v1/affiliate/history?status=success&limit=${LIMIT}&offset=${offset}`
+      const url = `https://api.nrnb.io/api/v1/affiliate/history?limit=${LIMIT}&offset=${offset}`
       const headers = {
         'public-key': apiKey
       }
@@ -62,11 +102,17 @@ export async function queryGodex(
       const txs = asGodexResult(resultJSON)
 
       for (const rawtx of txs) {
-        const tx = asGodexTx(rawtx)
+        let tx: GodexTx
+        try {
+          tx = asGodexTx(rawtx)
+        } catch (e) {
+          datelog(e)
+          throw e
+        }
         const ts = parseInt(tx.created_at)
         const { isoDate, timestamp } = smartIsoDateFromTimestamp(ts)
         const ssTx: StandardTx = {
-          status: 'complete',
+          status: statusMap[tx.status],
           orderId: tx.hash_in,
           depositTxid: tx.hash_in,
           depositAddress: tx.deposit,
