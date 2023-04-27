@@ -7,7 +7,7 @@ import config from '../config.json'
 import { getAnalytic } from './dbutils'
 import { datelog, snooze } from './util'
 
-const CACHE_UPDATE_LOOKBACK_MONTHS = 3
+const CACHE_UPDATE_LOOKBACK_MONTHS = config.cacheLookbackMonths ?? 3
 
 const BULK_WRITE_SIZE = 50
 const UPDATE_FREQUENCY_MS = 1000 * 60 * 30
@@ -118,8 +118,12 @@ export async function cacheEngine(): Promise<void> {
     const rawApps = await reportsApps.find(query)
     const apps = asApps(rawApps.docs)
     for (const app of apps) {
+      if (config.soloAppId != null && config.soloAppId !== app.appId) continue
+
       const keys = Object.keys(app.pluginIds)
+
       for (const key of keys) {
+        if (config.soloPluginId != null && config.soloPluginId !== key) continue
         for (const timePeriod of TIME_PERIODS) {
           const data = await getAnalytic(
             start,

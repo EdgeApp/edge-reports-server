@@ -3,5 +3,6 @@
   "httpPort": "8000",
   "soloAppId": null,
   "soloPluginId": null,
-  "timeoutOverrideMins": null
+  "timeoutOverrideMins": null,
+  "cacheLookbackMonths": null
 }
