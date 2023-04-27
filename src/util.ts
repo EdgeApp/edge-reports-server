@@ -7,6 +7,7 @@ import startOfMonth from 'date-fns/startOfMonth'
 import sub from 'date-fns/sub'
 import fetch, { RequestInfo, RequestInit, Response } from 'node-fetch'
 
+import config from '../config.json'
 import {
   AnalyticsResult,
   Bucket,
@@ -39,9 +40,10 @@ export const promiseTimeout = async <T>(
   msg: string,
   p: Promise<T>
 ): Promise<T> => {
+  const timeoutMins = config.timeoutOverrideMins ?? 5
   return new Promise((resolve, reject) => {
     datelog('STARTING', msg)
-    setTimeout(() => reject(new Error(msg)), 60000 * 5)
+    setTimeout(() => reject(new Error(`Timeout: ${msg}`)), 60000 * timeoutMins)
     p.then(v => resolve(v)).catch(e => reject(e))
   })
 }
@@ -313,12 +315,12 @@ export const sevenDayDataMerge = (data: Data[]): DataPlusSevenDayAve[] => {
 export const retryFetch = async (
   request: RequestInfo,
   init: RequestInit,
-  maxRetries = 5
+  maxRetries: number = 5
 ): Promise<Response> => {
   let retries = 0
   let err: any
 
-  while (retries++ < 5) {
+  while (retries++ < maxRetries) {
     try {
       const response = await fetch(request, init)
       return response
