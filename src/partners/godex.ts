@@ -113,7 +113,7 @@ export async function queryGodex(
         const { isoDate, timestamp } = smartIsoDateFromTimestamp(ts)
         const ssTx: StandardTx = {
           status: statusMap[tx.status],
-          orderId: tx.hash_in,
+          orderId: tx.transaction_id,
           depositTxid: tx.hash_in,
           depositAddress: tx.deposit,
           depositCurrency: tx.coin_from.toUpperCase(),
