@@ -1,17 +1,39 @@
-import { asArray, asObject, asString, asUnknown } from 'cleaners'
+import {
+  asArray,
+  asMaybe,
+  asObject,
+  asString,
+  asUnknown,
+  asValue
+} from 'cleaners'
 
 import {
   asStandardPluginParams,
   PartnerPlugin,
   PluginParams,
   PluginResult,
-  StandardTx
+  StandardTx,
+  Status
 } from '../types'
 import { datelog, retryFetch, smartIsoDateFromTimestamp } from '../util'
 
+const asLetsExchangeStatus = asMaybe(
+  asValue(
+    'success',
+    'wait',
+    'overdue',
+    'refund',
+    'exchanging',
+    'sending_confirmation',
+    'other'
+  ),
+  'other'
+)
+
 const asLetsExchangeTx = asObject({
+  status: asLetsExchangeStatus,
   transaction_id: asString,
-  hash_in: asString,
+  hash_in: asMaybe(asString, ''),
   deposit: asString,
   coin_from: asString,
   deposit_amount: asString,
@@ -25,10 +47,20 @@ const asLetsExchangeResult = asObject({
   data: asArray(asUnknown)
 })
 
+type LetsExchangeTx = ReturnType<typeof asLetsExchangeTx>
+type LetsExchangeStatus = ReturnType<typeof asLetsExchangeStatus>
+
 const LIMIT = 100
 const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
-
-type LetsExchangeTx = ReturnType<typeof asLetsExchangeTx>
+const statusMap: { [key in LetsExchangeStatus]: Status } = {
+  success: 'complete',
+  wait: 'pending',
+  overdue: 'expired',
+  refund: 'refunded',
+  exchanging: 'processing',
+  sending_confirmation: 'other',
+  other: 'other'
+}
 
 export async function queryLetsExchange(
   pluginParams: PluginParams
@@ -52,7 +84,7 @@ export async function queryLetsExchange(
   let done = false
   try {
     while (!done) {
-      const url = `https://api.letsexchange.io/api/v1/affiliate/history/${apiKey}?limit=${LIMIT}&page=${page}&status=success&types=0`
+      const url = `https://api.letsexchange.io/api/v1/affiliate/history/${apiKey}?limit=${LIMIT}&page=${page}&types=0`
 
       const result = await retryFetch(url, { method: 'GET' })
       if (result.ok === false) {
@@ -74,7 +106,7 @@ export async function queryLetsExchange(
         const ts = parseInt(tx.created_at)
         const { isoDate, timestamp } = smartIsoDateFromTimestamp(ts)
         const ssTx: StandardTx = {
-          status: 'complete',
+          status: statusMap[tx.status],
           orderId: tx.hash_in,
           depositTxid: tx.hash_in,
           depositAddress: tx.deposit,
