@@ -1,19 +1,30 @@
 import {
   asArray,
+  asMaybe,
   asNumber,
   asObject,
   asOptional,
   asString,
-  asUnknown
+  asUnknown,
+  asValue
 } from 'cleaners'
 
-import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import {
+  PartnerPlugin,
+  PluginParams,
+  PluginResult,
+  StandardTx,
+  Status
+} from '../types'
 import { datelog, retryFetch, smartIsoDateFromTimestamp } from '../util'
+
+const asChangeHeroStatus = asMaybe(asValue('finished', 'expired'), 'other')
 
 const asChangeHeroTx = asObject({
   id: asString,
-  payinHash: asString,
-  payoutHash: asString,
+  status: asChangeHeroStatus,
+  payinHash: asMaybe(asString, undefined),
+  payoutHash: asMaybe(asString, undefined),
   payinAddress: asString,
   currencyFrom: asString,
   amountFrom: asString,
@@ -32,17 +43,22 @@ const asChangeHeroPluginParams = asObject({
   })
 })
 
-const asChangeHeroRawTx = asObject({
-  status: asString
-})
-
 const asChangeHeroResult = asObject({
   result: asArray(asUnknown)
 })
 
+type ChangeHeroTx = ReturnType<typeof asChangeHeroTx>
+type ChangeHeroStatus = ReturnType<typeof asChangeHeroStatus>
+
 const API_URL = 'https://api.changehero.io/v2/'
 const LIMIT = 100
 const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
+
+const statusMap: { [key in ChangeHeroStatus]: Status } = {
+  finished: 'complete',
+  expired: 'expired',
+  other: 'other'
+}
 
 export async function queryChangeHero(
   pluginParams: PluginParams
@@ -98,40 +114,44 @@ export async function queryChangeHero(
         break
       }
       for (const rawTx of txs) {
-        if (asChangeHeroRawTx(rawTx).status === 'finished') {
-          const tx = asChangeHeroTx(rawTx)
-          const ssTx: StandardTx = {
-            status: 'complete',
-            orderId: tx.id,
-            depositTxid: tx.payinHash,
-            depositAddress: tx.payinAddress,
-            depositCurrency: tx.currencyFrom.toUpperCase(),
-            depositAmount: parseFloat(tx.amountFrom),
-            payoutTxid: tx.payoutHash,
-            payoutAddress: tx.payoutAddress,
-            payoutCurrency: tx.currencyTo.toUpperCase(),
-            payoutAmount: parseFloat(tx.amountTo),
-            timestamp: tx.createdAt,
-            isoDate: smartIsoDateFromTimestamp(tx.createdAt).isoDate,
-            usdValue: undefined,
-            rawTx
-          }
-          ssFormatTxs.push(ssTx)
-          if (ssTx.isoDate > latestIsoDate) {
-            latestIsoDate = ssTx.isoDate
-          }
-          if (ssTx.isoDate < oldestIsoDate) {
-            oldestIsoDate = ssTx.isoDate
-          }
-          if (ssTx.isoDate < previousLatestIsoDate && !done) {
-            datelog(
-              `ChangeHero done: date ${ssTx.isoDate} < ${previousLatestIsoDate}`
-            )
-            done = true
-          }
+        let tx: ChangeHeroTx
+        try {
+          tx = asChangeHeroTx(rawTx)
+        } catch (e) {
+          console.log(e)
+          throw e
+        }
+        const ssTx: StandardTx = {
+          status: statusMap[tx.status],
+          orderId: tx.id,
+          depositTxid: tx.payinHash,
+          depositAddress: tx.payinAddress,
+          depositCurrency: tx.currencyFrom.toUpperCase(),
+          depositAmount: parseFloat(tx.amountFrom),
+          payoutTxid: tx.payoutHash,
+          payoutAddress: tx.payoutAddress,
+          payoutCurrency: tx.currencyTo.toUpperCase(),
+          payoutAmount: parseFloat(tx.amountTo),
+          timestamp: tx.createdAt,
+          isoDate: smartIsoDateFromTimestamp(tx.createdAt).isoDate,
+          usdValue: undefined,
+          rawTx
+        }
+        ssFormatTxs.push(ssTx)
+        if (ssTx.isoDate > latestIsoDate) {
+          latestIsoDate = ssTx.isoDate
+        }
+        if (ssTx.isoDate < oldestIsoDate) {
+          oldestIsoDate = ssTx.isoDate
+        }
+        if (ssTx.isoDate < previousLatestIsoDate && !done) {
+          datelog(
+            `ChangeHero done: date ${ssTx.isoDate} < ${previousLatestIsoDate}`
+          )
+          done = true
         }
       }
-      datelog(`oldestIsoDate ${oldestIsoDate}`)
+      datelog(`Changehero oldestIsoDate ${oldestIsoDate}`)
       offset += LIMIT
     }
   } catch (e) {
