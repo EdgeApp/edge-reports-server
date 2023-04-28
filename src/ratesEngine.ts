@@ -12,8 +12,8 @@ import {
 import { datelog, standardizeNames } from './util'
 
 const nanoDb = nano(config.couchDbFullpath)
-const QUERY_FREQ_MS = 1000
-const QUERY_LIMIT = 5
+const QUERY_FREQ_MS = 300
+const QUERY_LIMIT = 20
 const snooze: Function = async (ms: number) =>
   new Promise((resolve: Function) => setTimeout(resolve, ms))
 
@@ -35,11 +35,19 @@ export async function ratesEngine(): Promise<void> {
 
     const query = {
       selector: {
-        $or: [
-          { usdValue: { $exists: false } },
-          { usdValue: { $eq: null } },
+        $and: [
+          { status: { $eq: 'complete' } },
           {
-            $and: [{ payoutAmount: { $eq: 0 } }, { depositAmount: { $gt: 0 } }]
+            $or: [
+              { usdValue: { $exists: false } },
+              { usdValue: { $eq: null } },
+              {
+                $and: [
+                  { payoutAmount: { $eq: 0 } },
+                  { depositAmount: { $gt: 0 } }
+                ]
+              }
+            ]
           }
         ]
       },
