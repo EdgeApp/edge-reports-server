@@ -139,7 +139,7 @@ export async function queryGodex(
           done = true
         }
       }
-      // datelog(`godex oldestIsoDate ${oldestIsoDate}`)
+      datelog(`godex oldestIsoDate ${oldestIsoDate}`)
 
       offset += LIMIT
       // this is if the end of the database is reached

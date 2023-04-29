@@ -157,7 +157,7 @@ export async function queryExolix(
       }
     }
     page++
-    // datelog(`oldestIsoDate ${oldestIsoDate}`)
+    datelog(`Exolix oldestIsoDate ${oldestIsoDate}`)
 
     // reached end of database
     if (txs.length < PAGE_LIMIT) {

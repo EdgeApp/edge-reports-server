@@ -133,7 +133,7 @@ export async function queryLetsExchange(
           done = true
         }
       }
-      // datelog(`letsexchange oldestIsoDate ${oldestIsoDate}`)
+      datelog(`letsexchange oldestIsoDate ${oldestIsoDate}`)
 
       page++
       // this is if the end of the database is reached
