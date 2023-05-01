@@ -1,125 +1,156 @@
 import {
   asArray,
+  asMaybe,
   asNumber,
   asObject,
   asOptional,
   asString,
-  asUnknown
+  asUnknown,
+  asValue
 } from 'cleaners'
-import fetch from 'node-fetch'
 
-import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog } from '../util'
+import {
+  asStandardPluginParams,
+  PartnerPlugin,
+  PluginParams,
+  PluginResult,
+  StandardTx,
+  Status
+} from '../types'
+import { datelog, retryFetch, snooze } from '../util'
+
+const asChangeNowStatus = asMaybe(
+  asValue('finished', 'waiting', 'expired'),
+  'other'
+)
 
 const asChangeNowTx = asObject({
-  id: asString,
-  updatedAt: asString,
-  payinHash: asOptional(asString),
-  payoutHash: asOptional(asString),
-  payinAddress: asString,
-  fromCurrency: asString,
-  amountSend: asNumber,
-  payoutAddress: asString,
-  toCurrency: asString,
-  amountReceive: asNumber
+  createdAt: asString,
+  requestId: asString,
+  status: asChangeNowStatus,
+  payin: asObject({
+    currency: asString,
+    address: asString,
+    amount: asOptional(asNumber),
+    expectedAmount: asOptional(asNumber),
+    hash: asOptional(asString)
+  }),
+  payout: asObject({
+    currency: asString,
+    address: asString,
+    amount: asOptional(asNumber),
+    expectedAmount: asOptional(asNumber),
+    hash: asOptional(asString)
+  })
 })
 
-const asChangeNowRawTx = asObject({
-  status: asString,
-  amountSend: asOptional(asNumber),
-  amountReceive: asOptional(asNumber)
-})
+const asChangeNowResult = asObject({ exchanges: asArray(asUnknown) })
 
-const asChangeNowResult = asArray(asUnknown)
-const LIMIT = 100
-const ROLLBACK = 500
+type ChangeNowTx = ReturnType<typeof asChangeNowTx>
+type ChangeNowStatus = ReturnType<typeof asChangeNowStatus>
 
-const makeUrl = (settings, apiKey): string => {
-  const options = Object.keys(settings)
-    .reduce((prev, key) => `${prev}${key}=${settings[key]}&`, '')
-    .slice(0, -1)
-  const url = `https://changenow.io/api/v1/transactions/${apiKey}?${options}`
-  return url
+const MAX_RETRIES = 5
+const LIMIT = 200
+const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
+
+const statusMap: { [key in ChangeNowStatus]: Status } = {
+  finished: 'complete',
+  waiting: 'pending',
+  expired: 'expired',
+  other: 'other'
 }
 
 export const queryChangeNow = async (
   pluginParams: PluginParams
 ): Promise<PluginResult> => {
+  const { settings, apiKeys } = asStandardPluginParams(pluginParams)
+  const { apiKey } = apiKeys
+  let { latestIsoDate } = settings
+
+  if (typeof apiKey !== 'string') {
+    return { settings: { latestIsoDate }, transactions: [] }
+  }
+
   const ssFormatTxs: StandardTx[] = []
-  const settings = { ...pluginParams.settings }
-  if (typeof pluginParams.apiKeys.changenowApiKey !== 'string') {
-    return {
-      settings,
-      transactions: []
-    }
-  }
+  let previousTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
+  if (previousTimestamp < 0) previousTimestamp = 0
+  const previousLatestIsoDate = new Date(previousTimestamp).toISOString()
 
-  if (settings.limit == null) {
-    settings.limit = LIMIT
-  }
-  if (settings.offset == null) {
-    settings.offset = 0
-  }
-
+  let offset = 0
+  let retry = 0
   while (true) {
-    const url = makeUrl(settings, pluginParams.apiKeys.changenowApiKey)
-    let jsonObj: ReturnType<typeof asChangeNowResult>
-    let retry = 3
+    const url = `https://api.changenow.io/v2/exchanges?sortDirection=ASC&limit=${LIMIT}&dateFrom=${previousLatestIsoDate}&offset=${offset}`
+
     try {
-      const result = await fetch(url, {
-        method: 'GET'
+      const response = await retryFetch(url, {
+        method: 'GET',
+        headers: {
+          'x-changenow-api-key': apiKey,
+          'Content-Type': 'application/json'
+        }
       })
-      const seperate = await result.json()
-      jsonObj = asChangeNowResult(seperate)
-    } catch (e) {
-      const error: any = e
-      datelog(e)
-      if (error.code === 'ETIMEDOUT' && --retry >= 0) {
-        continue
+      if (!response.ok) {
+        const text = await response.text()
+        datelog(`Error in offset:${offset}`)
+        throw new Error(text)
       }
-      break
-    }
-    const txs = jsonObj
-    for (const rawtx of txs) {
-      const checkTx = asChangeNowRawTx(rawtx) // Check RAW trasaction
-      if (
-        checkTx.status === 'finished' &&
-        checkTx.amountSend != null &&
-        checkTx.amountReceive != null
-      ) {
-        const tx = asChangeNowTx(rawtx) // Set NORMAL trasaction
-        const date = new Date(tx.updatedAt)
+      const result = await response.json()
+      const txs = asChangeNowResult(result).exchanges
+
+      for (const rawTx of txs) {
+        let tx: ChangeNowTx
+        try {
+          tx = asChangeNowTx(rawTx)
+        } catch (e) {
+          datelog(e)
+          throw e
+        }
+        const date = new Date(
+          tx.createdAt.endsWith('Z') ? tx.createdAt : tx.createdAt + 'Z'
+        )
         const timestamp = date.getTime() / 1000
         const ssTx: StandardTx = {
-          status: 'complete',
-          orderId: tx.id,
-          depositTxid: tx.payinHash,
-          depositAddress: tx.payinAddress,
-          depositCurrency: tx.fromCurrency.toUpperCase(),
-          depositAmount: tx.amountSend,
-          payoutTxid: tx.payoutHash,
-          payoutAddress: tx.payoutAddress,
-          payoutCurrency: tx.toCurrency.toUpperCase(),
-          payoutAmount: tx.amountReceive,
+          status: statusMap[tx.status],
+          orderId: tx.requestId,
+          depositTxid: tx.payin.hash,
+          depositAddress: tx.payin.address,
+          depositCurrency: tx.payin.currency.toUpperCase(),
+          depositAmount: tx.payin.amount ?? tx.payin.expectedAmount ?? 0,
+          payoutTxid: tx.payout.hash,
+          payoutAddress: tx.payout.address,
+          payoutCurrency: tx.payout.currency.toUpperCase(),
+          payoutAmount: tx.payout.amount ?? tx.payout.expectedAmount ?? 0,
           timestamp,
-          isoDate: tx.updatedAt,
+          isoDate: date.toISOString(),
           usdValue: undefined,
-          rawTx: rawtx
+          rawTx
         }
         ssFormatTxs.push(ssTx)
+        if (ssTx.isoDate > latestIsoDate) {
+          latestIsoDate = ssTx.isoDate
+        }
+      }
+      datelog(`ChangeNow latestIsoDate ${latestIsoDate}`)
+      offset += LIMIT
+      if (txs.length < LIMIT) {
+        break
+      }
+      retry = 0
+    } catch (e) {
+      datelog(e)
+      // Retry a few times with time delay to prevent throttling
+      retry++
+      if (retry <= MAX_RETRIES) {
+        datelog(`Snoozing ${5 * retry}s`)
+        await snooze(5000 * retry)
+      } else {
+        // We can safely save our progress since we go from oldest to newest.
+        break
       }
     }
-    if (txs.length < LIMIT) {
-      // datelog('length < 100, stopping query')
-      break
-    }
-    settings.offset += LIMIT
-  }
-  if (settings.offset >= ROLLBACK) {
-    settings.offset -= ROLLBACK
   }
   const out: PluginResult = {
-    settings,
+    settings: { latestIsoDate },
     transactions: ssFormatTxs
   }
   return out
