@@ -34,7 +34,7 @@ const asSwapuzTx = asObject({
 })
 
 const asSwapuzRawTx = asObject({
-  id: asNumber,
+  uid: asString,
   status: asNumber,
   wTxId: asOptional(asString),
   dTxId: asOptional(asString)
@@ -117,7 +117,7 @@ export const querySwapuz = async (
       const jsonObj = asSwapuzResult(reply)
       const { currentPage, maxPage, result: txs } = jsonObj.result
       for (const rawTx of txs) {
-        const { id, status: statusNum, dTxId, wTxId } = asSwapuzRawTx(rawTx)
+        const { uid, status: statusNum, dTxId, wTxId } = asSwapuzRawTx(rawTx)
 
         // Status === 6 seems to be the "complete" status
         let status: Status = 'other'
@@ -126,12 +126,13 @@ export const querySwapuz = async (
         }
 
         const { amount, amountResult, createDate, from, to } = asSwapuzTx(rawTx)
-        const date = new Date(createDate)
+        const d = createDate.endsWith('Z') ? createDate : createDate + 'Z'
+        const date = new Date(d)
         const timestamp = date.getTime() / 1000
 
         const ssTx: StandardTx = {
           status,
-          orderId: id.toString(),
+          orderId: uid,
           depositTxid: dTxId,
           depositCurrency: from.toUpperCase(),
           depositAddress: undefined,
