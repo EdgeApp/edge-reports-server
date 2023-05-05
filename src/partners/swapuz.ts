@@ -15,7 +15,7 @@ import {
   StandardTx,
   Status
 } from '../types'
-import { datelog, retryFetch } from '../util'
+import { datelog, retryFetch, smartIsoDateFromTimestamp } from '../util'
 
 const asSwapuzLogin = asObject({
   result: asObject({
@@ -24,20 +24,20 @@ const asSwapuzLogin = asObject({
 })
 
 const asSwapuzTx = asObject({
+  uid: asString,
+  status: asNumber,
+  wTxId: asOptional(asString),
+  dTxId: asOptional(asString),
+  withdrawalTransactionID: asOptional(asString),
+  depositTransactionID: asOptional(asString),
   createDate: asString,
   from: asString,
   to: asString,
+  depositAddress: asString,
   amountResult: asNumber,
   amount: asNumber,
   amountBTC: asNumber,
   startAmount: asNumber
-})
-
-const asSwapuzRawTx = asObject({
-  uid: asString,
-  status: asNumber,
-  wTxId: asOptional(asString),
-  dTxId: asOptional(asString)
 })
 
 const asSwapuzResult = asObject({
@@ -117,32 +117,42 @@ export const querySwapuz = async (
       const jsonObj = asSwapuzResult(reply)
       const { currentPage, maxPage, result: txs } = jsonObj.result
       for (const rawTx of txs) {
-        const { uid, status: statusNum, dTxId, wTxId } = asSwapuzRawTx(rawTx)
+        const {
+          uid,
+          status: statusNum,
+          dTxId,
+          wTxId,
+          withdrawalTransactionID,
+          depositTransactionID,
+          depositAddress,
+          amount,
+          amountResult,
+          createDate,
+          from,
+          to
+        } = asSwapuzTx(rawTx)
 
         // Status === 6 seems to be the "complete" status
         let status: Status = 'other'
-        if (statusNum === 6 && dTxId != null && wTxId != null) {
+        if (statusNum === 6) {
           status = 'complete'
         }
 
-        const { amount, amountResult, createDate, from, to } = asSwapuzTx(rawTx)
-        const d = createDate.endsWith('Z') ? createDate : createDate + 'Z'
-        const date = new Date(d)
-        const timestamp = date.getTime() / 1000
+        const { isoDate, timestamp } = smartIsoDateFromTimestamp(createDate)
 
         const ssTx: StandardTx = {
           status,
           orderId: uid,
-          depositTxid: dTxId,
+          depositTxid: dTxId ?? depositTransactionID,
           depositCurrency: from.toUpperCase(),
-          depositAddress: undefined,
+          depositAddress,
           depositAmount: amount,
-          payoutTxid: wTxId,
+          payoutTxid: wTxId ?? withdrawalTransactionID,
           payoutCurrency: to.toUpperCase(),
           payoutAddress: undefined,
           payoutAmount: amountResult,
           timestamp,
-          isoDate: date.toISOString(),
+          isoDate,
           usdValue: undefined,
           rawTx
         }
