@@ -4,25 +4,50 @@ import {
   asObject,
   asOptional,
   asString,
-  asUnknown
+  asUnknown,
+  asValue
 } from 'cleaners'
 import crypto from 'crypto'
-import fetch from 'node-fetch'
 
-import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog } from '../util'
+import {
+  PartnerPlugin,
+  PluginParams,
+  PluginResult,
+  StandardTx,
+  Status
+} from '../types'
+import { datelog, retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
+
+const asSideshiftStatus = asMaybe(
+  asValue(
+    'pending',
+    'processing',
+    'settling',
+    'settled',
+    'refund',
+    'refunding',
+    'refunded',
+    'dead',
+    'review',
+    'waiting'
+  ),
+  'other'
+)
 
 const asSideshiftTx = asObject({
   id: asString,
+  status: asSideshiftStatus,
   depositAddress: asMaybe(asObject({ address: asMaybe(asString) })),
   prevDepositAddresses: asMaybe(asObject({ address: asMaybe(asString) })),
-  depositMethodId: asString,
+  depositAsset: asString,
+  // depositMethodId: asString,
   invoiceAmount: asString,
   settleAddress: asObject({
     address: asString
   }),
-  settleMethodId: asString,
+  // settleMethodId: asString,
   settleAmount: asString,
+  settleAsset: asString,
   createdAt: asString
 })
 
@@ -37,9 +62,26 @@ const asSideshiftPluginParams = asObject({
 })
 
 type SideshiftTx = ReturnType<typeof asSideshiftTx>
+type SideshiftStatus = ReturnType<typeof asSideshiftStatus>
 const asSideshiftResult = asArray(asUnknown)
 
+const MAX_RETRIES = 5
 const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
+const QUERY_TIME_BLOCK_MS = QUERY_LOOKBACK
+
+const statusMap: { [key in SideshiftStatus]: Status } = {
+  pending: 'pending',
+  processing: 'processing',
+  settling: 'processing',
+  settled: 'complete',
+  refund: 'refunded',
+  refunding: 'refunded',
+  refunded: 'refunded',
+  dead: 'other',
+  review: 'blocked',
+  waiting: 'pending',
+  other: 'other'
+}
 
 function affiliateSignature(
   affiliateId: string,
@@ -52,99 +94,98 @@ function affiliateSignature(
     .digest('hex')
 }
 
-async function fetchTransactions(
-  affiliateId: string,
-  affiliateSecret: string,
-  lastCheckedTimestamp: number
-): Promise<StandardTx[]> {
-  const time = Date.now()
+export async function querySideshift(
+  pluginParams: PluginParams
+): Promise<PluginResult> {
+  const { settings, apiKeys } = asSideshiftPluginParams(pluginParams)
+  const { sideshiftAffiliateId, sideshiftAffiliateSecret } = apiKeys
+  let { latestIsoDate } = settings
 
-  const signature = affiliateSignature(affiliateId, affiliateSecret, time)
-  const url = `https://sideshift.ai/api/affiliate/completedOrders?affiliateId=${affiliateId}&since=${lastCheckedTimestamp}&currentTime=${time}&signature=${signature}`
-  let tries = 5
-  while (--tries > 0) {
+  let lastCheckedTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
+  if (lastCheckedTimestamp < 0) lastCheckedTimestamp = 0
+
+  const ssFormatTxs: StandardTx[] = []
+  let retry = 0
+  let startTime = lastCheckedTimestamp
+
+  while (true) {
+    const endTime = startTime + QUERY_TIME_BLOCK_MS
+    const now = Date.now()
+
+    const signature = affiliateSignature(
+      sideshiftAffiliateId,
+      sideshiftAffiliateSecret,
+      now
+    )
+
+    const url = `https://sideshift.ai/api/affiliate/completedOrders?affiliateId=${sideshiftAffiliateId}&since=${startTime}&currentTime=${now}&signature=${signature}`
     try {
-      const response = await fetch(url)
+      const response = await retryFetch(url)
       if (response.ok === false) {
         const text = await response.text()
         throw new Error(text)
       }
       const jsonObj = await response.json()
       const orders = asSideshiftResult(jsonObj)
-      const out: StandardTx[] = []
+      if (orders.length === 0) {
+        break
+      }
       for (const order of orders) {
         let tx: SideshiftTx
         try {
           tx = asSideshiftTx(order)
         } catch (e) {
           datelog(e)
-          datelog(JSON.stringify(order, null, 2))
           throw e
         }
         const depositAddress =
           tx.depositAddress?.address ?? tx.prevDepositAddresses?.address
+        const { isoDate, timestamp } = smartIsoDateFromTimestamp(tx.createdAt)
 
-        out.push({
-          status: 'complete',
+        const ssTx: StandardTx = {
+          status: statusMap[tx.status],
           orderId: tx.id,
           depositTxid: undefined,
           depositAddress,
-          depositCurrency: tx.depositMethodId.toUpperCase(),
+          depositCurrency: tx.depositAsset,
           depositAmount: Number(tx.invoiceAmount),
           payoutTxid: undefined,
           payoutAddress: tx.settleAddress.address,
-          payoutCurrency: tx.settleMethodId.toUpperCase(),
+          payoutCurrency: tx.settleAsset,
           payoutAmount: Number(tx.settleAmount),
-          timestamp: new Date(tx.createdAt).getTime() / 1000,
-          isoDate: tx.createdAt,
+          timestamp,
+          isoDate,
           usdValue: undefined,
           rawTx: order
-        })
+        }
+        ssFormatTxs.push(ssTx)
+        if (ssTx.isoDate > latestIsoDate) {
+          latestIsoDate = ssTx.isoDate
+        }
       }
-      return out
+      startTime = new Date(latestIsoDate).getTime()
+      datelog(`Sideshift latestIsoDate ${latestIsoDate}`)
+      if (endTime > now) {
+        break
+      }
+      retry = 0
     } catch (e) {
-      const err: any = e
-      datelog(err)
-      if (err.code !== 'ETIMEDOUT') {
-        throw err
+      datelog(e)
+      // Retry a few times with time delay to prevent throttling
+      retry++
+      if (retry <= MAX_RETRIES) {
+        datelog(`Snoozing ${5 * retry}s`)
+        await snooze(5000 * retry)
+      } else {
+        // We can safely save our progress since we go from oldest to newest.
+        break
       }
-    }
-  }
-  throw new Error('Failed to fetch transactions')
-}
-
-export async function querySideshift(
-  pluginParams: PluginParams
-): Promise<PluginResult> {
-  const { settings, apiKeys } = asSideshiftPluginParams(pluginParams)
-  const { sideshiftAffiliateId, sideshiftAffiliateSecret } = apiKeys
-  const { latestIsoDate } = settings
-
-  let lastCheckedTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
-  if (lastCheckedTimestamp < 0) lastCheckedTimestamp = 0
-
-  const txs: StandardTx[] = []
-
-  while (true) {
-    const newTxs = await fetchTransactions(
-      sideshiftAffiliateId,
-      sideshiftAffiliateSecret,
-      lastCheckedTimestamp
-    )
-
-    txs.push(...newTxs)
-    lastCheckedTimestamp = Math.max(...newTxs.map(tx => tx.timestamp)) * 1000
-    if (newTxs.length < 3) {
-      console.log('break')
-      break
     }
   }
 
   const out = {
-    settings: {
-      latestIsoDate: new Date(lastCheckedTimestamp)
-    },
-    transactions: txs
+    settings: { latestIsoDate },
+    transactions: ssFormatTxs
   }
   return out
 }
