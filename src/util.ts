@@ -52,14 +52,23 @@ export const promiseTimeout = async <T>(
 }
 
 export const smartIsoDateFromTimestamp = (
-  timestamp: number
+  timestamp: number | string
 ): { timestamp: number; isoDate } => {
-  if (timestamp > 9999999999) {
-    timestamp = timestamp / 1000
-  }
-  return {
-    timestamp,
-    isoDate: new Date(timestamp * 1000).toISOString()
+  if (typeof timestamp === 'string') {
+    timestamp = timestamp.endsWith('Z') ? timestamp : timestamp + 'Z'
+    const date = new Date(timestamp)
+    return {
+      timestamp: date.getTime() / 1000,
+      isoDate: date.toISOString()
+    }
+  } else {
+    if (timestamp > 9999999999) {
+      timestamp = timestamp / 1000
+    }
+    return {
+      timestamp,
+      isoDate: new Date(timestamp * 1000).toISOString()
+    }
   }
 }
 
@@ -317,7 +326,7 @@ export const sevenDayDataMerge = (data: Data[]): DataPlusSevenDayAve[] => {
 
 export const retryFetch = async (
   request: RequestInfo,
-  init: RequestInit,
+  init?: RequestInit,
   maxRetries: number = 5
 ): Promise<Response> => {
   let retries = 0
