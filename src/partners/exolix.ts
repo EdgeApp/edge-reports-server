@@ -1,6 +1,7 @@
 import {
   asArray,
   asEither,
+  asMaybe,
   asNull,
   asNumber,
   asObject,
@@ -28,13 +29,17 @@ const asExolixPluginParams = asObject({
   })
 })
 
-const asExolixStatus = asValue(
-  'success',
-  'wait',
-  'overdue',
-  'refunded',
-  'confirmed',
-  'sending'
+const asExolixStatus = asMaybe(
+  asValue(
+    'success',
+    'wait',
+    'overdue',
+    'refunded',
+    'confirmed',
+    'sending',
+    'exchanging'
+  ),
+  'other'
 )
 
 const asExolixTx = asObject({
@@ -70,11 +75,13 @@ type ExolixTx = ReturnType<typeof asExolixTx>
 type ExolixStatus = ReturnType<typeof asExolixStatus>
 const statusMap: { [key in ExolixStatus]: Status } = {
   success: 'complete',
+  exchanging: 'processing',
   wait: 'pending',
   overdue: 'expired',
   refunded: 'refunded',
   confirmed: 'other',
-  sending: 'other'
+  sending: 'processing',
+  other: 'other'
 }
 
 type Response = ReturnType<typeof fetch>
