@@ -177,22 +177,22 @@ const filterAddNewTxs = async (
   if (docIds.length < 1 || transactions.length < 1) return
   const queryResults = await dbTransactions.fetch(
     { keys: docIds },
-    { include_docs: false }
+    { include_docs: true }
   )
 
   const newDocs: DbTx[] = []
   for (const docId of docIds) {
-    if (
-      queryResults.rows.find(
-        doc => 'id' in doc && doc.id === docId && doc.doc != null
-      ) == null
-    ) {
+    const queryResult = queryResults.rows.find(
+      doc => 'id' in doc && doc.id === docId && doc.doc != null
+    )
+    const orderId = docId.split(':')[1] ?? ''
+    const tx = transactions.find(tx => tx.orderId === orderId)
+    if (tx == null) {
+      throw new Error(`Cant find tx from docId ${docId}`)
+    }
+
+    if (queryResult == null) {
       // Get the full transaction
-      const orderId = docId.split(':')[1] ?? ''
-      const tx = transactions.find(tx => tx.orderId === orderId)
-      if (tx == null) {
-        throw new Error(`Cant find tx from docId ${docId}`)
-      }
       const newObj = { _id: docId, _rev: undefined, ...tx }
 
       // replace all fields with non-standard names
@@ -201,6 +201,16 @@ const filterAddNewTxs = async (
 
       datelog(`new doc id: ${newObj._id}`)
       newDocs.push(newObj)
+    } else {
+      if ('doc' in queryResult) {
+        if (tx.status !== queryResult.doc?.status) {
+          const oldStatus = queryResult.doc?.status
+          const newStatus = tx.status
+          const newObj = { _id: docId, _rev: queryResult.doc?._rev, ...tx }
+          newDocs.push(newObj)
+          datelog(`updated doc id: ${newObj._id} ${oldStatus} -> ${newStatus}`)
+        }
+      }
     }
   }
 
