@@ -14,6 +14,7 @@
     "clean": "rimraf lib dist .parcel-cache",
     "fix": "npm run lint -- --fix",
     "fio:promo": "node -r sucrase/register src/bin/fioPromo/fioPromo.ts",
+    "lifi": "node -r sucrase/register src/bin/lifiReporter.ts",
     "precommit": "lint-staged && npm run prepare",
     "prepare": "./scripts/prepare.sh && npm-run-all clean -p build.*",
     "start": "node -r sucrase/register src/indexQuery.ts",
