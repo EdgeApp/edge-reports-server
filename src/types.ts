@@ -70,7 +70,7 @@ export const asDbCurrencyCodeMappings = asObject({
 
 export const asStandardPluginParams = asObject({
   settings: asObject({
-    latestIsoDate: asOptional(asString, '0')
+    latestIsoDate: asOptional(asString, '2018-01-01T00:00:00.000Z')
   }),
   apiKeys: asObject({
     apiKey: asOptional(asString)
