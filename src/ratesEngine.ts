@@ -1,5 +1,5 @@
 import { asArray, asObject, asUnknown } from 'cleaners'
-import nano from 'nano'
+import nano, { MangoQuery } from 'nano'
 import fetch from 'node-fetch'
 
 import config from '../config.json'
@@ -33,12 +33,13 @@ export async function ratesEngine(): Promise<void> {
     const result2 = await dbSettings.get('currencyCodeMappings')
     const { mappings } = asDbCurrencyCodeMappings(result2)
 
-    const query = {
+    const query: MangoQuery = {
       selector: {
         $and: [
           { status: { $eq: 'complete' } },
           {
             $or: [
+              { usdValue: { $lt: 0 } },
               { usdValue: { $exists: false } },
               { usdValue: { $eq: null } },
               {

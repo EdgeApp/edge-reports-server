@@ -62,7 +62,7 @@ export async function querySafello(
         payoutAmount: 0,
         timestamp: timestamp / 1000,
         isoDate: date.toISOString(),
-        usdValue: undefined,
+        usdValue: -1,
         rawTx: rawtx
       }
       ssFormatTxs.push(ssTx)

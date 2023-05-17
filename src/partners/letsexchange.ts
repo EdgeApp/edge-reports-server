@@ -118,7 +118,7 @@ export async function queryLetsExchange(
           payoutAmount: parseFloat(tx.withdrawal_amount),
           timestamp,
           isoDate,
-          usdValue: undefined,
+          usdValue: -1,
           rawTx
         }
         ssFormatTxs.push(ssTx)

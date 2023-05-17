@@ -147,7 +147,7 @@ export async function queryExolix(
         payoutAmount: tx.amountTo,
         timestamp,
         isoDate,
-        usdValue: undefined,
+        usdValue: -1,
         rawTx
       }
 

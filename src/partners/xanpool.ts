@@ -110,7 +110,7 @@ async function queryXanpool(pluginParams: PluginParams): Promise<PluginResult> {
             timestamp: smartIsoDateFromTimestamp(new Date(createdAt).getTime())
               .timestamp,
             isoDate: createdAt,
-            usdValue: undefined,
+            usdValue: -1,
             rawTx
           }
         } else if (type === 'sell') {
@@ -128,7 +128,7 @@ async function queryXanpool(pluginParams: PluginParams): Promise<PluginResult> {
             timestamp: smartIsoDateFromTimestamp(new Date(createdAt).getTime())
               .timestamp,
             isoDate: createdAt,
-            usdValue: undefined,
+            usdValue: -1,
             rawTx
           }
         } else {

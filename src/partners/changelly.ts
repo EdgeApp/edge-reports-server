@@ -148,7 +148,7 @@ export async function queryChangelly(
             payoutAmount: parseFloat(tx.amountTo),
             timestamp: tx.createdAt,
             isoDate: new Date(tx.createdAt * 1000).toISOString(),
-            usdValue: undefined,
+            usdValue: -1,
             rawTx
           }
           ssFormatTxs.push(ssTx)

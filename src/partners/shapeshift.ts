@@ -66,7 +66,7 @@ export async function queryShapeshift(
           payoutAmount: parseFloat(tx.outputAmount),
           timestamp: tx.timestamp,
           isoDate: new Date(tx.timestamp * 1000).toISOString(),
-          usdValue: undefined,
+          usdValue: -1,
           rawTx
         }
         ssFormatTxs.push(ssTx)

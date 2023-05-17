@@ -96,7 +96,7 @@ export async function queryTransak(
           payoutAmount: tx.cryptoAmount,
           timestamp: date.getTime() / 1000,
           isoDate: date.toISOString(),
-          usdValue: undefined,
+          usdValue: -1,
           rawTx: rawtx
         }
         ssFormatTxs.push(ssTx)

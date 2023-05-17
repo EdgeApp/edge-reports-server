@@ -134,7 +134,7 @@ export async function queryChangeHero(
           payoutAmount: parseFloat(tx.amountTo),
           timestamp: tx.createdAt,
           isoDate: smartIsoDateFromTimestamp(tx.createdAt).isoDate,
-          usdValue: undefined,
+          usdValue: -1,
           rawTx
         }
         ssFormatTxs.push(ssTx)

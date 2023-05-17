@@ -122,7 +122,7 @@ export const queryChangeNow = async (
           payoutAmount: tx.payout.amount ?? tx.payout.expectedAmount ?? 0,
           timestamp,
           isoDate: date.toISOString(),
-          usdValue: undefined,
+          usdValue: -1,
           rawTx
         }
         ssFormatTxs.push(ssTx)

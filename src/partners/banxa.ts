@@ -239,7 +239,7 @@ function processBanxaOrders(rawtxs, ssFormatTxs): void {
       payoutAmount: outputAmount,
       timestamp,
       isoDate,
-      usdValue: undefined,
+      usdValue: -1,
       rawTx
     }
     ssFormatTxs.push(ssTx)

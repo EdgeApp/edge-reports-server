@@ -107,7 +107,7 @@ export async function queryBitaccess(
             payoutAmount: tx.withdrawal_amount,
             timestamp,
             isoDate: tx.updated_at,
-            usdValue: undefined,
+            usdValue: -1,
             rawTx
           }
           ssFormatTxs.push(ssTx)

@@ -155,7 +155,7 @@ export async function querySideshift(
           payoutAmount: Number(tx.settleAmount),
           timestamp,
           isoDate,
-          usdValue: undefined,
+          usdValue: -1,
           rawTx: order
         }
         ssFormatTxs.push(ssTx)

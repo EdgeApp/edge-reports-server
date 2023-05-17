@@ -130,7 +130,7 @@ export async function queryBity(
           payoutAmount: parseFloat(tx.output.amount),
           timestamp: Date.parse(tx.timestamp_created.concat('Z')) / 1000,
           isoDate: new Date(tx.timestamp_created.concat('Z')).toISOString(),
-          usdValue: undefined,
+          usdValue: -1,
           rawTx: rawtx
         }
         ssFormatTxs.push(ssTx)

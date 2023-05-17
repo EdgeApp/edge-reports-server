@@ -91,7 +91,7 @@ export async function queryFaast(
           payoutAmount: tx.amount_withdrawn,
           timestamp,
           isoDate: tx.created_at,
-          usdValue: undefined,
+          usdValue: -1,
           rawTx: rawtx
         }
         ssFormatTxs.push(ssTx)

@@ -124,7 +124,7 @@ export async function queryGodex(
           payoutAmount: parseFloat(tx.withdrawal_amount),
           timestamp,
           isoDate,
-          usdValue: undefined,
+          usdValue: -1,
           rawTx: rawtx
         }
         ssFormatTxs.push(ssTx)

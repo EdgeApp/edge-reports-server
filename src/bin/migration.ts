@@ -148,7 +148,7 @@ async function migration(): Promise<void> {
                   isoDate: new Date(
                     cleanedShapeshiftTx.timestamp * 1000
                   ).toISOString(),
-                  usdValue: undefined,
+                  usdValue: -1,
                   rawTx: tx
                 }
                 return standardTxReformat(
@@ -193,7 +193,7 @@ async function migration(): Promise<void> {
                 status: 'complete',
                 isoDate,
                 timestamp,
-                usdValue: undefined,
+                usdValue: -1,
                 rawTx: undefined
               }
               return standardTxReformat(

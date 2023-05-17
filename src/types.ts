@@ -47,7 +47,7 @@ const standardTxFields = {
   status: asStatus,
   isoDate: asString,
   timestamp: asNumber,
-  usdValue: asOptional(asNumber),
+  usdValue: asNumber,
   rawTx: asUnknown
 }
 export const asDbTx = asObject({

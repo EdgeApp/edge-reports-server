@@ -153,7 +153,7 @@ export const querySwapuz = async (
           payoutAmount: amountResult,
           timestamp,
           isoDate,
-          usdValue: undefined,
+          usdValue: -1,
           rawTx
         }
         ssFormatTxs.push(ssTx)
