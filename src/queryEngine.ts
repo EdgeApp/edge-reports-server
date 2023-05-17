@@ -48,9 +48,51 @@ const DB_NAMES = [
       {
         index: { fields: ['timestamp'] },
         ddoc: 'timestamp-index',
-        name: 'Timestamp',
+        name: 'timestamp-index',
         type: 'json' as 'json',
         partitioned: true
+      },
+      {
+        index: { fields: ['isoDate'] },
+        ddoc: 'isodate-index-p',
+        name: 'isodate-index-p',
+        type: 'json' as 'json',
+        partitioned: true
+      },
+      {
+        index: { fields: ['isoDate'] },
+        ddoc: 'isodate-index',
+        name: 'isodate-index',
+        type: 'json' as 'json',
+        partitioned: false
+      },
+      {
+        index: { fields: ['status'] },
+        ddoc: 'status-index-p',
+        name: 'status-index-p',
+        type: 'json' as 'json',
+        partitioned: true
+      },
+      {
+        index: { fields: ['status'] },
+        ddoc: 'status-index',
+        name: 'status-index',
+        type: 'json' as 'json',
+        partitioned: false
+      },
+      {
+        index: { fields: ['usdValue'] },
+        ddoc: 'usdvalue-index-p',
+        name: 'usdvalue-index-p',
+        type: 'json' as 'json',
+        partitioned: true
+      },
+      {
+        index: { fields: ['usdvalue'] },
+        ddoc: 'usdvalue-index',
+        name: 'usdvalue-index',
+        type: 'json' as 'json',
+        partitioned: false
       }
     ]
   },
