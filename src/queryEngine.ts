@@ -230,7 +230,9 @@ async function insertTransactions(
     'reports_transactions'
   )
   let docIds: string[] = []
-  for (const transaction of transactions) {
+  let startIndex = 0
+  for (let i = 0; i < transactions.length; i++) {
+    const transaction = transactions[i]
     transaction.orderId = transaction.orderId.toLowerCase()
     const key = `${pluginId}:${transaction.orderId}`
     docIds.push(key)
@@ -238,8 +240,12 @@ async function insertTransactions(
     // Collect a batch of docIds
     if (docIds.length < BULK_FETCH_SIZE) continue
 
+    datelog(
+      `insertTransactions ${startIndex} to ${i} of ${transactions.length}`
+    )
     await filterAddNewTxs(pluginId, dbTransactions, docIds, transactions)
     docIds = []
+    startIndex = i + 1
   }
   await filterAddNewTxs(pluginId, dbTransactions, docIds, transactions)
 }
