@@ -40,8 +40,6 @@ export async function ratesEngine(): Promise<void> {
           {
             $or: [
               { usdValue: { $lt: 0 } },
-              { usdValue: { $exists: false } },
-              { usdValue: { $eq: null } },
               {
                 $and: [
                   { payoutAmount: { $eq: 0 } },
@@ -167,7 +165,7 @@ export async function updateTxValues(
       }
     }
   }
-  if (transaction.usdValue == null || transaction.usdValue === 0) {
+  if (transaction.usdValue == null || transaction.usdValue <= 0) {
     const exchangeRate = await getExchangeRate(
       transaction.depositCurrency,
       'USD',
