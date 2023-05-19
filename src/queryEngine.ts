@@ -46,13 +46,6 @@ const DB_NAMES = [
     options: { partitioned: true },
     indexes: [
       {
-        index: { fields: ['timestamp'] },
-        ddoc: 'timestamp-index',
-        name: 'timestamp-index',
-        type: 'json' as 'json',
-        partitioned: true
-      },
-      {
         index: { fields: ['isoDate'] },
         ddoc: 'isodate-index-p',
         name: 'isodate-index-p',
@@ -81,6 +74,27 @@ const DB_NAMES = [
         partitioned: false
       },
       {
+        index: { fields: ['status', 'usdValue'] },
+        ddoc: 'status-usdvalue-index',
+        name: 'status-usdvalue-index',
+        type: 'json' as 'json',
+        partitioned: false
+      },
+      {
+        index: { fields: ['status', 'payoutAmount', 'depositAmount'] },
+        ddoc: 'status-payoutamount-depositamount-index',
+        name: 'status-payoutamount-depositamount-index',
+        type: 'json' as 'json',
+        partitioned: false
+      },
+      {
+        index: { fields: ['status', 'usdvalue', 'timestamp'] },
+        ddoc: 'status-usdvalue-timestamp-index-p',
+        name: 'status-usdvalue-timestamp-index-p',
+        type: 'json' as 'json',
+        partitioned: true
+      },
+      {
         index: { fields: ['usdValue'] },
         ddoc: 'usdvalue-index-p',
         name: 'usdvalue-index-p',
@@ -88,7 +102,7 @@ const DB_NAMES = [
         partitioned: true
       },
       {
-        index: { fields: ['usdvalue'] },
+        index: { fields: ['usdValue'] },
         ddoc: 'usdvalue-index',
         name: 'usdvalue-index',
         type: 'json' as 'json',
