@@ -60,8 +60,8 @@ export const getAnalytic = async (
 ): Promise<any> => {
   const query = {
     selector: {
-      usdValue: { $gte: 0 },
       status: { $eq: 'complete' },
+      usdValue: { $gte: 0 },
       timestamp: { $gte: start, $lt: end }
     },
     fields: [
@@ -71,7 +71,7 @@ export const getAnalytic = async (
       'timestamp',
       'usdValue'
     ],
-    use_index: 'timestamp-index',
+    use_index: 'status-usdvalue-timestamp-index',
     sort: ['timestamp'],
     limit: 1000000
   }
