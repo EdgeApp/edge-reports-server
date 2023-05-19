@@ -28,7 +28,7 @@ const DB_NAMES = [
       {
         index: { fields: ['timestamp'] },
         ddoc: 'timestamp-index',
-        name: 'Timestamp',
+        name: 'timestamp-index',
         type: 'json' as 'json',
         partitioned: true
       }
@@ -41,7 +41,7 @@ const DB_NAMES = [
       {
         index: { fields: ['timestamp'] },
         ddoc: 'timestamp-index',
-        name: 'Timestamp',
+        name: 'timestamp-index',
         type: 'json' as 'json',
         partitioned: true
       }
@@ -54,7 +54,7 @@ const DB_NAMES = [
       {
         index: { fields: ['timestamp'] },
         ddoc: 'timestamp-index',
-        name: 'Timestamp',
+        name: 'timestamp-index',
         type: 'json' as 'json',
         partitioned: true
       }
