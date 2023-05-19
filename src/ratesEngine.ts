@@ -12,8 +12,8 @@ import {
 import { datelog, standardizeNames } from './util'
 
 const nanoDb = nano(config.couchDbFullpath)
-const QUERY_FREQ_MS = 300
-const QUERY_LIMIT = 20
+const QUERY_FREQ_MS = 15000
+const QUERY_LIMIT = 50
 const snooze: Function = async (ms: number) =>
   new Promise((resolve: Function) => setTimeout(resolve, ms))
 
@@ -27,32 +27,35 @@ export async function ratesEngine(): Promise<void> {
   const dbSettings: nano.DocumentScope<unknown> = nanoDb.db.use(
     'reports_settings'
   )
+  const queries: MangoQuery[] = [
+    {
+      selector: {
+        $and: [{ status: { $eq: 'complete' } }, { usdValue: { $lt: 0 } }]
+      },
+      limit: QUERY_LIMIT
+    },
+    {
+      selector: {
+        $and: [
+          { status: { $eq: 'complete' } },
+          { payoutAmount: { $eq: 0 } },
+          { depositAmount: { $gt: 0 } }
+        ]
+      },
+      limit: QUERY_LIMIT
+    }
+  ]
   let bookmark
+  let count = 1
   while (true) {
+    count++
     datelog('Querying missing rates')
     const result2 = await dbSettings.get('currencyCodeMappings')
     const { mappings } = asDbCurrencyCodeMappings(result2)
 
-    const query: MangoQuery = {
-      selector: {
-        $and: [
-          { status: { $eq: 'complete' } },
-          {
-            $or: [
-              { usdValue: { $lt: 0 } },
-              {
-                $and: [
-                  { payoutAmount: { $eq: 0 } },
-                  { depositAmount: { $gt: 0 } }
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      bookmark,
-      limit: QUERY_LIMIT
-    }
+    const query = queries[count % 2]
+    query.bookmark = bookmark
+
     const result = await dbTransactions.find(query)
     if (
       typeof result.bookmark === 'string' &&
