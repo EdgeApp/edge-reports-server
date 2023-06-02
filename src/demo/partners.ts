@@ -57,6 +57,14 @@ export default {
     type: 'swap',
     color: '#F8F852'
   },
+  ioniagiftcards: {
+    type: 'fiat',
+    color: '#2D2450'
+  },
+  ioniavisarewards: {
+    type: 'fiat',
+    color: '#6381F5'
+  },
   letsexchange: {
     type: 'swap',
     color: '#1A1438'

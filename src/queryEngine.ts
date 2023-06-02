@@ -15,6 +15,8 @@ import { exolix } from './partners/exolix'
 import { foxExchange } from './partners/foxExchange'
 import { gebo } from './partners/gebo'
 import { godex } from './partners/godex'
+import { ioniaGiftCards } from './partners/ioniagiftcard'
+import { ioniaVisaRewards } from './partners/ioniavisarewards'
 import { letsexchange } from './partners/letsexchange'
 import { libertyx } from './partners/libertyx'
 import { moonpay } from './partners/moonpay'
@@ -126,6 +128,8 @@ const partners = [
   foxExchange,
   gebo,
   godex,
+  ioniaVisaRewards,
+  ioniaGiftCards,
   letsexchange,
   libertyx,
   moonpay,
