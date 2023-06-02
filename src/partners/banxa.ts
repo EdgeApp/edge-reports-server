@@ -76,7 +76,7 @@ export async function queryBanxa(
   const { apiKey } = apiKeys
   const { latestIsoDate } = settings
 
-  if (typeof apiKey !== 'string') {
+  if (apiKey == null) {
     return { settings: { latestIsoDate }, transactions: [] }
   }
 

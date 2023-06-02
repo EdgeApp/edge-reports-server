@@ -67,7 +67,7 @@ export const queryChangeNow = async (
   const { apiKey } = apiKeys
   let { latestIsoDate } = settings
 
-  if (typeof apiKey !== 'string') {
+  if (apiKey == null) {
     return { settings: { latestIsoDate }, transactions: [] }
   }
 

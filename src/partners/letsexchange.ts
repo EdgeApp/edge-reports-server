@@ -70,7 +70,7 @@ export async function queryLetsExchange(
   let { latestIsoDate } = settings
   // let latestIsoDate = '2023-01-04T19:36:46.000Z'
 
-  if (typeof apiKey !== 'string') {
+  if (apiKey == null) {
     return { settings: { latestIsoDate }, transactions: [] }
   }
 
