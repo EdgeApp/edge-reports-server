@@ -28,7 +28,7 @@
 //         payoutAmount: 124.40797699,
 //         timestamp: 1598908235.759,
 //         isoDate: '2020-08-31T21:10:35.759Z',
-//         usdValue: undefined,
+//         usdValue: -1,
 //         rawTx: {
 //           status: 'finished',
 //           payinHash:

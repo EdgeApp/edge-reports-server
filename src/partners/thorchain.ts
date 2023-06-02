@@ -164,7 +164,7 @@ export const queryThorchain = async (
         payoutAmount,
         timestamp,
         isoDate,
-        usdValue: undefined,
+        usdValue: -1,
         rawTx
       }
 

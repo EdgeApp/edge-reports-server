@@ -94,7 +94,7 @@ export async function queryCoinSwitch(
         payoutAmount: tx.destinationCoinAmount,
         timestamp: tx.createdAt / 1000,
         isoDate: new Date(tx.createdAt).toISOString(),
-        usdValue: undefined,
+        usdValue: -1,
         rawTx: rawTx
       }
       ssFormatTxs.push(ssTx)

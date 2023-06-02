@@ -318,11 +318,13 @@ export async function queryTotle(
 
   try {
     const { tokens } = asTokenResult(
-      await fetch('https://api.totle.com/tokens').then(res => res.json())
+      await fetch('https://api.totle.com/tokens').then(async res => res.json())
     )
 
     const { contracts } = asContractResult(
-      await fetch('https://api.totle.com/contracts').then(res => res.json())
+      await fetch('https://api.totle.com/contracts').then(async res =>
+        res.json()
+      )
     )
 
     const primaries = contracts.filter(({ type }) => type === 1)
@@ -383,7 +385,7 @@ export async function queryTotle(
             await web3.eth.getTransactionReceipt(swapEvent.transactionHash)
           )
 
-          const ssTx = {
+          const ssTx: StandardTx = {
             status: 'complete',
             orderId: receipt.transactionHash,
             depositTxid: receipt.transactionHash,
@@ -410,7 +412,7 @@ export async function queryTotle(
             ),
             timestamp: timestamp,
             isoDate: new Date(timestamp * 1000).toISOString(),
-            usdValue: undefined,
+            usdValue: -1,
             rawTx: rawSwapEvent
           }
           ssFormatTxs.push(ssTx)

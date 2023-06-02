@@ -1,20 +1,30 @@
-import axios from 'axios'
 import {
   asArray,
+  asMaybe,
   asNumber,
   asObject,
   asOptional,
   asString,
-  asUnknown
+  asUnknown,
+  asValue
 } from 'cleaners'
 
-import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog, smartIsoDateFromTimestamp } from '../util'
+import {
+  PartnerPlugin,
+  PluginParams,
+  PluginResult,
+  StandardTx,
+  Status
+} from '../types'
+import { datelog, retryFetch, smartIsoDateFromTimestamp } from '../util'
+
+const asChangeHeroStatus = asMaybe(asValue('finished', 'expired'), 'other')
 
 const asChangeHeroTx = asObject({
   id: asString,
-  payinHash: asString,
-  payoutHash: asString,
+  status: asChangeHeroStatus,
+  payinHash: asMaybe(asString, undefined),
+  payoutHash: asMaybe(asString, undefined),
   payinAddress: asString,
   currencyFrom: asString,
   amountFrom: asString,
@@ -33,64 +43,21 @@ const asChangeHeroPluginParams = asObject({
   })
 })
 
-const asChangeHeroRawTx = asObject({
-  status: asString
-})
-
 const asChangeHeroResult = asObject({
   result: asArray(asUnknown)
 })
 
+type ChangeHeroTx = ReturnType<typeof asChangeHeroTx>
+type ChangeHeroStatus = ReturnType<typeof asChangeHeroStatus>
+
 const API_URL = 'https://api.changehero.io/v2/'
-const MAX_ATTEMPTS = 3
 const LIMIT = 100
-const TIMEOUT = 20000
 const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
-const EMPTY_STRING = ''
 
-async function getTransactionsPromised(
-  apiKey: string,
-  limit: number,
-  offset: number,
-  currencyFrom: string | undefined,
-  address: string | undefined,
-  extraId: string | undefined
-): Promise<ReturnType<typeof asChangeHeroResult>> {
-  let promise
-  let attempt = 1
-  while (true) {
-    const params = {
-      id: extraId === undefined ? EMPTY_STRING : extraId,
-      currency: currencyFrom === undefined ? EMPTY_STRING : currencyFrom,
-      payoutAddress: address === undefined ? EMPTY_STRING : address,
-      offset: offset,
-      limit: limit
-    }
-
-    const changeHeroFetch = axios
-      .post(
-        API_URL,
-        {
-          method: 'getTransactions',
-          params: params
-        },
-        { headers: { 'api-key': apiKey } }
-      )
-      .catch(err => err.code)
-
-    const timeoutTest = new Promise((resolve, reject) => {
-      setTimeout(resolve, TIMEOUT, 'ETIMEDOUT')
-    })
-
-    promise = await Promise.race([changeHeroFetch, timeoutTest])
-    if (promise === 'ETIMEDOUT' && attempt <= MAX_ATTEMPTS) {
-      datelog(`ChangeHero request timed out.  Retry attempt: ${attempt}`)
-      attempt++
-      continue
-    }
-    break
-  }
-  return promise
+const statusMap: { [key in ChangeHeroStatus]: Status } = {
+  finished: 'complete',
+  expired: 'expired',
+  other: 'other'
 }
 
 export async function queryChangeHero(
@@ -116,55 +83,75 @@ export async function queryChangeHero(
       let oldestIsoDate = '999999999999999999999999999999999999'
       datelog(`Query changeHero offset: ${offset}`)
 
-      const response: any = await getTransactionsPromised(
-        pluginParams.apiKeys.apiKey,
-        LIMIT,
+      const params = {
+        id: '',
+        currency: '',
+        payoutAddress: '',
         offset,
-        undefined,
-        undefined,
-        undefined
-      )
+        limit: LIMIT
+      }
 
-      const txs = asChangeHeroResult(response.data).result
+      const response = await retryFetch(API_URL, {
+        headers: { 'Content-Type': 'application/json', 'api-key': apiKey },
+        method: 'POST',
+        body: JSON.stringify({
+          method: 'getTransactions',
+          params
+        })
+      })
+
+      if (!response.ok) {
+        const text = await response.text()
+        datelog(text)
+        throw new Error(text)
+      }
+
+      const result = await response.json()
+
+      const txs = asChangeHeroResult(result).result
       if (txs.length === 0) {
         datelog(`ChangeHero done at offset ${offset}`)
         break
       }
       for (const rawTx of txs) {
-        if (asChangeHeroRawTx(rawTx).status === 'finished') {
-          const tx = asChangeHeroTx(rawTx)
-          const ssTx: StandardTx = {
-            status: 'complete',
-            orderId: tx.id,
-            depositTxid: tx.payinHash,
-            depositAddress: tx.payinAddress,
-            depositCurrency: tx.currencyFrom.toUpperCase(),
-            depositAmount: parseFloat(tx.amountFrom),
-            payoutTxid: tx.payoutHash,
-            payoutAddress: tx.payoutAddress,
-            payoutCurrency: tx.currencyTo.toUpperCase(),
-            payoutAmount: parseFloat(tx.amountTo),
-            timestamp: tx.createdAt,
-            isoDate: smartIsoDateFromTimestamp(tx.createdAt).isoDate,
-            usdValue: undefined,
-            rawTx
-          }
-          ssFormatTxs.push(ssTx)
-          if (ssTx.isoDate > latestIsoDate) {
-            latestIsoDate = ssTx.isoDate
-          }
-          if (ssTx.isoDate < oldestIsoDate) {
-            oldestIsoDate = ssTx.isoDate
-          }
-          if (ssTx.isoDate < previousLatestIsoDate && !done) {
-            datelog(
-              `ChangeHero done: date ${ssTx.isoDate} < ${previousLatestIsoDate}`
-            )
-            done = true
-          }
+        let tx: ChangeHeroTx
+        try {
+          tx = asChangeHeroTx(rawTx)
+        } catch (e) {
+          console.log(e)
+          throw e
+        }
+        const ssTx: StandardTx = {
+          status: statusMap[tx.status],
+          orderId: tx.id,
+          depositTxid: tx.payinHash,
+          depositAddress: tx.payinAddress,
+          depositCurrency: tx.currencyFrom.toUpperCase(),
+          depositAmount: parseFloat(tx.amountFrom),
+          payoutTxid: tx.payoutHash,
+          payoutAddress: tx.payoutAddress,
+          payoutCurrency: tx.currencyTo.toUpperCase(),
+          payoutAmount: parseFloat(tx.amountTo),
+          timestamp: tx.createdAt,
+          isoDate: smartIsoDateFromTimestamp(tx.createdAt).isoDate,
+          usdValue: -1,
+          rawTx
+        }
+        ssFormatTxs.push(ssTx)
+        if (ssTx.isoDate > latestIsoDate) {
+          latestIsoDate = ssTx.isoDate
+        }
+        if (ssTx.isoDate < oldestIsoDate) {
+          oldestIsoDate = ssTx.isoDate
+        }
+        if (ssTx.isoDate < previousLatestIsoDate && !done) {
+          datelog(
+            `ChangeHero done: date ${ssTx.isoDate} < ${previousLatestIsoDate}`
+          )
+          done = true
         }
       }
-      datelog(`oldestIsoDate ${oldestIsoDate}`)
+      datelog(`Changehero oldestIsoDate ${oldestIsoDate}`)
       offset += LIMIT
     }
   } catch (e) {

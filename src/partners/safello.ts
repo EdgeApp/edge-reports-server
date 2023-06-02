@@ -49,7 +49,7 @@ export async function querySafello(
       const tx = asSafelloTx(rawtx)
       const date = new Date(tx.completedDate)
       const timestamp = date.getTime()
-      const ssTx = {
+      const ssTx: StandardTx = {
         status: 'complete',
         orderId: tx.id,
         depositTxid: undefined,
@@ -62,7 +62,7 @@ export async function querySafello(
         payoutAmount: 0,
         timestamp: timestamp / 1000,
         isoDate: date.toISOString(),
-        usdValue: undefined,
+        usdValue: -1,
         rawTx: rawtx
       }
       ssFormatTxs.push(ssTx)

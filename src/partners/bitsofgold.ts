@@ -97,7 +97,7 @@ export async function queryBitsOfGold(
       payoutAmount,
       timestamp: timestamp / 1000,
       isoDate: date.toISOString(),
-      usdValue: undefined,
+      usdValue: -1,
       rawTx: rawtx
     }
     latestTimeStamp = latestTimeStamp > timestamp ? latestTimeStamp : timestamp

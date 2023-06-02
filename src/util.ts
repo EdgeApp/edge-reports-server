@@ -5,7 +5,9 @@ import startOfDay from 'date-fns/startOfDay'
 import startOfHour from 'date-fns/startOfHour'
 import startOfMonth from 'date-fns/startOfMonth'
 import sub from 'date-fns/sub'
+import fetch, { RequestInfo, RequestInit, Response } from 'node-fetch'
 
+import config from '../config.json'
 import {
   AnalyticsResult,
   Bucket,
@@ -19,6 +21,9 @@ export const SIX_DAYS = 6
 const CURRENCY_CONVERSION = {
   USDT20: 'USDT',
   USDTERC20: 'USDT',
+  USDTPOLYGON: 'USDT',
+  USDCPOLYGON: 'USDC',
+  ZADDR: 'ZEC',
   BCHABC: 'BCH',
   BCHSV: 'BSV',
   FTMMAINNET: 'FTM',
@@ -38,22 +43,32 @@ export const promiseTimeout = async <T>(
   msg: string,
   p: Promise<T>
 ): Promise<T> => {
+  const timeoutMins = config.timeoutOverrideMins ?? 5
   return new Promise((resolve, reject) => {
     datelog('STARTING', msg)
-    setTimeout(() => reject(new Error(msg)), 60000 * 5)
+    setTimeout(() => reject(new Error(`Timeout: ${msg}`)), 60000 * timeoutMins)
     p.then(v => resolve(v)).catch(e => reject(e))
   })
 }
 
 export const smartIsoDateFromTimestamp = (
-  timestamp: number
+  timestamp: number | string
 ): { timestamp: number; isoDate } => {
-  if (timestamp > 9999999999) {
-    timestamp = timestamp / 1000
-  }
-  return {
-    timestamp,
-    isoDate: new Date(timestamp * 1000).toISOString()
+  if (typeof timestamp === 'string') {
+    timestamp = timestamp.endsWith('Z') ? timestamp : timestamp + 'Z'
+    const date = new Date(timestamp)
+    return {
+      timestamp: date.getTime() / 1000,
+      isoDate: date.toISOString()
+    }
+  } else {
+    if (timestamp > 9999999999) {
+      timestamp = timestamp / 1000
+    }
+    return {
+      timestamp,
+      isoDate: new Date(timestamp * 1000).toISOString()
+    }
   }
 }
 
@@ -307,4 +322,27 @@ export const sevenDayDataMerge = (data: Data[]): DataPlusSevenDayAve[] => {
     })
   })
   return sevenDayDataArr.slice(SIX_DAYS)
+}
+
+export const retryFetch = async (
+  request: RequestInfo,
+  init?: RequestInit,
+  maxRetries: number = 5
+): Promise<Response> => {
+  let retries = 0
+  let err: any
+
+  while (retries++ < maxRetries) {
+    try {
+      const response = await fetch(request, init)
+      return response
+    } catch (e) {
+      err = e
+      if (err.code.includes('ETIMEDOUT') === false) {
+        throw err
+      }
+      await snooze(5000 * retries)
+    }
+  }
+  throw err
 }

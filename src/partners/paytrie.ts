@@ -50,7 +50,10 @@ export async function queryPaytrie(
       },
       method: 'post'
     }
-  ).catch(err => datelog(err))
+  ).catch(err => {
+    datelog(err)
+    throw err
+  })
 
   const orders = asPaytrieTxs(await apiResponse.json())
 
@@ -69,7 +72,7 @@ export async function queryPaytrie(
       payoutAmount: order.outputAmount,
       timestamp: new Date(order.timestamp).getTime() / 1000,
       isoDate: order.timestamp,
-      usdValue: undefined,
+      usdValue: -1,
       rawTx: rawOrder
     }
     ssFormatTxs.push(ssTx)

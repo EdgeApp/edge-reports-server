@@ -105,7 +105,7 @@ export async function querySimplex(
           done = true
           break
         }
-        const ssTx = {
+        const ssTx: StandardTx = {
           status: 'complete',
           orderId: tx.order_id,
           depositTxid: undefined,

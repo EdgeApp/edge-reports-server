@@ -2,6 +2,7 @@
   "couchDbFullpath": "http://admin:admin@localhost:5984",
   "httpPort": "8000",
   "soloAppId": null,
-  "soloPluginId": null
-
+  "soloPluginId": null,
+  "timeoutOverrideMins": null,
+  "cacheLookbackMonths": null
 }

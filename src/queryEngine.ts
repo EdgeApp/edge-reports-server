@@ -46,11 +46,67 @@ const DB_NAMES = [
     options: { partitioned: true },
     indexes: [
       {
-        index: { fields: ['timestamp'] },
-        ddoc: 'timestamp-index',
-        name: 'Timestamp',
+        index: { fields: ['isoDate'] },
+        ddoc: 'isodate-index-p',
+        name: 'isodate-index-p',
         type: 'json' as 'json',
         partitioned: true
+      },
+      {
+        index: { fields: ['isoDate'] },
+        ddoc: 'isodate-index',
+        name: 'isodate-index',
+        type: 'json' as 'json',
+        partitioned: false
+      },
+      {
+        index: { fields: ['status'] },
+        ddoc: 'status-index-p',
+        name: 'status-index-p',
+        type: 'json' as 'json',
+        partitioned: true
+      },
+      {
+        index: { fields: ['status'] },
+        ddoc: 'status-index',
+        name: 'status-index',
+        type: 'json' as 'json',
+        partitioned: false
+      },
+      {
+        index: { fields: ['status', 'usdValue'] },
+        ddoc: 'status-usdvalue-index',
+        name: 'status-usdvalue-index',
+        type: 'json' as 'json',
+        partitioned: false
+      },
+      {
+        index: { fields: ['status', 'payoutAmount', 'depositAmount'] },
+        ddoc: 'status-payoutamount-depositamount-index',
+        name: 'status-payoutamount-depositamount-index',
+        type: 'json' as 'json',
+        partitioned: false
+      },
+      {
+        index: { fields: ['status', 'usdvalue', 'timestamp'] },
+        ddoc: 'status-usdvalue-timestamp-index-p',
+        name: 'status-usdvalue-timestamp-index-p',
+        type: 'json' as 'json',
+        partitioned: true
+      },
+      {
+        index: { fields: ['usdValue'] },
+        ddoc: 'usdvalue-index-p',
+        name: 'usdvalue-index-p',
+        type: 'json' as 'json',
+        partitioned: true
+      },
+      {
+        index: { fields: ['usdValue'] },
+        ddoc: 'usdvalue-index',
+        name: 'usdvalue-index',
+        type: 'json' as 'json',
+        partitioned: false
       }
     ]
   },
@@ -177,22 +233,22 @@ const filterAddNewTxs = async (
   if (docIds.length < 1 || transactions.length < 1) return
   const queryResults = await dbTransactions.fetch(
     { keys: docIds },
-    { include_docs: false }
+    { include_docs: true }
   )
 
   const newDocs: DbTx[] = []
   for (const docId of docIds) {
-    if (
-      queryResults.rows.find(
-        doc => 'id' in doc && doc.id === docId && doc.doc != null
-      ) == null
-    ) {
+    const queryResult = queryResults.rows.find(
+      doc => 'id' in doc && doc.id === docId && doc.doc != null
+    )
+    const orderId = docId.split(':')[1] ?? ''
+    const tx = transactions.find(tx => tx.orderId === orderId)
+    if (tx == null) {
+      throw new Error(`Cant find tx from docId ${docId}`)
+    }
+
+    if (queryResult == null) {
       // Get the full transaction
-      const orderId = docId.split(':')[1] ?? ''
-      const tx = transactions.find(tx => tx.orderId === orderId)
-      if (tx == null) {
-        throw new Error(`Cant find tx from docId ${docId}`)
-      }
       const newObj = { _id: docId, _rev: undefined, ...tx }
 
       // replace all fields with non-standard names
@@ -201,6 +257,16 @@ const filterAddNewTxs = async (
 
       datelog(`new doc id: ${newObj._id}`)
       newDocs.push(newObj)
+    } else {
+      if ('doc' in queryResult) {
+        if (tx.status !== queryResult.doc?.status) {
+          const oldStatus = queryResult.doc?.status
+          const newStatus = tx.status
+          const newObj = { _id: docId, _rev: queryResult.doc?._rev, ...tx }
+          newDocs.push(newObj)
+          datelog(`updated doc id: ${newObj._id} ${oldStatus} -> ${newStatus}`)
+        }
+      }
     }
   }
 
@@ -220,7 +286,9 @@ async function insertTransactions(
     'reports_transactions'
   )
   let docIds: string[] = []
-  for (const transaction of transactions) {
+  let startIndex = 0
+  for (let i = 0; i < transactions.length; i++) {
+    const transaction = transactions[i]
     transaction.orderId = transaction.orderId.toLowerCase()
     const key = `${pluginId}:${transaction.orderId}`
     docIds.push(key)
@@ -228,8 +296,12 @@ async function insertTransactions(
     // Collect a batch of docIds
     if (docIds.length < BULK_FETCH_SIZE) continue
 
+    datelog(
+      `insertTransactions ${startIndex} to ${i} of ${transactions.length}`
+    )
     await filterAddNewTxs(pluginId, dbTransactions, docIds, transactions)
     docIds = []
+    startIndex = i + 1
   }
   await filterAddNewTxs(pluginId, dbTransactions, docIds, transactions)
 }

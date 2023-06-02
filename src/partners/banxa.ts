@@ -1,19 +1,47 @@
-import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
+import {
+  asArray,
+  asMaybe,
+  asNumber,
+  asObject,
+  asString,
+  asUnknown,
+  asValue
+} from 'cleaners'
 import crypto from 'crypto'
-import fetch from 'node-fetch'
+import { Response } from 'node-fetch'
 
-import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog, snooze } from '../util'
+import {
+  asStandardPluginParams,
+  PartnerPlugin,
+  PluginParams,
+  PluginResult,
+  StandardTx,
+  Status
+} from '../types'
+import { datelog, retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
+
+const asBanxaStatus = asMaybe(
+  asValue(
+    'complete',
+    'pendingPayment',
+    'cancelled',
+    'expired',
+    'declined',
+    'refunded'
+  ),
+  'other'
+)
 
 const asBanxaTx = asObject({
+  id: asString,
+  status: asBanxaStatus,
   created_at: asString,
   fiat_amount: asNumber,
   fiat_code: asString,
   coin_amount: asNumber,
   coin_code: asString,
   order_type: asString,
-  ref: asNumber,
-  wallet_address: asString
+  wallet_address: asMaybe(asString, '')
 })
 
 const asBanxaResult = asObject({
@@ -22,101 +50,103 @@ const asBanxaResult = asObject({
   })
 })
 
-const asRawBanxaTx = asObject({
-  status: asString
-})
-
-const MAX_ATTEMPTS = 5
+const MAX_ATTEMPTS = 1
 const PAGE_LIMIT = 100
-const ROLLBACK = 1000 * 60 * 60 * 24 * 7 // 7 days
-const MONTH_MAP = {
-  Jan: '01',
-  Feb: '02',
-  Mar: '03',
-  Apr: '04',
-  May: '05',
-  Jun: '06',
-  Jul: '07',
-  Aug: '08',
-  Sep: '09',
-  Oct: '10',
-  Nov: '11',
-  Dec: '12'
+const ONE_DAY_MS = 1000 * 60 * 60 * 24
+const ROLLBACK = ONE_DAY_MS * 7 // 7 days
+
+type BanxaTx = ReturnType<typeof asBanxaTx>
+type BanxaStatus = ReturnType<typeof asBanxaStatus>
+
+const statusMap: { [key in BanxaStatus]: Status } = {
+  complete: 'complete',
+  expired: 'expired',
+  cancelled: 'other',
+  declined: 'blocked',
+  refunded: 'refunded',
+  pendingPayment: 'pending',
+  other: 'other'
 }
 
 export async function queryBanxa(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
   const ssFormatTxs: StandardTx[] = []
-  let apiKey
-  const lastCheckedDate =
-    typeof pluginParams.settings.lastCheckedDate === 'string'
-      ? pluginParams.settings.lastCheckedDate
-      : '2019-08-26'
-  if (typeof pluginParams.apiKeys.banxaToken === 'string') {
-    apiKey = pluginParams.apiKeys.banxaToken
-  } else {
-    return {
-      settings: { lastCheckedDate },
-      transactions: []
-    }
+  const { settings, apiKeys } = asStandardPluginParams(pluginParams)
+  const { apiKey } = apiKeys
+  const { latestIsoDate } = settings
+
+  if (apiKey == null) {
+    return { settings: { latestIsoDate }, transactions: [] }
   }
 
-  const today = new Date(Date.now()).toISOString().slice(0, 10)
-  let currentQuery = new Date(new Date(lastCheckedDate).getTime() - ROLLBACK)
-    .toISOString()
-    .slice(0, 10)
+  const today = new Date().toISOString()
+  let startDate = new Date(
+    new Date(latestIsoDate).getTime() - ROLLBACK
+  ).toISOString()
 
-  while (currentQuery !== today) {
+  let endDate = startDate
+  while (startDate < today) {
+    endDate = new Date(new Date(startDate).getTime() + ROLLBACK).toISOString()
+    if (endDate > today) {
+      endDate = today
+    }
+
     let page = 1
-    let attempt = 1
-    while (true) {
-      // datelog(
-      //   `BANXA: Calling API with date ${currentQuery}, result size ${PAGE_LIMIT} and offset ${page} for attempt ${attempt}`
-      // )
-      const apiResponse = await callBanxaAPI(
-        currentQuery,
-        PAGE_LIMIT,
-        page,
-        apiKey
-      )
-      const status = await apiResponse.status
-
-      // Handle the situation where the API is rate limiting the requests
-      if (status !== 200) {
-        const delay = 2000 * attempt
+    let attempt = 0
+    try {
+      while (true) {
         datelog(
-          `BANXA: Response code ${status}. Retrying after ${delay /
-            1000} second snooze...`
+          `BANXA: Querying ${startDate}->${endDate}, limit=${PAGE_LIMIT} page=${page} attempt=${attempt}`
         )
-        await snooze(delay)
-        attempt++
-        if (attempt === MAX_ATTEMPTS) {
+        const response = await fetchBanxaAPI(
+          startDate,
+          endDate,
+          PAGE_LIMIT,
+          page,
+          apiKey
+        )
+
+        // Handle the situation where the API is rate limiting the requests
+        if (!response.ok) {
+          attempt++
+          const delay = 2000 * attempt
+          datelog(
+            `BANXA: Response code ${response.status}. Retrying after ${delay /
+              1000} second snooze...`
+          )
+          await snooze(delay)
+          if (attempt === MAX_ATTEMPTS) {
+            datelog(`BANXA: Retry Limit reached for date ${startDate}.`)
+
+            const text = await response.text()
+            throw new Error(text)
+          }
+          continue
+        }
+
+        const reply = await response.json()
+        const jsonObj = asBanxaResult(reply)
+        const txs = jsonObj.data.orders
+        processBanxaOrders(txs, ssFormatTxs)
+        if (txs.length < PAGE_LIMIT) {
           break
         }
-        continue
+        page++
       }
+      const newStartTs = new Date(endDate).getTime()
+      startDate = new Date(newStartTs).toISOString()
+    } catch (e) {
+      datelog(String(e))
+      endDate = startDate
 
-      const jsonObj = asBanxaResult(await apiResponse.json())
-      const txs = jsonObj.data.orders
-      processBanxaOrders(txs, ssFormatTxs)
-
-      if (txs.length < PAGE_LIMIT) {
-        break
-      }
-      page++
-    }
-    if (attempt === MAX_ATTEMPTS) {
-      datelog(`BANXA: Retry Limit reached for date ${currentQuery}.`)
+      // We can safely save our progress since we go from oldest to newest.
       break
     }
-    currentQuery = new Date(new Date(currentQuery).getTime() + 86400000)
-      .toISOString()
-      .slice(0, 10)
   }
 
   const out: PluginResult = {
-    settings: { lastCheckedDate: currentQuery },
+    settings: { latestIsoDate: endDate },
     transactions: ssFormatTxs
   }
   return out
@@ -130,15 +160,16 @@ export const banxa: PartnerPlugin = {
   pluginId: 'banxa'
 }
 
-function callBanxaAPI(
-  queryDate: string,
+async function fetchBanxaAPI(
+  startDate: string,
+  endDate: string,
   pageLimit: number,
   page: number,
   apiKey: string
-): any {
+): Promise<Response> {
   const nonce = Math.floor(new Date().getTime() / 1000)
 
-  const apiQuery = `/api/orders?start_date=${queryDate}&end_date=${queryDate}&per_page=${pageLimit}&page=${page}`
+  const apiQuery = `/api/orders?start_date=${startDate}&end_date=${endDate}&per_page=${pageLimit}&page=${page}`
 
   const text = `GET\n${apiQuery}\n${nonce}`
   const secret = apiKey
@@ -154,52 +185,75 @@ function callBanxaAPI(
     'Content-Type': 'application/json'
   }
 
-  return fetch(`https://edge.banxa.com${apiQuery}`, { headers: headers })
+  return retryFetch(`https://edge.banxa.com${apiQuery}`, { headers: headers })
 }
 
 function processBanxaOrders(rawtxs, ssFormatTxs): void {
+  let numComplete = 0
+  let newestIsoDate = new Date(0).toISOString()
+  let oldestIsoDate = new Date(9999999999999).toISOString()
   for (const rawTx of rawtxs) {
-    if (asRawBanxaTx(rawTx).status === 'complete') {
-      const tx = asBanxaTx(rawTx)
-      // Reformat the date from DD-MMM-YYYY HH:MM:SS to YYYY-MM-DDTHH:MM:SS
-      const origDateTime = tx.created_at
-      const dateTimeParts = origDateTime.split(' ')
-      const dateParts = dateTimeParts[0].split('-')
-      const month = MONTH_MAP[dateParts[1]]
-      const reformattedDate = `${dateParts[2]}-${month}-${dateParts[0]}T${dateTimeParts[1]}Z`
-
-      // Flip the amounts if the order is a SELL
-      let payoutAddress
-      let inputAmount = tx.fiat_amount
-      let inputCurrency = tx.fiat_code
-      let outputAmount = tx.coin_amount
-      let outputCurrency = tx.coin_code
-      if (tx.order_type === 'CRYPTO-SELL') {
-        inputAmount = tx.coin_amount
-        inputCurrency = tx.coin_code
-        outputAmount = tx.fiat_amount
-        outputCurrency = tx.fiat_code
-      } else {
-        payoutAddress = tx.wallet_address
-      }
-
-      const ssTx: StandardTx = {
-        status: 'complete',
-        orderId: tx.ref.toString(),
-        depositTxid: undefined,
-        depositAddress: undefined,
-        depositCurrency: inputCurrency,
-        depositAmount: inputAmount,
-        payoutTxid: undefined,
-        payoutAddress,
-        payoutCurrency: outputCurrency,
-        payoutAmount: outputAmount,
-        timestamp: new Date(reformattedDate).getTime() / 1000,
-        isoDate: reformattedDate,
-        usdValue: undefined,
-        rawTx
-      }
-      ssFormatTxs.push(ssTx)
+    let tx: BanxaTx
+    try {
+      tx = asBanxaTx(rawTx)
+    } catch (e) {
+      datelog(String(e))
+      throw e
     }
+    if (tx.status === 'complete') {
+      numComplete++
+    }
+    const { isoDate, timestamp } = smartIsoDateFromTimestamp(tx.created_at)
+
+    if (isoDate > newestIsoDate) {
+      newestIsoDate = isoDate
+    }
+    if (isoDate < oldestIsoDate) {
+      oldestIsoDate = isoDate
+    }
+    // Flip the amounts if the order is a SELL
+    let payoutAddress
+    let inputAmount = tx.fiat_amount
+    let inputCurrency = tx.fiat_code
+    let outputAmount = tx.coin_amount
+    let outputCurrency = tx.coin_code
+    if (tx.order_type === 'CRYPTO-SELL') {
+      inputAmount = tx.coin_amount
+      inputCurrency = tx.coin_code
+      outputAmount = tx.fiat_amount
+      outputCurrency = tx.fiat_code
+    } else {
+      payoutAddress = tx.wallet_address
+    }
+
+    const ssTx: StandardTx = {
+      status: statusMap[tx.status],
+      orderId: tx.id,
+      depositTxid: undefined,
+      depositAddress: undefined,
+      depositCurrency: inputCurrency,
+      depositAmount: inputAmount,
+      payoutTxid: undefined,
+      payoutAddress,
+      payoutCurrency: outputCurrency,
+      payoutAmount: outputAmount,
+      timestamp,
+      isoDate,
+      usdValue: -1,
+      rawTx
+    }
+    ssFormatTxs.push(ssTx)
+  }
+  if (rawtxs.length > 1) {
+    datelog(
+      `BANXA: Processed ${
+        rawtxs.length
+      }, #complete=${numComplete} oldest=${oldestIsoDate.slice(
+        0,
+        16
+      )} newest=${newestIsoDate.slice(0, 16)}`
+    )
+  } else {
+    datelog(`BANXA: Processed ${rawtxs.length}`)
   }
 }

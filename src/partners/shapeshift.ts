@@ -53,7 +53,7 @@ export async function queryShapeshift(
     for (const rawTx of txs) {
       if (asRawShapeshiftTx(rawTx).status === 'complete') {
         const tx = asShapeshiftTx(rawTx)
-        const ssTx = {
+        const ssTx: StandardTx = {
           status: 'complete',
           orderId: tx.orderId,
           depositTxid: tx.inputTXID,
@@ -66,7 +66,7 @@ export async function queryShapeshift(
           payoutAmount: parseFloat(tx.outputAmount),
           timestamp: tx.timestamp,
           isoDate: new Date(tx.timestamp * 1000).toISOString(),
-          usdValue: undefined,
+          usdValue: -1,
           rawTx
         }
         ssFormatTxs.push(ssTx)

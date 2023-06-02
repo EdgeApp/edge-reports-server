@@ -8,8 +8,14 @@ import {
 } from 'cleaners'
 import fetch from 'node-fetch'
 
-import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog } from '../util'
+import {
+  PartnerPlugin,
+  PluginParams,
+  PluginResult,
+  StandardTx,
+  Status
+} from '../types'
+import { datelog, retryFetch, smartIsoDateFromTimestamp } from '../util'
 
 const asSwapuzLogin = asObject({
   result: asObject({
@@ -18,20 +24,20 @@ const asSwapuzLogin = asObject({
 })
 
 const asSwapuzTx = asObject({
+  uid: asString,
+  status: asNumber,
+  wTxId: asOptional(asString),
+  dTxId: asOptional(asString),
+  withdrawalTransactionID: asOptional(asString),
+  depositTransactionID: asOptional(asString),
   createDate: asString,
   from: asString,
   to: asString,
+  depositAddress: asString,
   amountResult: asNumber,
   amount: asNumber,
   amountBTC: asNumber,
   startAmount: asNumber
-})
-
-const asSwapuzRawTx = asObject({
-  id: asNumber,
-  status: asNumber,
-  wTxId: asOptional(asString),
-  dTxId: asOptional(asString)
 })
 
 const asSwapuzResult = asObject({
@@ -98,7 +104,7 @@ export const querySwapuz = async (
   while (!done) {
     page++
     const url = `https://api.swapuz.com/api/partner/partnerPaginator?page=${page}`
-    const response = await fetch(url, {
+    const response = await retryFetch(url, {
       method: 'GET',
       headers
     })
@@ -106,38 +112,48 @@ export const querySwapuz = async (
       const text = await response.text()
       throw new Error(text)
     }
-    const reply = await response.json()
-    const jsonObj = asSwapuzResult(reply)
-    const { currentPage, maxPage, result: txs } = jsonObj.result
-    for (const rawTx of txs) {
-      const { id, status, dTxId, wTxId } = asSwapuzRawTx(rawTx)
+    try {
+      const reply = await response.json()
+      const jsonObj = asSwapuzResult(reply)
+      const { currentPage, maxPage, result: txs } = jsonObj.result
+      for (const rawTx of txs) {
+        const {
+          uid,
+          status: statusNum,
+          dTxId,
+          wTxId,
+          withdrawalTransactionID,
+          depositTransactionID,
+          depositAddress,
+          amount,
+          amountResult,
+          createDate,
+          from,
+          to
+        } = asSwapuzTx(rawTx)
 
-      // Status === 6 seems to be the "complete" status
-      if (status === 6) {
-        if (dTxId == null) {
-          continue
+        // Status === 6 seems to be the "complete" status
+        let status: Status = 'other'
+        if (statusNum === 6) {
+          status = 'complete'
         }
-        if (wTxId == null) {
-          continue
-        }
-        const { amount, amountResult, createDate, from, to } = asSwapuzTx(rawTx)
-        const date = new Date(createDate)
-        const timestamp = date.getTime() / 1000
+
+        const { isoDate, timestamp } = smartIsoDateFromTimestamp(createDate)
 
         const ssTx: StandardTx = {
-          status: 'complete',
-          orderId: id.toString(),
-          depositTxid: dTxId,
+          status,
+          orderId: uid,
+          depositTxid: dTxId ?? depositTransactionID,
           depositCurrency: from.toUpperCase(),
-          depositAddress: undefined,
+          depositAddress,
           depositAmount: amount,
-          payoutTxid: wTxId,
+          payoutTxid: wTxId ?? withdrawalTransactionID,
           payoutCurrency: to.toUpperCase(),
           payoutAddress: undefined,
           payoutAmount: amountResult,
           timestamp,
-          isoDate: date.toISOString(),
-          usdValue: undefined,
+          isoDate,
+          usdValue: -1,
           rawTx
         }
         ssFormatTxs.push(ssTx)
@@ -154,13 +170,15 @@ export const querySwapuz = async (
           done = true
         }
       }
-    }
-    // console.log(
-    //   `Swapuz page=${page}/${maxPage} oldestIsoDate: ${oldestIsoDate}`
-    // )
+      datelog(`Swapuz page=${page}/${maxPage} oldestIsoDate: ${oldestIsoDate}`)
 
-    if (currentPage >= maxPage) {
-      break
+      if (currentPage >= maxPage) {
+        break
+      }
+    } catch (e) {
+      const err: any = e
+      datelog(err.message)
+      throw e
     }
   }
   const out: PluginResult = {

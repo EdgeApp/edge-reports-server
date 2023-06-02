@@ -4,7 +4,8 @@ import {
   asObject,
   asOptional,
   asString,
-  asUnknown
+  asUnknown,
+  asValue
 } from 'cleaners'
 
 export const asPluginParams = asObject({
@@ -23,6 +24,16 @@ export interface PartnerPlugin {
   pluginName: string
   pluginId: string
 }
+
+const asStatus = asValue(
+  'complete',
+  'processing',
+  'pending',
+  'expired',
+  'blocked',
+  'refunded',
+  'other'
+)
 const standardTxFields = {
   orderId: asString,
   depositTxid: asOptional(asString),
@@ -33,10 +44,10 @@ const standardTxFields = {
   payoutAddress: asOptional(asString),
   payoutCurrency: asString,
   payoutAmount: asNumber,
-  status: asString,
+  status: asStatus,
   isoDate: asString,
   timestamp: asNumber,
-  usdValue: asOptional(asNumber),
+  usdValue: asNumber,
   rawTx: asUnknown
 }
 export const asDbTx = asObject({
@@ -57,8 +68,18 @@ export const asDbCurrencyCodeMappings = asObject({
   mappings: asCurrencyCodeMappings
 })
 
+export const asStandardPluginParams = asObject({
+  settings: asObject({
+    latestIsoDate: asOptional(asString, '2018-01-01T00:00:00.000Z')
+  }),
+  apiKeys: asObject({
+    apiKey: asOptional(asString)
+  })
+})
+
 export type CurrencyCodeMappings = ReturnType<typeof asCurrencyCodeMappings>
 export type DbCurrencyCodeMappings = ReturnType<typeof asDbCurrencyCodeMappings>
 export type DbTx = ReturnType<typeof asDbTx>
 export type StandardTx = ReturnType<typeof asStandardTx>
 export type PluginParams = ReturnType<typeof asPluginParams>
+export type Status = ReturnType<typeof asStatus>

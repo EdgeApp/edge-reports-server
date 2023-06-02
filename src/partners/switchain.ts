@@ -85,7 +85,7 @@ export async function querySwitchain(
           payoutAmount: parseFloat(tx.rate),
           timestamp: timestamp / 1000,
           isoDate: tx.createdAt,
-          usdValue: undefined,
+          usdValue: -1,
           rawTx: rawtx
         }
 
