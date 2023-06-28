@@ -127,7 +127,9 @@ export const queryThorchain = async (
       }
 
       const timestampMs = div(date, '1000000', 16)
-      const { timestamp, isoDate } = smartIsoDateFromTimestamp(timestampMs)
+      const { timestamp, isoDate } = smartIsoDateFromTimestamp(
+        Number(timestampMs)
+      )
 
       const [chainAsset] = srcAsset.split('-')
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
