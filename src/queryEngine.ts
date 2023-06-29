@@ -40,77 +40,47 @@ const asApps = asArray(asApp)
 
 const nanoDb = nano(config.couchDbFullpath)
 
+const INDEXES: string[][] = [
+  ['isoDate'],
+  ['status'],
+  ['status', 'payoutAmount', 'depositAmount'],
+  ['status', 'usdvalue', 'timestamp'],
+  ['usdValue']
+]
+
+interface Index {
+  index: { fields: string[] }
+  ddoc: string
+  name: string
+  type: 'json'
+  partitioned: boolean
+}
+
+const indexes: Index[] = []
+
+INDEXES.forEach(index => {
+  const indexLower = index.map(i => i.toLowerCase())
+  const out = {
+    index: { fields: index },
+    ddoc: indexLower.join('-'),
+    name: indexLower.join('-'),
+    type: 'json' as 'json',
+    partitioned: false
+  }
+  indexes.push(out)
+  out.ddoc += '-p'
+  out.name += '-p'
+  out.partitioned = true
+  indexes.push(out)
+})
+
 const DB_NAMES = [
   { name: 'reports_apps' },
   { name: 'reports_settings' },
   {
     name: 'reports_transactions',
     options: { partitioned: true },
-    indexes: [
-      {
-        index: { fields: ['isoDate'] },
-        ddoc: 'isodate-index-p',
-        name: 'isodate-index-p',
-        type: 'json' as 'json',
-        partitioned: true
-      },
-      {
-        index: { fields: ['isoDate'] },
-        ddoc: 'isodate-index',
-        name: 'isodate-index',
-        type: 'json' as 'json',
-        partitioned: false
-      },
-      {
-        index: { fields: ['status'] },
-        ddoc: 'status-index-p',
-        name: 'status-index-p',
-        type: 'json' as 'json',
-        partitioned: true
-      },
-      {
-        index: { fields: ['status'] },
-        ddoc: 'status-index',
-        name: 'status-index',
-        type: 'json' as 'json',
-        partitioned: false
-      },
-      {
-        index: { fields: ['status', 'usdValue'] },
-        ddoc: 'status-usdvalue-index',
-        name: 'status-usdvalue-index',
-        type: 'json' as 'json',
-        partitioned: false
-      },
-      {
-        index: { fields: ['status', 'payoutAmount', 'depositAmount'] },
-        ddoc: 'status-payoutamount-depositamount-index',
-        name: 'status-payoutamount-depositamount-index',
-        type: 'json' as 'json',
-        partitioned: false
-      },
-      {
-        index: { fields: ['status', 'usdvalue', 'timestamp'] },
-        ddoc: 'status-usdvalue-timestamp-index-p',
-        name: 'status-usdvalue-timestamp-index-p',
-        type: 'json' as 'json',
-        partitioned: true
-      },
-      {
-        index: { fields: ['usdValue'] },
-        ddoc: 'usdvalue-index-p',
-        name: 'usdvalue-index-p',
-        type: 'json' as 'json',
-        partitioned: true
-      },
-      {
-        index: { fields: ['usdValue'] },
-        ddoc: 'usdvalue-index',
-        name: 'usdvalue-index',
-        type: 'json' as 'json',
-        partitioned: false
-      }
-    ]
+    indexes
   },
   { name: 'reports_progresscache', options: { partitioned: true } }
 ]
