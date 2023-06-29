@@ -43,7 +43,12 @@ const nanoDb = nano(config.couchDbFullpath)
 const INDEXES: string[][] = [
   ['isoDate'],
   ['status'],
+  ['status', 'depositCurrency', 'isoDate'],
+  ['status', 'depositCurrency', 'payoutCurrency', 'isoDate'],
+  ['status', 'isoDate'],
   ['status', 'payoutAmount', 'depositAmount'],
+  ['status', 'payoutCurrency', 'isoDate'],
+  ['status', 'usdValue'],
   ['status', 'usdvalue', 'timestamp'],
   ['usdValue']
 ]
