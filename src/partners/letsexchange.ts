@@ -2,13 +2,13 @@ import {
   asArray,
   asMaybe,
   asObject,
+  asOptional,
   asString,
   asUnknown,
   asValue
 } from 'cleaners'
 
 import {
-  asStandardPluginParams,
   PartnerPlugin,
   PluginParams,
   PluginResult,
@@ -16,6 +16,16 @@ import {
   Status
 } from '../types'
 import { datelog, retryFetch, smartIsoDateFromTimestamp } from '../util'
+
+export const asLetsExchangePluginParams = asObject({
+  settings: asObject({
+    latestIsoDate: asOptional(asString, '2018-01-01T00:00:00.000Z')
+  }),
+  apiKeys: asObject({
+    affiliateId: asOptional(asString),
+    apiKey: asOptional(asString)
+  })
+})
 
 const asLetsExchangeStatus = asMaybe(
   asValue(
@@ -65,12 +75,12 @@ const statusMap: { [key in LetsExchangeStatus]: Status } = {
 export async function queryLetsExchange(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
-  const { settings, apiKeys } = asStandardPluginParams(pluginParams)
-  const { apiKey } = apiKeys
+  const { settings, apiKeys } = asLetsExchangePluginParams(pluginParams)
+  const { affiliateId, apiKey } = apiKeys
   let { latestIsoDate } = settings
   // let latestIsoDate = '2023-01-04T19:36:46.000Z'
 
-  if (apiKey == null) {
+  if (apiKey == null || affiliateId == null) {
     return { settings: { latestIsoDate }, transactions: [] }
   }
 
@@ -82,11 +92,15 @@ export async function queryLetsExchange(
 
   let page = 0
   let done = false
+  const headers = {
+    Authorization: 'Bearer ' + apiKey
+  }
+
   try {
     while (!done) {
-      const url = `https://api.letsexchange.io/api/v1/affiliate/history/${apiKey}?limit=${LIMIT}&page=${page}&types=0`
+      const url = `https://api.letsexchange.io/api/v1/affiliate/history/${affiliateId}?limit=${LIMIT}&page=${page}&types=0`
 
-      const result = await retryFetch(url, { method: 'GET' })
+      const result = await retryFetch(url, { headers, method: 'GET' })
       if (result.ok === false) {
         const text = await result.text()
         datelog(text)
