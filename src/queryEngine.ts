@@ -11,6 +11,7 @@ import { bity } from './partners/bity'
 import { changehero } from './partners/changehero'
 import { changelly } from './partners/changelly'
 import { changenow } from './partners/changenow'
+import { criptointercambio } from './partners/criptointercambio'
 import { exolix } from './partners/exolix'
 import { foxExchange } from './partners/foxExchange'
 import { gebo } from './partners/gebo'
@@ -124,6 +125,7 @@ const partners = [
   changelly,
   changenow,
   changehero,
+  criptointercambio,
   exolix,
   foxExchange,
   gebo,
