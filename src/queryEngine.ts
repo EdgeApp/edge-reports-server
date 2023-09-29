@@ -1,4 +1,3 @@
-import { asArray, asMap, asObject, asString } from 'cleaners'
 import nano from 'nano'
 
 import config from '../config.json'
@@ -30,13 +29,8 @@ import { thorchain } from './partners/thorchain'
 import { transak } from './partners/transak'
 import { wyre } from './partners/wyre'
 import { xanpool } from './partners/xanpool'
-import { asProgressSettings, DbTx, StandardTx } from './types'
+import { asApp, asApps, asProgressSettings, DbTx, StandardTx } from './types'
 import { datelog, promiseTimeout, standardizeNames } from './util'
-const asApp = asObject({
-  appId: asString,
-  pluginIds: asMap(asMap(asString))
-})
-const asApps = asArray(asApp)
 
 const nanoDb = nano(config.couchDbFullpath)
 
@@ -158,7 +152,6 @@ export async function queryEngine(): Promise<void> {
       selector: {
         appId: { $exists: true }
       },
-      fields: ['appId', 'pluginIds'],
       limit: 1000000
     }
     const rawApps = await dbApps.find(query)

@@ -6,7 +6,7 @@ import nano from 'nano'
 
 import config from '../config.json'
 import { cacheAnalytic } from './dbutils'
-import { asDbTx } from './types'
+import { asApps, asDbTx } from './types'
 
 const asAnalyticsReq = asObject({
   start: asString,
@@ -33,12 +33,6 @@ const asCheckTxsFetch = asArray(
     error: asOptional(asString)
   })
 )
-
-const asApp = asObject({
-  _id: asString,
-  appId: asString
-})
-const asApps = asArray(asApp)
 
 const asPluginIdsReq = asObject({
   appId: asString
@@ -80,7 +74,6 @@ async function main(): Promise<void> {
     selector: {
       appId: { $exists: true }
     },
-    fields: ['_id', 'appId'],
     limit: 1000000
   }
   const rawApps = await reportsApps.find(query)

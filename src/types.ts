@@ -1,4 +1,5 @@
 import {
+  asArray,
   asMap,
   asNumber,
   asObject,
@@ -76,6 +77,17 @@ export const asStandardPluginParams = asObject({
     apiKey: asOptional(asString)
   })
 })
+
+const asApiKeys = asMap(asString)
+export const asApp = asObject({
+  _id: asString,
+  _rev: asString,
+  appId: asString,
+  appName: asString,
+  pluginIds: asMap(asApiKeys)
+})
+
+export const asApps = asArray(asApp)
 
 export type CurrencyCodeMappings = ReturnType<typeof asCurrencyCodeMappings>
 export type DbCurrencyCodeMappings = ReturnType<typeof asDbCurrencyCodeMappings>

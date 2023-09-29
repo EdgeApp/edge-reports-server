@@ -1,18 +1,9 @@
-import { asArray, asMap, asObject, asString } from 'cleaners'
+import { asArray, asObject, asString } from 'cleaners'
 import js from 'jsonfile'
 import nano from 'nano'
 
-import { asDbTx, DbTx } from '../types'
+import { asApps, asDbTx, DbTx } from '../types'
 import { datelog } from '../util'
-
-const asApp = asObject({
-  _id: asString,
-  _rev: asString,
-  appId: asString,
-  appName: asString,
-  pluginIds: asMap(asMap(asString))
-})
-const asApps = asArray(asApp)
 
 const asDbQueryResult = asObject({ docs: asArray(asDbTx), bookmark: asString })
 
