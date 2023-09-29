@@ -1,22 +1,16 @@
-import { asArray, asMap, asObject, asString } from 'cleaners'
 import startOfMonth from 'date-fns/startOfMonth'
 import sub from 'date-fns/sub'
 import nano from 'nano'
 
 import config from '../config.json'
 import { getAnalytic } from './dbutils'
+import { asApps } from './types'
 import { datelog, snooze } from './util'
 
 const CACHE_UPDATE_LOOKBACK_MONTHS = config.cacheLookbackMonths ?? 3
 
 const BULK_WRITE_SIZE = 50
 const UPDATE_FREQUENCY_MS = 1000 * 60 * 30
-const asApp = asObject({
-  _id: asString,
-  appId: asString,
-  pluginIds: asMap(asMap(asString))
-})
-const asApps = asArray(asApp)
 
 const nanoDb = nano(config.couchDbFullpath)
 
@@ -112,7 +106,6 @@ export async function cacheEngine(): Promise<void> {
       selector: {
         appId: { $exists: true }
       },
-      fields: ['_id', 'appId', 'pluginIds'],
       limit: 1000000
     }
     const rawApps = await reportsApps.find(query)
