@@ -30,7 +30,7 @@ interface AnalyticsResult {
     numAllTxs: number
   }
   appId: string
-  pluginId: string
+  partnerId: string
   start: number
   end: number
 }
@@ -40,7 +40,7 @@ export const getAnalytics = (
   start: number,
   end: number,
   appId: string,
-  pluginId: string,
+  partnerId: string,
   timePeriod: string
 ): AnalyticsResult => {
   // the creation of buckets
@@ -134,7 +134,7 @@ export const getAnalytics = (
       numAllTxs: txs.length
     },
     appId,
-    pluginId,
+    partnerId,
     start: start,
     end: end
   }

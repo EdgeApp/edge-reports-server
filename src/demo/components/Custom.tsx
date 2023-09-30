@@ -122,22 +122,22 @@ class Custom extends Component<CustomProps, CustomState> {
     let barGraphData = this.state.data
     if (this.props.exchangeType !== 'all') {
       barGraphData = barGraphData.filter(
-        obj => Partners[obj.pluginId].type === this.props.exchangeType
+        obj => Partners[obj.partnerId].type === this.props.exchangeType
       )
     }
 
     const barGraphStyles = barGraphData.map(analytic => {
       const style = {
-        backgroundColor: Partners[analytic.pluginId].color,
+        backgroundColor: Partners[analytic.partnerId].color,
         marginLeft: '10px',
         width: '18px',
         height: '18px'
       }
-      const capitilizedPluginId = `${analytic.pluginId
+      const capitilizedPluginId = `${analytic.partnerId
         .charAt(0)
-        .toUpperCase()}${analytic.pluginId.slice(1)}`
+        .toUpperCase()}${analytic.partnerId.slice(1)}`
       return (
-        <div style={legendKeys} key={analytic.pluginId}>
+        <div style={legendKeys} key={analytic.partnerId}>
           <div style={style} />
           <div style={legend}>{capitilizedPluginId}</div>
         </div>
@@ -149,11 +149,11 @@ class Custom extends Component<CustomProps, CustomState> {
     const barGraphs = barGraphData.map((analytic, index) => {
       const graphTotals = calculateGraphTotals(analytic)
       graphTotals.partnerId =
-        analytic.pluginId.charAt(0).toUpperCase() + analytic.pluginId.slice(1)
+        analytic.partnerId.charAt(0).toUpperCase() + analytic.partnerId.slice(1)
       list.push(graphTotals)
       return (
-        <div key={analytic.pluginId} style={smallLegendAndGraphHolder}>
-          {Partners[analytic.pluginId].type === this.props.exchangeType ||
+        <div key={analytic.partnerId} style={smallLegendAndGraphHolder}>
+          {Partners[analytic.partnerId].type === this.props.exchangeType ||
           this.props.exchangeType === 'all' ? (
             <div>
               <div style={legendHolder}>{barGraphStyles[index]}</div>
