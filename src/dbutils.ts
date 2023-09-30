@@ -54,7 +54,7 @@ export const getAnalytic = async (
   start: number,
   end: number,
   appId: string,
-  pluginIds: string[],
+  partnerIds: string[],
   timePeriod: string,
   transactionDatabase: any
 ): Promise<any> => {
@@ -78,17 +78,17 @@ export const getAnalytic = async (
   const results: any[] = []
   const promises: Array<Promise<any>> = []
   try {
-    for (const pluginId of pluginIds) {
-      const appAndPluginId = `${appId}_${pluginId}`
+    for (const partnerId of partnerIds) {
+      const appAndPartnerId = `${appId}_${partnerId}`
       const result = transactionDatabase
-        .partitionedFind(appAndPluginId, query)
+        .partitionedFind(appAndPartnerId, query)
         .then(data => {
           const analytic = getAnalytics(
             asDbReq(data).docs,
             start,
             end,
             appId,
-            pluginId,
+            appAndPartnerId,
             timePeriod
           )
           if (analytic.result.numAllTxs > 0) results.push(analytic)
@@ -117,7 +117,7 @@ export const cacheAnalytic = async (
   start: number,
   end: number,
   appId: string,
-  pluginIds: string[],
+  partnerIds: string[],
   timePeriod: string
 ): Promise<any> => {
   const nanoDb = nano(config.couchDbFullpath)
@@ -129,12 +129,12 @@ export const cacheAnalytic = async (
   if (timePeriod.includes('day')) timePeriods.push('day')
   if (timePeriod.includes('month')) timePeriods.push('month')
   const analyticResultArray: AnalyticsResult[] = []
-  for (const pluginId of pluginIds) {
+  for (const partnerId of partnerIds) {
     const analyticResult: AnalyticsResult = {
       start,
       end,
       app: appId,
-      pluginId,
+      partnerId,
       result: { hour: [], day: [], month: [], numAllTxs: 0 }
     }
     let startForDayTimePeriod
@@ -157,7 +157,7 @@ export const cacheAnalytic = async (
         limit: 1000000
       }
       try {
-        const appAndPluginId = `${appId}_${pluginId}`
+        const appAndPluginId = `${appId}_${partnerId}`
         const result = await database.partitionedFind(appAndPluginId, query)
         analyticResult.result[timePeriod] = result.docs.map(cacheObj => {
           analyticResult.result.numAllTxs += cacheObj.numTxs
@@ -170,8 +170,8 @@ export const cacheAnalytic = async (
             currencyPairs: cacheObj.currencyPairs
           }
         })
-        console.time(`${pluginId} ${timePeriod} cache fetched`)
-        console.timeEnd(`${pluginId} ${timePeriod} cache fetched`)
+        console.time(`${partnerId} ${timePeriod} cache fetched`)
+        console.timeEnd(`${partnerId} ${timePeriod} cache fetched`)
       } catch (e) {
         console.log(e)
         return `Internal server error.`

@@ -113,16 +113,17 @@ export async function cacheEngine(): Promise<void> {
     for (const app of apps) {
       if (config.soloAppId != null && config.soloAppId !== app.appId) continue
 
-      const keys = Object.keys(app.pluginIds)
+      const partnerIds = Object.keys(app.partnerIds)
 
-      for (const key of keys) {
-        if (config.soloPluginId != null && config.soloPluginId !== key) continue
+      for (const partnerId of partnerIds) {
+        if (config.soloPartnerId != null && config.soloPartnerId !== partnerId)
+          continue
         for (const timePeriod of TIME_PERIODS) {
           const data = await getAnalytic(
             start,
             end,
             app.appId,
-            [key],
+            [partnerId],
             timePeriod,
             reportsTransactions
           )
@@ -130,7 +131,7 @@ export async function cacheEngine(): Promise<void> {
           if (data.length > 0) {
             const cacheResult = data[0].result[timePeriod].map(bucket => {
               return {
-                _id: `${app.appId}_${key}:${bucket.isoDate}`,
+                _id: `${app.appId}_${partnerId}:${bucket.isoDate}`,
                 timestamp: bucket.start,
                 usdValue: bucket.usdValue,
                 numTxs: bucket.numTxs,
@@ -162,7 +163,7 @@ export async function cacheEngine(): Promise<void> {
               }
 
               datelog(
-                `Update cache db ${timePeriod} cache for ${app.appId}_${key}. length = ${cacheResult.length}`
+                `Update cache db ${timePeriod} cache for ${app.appId}_${partnerId}. length = ${cacheResult.length}`
               )
 
               for (
@@ -183,7 +184,7 @@ export async function cacheEngine(): Promise<void> {
               }
 
               datelog(
-                `Finished updating ${timePeriod} cache for ${app.appId}_${key}`
+                `Finished updating ${timePeriod} cache for ${app.appId}_${partnerId}`
               )
             } catch (e) {
               datelog('Error doing bulk cache update', e)

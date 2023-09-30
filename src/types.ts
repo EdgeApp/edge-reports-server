@@ -84,7 +84,7 @@ export const asApp = asObject({
   _rev: asString,
   appId: asString,
   appName: asString,
-  pluginIds: asMap(asApiKeys)
+  partnerIds: asMap(asApiKeys)
 })
 
 export const asApps = asArray(asApp)
