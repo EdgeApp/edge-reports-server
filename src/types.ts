@@ -78,13 +78,16 @@ export const asStandardPluginParams = asObject({
   })
 })
 
-const asApiKeys = asMap(asString)
+const asPartnerInfo = asObject({
+  apiKeys: asMap(asString)
+})
+
 export const asApp = asObject({
   _id: asString,
   _rev: asString,
   appId: asString,
   appName: asString,
-  partnerIds: asMap(asApiKeys)
+  partnerIds: asMap(asPartnerInfo)
 })
 
 export const asApps = asArray(asApp)
