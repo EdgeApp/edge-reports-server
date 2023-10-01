@@ -165,11 +165,13 @@ export async function queryEngine(): Promise<void> {
       // loop over every pluginId that app uses
       remainingPartners = Object.keys(app.partnerIds)
       for (const partnerId in app.partnerIds) {
+        const pluginId = app.partnerIds[partnerId].pluginId ?? partnerId
+
         if (config.soloPartnerId != null && config.soloPartnerId !== partnerId)
           continue
         remainingPartners.push(partnerId)
         promiseArray.push(
-          runPlugin(app, partnerId, dbProgress).finally(() => {
+          runPlugin(app, partnerId, pluginId, dbProgress).finally(() => {
             remainingPartners = remainingPartners.filter(
               string => string !== partnerId
             )
@@ -281,13 +283,14 @@ async function insertTransactions(
 async function runPlugin(
   app: ReturnType<typeof asApp>,
   partnerId: string,
+  pluginId: string,
   dbProgress: nano.DocumentScope<unknown>
 ): Promise<string> {
   const start = Date.now()
   let errorText = ''
   try {
     // obtains function that corresponds to current pluginId
-    const plugin = plugins.find(plugin => plugin.pluginId === partnerId)
+    const plugin = plugins.find(plugin => plugin.pluginId === pluginId)
     // if current plugin is not within the list of partners skip to next
     if (plugin === undefined) {
       errorText = `Missing or disabled plugin ${app.appId.toLowerCase()}_${partnerId}`
@@ -296,7 +299,9 @@ async function runPlugin(
     }
 
     // get progress cache to see where previous query ended
-    datelog(`Starting with partner:${partnerId}, app: ${app.appId}`)
+    datelog(
+      `Starting with partner:${partnerId} plugin:${pluginId}, app: ${app.appId}`
+    )
     const progressCacheFileName = `${app.appId.toLowerCase()}:${partnerId}`
     const out = await dbProgress.get(progressCacheFileName).catch(e => {
       if (e.error != null && e.error === 'not_found') {

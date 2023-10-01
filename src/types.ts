@@ -79,6 +79,7 @@ export const asStandardPluginParams = asObject({
 })
 
 const asPartnerInfo = asObject({
+  pluginId: asOptional(asString),
   apiKeys: asMap(asString)
 })
 
