@@ -322,7 +322,7 @@ async function runPlugin(
     }
 
     // set apiKeys and settings for use in partner's function
-    const apiKeys = app.partnerIds[partnerId]
+    const { apiKeys } = app.partnerIds[partnerId]
     const settings = progressSettings.progressCache
     datelog(`Querying ${app.appId.toLowerCase()}_${partnerId}`)
     // run the plugin function
