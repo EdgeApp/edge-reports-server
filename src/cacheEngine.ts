@@ -111,13 +111,21 @@ export async function cacheEngine(): Promise<void> {
     const rawApps = await reportsApps.find(query)
     const apps = asApps(rawApps.docs)
     for (const app of apps) {
-      if (config.soloAppId != null && config.soloAppId !== app.appId) continue
-
+      if (
+        config.soloAppIds != null &&
+        config.soloAppIds.includes(app.appId) === false
+      ) {
+        continue
+      }
       const partnerIds = Object.keys(app.partnerIds)
 
       for (const partnerId of partnerIds) {
-        if (config.soloPartnerId != null && config.soloPartnerId !== partnerId)
+        if (
+          config.soloPartnerIds != null &&
+          config.soloPartnerIds.includes(partnerId) === false
+        ) {
           continue
+        }
         for (const timePeriod of TIME_PERIODS) {
           const data = await getAnalytic(
             start,

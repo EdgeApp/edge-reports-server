@@ -160,15 +160,24 @@ export async function queryEngine(): Promise<void> {
     let remainingPartners: String[] = []
     // loop over every app
     for (const app of apps) {
-      if (config.soloAppId != null && config.soloAppId !== app.appId) continue
+      if (
+        config.soloAppIds != null &&
+        config.soloAppIds.includes(app.appId) === false
+      ) {
+        continue
+      }
       let partnerStatus: string[] = []
       // loop over every pluginId that app uses
       remainingPartners = Object.keys(app.partnerIds)
       for (const partnerId in app.partnerIds) {
         const pluginId = app.partnerIds[partnerId].pluginId ?? partnerId
 
-        if (config.soloPartnerId != null && config.soloPartnerId !== partnerId)
+        if (
+          config.soloPartnerIds != null &&
+          config.soloPartnerIds.includes(partnerId) === false
+        ) {
           continue
+        }
         remainingPartners.push(partnerId)
         promiseArray.push(
           runPlugin(app, partnerId, pluginId, dbProgress).finally(() => {
