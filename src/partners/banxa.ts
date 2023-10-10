@@ -3,6 +3,7 @@ import {
   asMaybe,
   asNumber,
   asObject,
+  asOptional,
   asString,
   asUnknown,
   asValue
@@ -11,7 +12,6 @@ import crypto from 'crypto'
 import { Response } from 'node-fetch'
 
 import {
-  asStandardPluginParams,
   PartnerPlugin,
   PluginParams,
   PluginResult,
@@ -19,6 +19,17 @@ import {
   Status
 } from '../types'
 import { datelog, retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
+
+export const asBanxaParams = asObject({
+  settings: asObject({
+    latestIsoDate: asOptional(asString, '2018-01-01T00:00:00.000Z')
+  }),
+  apiKeys: asObject({
+    apiKey: asString,
+    secret: asString,
+    partnerUrl: asString
+  })
+})
 
 const asBanxaStatus = asMaybe(
   asValue(
@@ -72,8 +83,8 @@ export async function queryBanxa(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
   const ssFormatTxs: StandardTx[] = []
-  const { settings, apiKeys } = asStandardPluginParams(pluginParams)
-  const { apiKey } = apiKeys
+  const { settings, apiKeys } = asBanxaParams(pluginParams)
+  const { apiKey, partnerUrl, secret } = apiKeys
   const { latestIsoDate } = settings
 
   if (apiKey == null) {
@@ -100,11 +111,13 @@ export async function queryBanxa(
           `BANXA: Querying ${startDate}->${endDate}, limit=${PAGE_LIMIT} page=${page} attempt=${attempt}`
         )
         const response = await fetchBanxaAPI(
+          partnerUrl,
           startDate,
           endDate,
           PAGE_LIMIT,
           page,
-          apiKey
+          apiKey,
+          secret
         )
 
         // Handle the situation where the API is rate limiting the requests
@@ -161,31 +174,31 @@ export const banxa: PartnerPlugin = {
 }
 
 async function fetchBanxaAPI(
+  partnerUrl: string,
   startDate: string,
   endDate: string,
   pageLimit: number,
   page: number,
-  apiKey: string
+  apiKey: string,
+  secret: string
 ): Promise<Response> {
   const nonce = Math.floor(new Date().getTime() / 1000)
 
   const apiQuery = `/api/orders?start_date=${startDate}&end_date=${endDate}&per_page=${pageLimit}&page=${page}`
 
   const text = `GET\n${apiQuery}\n${nonce}`
-  const secret = apiKey
-  const key = 'EDGE'
   const hmac = crypto
     .createHmac('sha256', secret)
     .update(text)
     .digest('hex')
-  const authHeader = `${key}:${hmac}:${nonce}`
+  const authHeader = `${apiKey}:${hmac}:${nonce}`
 
   const headers = {
     Authorization: 'Bearer ' + authHeader,
     'Content-Type': 'application/json'
   }
 
-  return retryFetch(`https://edge.banxa.com${apiQuery}`, { headers: headers })
+  return retryFetch(`${partnerUrl}${apiQuery}`, { headers: headers })
 }
 
 function processBanxaOrders(rawtxs, ssFormatTxs): void {
