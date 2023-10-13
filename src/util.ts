@@ -18,6 +18,8 @@ import Partners from './demo/partners'
 
 export const SIX_DAYS = 6
 
+export const apiHost = config.apiHost
+
 const CURRENCY_CONVERSION = {
   USDT20: 'USDT',
   USDTERC20: 'USDT',
@@ -149,7 +151,7 @@ export const getCustomData = async (
   end: string,
   timePeriod: string = 'hourdaymonth'
 ): Promise<any> => {
-  const endPoint = '/v1/analytics/'
+  const endPoint = `${apiHost}/v1/analytics/`
   let trueTimePeriod = timePeriod
   if (
     new Date(end).getTime() - new Date(start).getTime() >
@@ -232,7 +234,7 @@ interface PluginIdsResponse {
 }
 
 export const getAppId = async (apiKey: string): Promise<AppIdResponse> => {
-  const url = `/v1/getAppId?apiKey=${apiKey}`
+  const url = `${apiHost}/v1/getAppId?apiKey=${apiKey}`
   const response = await fetch(url)
   const appId = await response.json()
   let redirect = false
@@ -246,7 +248,7 @@ export const getPluginIds = async (
   appId: string
 ): Promise<PluginIdsResponse> => {
   const partners = Object.keys(Partners)
-  const url = `/v1/getPluginIds?appId=${appId}`
+  const url = `${apiHost}/v1/getPluginIds?appId=${appId}`
   const response = await fetch(url)
   const json = await response.json()
   const existingPartners = json.filter(pluginId => partners.includes(pluginId))

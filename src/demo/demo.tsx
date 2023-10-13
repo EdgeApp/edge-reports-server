@@ -7,6 +7,7 @@ import React, { Component } from 'react'
 import { Cookies, withCookies } from 'react-cookie'
 import { HashRouter, Route, RouteChildrenProps, Switch } from 'react-router-dom'
 
+import { apiHost } from '../util'
 import ApiKeyScreen from './components/ApiKeyScreen'
 import Custom, { CustomRouteProps } from './components/Custom'
 import { MainScene } from './components/MainScene'
@@ -76,7 +77,7 @@ class App extends Component<
   }
 
   getAppId = async (): Promise<void> => {
-    const url = `/v1/getAppId?apiKey=${this.state.apiKey}`
+    const url = `${apiHost}/v1/getAppId?apiKey=${this.state.apiKey}`
     const response = await fetch(url)
     if (response.status === 400) {
       this.setState({ apiKeyMessage: 'Invalid API Key.' })
@@ -94,7 +95,7 @@ class App extends Component<
 
   async getPluginIds(): Promise<void> {
     const partners = Object.keys(Partners)
-    const url = `/v1/getPluginIds?appId=${this.state.appId}`
+    const url = `${apiHost}/v1/getPluginIds?appId=${this.state.appId}`
     const response = await fetch(url)
     const json = await response.json()
     const existingPartners = json.filter(pluginId =>
