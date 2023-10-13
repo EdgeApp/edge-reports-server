@@ -5,7 +5,7 @@ import { Redirect, RouteComponentProps, withRouter } from 'react-router-dom'
 import {
   getAppId,
   getCustomData,
-  getPluginIds,
+  getPartnerIds,
   getPresetDates
 } from '../../util'
 import Partners from '../partners'
@@ -64,7 +64,7 @@ interface PresetProps extends RouteComponentProps {
 
 interface PresetState {
   appId: string
-  pluginIds: string[]
+  partnerIds: string[]
   setData1: []
   setData2: []
   setData3: []
@@ -76,7 +76,7 @@ class Preset extends Component<PresetProps, PresetState> {
     super(props)
     this.state = {
       appId: '',
-      pluginIds: [],
+      partnerIds: [],
       setData1: [],
       setData2: [],
       setData3: [],
@@ -85,15 +85,15 @@ class Preset extends Component<PresetProps, PresetState> {
   }
 
   async componentDidMount(): Promise<void> {
-    const appIdResponse = await getAppId(this.props.apiKey)
-    this.setState(appIdResponse)
-    const pluginIdsResponse = await getPluginIds(this.state.appId)
-    this.setState(pluginIdsResponse)
+    const { appId, redirect } = await getAppId(this.props.apiKey)
+    this.setState({ appId, redirect })
+    const { partnerIds } = await getPartnerIds(this.state.appId)
+    this.setState({ partnerIds })
     await this.getGraphData()
   }
 
   async getGraphData(): Promise<void> {
-    if (this.state.pluginIds.length > 0) {
+    if (this.state.partnerIds.length > 0) {
       for (const timeRange in PRESET_TIMERANGES) {
         console.time(`${timeRange}`)
         let timePeriod = 'month'
@@ -105,7 +105,7 @@ class Preset extends Component<PresetProps, PresetState> {
           const endDate = timeRanges[1]
           const newData = await getCustomData(
             this.state.appId,
-            this.state.pluginIds,
+            this.state.partnerIds,
             startDate,
             endDate,
             timePeriod
