@@ -5,6 +5,14 @@ export default {
     type: 'fiat',
     color: '#58BFB9'
   },
+  banxa2: {
+    type: 'fiat',
+    color: '#58BFB9'
+  },
+  banxa3: {
+    type: 'fiat',
+    color: '#58BFB9'
+  },
   bitaccess: {
     type: 'fiat',
     color: '#CF7135'
