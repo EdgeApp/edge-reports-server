@@ -4,7 +4,7 @@ import { TimePeriodButton } from './Buttons'
 
 interface TimePeriodsProps {
   timePeriod: string
-  changeTimePeriod: any
+  changeTimePeriod: (timePeriod: string) => void
 }
 
 const timePeriodHolder = {

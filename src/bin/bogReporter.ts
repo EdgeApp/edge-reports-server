@@ -53,7 +53,7 @@ async function queryBog(): Promise<void> {
         )
       }
     } catch (e) {
-      console.log(e.message)
+      console.log(String(e))
     }
   }
   // Print totals

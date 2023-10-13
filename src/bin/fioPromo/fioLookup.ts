@@ -94,8 +94,7 @@ export const checkAddress = async (
       error = ''
       break
     } catch (e) {
-      error = e
-      console.log(e)
+      console.log(String(e))
     }
   }
   if (error !== '') throw error

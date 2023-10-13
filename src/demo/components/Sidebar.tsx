@@ -12,7 +12,12 @@ import {
   sub
 } from 'date-fns'
 import React, { Component } from 'react'
-import { Link, NavLink, withRouter } from 'react-router-dom'
+import {
+  Link,
+  NavLink,
+  RouteComponentProps,
+  withRouter
+} from 'react-router-dom'
 
 import { MainButton, SecondaryButton } from './Buttons'
 import Sidetab from './Sidetab'
@@ -20,11 +25,9 @@ import TimePicker from './TimePicker'
 
 const calendar = new URL('../images/calendar.png', import.meta.url).toString()
 
-interface SidebarProps {
-  location: any
-  getData: any
-  changeExchangeType: any
-  logout: any
+interface SidebarProps extends RouteComponentProps<void> {
+  changeExchangeType: (exchangeType: string) => void
+  logout: () => void
   appId: string
   exchangeType: string
 }
