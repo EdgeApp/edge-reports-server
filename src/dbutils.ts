@@ -71,7 +71,7 @@ export const getAnalytic = async (
       'timestamp',
       'usdValue'
     ],
-    use_index: 'status-usdvalue-timestamp-index',
+    use_index: 'timestamp-p',
     sort: ['timestamp'],
     limit: 1000000
   }

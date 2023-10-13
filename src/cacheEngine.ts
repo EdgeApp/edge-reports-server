@@ -4,6 +4,7 @@ import nano from 'nano'
 
 import config from '../config.json'
 import { getAnalytic } from './dbutils'
+import { initDbs } from './initDbs'
 import { asApps } from './types'
 import { datelog, snooze } from './util'
 
@@ -14,73 +15,13 @@ const UPDATE_FREQUENCY_MS = 1000 * 60 * 30
 
 const nanoDb = nano(config.couchDbFullpath)
 
-const DB_NAMES = [
-  {
-    name: 'reports_hour',
-    options: { partitioned: true },
-    indexes: [
-      {
-        index: { fields: ['timestamp'] },
-        ddoc: 'timestamp-index',
-        name: 'timestamp-index',
-        type: 'json' as 'json',
-        partitioned: true
-      }
-    ]
-  },
-  {
-    name: 'reports_day',
-    options: { partitioned: true },
-    indexes: [
-      {
-        index: { fields: ['timestamp'] },
-        ddoc: 'timestamp-index',
-        name: 'timestamp-index',
-        type: 'json' as 'json',
-        partitioned: true
-      }
-    ]
-  },
-  {
-    name: 'reports_month',
-    options: { partitioned: true },
-    indexes: [
-      {
-        index: { fields: ['timestamp'] },
-        ddoc: 'timestamp-index',
-        name: 'timestamp-index',
-        type: 'json' as 'json',
-        partitioned: true
-      }
-    ]
-  }
-]
 const TIME_PERIODS = ['hour', 'day', 'month']
 
 export async function cacheEngine(): Promise<void> {
   datelog('Starting Cache Engine')
   console.time('cacheEngine')
-  // get a list of all databases within couchdb
-  const result = await nanoDb.db.list()
-  datelog(result)
-  // if database does not exist, create it
-  for (const dbName of DB_NAMES) {
-    if (result.includes(dbName.name) === false) {
-      await nanoDb.db.create(dbName.name, dbName.options)
-    }
-    if (dbName.indexes !== undefined) {
-      const currentDb = nanoDb.db.use(dbName.name)
-      for (const dbIndex of dbName.indexes) {
-        try {
-          await currentDb.get(`_design/${dbIndex.ddoc}`)
-          datelog(`${dbName.name} already has '${dbIndex.name}' index.`)
-        } catch {
-          await currentDb.createIndex(dbIndex)
-          datelog(`Created '${dbIndex.name}' index for ${dbName.name}.`)
-        }
-      }
-    }
-  }
+
+  await initDbs()
 
   const reportsApps = nanoDb.use('reports_apps')
   const reportsTransactions = nanoDb.use('reports_transactions')
