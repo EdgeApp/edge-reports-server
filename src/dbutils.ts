@@ -1,8 +1,8 @@
 import { asArray, asNumber, asObject, asString } from 'cleaners'
 import nano from 'nano'
 
-import config from '../config.json'
 import { getAnalytics } from './apiAnalytics'
+import { config } from './config'
 import { AnalyticsResult, asCacheQuery } from './types'
 import { datelog, promiseTimeout } from './util'
 

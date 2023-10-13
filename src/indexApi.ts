@@ -4,7 +4,7 @@ import cors from 'cors'
 import express from 'express'
 import nano from 'nano'
 
-import config from '../config.json'
+import { config } from './config'
 import { cacheAnalytic } from './dbutils'
 import { asApps, asDbTx } from './types'
 
@@ -81,6 +81,7 @@ async function main(): Promise<void> {
     },
     limit: 1000000
   }
+  console.log(config)
   const rawApps = await reportsApps.find(query)
   const apps = asApps(rawApps.docs)
 

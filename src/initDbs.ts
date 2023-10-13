@@ -1,6 +1,6 @@
 import nano from 'nano'
 
-import config from '../config.json'
+import { config } from './config'
 import { datelog } from './util'
 
 const nanoDb = nano(config.couchDbFullpath)

@@ -15,7 +15,7 @@ import { AnalyticsResult, asAnalyticsResult, Bucket } from './types'
 
 export const SIX_DAYS = 6
 
-export const apiHost = config.apiHost
+export const apiHost = config.apiHost ?? ''
 
 const CURRENCY_CONVERSION = {
   USDT20: 'USDT',
