@@ -6,7 +6,7 @@ import {
   calculateGraphTotals,
   getAppId,
   getCustomData,
-  getPluginIds,
+  getPartnerIds,
   getTimeRange
 } from '../../util'
 import Partners from '../partners'
@@ -58,7 +58,7 @@ interface CustomProps extends RouteComponentProps<CustomRouteProps> {
 
 interface CustomState {
   appId: string
-  pluginIds: string[]
+  partnerIds: string[]
   data: AnalyticsResult[]
   loading: boolean
   redirect: boolean
@@ -69,7 +69,7 @@ class Custom extends Component<CustomProps, CustomState> {
     super(props)
     this.state = {
       appId: '',
-      pluginIds: [],
+      partnerIds: [],
       data: [],
       loading: true,
       redirect: false
@@ -77,10 +77,10 @@ class Custom extends Component<CustomProps, CustomState> {
   }
 
   async componentDidMount(): Promise<void> {
-    const appIdResponse = await getAppId(this.props.apiKey)
-    this.setState(appIdResponse)
-    const pluginIdsResponse = await getPluginIds(this.state.appId)
-    this.setState(pluginIdsResponse)
+    const { appId, redirect } = await getAppId(this.props.apiKey)
+    this.setState({ appId, redirect })
+    const { partnerIds } = await getPartnerIds(this.state.appId)
+    this.setState({ partnerIds })
     if (
       typeof this.props.match.params.start === 'string' &&
       this.props.match.params.start.length > 0 &&
@@ -99,7 +99,7 @@ class Custom extends Component<CustomProps, CustomState> {
     this.setState({ loading: true })
     const data = await getCustomData(
       this.state.appId,
-      this.state.pluginIds,
+      this.state.partnerIds,
       start,
       end
     )

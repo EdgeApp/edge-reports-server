@@ -1,3 +1,4 @@
+import { asArray, asString } from 'cleaners'
 import { getTimezoneOffset } from 'date-fns-tz'
 import add from 'date-fns/add'
 import eachQuarterOfInterval from 'date-fns/eachQuarterOfInterval'
@@ -33,6 +34,8 @@ const CURRENCY_CONVERSION = {
   AVAXC: 'AVAX',
   POLYGON: 'MATIC'
 }
+
+const asGetPartnerIds = asArray(asString)
 
 export const standardizeNames = (field: string): string => {
   if (CURRENCY_CONVERSION[field] !== undefined) {
@@ -229,8 +232,8 @@ interface AppIdResponse {
   redirect: boolean
 }
 
-interface PluginIdsResponse {
-  pluginIds: string[]
+interface PartnerIdsResponse {
+  partnerIds: string[]
 }
 
 export const getAppId = async (apiKey: string): Promise<AppIdResponse> => {
@@ -244,15 +247,16 @@ export const getAppId = async (apiKey: string): Promise<AppIdResponse> => {
   return { appId, redirect }
 }
 
-export const getPluginIds = async (
+export const getPartnerIds = async (
   appId: string
-): Promise<PluginIdsResponse> => {
+): Promise<PartnerIdsResponse> => {
   const partners = Object.keys(Partners)
   const url = `${apiHost}/v1/getPluginIds?appId=${appId}`
   const response = await fetch(url)
   const json = await response.json()
-  const existingPartners = json.filter(pluginId => partners.includes(pluginId))
-  return { pluginIds: existingPartners }
+  const ids = asGetPartnerIds(json)
+  const partnerIds = ids.filter(pluginId => partners.includes(pluginId))
+  return { partnerIds }
 }
 interface GraphTotals {
   totalTxs: number
