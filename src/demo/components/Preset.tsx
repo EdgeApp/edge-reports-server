@@ -2,6 +2,7 @@ import React, { Component } from 'react'
 import Loader from 'react-loader-spinner'
 import { Redirect, RouteComponentProps, withRouter } from 'react-router-dom'
 
+import { AnalyticsResult } from '../../types'
 import {
   getAppId,
   getCustomData,
@@ -9,7 +10,7 @@ import {
   getPresetDates
 } from '../../util'
 import Partners from '../partners'
-import Graphs, { AnalyticsResult } from './Graphs'
+import Graphs from './Graphs'
 
 const PRESET_TIMERANGES = getPresetDates()
 
@@ -65,9 +66,9 @@ interface PresetProps extends RouteComponentProps {
 interface PresetState {
   appId: string
   partnerIds: string[]
-  setData1: []
-  setData2: []
-  setData3: []
+  setData1: AnalyticsResult[]
+  setData2: AnalyticsResult[]
+  setData3: AnalyticsResult[]
   redirect: boolean
 }
 
@@ -94,7 +95,10 @@ class Preset extends Component<PresetProps, PresetState> {
 
   async getGraphData(): Promise<void> {
     if (this.state.partnerIds.length > 0) {
-      for (const timeRange in PRESET_TIMERANGES) {
+      const keys = Object.keys(PRESET_TIMERANGES) as Array<
+        keyof typeof PRESET_TIMERANGES
+      >
+      for (const timeRange of keys) {
         console.time(`${timeRange}`)
         let timePeriod = 'month'
         if (timeRange === 'setData1') timePeriod = 'hour'
@@ -111,11 +115,11 @@ class Preset extends Component<PresetProps, PresetState> {
             timePeriod
           )
           newData.forEach(analytic => {
-            const { pluginId } = analytic
-            if (analyticsResults[pluginId] == null) {
-              analyticsResults[pluginId] = analytic
+            const { partnerId } = analytic
+            if (analyticsResults[partnerId] == null) {
+              analyticsResults[partnerId] = analytic
             } else {
-              const { result } = analyticsResults[pluginId]
+              const { result } = analyticsResults[partnerId]
               result.month = [...result.month, ...analytic.result.month]
               result.numAllTxs += analytic.result.numAllTxs
             }
@@ -141,7 +145,8 @@ class Preset extends Component<PresetProps, PresetState> {
     }
     const graphs: JSX.Element[] = []
     let index = 0
-    for (const dataSet in dataSets) {
+    const dataSetKeys = Object.keys(dataSets) as Array<keyof typeof dataSets>
+    for (const dataSet of dataSetKeys) {
       if (dataSets[dataSet].length === 0) {
         graphs.push(
           <div key={`${dataSet}-loader`} style={presetLoader}>
@@ -153,20 +158,20 @@ class Preset extends Component<PresetProps, PresetState> {
       let barGraphData = dataSets[dataSet]
       if (this.props.exchangeType !== 'all') {
         barGraphData = barGraphData.filter(
-          obj => Partners[obj.pluginId].type === this.props.exchangeType
+          obj => Partners[obj.partnerId].type === this.props.exchangeType
         )
       }
 
       const barGraphStyles = barGraphData.map((obj, stylesIndex) => {
         const style = {
-          backgroundColor: Partners[obj.pluginId].color,
+          backgroundColor: Partners[obj.partnerId].color,
           marginLeft: '10px',
           width: '18px',
           height: '18px'
         }
-        const capitilizedPluginId = `${obj.pluginId
+        const capitilizedPluginId = `${obj.partnerId
           .charAt(0)
-          .toUpperCase()}${obj.pluginId.slice(1)}`
+          .toUpperCase()}${obj.partnerId.slice(1)}`
         return (
           <div style={legendKeys} key={stylesIndex}>
             <div style={style} />

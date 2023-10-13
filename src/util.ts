@@ -9,13 +9,9 @@ import sub from 'date-fns/sub'
 import fetch, { RequestInfo, RequestInit, Response } from 'node-fetch'
 
 import config from '../config.json'
-import {
-  AnalyticsResult,
-  Bucket,
-  Data,
-  DataPlusSevenDayAve
-} from './demo/components/Graphs'
+import { Data, DataPlusSevenDayAve } from './demo/components/Graphs'
 import Partners from './demo/partners'
+import { AnalyticsResult, asAnalyticsResult, Bucket } from './types'
 
 export const SIX_DAYS = 6
 
@@ -96,11 +92,11 @@ export const addObject = (origin: any, destination: any): void => {
   })
 }
 
-export const getPresetDates = function(): {
-  setData1: string[][]
-  setData2: string[][]
-  setData3: string[][]
-} {
+export type SetDataKeys = 'setData1' | 'setData2' | 'setData3'
+
+export type PresetDates = Record<SetDataKeys, string[][]>
+
+export const getPresetDates = function(): PresetDates {
   const DATE = new Date(Date.now())
   const HOUR_RANGE_END = add(startOfHour(DATE), { hours: 1 })
   const DAY_RANGE_END = add(startOfDay(DATE), { days: 1 })
@@ -153,7 +149,7 @@ export const getCustomData = async (
   start: string,
   end: string,
   timePeriod: string = 'hourdaymonth'
-): Promise<any> => {
+): Promise<AnalyticsResult[]> => {
   const endPoint = `${apiHost}/v1/analytics/`
   let trueTimePeriod = timePeriod
   if (
@@ -171,7 +167,9 @@ export const getCustomData = async (
     method: 'POST',
     body: JSON.stringify(query)
   })
-  return response.json()
+  const json = await response.json()
+  const out = asArray(asAnalyticsResult)(json)
+  return out
 }
 
 export const getTimeRange = (start: string, end: string): string => {
