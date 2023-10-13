@@ -2,6 +2,7 @@ import nano from 'nano'
 
 import config from '../config.json'
 import { pagination } from './dbutils'
+import { initDbs } from './initDbs'
 import { banxa } from './partners/banxa'
 import { bitaccess } from './partners/bitaccess'
 import { bitrefill } from './partners/bitrefill'
@@ -33,56 +34,6 @@ import { asApp, asApps, asProgressSettings, DbTx, StandardTx } from './types'
 import { datelog, promiseTimeout, standardizeNames } from './util'
 
 const nanoDb = nano(config.couchDbFullpath)
-
-const INDEXES: string[][] = [
-  ['isoDate'],
-  ['status'],
-  ['status', 'depositCurrency', 'isoDate'],
-  ['status', 'depositCurrency', 'payoutCurrency', 'isoDate'],
-  ['status', 'isoDate'],
-  ['status', 'payoutAmount', 'depositAmount'],
-  ['status', 'payoutCurrency', 'isoDate'],
-  ['status', 'usdValue'],
-  ['status', 'usdvalue', 'timestamp'],
-  ['usdValue']
-]
-
-interface Index {
-  index: { fields: string[] }
-  ddoc: string
-  name: string
-  type: 'json'
-  partitioned: boolean
-}
-
-const indexes: Index[] = []
-
-INDEXES.forEach(index => {
-  const indexLower = index.map(i => i.toLowerCase())
-  const out = {
-    index: { fields: index },
-    ddoc: indexLower.join('-'),
-    name: indexLower.join('-'),
-    type: 'json' as 'json',
-    partitioned: false
-  }
-  indexes.push(out)
-  out.ddoc += '-p'
-  out.name += '-p'
-  out.partitioned = true
-  indexes.push(out)
-})
-
-const DB_NAMES = [
-  { name: 'reports_apps' },
-  { name: 'reports_settings' },
-  {
-    name: 'reports_transactions',
-    options: { partitioned: true },
-    indexes
-  },
-  { name: 'reports_progresscache', options: { partitioned: true } }
-]
 
 const plugins = [
   banxa,
@@ -120,27 +71,7 @@ const snooze: Function = async (ms: number) =>
   new Promise((resolve: Function) => setTimeout(resolve, ms))
 
 export async function queryEngine(): Promise<void> {
-  // get a list of all databases within couchdb
-  const result = await nanoDb.db.list()
-  datelog(result)
-  // if database does not exist, create it
-  for (const dbName of DB_NAMES) {
-    if (result.includes(dbName.name) === false) {
-      await nanoDb.db.create(dbName.name, dbName.options)
-    }
-    if (dbName.indexes !== undefined) {
-      const currentDb = nanoDb.db.use(dbName.name)
-      for (const dbIndex of dbName.indexes) {
-        try {
-          await currentDb.get(`_design/${dbIndex.ddoc}`)
-          datelog(`${dbName.name} already has '${dbIndex.name}' index.`)
-        } catch {
-          await currentDb.createIndex(dbIndex)
-          datelog(`Created '${dbIndex.name}' index for ${dbName.name}.`)
-        }
-      }
-    }
-  }
+  await initDbs()
 
   const dbProgress = nanoDb.db.use('reports_progresscache')
   const dbApps = nanoDb.db.use('reports_apps')
