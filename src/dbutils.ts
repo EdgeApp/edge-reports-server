@@ -3,7 +3,7 @@ import nano from 'nano'
 
 import config from '../config.json'
 import { getAnalytics } from './apiAnalytics'
-import { AnalyticsResult } from './demo/components/Graphs'
+import { AnalyticsResult, asCacheQuery } from './types'
 import { datelog, promiseTimeout } from './util'
 
 const BATCH_ADVANCE = 100
@@ -159,7 +159,8 @@ export const cacheAnalytic = async (
       try {
         const appAndPluginId = `${appId}_${partnerId}`
         const result = await database.partitionedFind(appAndPluginId, query)
-        analyticResult.result[timePeriod] = result.docs.map(cacheObj => {
+        const cacheResults = asCacheQuery(result)
+        analyticResult.result[timePeriod] = cacheResults.docs.map(cacheObj => {
           analyticResult.result.numAllTxs += cacheObj.numTxs
           return {
             start: cacheObj.timestamp,

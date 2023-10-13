@@ -10,18 +10,10 @@ import {
   YAxis
 } from 'recharts'
 
+import { AnalyticsResult, Bucket } from '../../types'
 import { addObject, createQuarterBuckets, sevenDayDataMerge } from '../../util'
 import Partners from '../partners'
 import Modal from './Modal'
-
-export interface Bucket {
-  start: number
-  usdValue: number
-  numTxs: number
-  isoDate: string
-  currencyCodes: { [currencyCode: string]: number }
-  currencyPairs: { [currencyPair: string]: number }
-}
 
 export interface Data {
   date: string
@@ -33,19 +25,6 @@ export interface Data {
 
 export interface DataPlusSevenDayAve extends Data {
   sevenDayAve: number
-}
-
-export interface AnalyticsResult {
-  result: {
-    hour: Bucket[]
-    day: Bucket[]
-    month: Bucket[]
-    numAllTxs: number
-  }
-  app: string
-  partnerId: string
-  start: number
-  end: number
 }
 
 interface BarData {

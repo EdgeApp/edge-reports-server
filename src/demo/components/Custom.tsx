@@ -2,6 +2,7 @@ import React, { Component } from 'react'
 import Loader from 'react-loader-spinner'
 import { Redirect, RouteComponentProps, withRouter } from 'react-router-dom'
 
+import { AnalyticsResult } from '../../types'
 import {
   calculateGraphTotals,
   getAppId,
@@ -10,7 +11,7 @@ import {
   getTimeRange
 } from '../../util'
 import Partners from '../partners'
-import Graphs, { AnalyticsResult } from './Graphs'
+import Graphs from './Graphs'
 import { largeGraphHolder, legend, legendHolder, legendKeys } from './Preset'
 
 const smallLegendAndGraphHolder = {
