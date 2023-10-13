@@ -54,7 +54,7 @@
       "args":[
         "-r",
         "sucrase/register",
-        "${workspaceFolder}/src/indexCache.js",
+        "${workspaceFolder}/src/indexCache.ts",
       ],
       "skipFiles": [
         "<node_internals>/**"
