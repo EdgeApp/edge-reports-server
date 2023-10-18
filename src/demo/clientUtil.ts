@@ -8,28 +8,14 @@ import sub from 'date-fns/sub'
 import { getTimezoneOffset } from 'date-fns-tz'
 import fetch from 'node-fetch'
 
-import { clientConfig } from './clientConfig'
 import { AnalyticsResult, asAnalyticsResult, Bucket } from '../types'
+import { clientConfig } from './clientConfig'
 import { Data, DataPlusSevenDayAve } from './components/Graphs'
 import Partners from './partners'
 
 export const SIX_DAYS = 6
 
 export const apiHost = clientConfig.apiHost ?? ''
-
-const CURRENCY_CONVERSION = {
-  USDT20: 'USDT',
-  USDTERC20: 'USDT',
-  USDTPOLYGON: 'USDT',
-  USDCPOLYGON: 'USDC',
-  ZADDR: 'ZEC',
-  BCHABC: 'BCH',
-  BCHSV: 'BSV',
-  FTMMAINNET: 'FTM',
-  BNBMAINNET: 'BNB',
-  AVAXC: 'AVAX',
-  POLYGON: 'MATIC'
-}
 
 const asGetPartnerIds = asArray(asString)
 

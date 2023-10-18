@@ -39,15 +39,15 @@ export async function queryMoonpay(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
   const ssFormatTxs: StandardTx[] = []
-  let apiKey
+
   let headers
   let latestTimestamp = 0
   if (typeof pluginParams.settings.latestTimestamp === 'number') {
     latestTimestamp = pluginParams.settings.latestTimestamp
   }
 
-  if (typeof pluginParams.apiKeys.apiKey === 'string') {
-    apiKey = pluginParams.apiKeys.apiKey
+  const apiKey = pluginParams.apiKeys.apiKey
+  if (typeof apiKey === 'string') {
     headers = {
       Authorization: `Api-Key ${apiKey}`
     }

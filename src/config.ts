@@ -10,6 +10,7 @@ export const asConfig = asObject({
     'http://username:password@localhost:5984'
   ),
   httpPort: asOptional(asNumber, 8008),
+  bog: asOptional(asObject({ apiKey: asString }), { apiKey: '' }),
   soloAppIds: asOptional(asArray(asString), undefined),
   soloPartnerIds: asOptional(asArray(asString), undefined),
   timeoutOverrideMins: asOptional(asNumber, 1200),
