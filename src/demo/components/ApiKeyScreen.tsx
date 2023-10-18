@@ -48,7 +48,10 @@ const ApiKeyScreen = (props: ApiKeyScreenProps): React.ReactElement => {
           style={apiKeyInput}
           onChange={e => props.handleApiKeyChange(e.target.value)}
         />
-        <button style={apiKeyButton} onClick={() => props.getAppId()}>
+        <button
+          style={apiKeyButton}
+          onClick={async () => await props.getAppId()}
+        >
           Use
         </button>
       </li>

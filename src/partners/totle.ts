@@ -318,12 +318,14 @@ export async function queryTotle(
 
   try {
     const { tokens } = asTokenResult(
-      await fetch('https://api.totle.com/tokens').then(async res => res.json())
+      await fetch('https://api.totle.com/tokens').then(
+        async res => await res.json()
+      )
     )
 
     const { contracts } = asContractResult(
-      await fetch('https://api.totle.com/contracts').then(async res =>
-        res.json()
+      await fetch('https://api.totle.com/contracts').then(
+        async res => await res.json()
       )
     )
 

@@ -101,7 +101,7 @@ export async function queryLetsExchange(
       const url = `https://api.letsexchange.io/api/v1/affiliate/history/${affiliateId}?limit=${LIMIT}&page=${page}&types=0`
 
       const result = await retryFetch(url, { headers, method: 'GET' })
-      if (result.ok === false) {
+      if (!result.ok) {
         const text = await result.text()
         datelog(text)
         throw new Error(text)

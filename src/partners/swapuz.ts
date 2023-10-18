@@ -77,7 +77,7 @@ export const querySwapuz = async (
       password
     })
   })
-  if (response.ok === false) {
+  if (!response.ok) {
     const text = await response.text()
     throw new Error(text)
   }
@@ -108,7 +108,7 @@ export const querySwapuz = async (
       method: 'GET',
       headers
     })
-    if (response.ok === false) {
+    if (!response.ok) {
       const text = await response.text()
       throw new Error(text)
     }

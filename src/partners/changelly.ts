@@ -89,10 +89,7 @@ export async function queryChangelly(
   ) {
     firstAttempt = true
   }
-  if (
-    typeof pluginParams.settings.offset === 'number' &&
-    firstAttempt === true
-  ) {
+  if (typeof pluginParams.settings.offset === 'number' && firstAttempt) {
     offset = pluginParams.settings.offset
   }
   if (
@@ -157,8 +154,8 @@ export async function queryChangelly(
           }
           if (
             tx.createdAt < latestTimeStamp - QUERY_LOOKBACK &&
-            done === false &&
-            firstAttempt === false
+            !done &&
+            !firstAttempt
           ) {
             datelog(
               `Changelly done: date ${tx.createdAt} < ${latestTimeStamp -

@@ -198,7 +198,7 @@ async function fetchBanxaAPI(
     'Content-Type': 'application/json'
   }
 
-  return retryFetch(`${partnerUrl}${apiQuery}`, { headers: headers })
+  return await retryFetch(`${partnerUrl}${apiQuery}`, { headers: headers })
 }
 
 function processBanxaOrders(rawtxs, ssFormatTxs): void {

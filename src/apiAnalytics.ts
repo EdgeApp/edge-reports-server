@@ -51,7 +51,7 @@ export const getAnalytics = (
   const dayArray: Bucket[] = []
   const hourArray: Bucket[] = []
   // monthly buckets creation
-  if (hasMonthBucket === true) {
+  if (hasMonthBucket) {
     let { y, m } = utcVariables(start)
     let monthStart = new Date(Date.UTC(y, m, 1, 0))
     do {
@@ -68,7 +68,7 @@ export const getAnalytics = (
     } while (monthStart.getTime() <= end * 1000)
   }
   // daily buckets Creation
-  if (hasDayBucket === true) {
+  if (hasDayBucket) {
     let { y, m, d } = utcVariables(start)
     let dayStart = new Date(Date.UTC(y, m, d, 0))
     do {
@@ -85,7 +85,7 @@ export const getAnalytics = (
     } while (dayStart.getTime() <= end * 1000)
   }
   // hourly buckets creation
-  if (hasHourBucket === true) {
+  if (hasHourBucket) {
     let { y, m, d, h } = utcVariables(start)
     let hourStart = new Date(Date.UTC(y, m, d, h))
     do {
@@ -108,19 +108,19 @@ export const getAnalytics = (
   let hourPointer = 0
   for (const tx of txs) {
     // month
-    if (hasMonthBucket === true) {
+    if (hasMonthBucket) {
       // advances pointer to bucket that matches current txs timestamp
       monthPointer = bucketScroller(monthArray, monthPointer, tx.timestamp)
       // adds usdvalue, currencycode, and currencypair to that bucket
       bucketAdder(monthArray[monthPointer], tx)
     }
     // day
-    if (hasDayBucket === true) {
+    if (hasDayBucket) {
       dayPointer = bucketScroller(dayArray, dayPointer, tx.timestamp)
       bucketAdder(dayArray[dayPointer], tx)
     }
     // hour
-    if (hasHourBucket === true) {
+    if (hasHourBucket) {
       hourPointer = bucketScroller(hourArray, hourPointer, tx.timestamp)
       bucketAdder(hourArray[hourPointer], tx)
     }

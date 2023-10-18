@@ -85,11 +85,6 @@ export async function queryMoonpay(
           throw e
         }
 
-        if (tx.currency != null) {
-          if (tx.baseCurrencyId === tx.currency.id) {
-          }
-        }
-
         const date = new Date(tx.createdAt)
         const timestamp = date.getTime()
         const ssTx: StandardTx = {

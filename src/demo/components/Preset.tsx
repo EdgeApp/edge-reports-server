@@ -127,7 +127,7 @@ class Preset extends Component<PresetProps, PresetState> {
         }
         const analyticsArray = Object.values(analyticsResults)
 
-        // @ts-ignore
+        // @ts-expect-error
         this.setState({ [timeRange]: analyticsArray })
         console.timeEnd(`${timeRange}`)
       }
@@ -135,7 +135,7 @@ class Preset extends Component<PresetProps, PresetState> {
   }
 
   render(): JSX.Element {
-    if (this.state.redirect === true) {
+    if (this.state.redirect) {
       return <Redirect to={{ pathname: '/' }} />
     }
     const dataSets = {

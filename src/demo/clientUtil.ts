@@ -1,17 +1,17 @@
 import { asArray, asString } from 'cleaners'
-import { getTimezoneOffset } from 'date-fns-tz'
 import add from 'date-fns/add'
 import eachQuarterOfInterval from 'date-fns/eachQuarterOfInterval'
 import startOfDay from 'date-fns/startOfDay'
 import startOfHour from 'date-fns/startOfHour'
 import startOfMonth from 'date-fns/startOfMonth'
 import sub from 'date-fns/sub'
+import { getTimezoneOffset } from 'date-fns-tz'
 import fetch from 'node-fetch'
 
 import { clientConfig } from './clientConfig'
+import { AnalyticsResult, asAnalyticsResult, Bucket } from '../types'
 import { Data, DataPlusSevenDayAve } from './components/Graphs'
 import Partners from './partners'
-import { AnalyticsResult, asAnalyticsResult, Bucket } from '../types'
 
 export const SIX_DAYS = 6
 

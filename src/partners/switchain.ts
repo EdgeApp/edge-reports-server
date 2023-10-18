@@ -58,7 +58,7 @@ export async function querySwitchain(
         }
       }
       const response = await fetch(request, options)
-      if (response.ok === true) {
+      if (response.ok) {
         result = asSwitchainResult(await response.json())
       }
     } catch (e) {
