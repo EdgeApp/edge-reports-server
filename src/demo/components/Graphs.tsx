@@ -11,7 +11,7 @@ import {
 } from 'recharts'
 
 import { AnalyticsResult, Bucket } from '../../types'
-import { addObject, createQuarterBuckets, sevenDayDataMerge } from '../../util'
+import { addObject, createQuarterBuckets, sevenDayDataMerge } from '../clientUtil'
 import Partners from '../partners'
 import Modal from './Modal'
 

@@ -10,7 +10,6 @@ export const asConfig = asObject({
   soloAppIds: asOptional(asArray(asString), undefined),
   soloPartnerIds: asOptional(asArray(asString), undefined),
   timeoutOverrideMins: asOptional(asNumber, 1200),
-  apiHost: asOptional(asString, undefined),
   cacheLookbackMonths: asOptional(asNumber, 24)
 })
 
