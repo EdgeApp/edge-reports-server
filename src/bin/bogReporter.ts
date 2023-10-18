@@ -1,9 +1,8 @@
 import fetch from 'node-fetch'
 
-import CONFIG from '../../config.json'
+import { config } from '../config'
 
-// @ts-expect-error
-const BITS_OF_GOLD_API_KEY = CONFIG.bog.apiKey
+const BITS_OF_GOLD_API_KEY = config.bog.apiKey
 
 const dateRegex = /([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))/
 

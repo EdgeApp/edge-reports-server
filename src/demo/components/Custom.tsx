@@ -50,7 +50,6 @@ export interface CustomRouteProps {
   end: string
 }
 interface CustomProps extends RouteComponentProps<CustomRouteProps> {
-  key: string
   apiKey: string
   exchangeType: string
   changeTimePeriod: (timePeriod: string) => void
