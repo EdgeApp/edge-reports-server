@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import Loader from 'react-loader-spinner'
-import { Redirect, withRouter } from 'react-router-dom'
+import { Redirect, RouteComponentProps, withRouter } from 'react-router-dom'
 
 import {
   getAppId,
@@ -57,7 +57,7 @@ const presetLoader = {
 const TIME_PERIODS = ['hour', 'day', 'month']
 const GRAPH_LABELS = ['36 Hours', '75 Days', '2 Years']
 
-interface PresetProps {
+interface PresetProps extends RouteComponentProps {
   exchangeType: string
   apiKey: string
 }

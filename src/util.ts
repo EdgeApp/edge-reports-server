@@ -91,7 +91,11 @@ export const addObject = (origin: any, destination: any): void => {
   })
 }
 
-export const getPresetDates = function(): any {
+export const getPresetDates = function(): {
+  setData1: string[][]
+  setData2: string[][]
+  setData3: string[][]
+} {
   const DATE = new Date(Date.now())
   const HOUR_RANGE_END = add(startOfHour(DATE), { hours: 1 })
   const DAY_RANGE_END = add(startOfDay(DATE), { days: 1 })

@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import Loader from 'react-loader-spinner'
-import { Redirect, withRouter } from 'react-router-dom'
+import { Redirect, RouteComponentProps, withRouter } from 'react-router-dom'
 
 import {
   calculateGraphTotals,
@@ -44,12 +44,15 @@ const partnerTotalsTableStyle = {
   marginTop: '10px'
 }
 
-interface CustomProps {
-  match: any
+export interface CustomRouteProps {
+  start: string
+  end: string
+}
+interface CustomProps extends RouteComponentProps<CustomRouteProps> {
   key: string
   apiKey: string
   exchangeType: string
-  changeTimePeriod: Function
+  changeTimePeriod: (timePeriod: string) => void
   timePeriod: string
 }
 
