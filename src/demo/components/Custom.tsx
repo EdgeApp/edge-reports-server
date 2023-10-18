@@ -113,10 +113,10 @@ class Custom extends Component<CustomProps, CustomState> {
   }
 
   render(): JSX.Element {
-    if (this.state.redirect === true) {
+    if (this.state.redirect) {
       return <Redirect to={{ pathname: '/' }} />
     }
-    if (this.state.loading === true) {
+    if (this.state.loading) {
       return (
         <div key="Loader" style={customLoader}>
           <Loader type="Oval" color="blue" height="30px" width="30px" />

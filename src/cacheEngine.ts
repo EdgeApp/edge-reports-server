@@ -52,10 +52,7 @@ export async function cacheEngine(): Promise<void> {
     const rawApps = await reportsApps.find(query)
     const apps = asApps(rawApps.docs)
     for (const app of apps) {
-      if (
-        config.soloAppIds != null &&
-        config.soloAppIds.includes(app.appId) === false
-      ) {
+      if (config.soloAppIds != null && !config.soloAppIds.includes(app.appId)) {
         continue
       }
       const partnerIds = Object.keys(app.partnerIds)
@@ -63,7 +60,7 @@ export async function cacheEngine(): Promise<void> {
       for (const partnerId of partnerIds) {
         if (
           config.soloPartnerIds != null &&
-          config.soloPartnerIds.includes(partnerId) === false
+          !config.soloPartnerIds.includes(partnerId)
         ) {
           continue
         }

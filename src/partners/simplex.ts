@@ -128,7 +128,7 @@ export async function querySimplex(
       }
     }
 
-    if (csvData.data.has_more_pages === false) {
+    if (!csvData.data.has_more_pages) {
       break
     }
     nextPageCursor = asString(csvData.data.next_page_cursor)

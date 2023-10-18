@@ -38,7 +38,7 @@ const {
 } = defaultSettings
 
 const configFile: string = fs.readFileSync(
-  `${__dirname}/../../../config.json`,
+  path.join(__dirname, `/../../../config.json`),
   'utf8'
 )
 const config = JSON.parse(configFile)

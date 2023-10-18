@@ -72,7 +72,7 @@ export async function queryFoxExchange(
           }
         }
       )
-      if (res.ok === true) {
+      if (res.ok) {
         txs = asFoxExchangeTxs(await res.json())
       }
     } catch (e) {

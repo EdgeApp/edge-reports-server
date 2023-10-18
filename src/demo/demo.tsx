@@ -1,3 +1,4 @@
+/* eslint-disable react/no-children-prop */
 import 'regenerator-runtime/runtime'
 import 'react-datepicker/dist/react-datepicker.css'
 import './demo.css'

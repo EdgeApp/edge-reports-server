@@ -121,7 +121,7 @@ export async function querySideshift(
     const url = `https://sideshift.ai/api/affiliate/completedOrders?affiliateId=${sideshiftAffiliateId}&since=${startTime}&currentTime=${now}&signature=${signature}`
     try {
       const response = await retryFetch(url)
-      if (response.ok === false) {
+      if (!response.ok) {
         const text = await response.text()
         throw new Error(text)
       }

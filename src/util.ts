@@ -1,6 +1,6 @@
 import fetch, { RequestInfo, RequestInit, Response } from 'node-fetch'
 
-import {config} from './config'
+import { config } from './config'
 
 export const SIX_DAYS = 6
 
@@ -30,7 +30,7 @@ export const promiseTimeout = async <T>(
   p: Promise<T>
 ): Promise<T> => {
   const timeoutMins = config.timeoutOverrideMins ?? 5
-  return new Promise((resolve, reject) => {
+  return await new Promise((resolve, reject) => {
     datelog('STARTING', msg)
     setTimeout(() => reject(new Error(`Timeout: ${msg}`)), 60000 * timeoutMins)
     p.then(v => resolve(v)).catch(e => reject(e))
@@ -64,10 +64,12 @@ export const datelog = function(...args: any): void {
 }
 
 export const snoozeReject = async (ms: number): Promise<void> =>
-  new Promise((resolve: Function, reject: Function) => setTimeout(reject, ms))
+  await new Promise((resolve: Function, reject: Function) =>
+    setTimeout(reject, ms)
+  )
 
 export const snooze = async (ms: number): Promise<void> =>
-  new Promise((resolve: Function) => setTimeout(resolve, ms))
+  await new Promise((resolve: Function) => setTimeout(resolve, ms))
 
 export const retryFetch = async (
   request: RequestInfo,

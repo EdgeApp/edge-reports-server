@@ -11,7 +11,11 @@ import {
 } from 'recharts'
 
 import { AnalyticsResult, Bucket } from '../../types'
-import { addObject, createQuarterBuckets, sevenDayDataMerge } from '../clientUtil'
+import {
+  addObject,
+  createQuarterBuckets,
+  sevenDayDataMerge
+} from '../clientUtil'
 import Partners from '../partners'
 import Modal from './Modal'
 
@@ -188,7 +192,6 @@ const Graphs: any = (props: {
               stroke="#000000"
               allowDecimals={false}
             />
-            {/* @ts-ignore */}
             <Tooltip
               animationDuration={0}
               content={({ active, payload }) => {

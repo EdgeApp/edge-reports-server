@@ -88,7 +88,7 @@ export async function initDbs(): Promise<void> {
   datelog(result)
   // if database does not exist, create it
   for (const dbName of DB_NAMES) {
-    if (result.includes(dbName.name) === false) {
+    if (!result.includes(dbName.name)) {
       await nanoDb.db.create(dbName.name, dbName.options)
     }
     if (dbName.indexes !== undefined) {

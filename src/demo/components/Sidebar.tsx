@@ -113,7 +113,7 @@ const getISOString = (date: Date, end: boolean): string => {
   const year = date.getUTCFullYear()
   const month = date.getUTCMonth()
   const day = date.getUTCDate()
-  const isEnd = end === true ? 1 : 0
+  const isEnd = end ? 1 : 0
   const timezonedDate = new Date(Date.UTC(year, month, day) - isEnd)
   return timezonedDate.toISOString()
 }

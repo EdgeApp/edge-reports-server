@@ -68,7 +68,7 @@ const QUERY_FREQ_MS = 60 * 1000
 const MAX_CONCURRENT_QUERIES = 3
 const BULK_FETCH_SIZE = 50
 const snooze: Function = async (ms: number) =>
-  new Promise((resolve: Function) => setTimeout(resolve, ms))
+  await new Promise((resolve: Function) => setTimeout(resolve, ms))
 
 export async function queryEngine(): Promise<void> {
   await initDbs()
@@ -91,10 +91,7 @@ export async function queryEngine(): Promise<void> {
     let remainingPartners: String[] = []
     // loop over every app
     for (const app of apps) {
-      if (
-        config.soloAppIds != null &&
-        config.soloAppIds.includes(app.appId) === false
-      ) {
+      if (config.soloAppIds != null && !config.soloAppIds.includes(app.appId)) {
         continue
       }
       let partnerStatus: string[] = []
@@ -105,7 +102,7 @@ export async function queryEngine(): Promise<void> {
 
         if (
           config.soloPartnerIds != null &&
-          config.soloPartnerIds.includes(partnerId) === false
+          !config.soloPartnerIds.includes(partnerId)
         ) {
           continue
         }

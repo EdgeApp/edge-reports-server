@@ -72,7 +72,7 @@ const Modal: any = (props: ModalProps) => {
     .slice(0, 15)
   let modalStyle = styleTwo
   let closable: JSX.Element | null = null
-  if (isClosable === true) {
+  if (isClosable) {
     modalStyle = { ...styleTwo, paddingTop: '2px' }
     closable = (
       <span style={closeModalButton} onClick={closeModal}>

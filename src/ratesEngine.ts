@@ -15,7 +15,7 @@ const nanoDb = nano(config.couchDbFullpath)
 const QUERY_FREQ_MS = 15000
 const QUERY_LIMIT = 50
 const snooze: Function = async (ms: number) =>
-  new Promise((resolve: Function) => setTimeout(resolve, ms))
+  await new Promise((resolve: Function) => setTimeout(resolve, ms))
 
 const asDbQueryResult = asObject({ docs: asArray(asUnknown) })
 
