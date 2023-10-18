@@ -1,6 +1,6 @@
 import nano from 'nano'
 
-import config from '../config.json'
+import { config } from './config'
 import { pagination } from './dbutils'
 import { initDbs } from './initDbs'
 import { banxa } from './partners/banxa'

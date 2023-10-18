@@ -2,7 +2,7 @@ import { asArray, asObject, asUnknown } from 'cleaners'
 import nano, { MangoQuery } from 'nano'
 import fetch from 'node-fetch'
 
-import config from '../config.json'
+import { config } from './config'
 import {
   asDbCurrencyCodeMappings,
   asDbTx,

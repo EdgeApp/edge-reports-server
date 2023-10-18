@@ -2,7 +2,7 @@ import startOfMonth from 'date-fns/startOfMonth'
 import sub from 'date-fns/sub'
 import nano from 'nano'
 
-import config from '../config.json'
+import { config } from './config'
 import { getAnalytic } from './dbutils'
 import { initDbs } from './initDbs'
 import { asApps } from './types'
