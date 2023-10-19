@@ -1,4 +1,4 @@
-// Import to make client config
+// Import to generate clientConfig.json
 import './demo/clientConfig'
 
 import { makeConfig } from 'cleaner-config'
