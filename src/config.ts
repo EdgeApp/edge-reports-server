@@ -1,3 +1,6 @@
+// Import to generate clientConfig.json
+import './demo/clientConfig'
+
 import { makeConfig } from 'cleaner-config'
 import { asArray, asNumber, asObject, asOptional, asString } from 'cleaners'
 
@@ -10,7 +13,6 @@ export const asConfig = asObject({
   soloAppIds: asOptional(asArray(asString), undefined),
   soloPartnerIds: asOptional(asArray(asString), undefined),
   timeoutOverrideMins: asOptional(asNumber, 1200),
-  apiHost: asOptional(asString, undefined),
   cacheLookbackMonths: asOptional(asNumber, 24)
 })
 

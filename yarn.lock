@@ -1842,10 +1842,10 @@ clean-stack@^2.0.0:
   resolved "https://registry.npmjs.org/clean-stack/-/clean-stack-2.2.0.tgz"
   integrity sha512-4diC9HaTE+KRAMWhDhrGOECgWZxoevMc5TlkObMqNSsVU62PYzXZ/SMTjzyGAFF1YusgxGcSWTEXBhp0CPwQ1A==
 
-cleaner-config@^0.1.9:
-  version "0.1.9"
-  resolved "https://registry.yarnpkg.com/cleaner-config/-/cleaner-config-0.1.9.tgz#cf44f92b7c0d6ce01268b526fd108b50ed8777a1"
-  integrity sha512-hcojU0ppPMDBC65c1VBb1yyPgHg6fdZWJAOhbEPQscye2aidNQN3LtfKLnTS5hJVv/70X6fk5ZuPnMWZYCFasA==
+cleaner-config@^0.1.10:
+  version "0.1.10"
+  resolved "https://registry.yarnpkg.com/cleaner-config/-/cleaner-config-0.1.10.tgz#5df39aedaa0837e073f65229a4a1a4da709ffbbc"
+  integrity sha512-LDPPn6Iv9e3Kdc+Dk+fPbyIaCzzqzuILnwgVJf53hic+1xh5VerfdN4NgzGX5dZC88BKUteCRwpFZxZ5TTcngQ==
   dependencies:
     cleaners "^0.3.8"
     minimist "^1.2.5"

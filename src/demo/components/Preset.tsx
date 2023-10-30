@@ -8,7 +8,7 @@ import {
   getCustomData,
   getPartnerIds,
   getPresetDates
-} from '../../util'
+} from '../clientUtil'
 import Partners from '../partners'
 import Graphs from './Graphs'
 

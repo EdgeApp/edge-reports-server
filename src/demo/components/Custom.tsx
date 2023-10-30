@@ -9,7 +9,7 @@ import {
   getCustomData,
   getPartnerIds,
   getTimeRange
-} from '../../util'
+} from '../clientUtil'
 import Partners from '../partners'
 import Graphs from './Graphs'
 import { largeGraphHolder, legend, legendHolder, legendKeys } from './Preset'

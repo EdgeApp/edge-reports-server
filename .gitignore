@@ -3,6 +3,7 @@
 /cache/
 /dist/
 /lib/
+/clientConfig.json
 /config.json
 /twitterex.txt
 

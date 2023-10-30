@@ -7,7 +7,7 @@ import React, { Component } from 'react'
 import { Cookies, withCookies } from 'react-cookie'
 import { HashRouter, Route, RouteChildrenProps, Switch } from 'react-router-dom'
 
-import { apiHost } from '../util'
+import { apiHost } from './clientUtil'
 import ApiKeyScreen from './components/ApiKeyScreen'
 import Custom, { CustomRouteProps } from './components/Custom'
 import { MainScene } from './components/MainScene'
