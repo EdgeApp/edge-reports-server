@@ -88,11 +88,7 @@ export async function queryBitrefill(
         continue
       }
       const tx = asBitrefillTx(rawtx)
-      if (
-        tx.paymentReceived === true &&
-        tx.expired === false &&
-        tx.sent === true
-      ) {
+      if (tx.paymentReceived && !tx.expired && tx.sent) {
         const timestamp = tx.invoiceTime / 1000
 
         let inputAmountStr = tx.satoshiPrice?.toString()

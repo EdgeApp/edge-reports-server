@@ -102,7 +102,7 @@ export async function queryBity(
         // status: 404
         // statusText: "Not Found"
         // on page 4
-        if (monthlyResponse.ok === true) {
+        if (monthlyResponse.ok) {
           monthlyTxs = asBityResult(await monthlyResponse.json())
         } else if (
           monthlyResponse.status === 404 &&

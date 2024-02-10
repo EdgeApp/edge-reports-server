@@ -38,7 +38,7 @@ const {
 } = defaultSettings
 
 const configFile: string = fs.readFileSync(
-  `${__dirname}/../../../config.json`,
+  path.join(__dirname, `/../../../config.json`),
   'utf8'
 )
 const config = JSON.parse(configFile)
@@ -94,8 +94,7 @@ export const checkAddress = async (
       error = ''
       break
     } catch (e) {
-      error = e
-      console.log(e)
+      console.log(String(e))
     }
   }
   if (error !== '') throw error

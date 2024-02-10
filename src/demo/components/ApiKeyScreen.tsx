@@ -1,10 +1,10 @@
-import React from 'react'
-import { Redirect, withRouter } from 'react-router-dom'
+import * as React from 'react'
+import { Redirect, RouteComponentProps, withRouter } from 'react-router-dom'
 
-interface ApiKeyScreenProps {
+interface ApiKeyScreenProps extends RouteComponentProps {
   apiKeyMessage: string
-  handleApiKeyChange: any
-  getAppId: any
+  handleApiKeyChange: (apiKey: string) => void
+  getAppId: () => Promise<void> | void
   appId: string
 }
 
@@ -36,7 +36,7 @@ const apiKeyButton = {
   marginLeft: '20px'
 }
 
-const ApiKeyScreen: any = (props: ApiKeyScreenProps) => {
+const ApiKeyScreen = (props: ApiKeyScreenProps): React.ReactElement => {
   if (typeof props.appId === 'string' && props.appId.length > 0) {
     return <Redirect to={{ pathname: '/preset' }} />
   }
@@ -46,9 +46,12 @@ const ApiKeyScreen: any = (props: ApiKeyScreenProps) => {
       <li style={apiKeyUserDiv}>
         <input
           style={apiKeyInput}
-          onChange={e => props.handleApiKeyChange(e)}
+          onChange={e => props.handleApiKeyChange(e.target.value)}
         />
-        <button style={apiKeyButton} onClick={() => props.getAppId()}>
+        <button
+          style={apiKeyButton}
+          onClick={async () => await props.getAppId()}
+        >
           Use
         </button>
       </li>

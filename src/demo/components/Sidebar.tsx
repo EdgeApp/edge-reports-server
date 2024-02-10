@@ -12,7 +12,12 @@ import {
   sub
 } from 'date-fns'
 import React, { Component } from 'react'
-import { Link, NavLink, withRouter } from 'react-router-dom'
+import {
+  Link,
+  NavLink,
+  RouteComponentProps,
+  withRouter
+} from 'react-router-dom'
 
 import { MainButton, SecondaryButton } from './Buttons'
 import Sidetab from './Sidetab'
@@ -20,11 +25,9 @@ import TimePicker from './TimePicker'
 
 const calendar = new URL('../images/calendar.png', import.meta.url).toString()
 
-interface SidebarProps {
-  location: any
-  getData: any
-  changeExchangeType: any
-  logout: any
+interface SidebarProps extends RouteComponentProps<void> {
+  changeExchangeType: (exchangeType: string) => void
+  logout: () => void
   appId: string
   exchangeType: string
 }
@@ -110,7 +113,7 @@ const getISOString = (date: Date, end: boolean): string => {
   const year = date.getUTCFullYear()
   const month = date.getUTCMonth()
   const day = date.getUTCDate()
-  const isEnd = end === true ? 1 : 0
+  const isEnd = end ? 1 : 0
   const timezonedDate = new Date(Date.UTC(year, month, day) - isEnd)
   return timezonedDate.toISOString()
 }
@@ -134,14 +137,14 @@ class Sidebar extends Component<SidebarProps, SidebarState> {
     this.setState({ end })
   }
 
-  renderExchangeButtons = (props: SidebarProps): JSX.Element => (
+  renderExchangeButtons = (): JSX.Element => (
     <>
       {Object.entries(allowExchangeTypes).map(([exchangeType, label]) => (
         <SecondaryButton
           key={exchangeType}
-          underline={props.exchangeType === exchangeType}
+          underline={this.props.exchangeType === exchangeType}
           label={label}
-          onClick={() => props.changeExchangeType(exchangeType)}
+          onClick={() => this.props.changeExchangeType(exchangeType)}
         />
       ))}
     </>
@@ -221,7 +224,7 @@ class Sidebar extends Component<SidebarProps, SidebarState> {
       <Sidetab serverName="Reports" appId={this.props.appId}>
         {this.renderCustomView(this.props)}
         <hr style={divider} />
-        {this.renderExchangeButtons(this.props)}
+        {this.renderExchangeButtons()}
         <hr style={divider} />
         <NavLink to="/">
           <MainButton label="Logout" onClick={() => this.props.logout()} />

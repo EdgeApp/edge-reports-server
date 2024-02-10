@@ -1,16 +1,17 @@
 import React, { Component } from 'react'
 import Loader from 'react-loader-spinner'
-import { Redirect, withRouter } from 'react-router-dom'
+import { Redirect, RouteComponentProps, withRouter } from 'react-router-dom'
 
+import { AnalyticsResult } from '../../types'
 import {
   calculateGraphTotals,
   getAppId,
   getCustomData,
-  getPluginIds,
+  getPartnerIds,
   getTimeRange
-} from '../../util'
+} from '../clientUtil'
 import Partners from '../partners'
-import Graphs, { AnalyticsResult } from './Graphs'
+import Graphs from './Graphs'
 import { largeGraphHolder, legend, legendHolder, legendKeys } from './Preset'
 
 const smallLegendAndGraphHolder = {
@@ -44,18 +45,20 @@ const partnerTotalsTableStyle = {
   marginTop: '10px'
 }
 
-interface CustomProps {
-  match: any
-  key: string
+export interface CustomRouteProps {
+  start: string
+  end: string
+}
+interface CustomProps extends RouteComponentProps<CustomRouteProps> {
   apiKey: string
   exchangeType: string
-  changeTimePeriod: Function
+  changeTimePeriod: (timePeriod: string) => void
   timePeriod: string
 }
 
 interface CustomState {
   appId: string
-  pluginIds: string[]
+  partnerIds: string[]
   data: AnalyticsResult[]
   loading: boolean
   redirect: boolean
@@ -66,7 +69,7 @@ class Custom extends Component<CustomProps, CustomState> {
     super(props)
     this.state = {
       appId: '',
-      pluginIds: [],
+      partnerIds: [],
       data: [],
       loading: true,
       redirect: false
@@ -74,10 +77,10 @@ class Custom extends Component<CustomProps, CustomState> {
   }
 
   async componentDidMount(): Promise<void> {
-    const appIdResponse = await getAppId(this.props.apiKey)
-    this.setState(appIdResponse)
-    const pluginIdsResponse = await getPluginIds(this.state.appId)
-    this.setState(pluginIdsResponse)
+    const { appId, redirect } = await getAppId(this.props.apiKey)
+    this.setState({ appId, redirect })
+    const { partnerIds } = await getPartnerIds(this.state.appId)
+    this.setState({ partnerIds })
     if (
       typeof this.props.match.params.start === 'string' &&
       this.props.match.params.start.length > 0 &&
@@ -96,7 +99,7 @@ class Custom extends Component<CustomProps, CustomState> {
     this.setState({ loading: true })
     const data = await getCustomData(
       this.state.appId,
-      this.state.pluginIds,
+      this.state.partnerIds,
       start,
       end
     )
@@ -109,10 +112,10 @@ class Custom extends Component<CustomProps, CustomState> {
   }
 
   render(): JSX.Element {
-    if (this.state.redirect === true) {
+    if (this.state.redirect) {
       return <Redirect to={{ pathname: '/' }} />
     }
-    if (this.state.loading === true) {
+    if (this.state.loading) {
       return (
         <div key="Loader" style={customLoader}>
           <Loader type="Oval" color="blue" height="30px" width="30px" />
@@ -122,22 +125,22 @@ class Custom extends Component<CustomProps, CustomState> {
     let barGraphData = this.state.data
     if (this.props.exchangeType !== 'all') {
       barGraphData = barGraphData.filter(
-        obj => Partners[obj.pluginId].type === this.props.exchangeType
+        obj => Partners[obj.partnerId].type === this.props.exchangeType
       )
     }
 
     const barGraphStyles = barGraphData.map(analytic => {
       const style = {
-        backgroundColor: Partners[analytic.pluginId].color,
+        backgroundColor: Partners[analytic.partnerId].color,
         marginLeft: '10px',
         width: '18px',
         height: '18px'
       }
-      const capitilizedPluginId = `${analytic.pluginId
+      const capitilizedPluginId = `${analytic.partnerId
         .charAt(0)
-        .toUpperCase()}${analytic.pluginId.slice(1)}`
+        .toUpperCase()}${analytic.partnerId.slice(1)}`
       return (
-        <div style={legendKeys} key={analytic.pluginId}>
+        <div style={legendKeys} key={analytic.partnerId}>
           <div style={style} />
           <div style={legend}>{capitilizedPluginId}</div>
         </div>
@@ -149,11 +152,11 @@ class Custom extends Component<CustomProps, CustomState> {
     const barGraphs = barGraphData.map((analytic, index) => {
       const graphTotals = calculateGraphTotals(analytic)
       graphTotals.partnerId =
-        analytic.pluginId.charAt(0).toUpperCase() + analytic.pluginId.slice(1)
+        analytic.partnerId.charAt(0).toUpperCase() + analytic.partnerId.slice(1)
       list.push(graphTotals)
       return (
-        <div key={analytic.pluginId} style={smallLegendAndGraphHolder}>
-          {Partners[analytic.pluginId].type === this.props.exchangeType ||
+        <div key={analytic.partnerId} style={smallLegendAndGraphHolder}>
+          {Partners[analytic.partnerId].type === this.props.exchangeType ||
           this.props.exchangeType === 'all' ? (
             <div>
               <div style={legendHolder}>{barGraphStyles[index]}</div>

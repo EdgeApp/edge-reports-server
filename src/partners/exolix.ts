@@ -119,7 +119,7 @@ export async function queryExolix(
 
     const response = await retryFetch(request, options)
 
-    if (response.ok === true) {
+    if (response.ok) {
       result = asExolixResult(await response.json())
     }
 

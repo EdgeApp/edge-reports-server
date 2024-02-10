@@ -89,7 +89,6 @@ async function migration(): Promise<void> {
 
     try {
       await reportsTransactions
-        // @ts-ignore
         .partitionedList(appAndPluginId, { include_docs: true })
         .then(body => {
           body.rows.forEach(doc => {
@@ -122,6 +121,7 @@ async function migration(): Promise<void> {
       ) {
         return obj
       }
+      return false
     })
     const reformattedTxs: DbTx[] = []
     let offset = 0
@@ -151,7 +151,7 @@ async function migration(): Promise<void> {
                   usdValue: -1,
                   rawTx: tx
                 }
-                return standardTxReformat(
+                return await standardTxReformat(
                   newTx,
                   appAndPluginId,
                   reportsTransactions
@@ -196,7 +196,7 @@ async function migration(): Promise<void> {
                 usdValue: -1,
                 rawTx: undefined
               }
-              return standardTxReformat(
+              return await standardTxReformat(
                 newTx,
                 appAndPluginId,
                 reportsTransactions

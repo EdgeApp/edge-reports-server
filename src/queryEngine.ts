@@ -1,8 +1,8 @@
-import { asArray, asMap, asObject, asString } from 'cleaners'
 import nano from 'nano'
 
-import config from '../config.json'
+import { config } from './config'
 import { pagination } from './dbutils'
+import { initDbs } from './initDbs'
 import { banxa } from './partners/banxa'
 import { bitaccess } from './partners/bitaccess'
 import { bitrefill } from './partners/bitrefill'
@@ -30,92 +30,12 @@ import { thorchain } from './partners/thorchain'
 import { transak } from './partners/transak'
 import { wyre } from './partners/wyre'
 import { xanpool } from './partners/xanpool'
-import { asProgressSettings, DbTx, StandardTx } from './types'
+import { asApp, asApps, asProgressSettings, DbTx, StandardTx } from './types'
 import { datelog, promiseTimeout, standardizeNames } from './util'
-const asApp = asObject({
-  appId: asString,
-  pluginIds: asMap(asMap(asString))
-})
-const asApps = asArray(asApp)
 
 const nanoDb = nano(config.couchDbFullpath)
 
-const DB_NAMES = [
-  { name: 'reports_apps' },
-  { name: 'reports_settings' },
-  {
-    name: 'reports_transactions',
-    options: { partitioned: true },
-    indexes: [
-      {
-        index: { fields: ['isoDate'] },
-        ddoc: 'isodate-index-p',
-        name: 'isodate-index-p',
-        type: 'json' as 'json',
-        partitioned: true
-      },
-      {
-        index: { fields: ['isoDate'] },
-        ddoc: 'isodate-index',
-        name: 'isodate-index',
-        type: 'json' as 'json',
-        partitioned: false
-      },
-      {
-        index: { fields: ['status'] },
-        ddoc: 'status-index-p',
-        name: 'status-index-p',
-        type: 'json' as 'json',
-        partitioned: true
-      },
-      {
-        index: { fields: ['status'] },
-        ddoc: 'status-index',
-        name: 'status-index',
-        type: 'json' as 'json',
-        partitioned: false
-      },
-      {
-        index: { fields: ['status', 'usdValue'] },
-        ddoc: 'status-usdvalue-index',
-        name: 'status-usdvalue-index',
-        type: 'json' as 'json',
-        partitioned: false
-      },
-      {
-        index: { fields: ['status', 'payoutAmount', 'depositAmount'] },
-        ddoc: 'status-payoutamount-depositamount-index',
-        name: 'status-payoutamount-depositamount-index',
-        type: 'json' as 'json',
-        partitioned: false
-      },
-      {
-        index: { fields: ['status', 'usdvalue', 'timestamp'] },
-        ddoc: 'status-usdvalue-timestamp-index-p',
-        name: 'status-usdvalue-timestamp-index-p',
-        type: 'json' as 'json',
-        partitioned: true
-      },
-      {
-        index: { fields: ['usdValue'] },
-        ddoc: 'usdvalue-index-p',
-        name: 'usdvalue-index-p',
-        type: 'json' as 'json',
-        partitioned: true
-      },
-      {
-        index: { fields: ['usdValue'] },
-        ddoc: 'usdvalue-index',
-        name: 'usdvalue-index',
-        type: 'json' as 'json',
-        partitioned: false
-      }
-    ]
-  },
-  { name: 'reports_progresscache', options: { partitioned: true } }
-]
-
-const partners = [
+const plugins = [
   banxa,
   bitaccess,
   bitsofgold,
@@ -148,30 +68,10 @@ const QUERY_FREQ_MS = 60 * 1000
 const MAX_CONCURRENT_QUERIES = 3
 const BULK_FETCH_SIZE = 50
 const snooze: Function = async (ms: number) =>
-  new Promise((resolve: Function) => setTimeout(resolve, ms))
+  await new Promise((resolve: Function) => setTimeout(resolve, ms))
 
 export async function queryEngine(): Promise<void> {
-  // get a list of all databases within couchdb
-  const result = await nanoDb.db.list()
-  datelog(result)
-  // if database does not exist, create it
-  for (const dbName of DB_NAMES) {
-    if (result.includes(dbName.name) === false) {
-      await nanoDb.db.create(dbName.name, dbName.options)
-    }
-    if (dbName.indexes !== undefined) {
-      const currentDb = nanoDb.db.use(dbName.name)
-      for (const dbIndex of dbName.indexes) {
-        try {
-          await currentDb.get(`_design/${dbIndex.ddoc}`)
-          datelog(`${dbName.name} already has '${dbIndex.name}' index.`)
-        } catch {
-          await currentDb.createIndex(dbIndex)
-          datelog(`Created '${dbIndex.name}' index for ${dbName.name}.`)
-        }
-      }
-    }
-  }
+  await initDbs()
 
   const dbProgress = nanoDb.db.use('reports_progresscache')
   const dbApps = nanoDb.db.use('reports_apps')
@@ -183,30 +83,37 @@ export async function queryEngine(): Promise<void> {
       selector: {
         appId: { $exists: true }
       },
-      fields: ['appId', 'pluginIds'],
       limit: 1000000
     }
     const rawApps = await dbApps.find(query)
     const apps = asApps(rawApps.docs)
     let promiseArray: Array<Promise<string>> = []
-    let remainingPlugins: String[] = []
+    let remainingPartners: String[] = []
     // loop over every app
     for (const app of apps) {
-      if (config.soloAppId != null && config.soloAppId !== app.appId) continue
+      if (config.soloAppIds != null && !config.soloAppIds.includes(app.appId)) {
+        continue
+      }
       let partnerStatus: string[] = []
       // loop over every pluginId that app uses
-      remainingPlugins = Object.keys(app.pluginIds)
-      for (const pluginId in app.pluginIds) {
-        if (config.soloPluginId != null && config.soloPluginId !== pluginId)
+      remainingPartners = Object.keys(app.partnerIds)
+      for (const partnerId in app.partnerIds) {
+        const pluginId = app.partnerIds[partnerId].pluginId ?? partnerId
+
+        if (
+          config.soloPartnerIds != null &&
+          !config.soloPartnerIds.includes(partnerId)
+        ) {
           continue
-        remainingPlugins.push(pluginId)
+        }
+        remainingPartners.push(partnerId)
         promiseArray.push(
-          runPlugin(app, pluginId, dbProgress).finally(() => {
-            remainingPlugins = remainingPlugins.filter(
-              string => string !== pluginId
+          runPlugin(app, partnerId, pluginId, dbProgress).finally(() => {
+            remainingPartners = remainingPartners.filter(
+              string => string !== partnerId
             )
-            if (remainingPlugins.length > 0) {
-              datelog('REMAINING PLUGINS:', remainingPlugins.join(', '))
+            if (remainingPartners.length > 0) {
+              datelog('REMAINING PLUGINS:', remainingPartners.join(', '))
             }
           })
         )
@@ -312,6 +219,7 @@ async function insertTransactions(
 
 async function runPlugin(
   app: ReturnType<typeof asApp>,
+  partnerId: string,
   pluginId: string,
   dbProgress: nano.DocumentScope<unknown>
 ): Promise<string> {
@@ -319,21 +227,23 @@ async function runPlugin(
   let errorText = ''
   try {
     // obtains function that corresponds to current pluginId
-    const plugin = partners.find(partner => partner.pluginId === pluginId)
+    const plugin = plugins.find(plugin => plugin.pluginId === pluginId)
     // if current plugin is not within the list of partners skip to next
     if (plugin === undefined) {
-      errorText = `Missing or disabled plugin ${app.appId.toLowerCase()}_${pluginId}`
+      errorText = `Missing or disabled plugin ${app.appId.toLowerCase()}_${partnerId}`
       datelog(errorText)
       return errorText
     }
 
     // get progress cache to see where previous query ended
-    datelog(`Starting with partner: ${pluginId}, app: ${app.appId}`)
-    const progressCacheFileName = `${app.appId.toLowerCase()}:${pluginId}`
+    datelog(
+      `Starting with partner:${partnerId} plugin:${pluginId}, app: ${app.appId}`
+    )
+    const progressCacheFileName = `${app.appId.toLowerCase()}:${partnerId}`
     const out = await dbProgress.get(progressCacheFileName).catch(e => {
       if (e.error != null && e.error === 'not_found') {
         datelog(
-          `Previous Progress Record Not Found ${app.appId.toLowerCase()}_${pluginId}`
+          `Previous Progress Record Not Found ${app.appId.toLowerCase()}_${partnerId}`
         )
         return {}
       } else {
@@ -354,9 +264,9 @@ async function runPlugin(
     }
 
     // set apiKeys and settings for use in partner's function
-    const apiKeys = app.pluginIds[pluginId]
+    const { apiKeys } = app.partnerIds[partnerId]
     const settings = progressSettings.progressCache
-    datelog(`Querying ${app.appId.toLowerCase()}_${pluginId}`)
+    datelog(`Querying ${app.appId.toLowerCase()}_${partnerId}`)
     // run the plugin function
     const result = await promiseTimeout(
       'queryFunc',
@@ -365,11 +275,11 @@ async function runPlugin(
         settings
       })
     )
-    datelog(`Successful query: ${app.appId.toLowerCase()}_${pluginId}`)
+    datelog(`Successful query: ${app.appId.toLowerCase()}_${partnerId}`)
 
     await promiseTimeout(
       'insertTransactions',
-      insertTransactions(result.transactions, `${app.appId}_${pluginId}`)
+      insertTransactions(result.transactions, `${app.appId}_${partnerId}`)
     )
     progressSettings.progressCache = result.settings
     progressSettings._id = progressCacheFileName
@@ -379,11 +289,11 @@ async function runPlugin(
     )
     // Returning a successful completion message
     const completionTime = (Date.now() - start) / 1000
-    const successfulCompletionMessage = `Successful update: ${app.appId.toLowerCase()}_${pluginId} in ${completionTime} seconds.`
+    const successfulCompletionMessage = `Successful update: ${app.appId.toLowerCase()}_${partnerId} in ${completionTime} seconds.`
     datelog(successfulCompletionMessage)
     return successfulCompletionMessage
   } catch (e) {
-    errorText = `Error: ${app.appId.toLowerCase()}_${pluginId}. Error message: ${e}`
+    errorText = `Error: ${app.appId.toLowerCase()}_${partnerId}. Error message: ${e}`
     datelog(errorText)
     return errorText
   }

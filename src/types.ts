@@ -1,4 +1,5 @@
 import {
+  asArray,
   asMap,
   asNumber,
   asObject,
@@ -76,6 +77,57 @@ export const asStandardPluginParams = asObject({
     apiKey: asOptional(asString)
   })
 })
+
+const asPartnerInfo = asObject({
+  pluginId: asOptional(asString),
+  apiKeys: asMap(asString)
+})
+
+export const asApp = asObject({
+  _id: asString,
+  _rev: asString,
+  appId: asString,
+  appName: asString,
+  partnerIds: asMap(asPartnerInfo)
+})
+
+export const asApps = asArray(asApp)
+const asCacheEntry = asObject({
+  timestamp: asNumber,
+  usdValue: asNumber,
+  numTxs: asNumber,
+  currencyCodes: asObject(asNumber),
+  currencyPairs: asObject(asNumber)
+})
+
+export const asCacheQuery = asObject({
+  docs: asArray(asCacheEntry)
+})
+
+export const asBucket = asObject({
+  start: asNumber,
+  usdValue: asNumber,
+  numTxs: asNumber,
+  isoDate: asString,
+  currencyCodes: asObject(asNumber),
+  currencyPairs: asObject(asNumber)
+})
+
+export const asAnalyticsResult = asObject({
+  result: asObject({
+    hour: asArray(asBucket),
+    day: asArray(asBucket),
+    month: asArray(asBucket),
+    numAllTxs: asNumber
+  }),
+  app: asString,
+  partnerId: asString,
+  start: asNumber,
+  end: asNumber
+})
+
+export type Bucket = ReturnType<typeof asBucket>
+export type AnalyticsResult = ReturnType<typeof asAnalyticsResult>
 
 export type CurrencyCodeMappings = ReturnType<typeof asCurrencyCodeMappings>
 export type DbCurrencyCodeMappings = ReturnType<typeof asDbCurrencyCodeMappings>

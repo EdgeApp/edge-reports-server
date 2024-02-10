@@ -1,12 +1,12 @@
 // import bodyParser from 'body-parser'
-import { asArray, asMap, asObject, asOptional, asString } from 'cleaners'
+import { asArray, asObject, asOptional, asString } from 'cleaners'
 import cors from 'cors'
 import express from 'express'
 import nano from 'nano'
 
-import config from '../config.json'
+import { config } from './config'
 import { cacheAnalytic } from './dbutils'
-import { asDbTx } from './types'
+import { asApps, asDbTx } from './types'
 
 const asAnalyticsReq = asObject({
   start: asString,
@@ -34,17 +34,16 @@ const asCheckTxsFetch = asArray(
   })
 )
 
-const asApp = asObject({
-  _id: asString,
-  appId: asString
-})
-const asApps = asArray(asApp)
-
 const asPluginIdsReq = asObject({
   appId: asString
 })
-const asPluginIdsDbReq = asObject({
-  pluginIds: asMap(asMap(asString))
+const asPartnerIdsDbReq = asObject({
+  partnerIds: asObject(
+    asObject({
+      pluginId: asOptional(asString),
+      apiKeys: asObject(asString)
+    })
+  )
 })
 
 const asAppIdReq = asObject({
@@ -80,9 +79,9 @@ async function main(): Promise<void> {
     selector: {
       appId: { $exists: true }
     },
-    fields: ['_id', 'appId'],
     limit: 1000000
   }
+
   const rawApps = await reportsApps.find(query)
   const apps = asApps(rawApps.docs)
 
@@ -179,19 +178,19 @@ async function main(): Promise<void> {
       selector: {
         appId: { $eq: queryResult.appId.toLowerCase() }
       },
-      fields: ['pluginIds'],
+      fields: ['partnerIds'],
       limit: 1
     }
-    let pluginNames
+    let partnerIds
     try {
       const rawApp = await reportsApps.find(query)
-      const app = asPluginIdsDbReq(rawApp.docs[0])
-      pluginNames = Object.keys(app.pluginIds)
+      const app = asPartnerIdsDbReq(rawApp.docs[0])
+      partnerIds = Object.keys(app.partnerIds)
     } catch (e) {
       res.status(404).send(`App ID not found.`)
       return
     }
-    res.json(pluginNames)
+    res.json(partnerIds)
   })
 
   app.get('/v1/getAppId/', async function(req, res) {

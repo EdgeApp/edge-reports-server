@@ -5,6 +5,7 @@ const logo = new URL('../images/logo.png', import.meta.url).toString()
 interface SidetabProps {
   appId?: string
   serverName: string
+  children: React.ReactNode
 }
 
 const logoStyle = {

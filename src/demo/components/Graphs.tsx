@@ -10,18 +10,14 @@ import {
   YAxis
 } from 'recharts'
 
-import { addObject, createQuarterBuckets, sevenDayDataMerge } from '../../util'
+import { AnalyticsResult, Bucket } from '../../types'
+import {
+  addObject,
+  createQuarterBuckets,
+  sevenDayDataMerge
+} from '../clientUtil'
 import Partners from '../partners'
 import Modal from './Modal'
-
-export interface Bucket {
-  start: number
-  usdValue: number
-  numTxs: number
-  isoDate: string
-  currencyCodes: { [currencyCode: string]: number }
-  currencyPairs: { [currencyPair: string]: number }
-}
 
 export interface Data {
   date: string
@@ -33,19 +29,6 @@ export interface Data {
 
 export interface DataPlusSevenDayAve extends Data {
   sevenDayAve: number
-}
-
-export interface AnalyticsResult {
-  result: {
-    hour: Bucket[]
-    day: Bucket[]
-    month: Bucket[]
-    numAllTxs: number
-  }
-  app: string
-  pluginId: string
-  start: number
-  end: number
 }
 
 interface BarData {
@@ -103,7 +86,8 @@ const Graphs: any = (props: {
           ? createQuarterBuckets(analytics)
           : analytics.result[timePeriod]
       const graphName =
-        analytics.pluginId.charAt(0).toUpperCase() + analytics.pluginId.slice(1)
+        analytics.partnerId.charAt(0).toUpperCase() +
+        analytics.partnerId.slice(1)
       bars.push(
         <Bar
           key={index}
@@ -111,7 +95,7 @@ const Graphs: any = (props: {
           stackId="a"
           dataKey={graphName}
           barSize={20}
-          fill={Partners[analytics.pluginId].color}
+          fill={Partners[analytics.partnerId].color}
           onMouseOver={() => {
             tooltip = graphName
           }}
@@ -142,7 +126,7 @@ const Graphs: any = (props: {
         totalTxs += numTxs
         prev[start][graphName] = usdValue
         prev[start][`${graphName}NumTxs`] = numTxs
-        prev[start][`${graphName}Color`] = Partners[analytics.pluginId].color
+        prev[start][`${graphName}Color`] = Partners[analytics.partnerId].color
       }
       return prev
     },
@@ -208,7 +192,6 @@ const Graphs: any = (props: {
               stroke="#000000"
               allowDecimals={false}
             />
-            {/* @ts-ignore */}
             <Tooltip
               animationDuration={0}
               content={({ active, payload }) => {

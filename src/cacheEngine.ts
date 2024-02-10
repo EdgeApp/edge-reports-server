@@ -1,92 +1,27 @@
-import { asArray, asMap, asObject, asString } from 'cleaners'
 import startOfMonth from 'date-fns/startOfMonth'
 import sub from 'date-fns/sub'
 import nano from 'nano'
 
-import config from '../config.json'
+import { config } from './config'
 import { getAnalytic } from './dbutils'
+import { initDbs } from './initDbs'
+import { asApps } from './types'
 import { datelog, snooze } from './util'
 
 const CACHE_UPDATE_LOOKBACK_MONTHS = config.cacheLookbackMonths ?? 3
 
 const BULK_WRITE_SIZE = 50
 const UPDATE_FREQUENCY_MS = 1000 * 60 * 30
-const asApp = asObject({
-  _id: asString,
-  appId: asString,
-  pluginIds: asMap(asMap(asString))
-})
-const asApps = asArray(asApp)
 
 const nanoDb = nano(config.couchDbFullpath)
 
-const DB_NAMES = [
-  {
-    name: 'reports_hour',
-    options: { partitioned: true },
-    indexes: [
-      {
-        index: { fields: ['timestamp'] },
-        ddoc: 'timestamp-index',
-        name: 'timestamp-index',
-        type: 'json' as 'json',
-        partitioned: true
-      }
-    ]
-  },
-  {
-    name: 'reports_day',
-    options: { partitioned: true },
-    indexes: [
-      {
-        index: { fields: ['timestamp'] },
-        ddoc: 'timestamp-index',
-        name: 'timestamp-index',
-        type: 'json' as 'json',
-        partitioned: true
-      }
-    ]
-  },
-  {
-    name: 'reports_month',
-    options: { partitioned: true },
-    indexes: [
-      {
-        index: { fields: ['timestamp'] },
-        ddoc: 'timestamp-index',
-        name: 'timestamp-index',
-        type: 'json' as 'json',
-        partitioned: true
-      }
-    ]
-  }
-]
 const TIME_PERIODS = ['hour', 'day', 'month']
 
 export async function cacheEngine(): Promise<void> {
   datelog('Starting Cache Engine')
   console.time('cacheEngine')
-  // get a list of all databases within couchdb
-  const result = await nanoDb.db.list()
-  datelog(result)
-  // if database does not exist, create it
-  for (const dbName of DB_NAMES) {
-    if (result.includes(dbName.name) === false) {
-      await nanoDb.db.create(dbName.name, dbName.options)
-    }
-    if (dbName.indexes !== undefined) {
-      const currentDb = nanoDb.db.use(dbName.name)
-      for (const dbIndex of dbName.indexes) {
-        try {
-          await currentDb.get(`_design/${dbIndex.ddoc}`)
-          datelog(`${dbName.name} already has '${dbIndex.name}' index.`)
-        } catch {
-          await currentDb.createIndex(dbIndex)
-          datelog(`Created '${dbIndex.name}' index for ${dbName.name}.`)
-        }
-      }
-    }
-  }
+
+  await initDbs()
 
   const reportsApps = nanoDb.use('reports_apps')
   const reportsTransactions = nanoDb.use('reports_transactions')
@@ -112,24 +47,29 @@ export async function cacheEngine(): Promise<void> {
       selector: {
         appId: { $exists: true }
       },
-      fields: ['_id', 'appId', 'pluginIds'],
       limit: 1000000
     }
     const rawApps = await reportsApps.find(query)
     const apps = asApps(rawApps.docs)
     for (const app of apps) {
-      if (config.soloAppId != null && config.soloAppId !== app.appId) continue
+      if (config.soloAppIds != null && !config.soloAppIds.includes(app.appId)) {
+        continue
+      }
+      const partnerIds = Object.keys(app.partnerIds)
 
-      const keys = Object.keys(app.pluginIds)
-
-      for (const key of keys) {
-        if (config.soloPluginId != null && config.soloPluginId !== key) continue
+      for (const partnerId of partnerIds) {
+        if (
+          config.soloPartnerIds != null &&
+          !config.soloPartnerIds.includes(partnerId)
+        ) {
+          continue
+        }
         for (const timePeriod of TIME_PERIODS) {
           const data = await getAnalytic(
             start,
             end,
             app.appId,
-            [key],
+            [partnerId],
             timePeriod,
             reportsTransactions
           )
@@ -137,7 +77,7 @@ export async function cacheEngine(): Promise<void> {
           if (data.length > 0) {
             const cacheResult = data[0].result[timePeriod].map(bucket => {
               return {
-                _id: `${app.appId}_${key}:${bucket.isoDate}`,
+                _id: `${app.appId}_${partnerId}:${bucket.isoDate}`,
                 timestamp: bucket.start,
                 usdValue: bucket.usdValue,
                 numTxs: bucket.numTxs,
@@ -169,7 +109,7 @@ export async function cacheEngine(): Promise<void> {
               }
 
               datelog(
-                `Update cache db ${timePeriod} cache for ${app.appId}_${key}. length = ${cacheResult.length}`
+                `Update cache db ${timePeriod} cache for ${app.appId}_${partnerId}. length = ${cacheResult.length}`
               )
 
               for (
@@ -190,7 +130,7 @@ export async function cacheEngine(): Promise<void> {
               }
 
               datelog(
-                `Finished updating ${timePeriod} cache for ${app.appId}_${key}`
+                `Finished updating ${timePeriod} cache for ${app.appId}_${partnerId}`
               )
             } catch (e) {
               datelog('Error doing bulk cache update', e)

@@ -1,3 +1,4 @@
+/* eslint-disable react/no-children-prop */
 import 'regenerator-runtime/runtime'
 import 'react-datepicker/dist/react-datepicker.css'
 import './demo.css'
@@ -5,10 +6,11 @@ import './demo.css'
 import { instanceOf } from 'prop-types'
 import React, { Component } from 'react'
 import { Cookies, withCookies } from 'react-cookie'
-import { HashRouter, Route, Switch } from 'react-router-dom'
+import { HashRouter, Route, RouteChildrenProps, Switch } from 'react-router-dom'
 
+import { apiHost } from './clientUtil'
 import ApiKeyScreen from './components/ApiKeyScreen'
-import Custom from './components/Custom'
+import Custom, { CustomRouteProps } from './components/Custom'
 import { MainScene } from './components/MainScene'
 import Preset from './components/Preset'
 import Sidebar from './components/Sidebar'
@@ -63,8 +65,8 @@ class App extends Component<
     }
   }
 
-  handleApiKeyChange = (apiKey: any): void => {
-    this.setState({ apiKey: apiKey.target.value })
+  onHandleApiKeyChange = (apiKey: string): void => {
+    this.setState({ apiKey })
   }
 
   changeTimeperiod = (timePeriod: string): void => {
@@ -76,7 +78,7 @@ class App extends Component<
   }
 
   getAppId = async (): Promise<void> => {
-    const url = `/v1/getAppId?apiKey=${this.state.apiKey}`
+    const url = `${apiHost}/v1/getAppId?apiKey=${this.state.apiKey}`
     const response = await fetch(url)
     if (response.status === 400) {
       this.setState({ apiKeyMessage: 'Invalid API Key.' })
@@ -94,7 +96,7 @@ class App extends Component<
 
   async getPluginIds(): Promise<void> {
     const partners = Object.keys(Partners)
-    const url = `/v1/getPluginIds?appId=${this.state.appId}`
+    const url = `${apiHost}/v1/getPluginIds?appId=${this.state.appId}`
     const response = await fetch(url)
     const json = await response.json()
     const existingPartners = json.filter(pluginId =>
@@ -131,7 +133,7 @@ class App extends Component<
                 children={
                   <ApiKeyScreen
                     apiKeyMessage={this.state.apiKeyMessage}
-                    handleApiKeyChange={e => this.handleApiKeyChange(e)}
+                    handleApiKeyChange={this.onHandleApiKeyChange}
                     getAppId={this.getAppId}
                     appId={this.state.appId}
                   />
@@ -150,7 +152,7 @@ class App extends Component<
               <Route
                 exact
                 path="/custom/:start?/:end?"
-                children={props => {
+                children={(props: RouteChildrenProps<CustomRouteProps>) => {
                   return props.match != null ? (
                     <>
                       <TimePeriods

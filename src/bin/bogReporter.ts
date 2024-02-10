@@ -1,11 +1,10 @@
 import fetch from 'node-fetch'
 
-import CONFIG from '../../config.json'
+import { config } from '../config'
 
-// @ts-ignore
-const BITS_OF_GOLD_API_KEY = CONFIG.bog.apiKey
+const BITS_OF_GOLD_API_KEY = config.bog.apiKey
 
-const dateRegex = RegExp(/([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))/)
+const dateRegex = /([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))/
 
 async function queryBog(): Promise<void> {
   // Grab args and verify format
@@ -53,7 +52,7 @@ async function queryBog(): Promise<void> {
         )
       }
     } catch (e) {
-      console.log(e.message)
+      console.log(String(e))
     }
   }
   // Print totals
@@ -71,7 +70,7 @@ async function queryFiatRate(
       method: 'GET'
     }
   )
-  if (result.ok !== true) {
+  if (!result.ok) {
     throw new Error(`queryFiatRate failed with status code ${result.status}`)
   }
   const json = await result.json()
@@ -88,7 +87,7 @@ async function queryCryptoRate(
       method: 'GET'
     }
   )
-  if (result.ok !== true) {
+  if (!result.ok) {
     throw new Error(`queryCryptoRate failed with status code ${result.status}`)
   }
   const json = await result.json()

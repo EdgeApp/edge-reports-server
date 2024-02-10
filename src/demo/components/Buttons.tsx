@@ -52,7 +52,10 @@ interface buttonProps {
   onClick: () => void
 }
 
-export class MainButton extends PureComponent<buttonProps, {}> {
+export class MainButton extends PureComponent<
+  { label: string; onClick: () => void },
+  {}
+> {
   render(): JSX.Element {
     return (
       <button style={mainButton} onClick={() => this.props.onClick()}>
