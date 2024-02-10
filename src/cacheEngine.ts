@@ -2,8 +2,9 @@ import startOfMonth from 'date-fns/startOfMonth'
 import sub from 'date-fns/sub'
 import nano from 'nano'
 
+import { getAnalytics } from './apiAnalytics'
 import { config } from './config'
-import { getAnalytic } from './dbutils'
+import { asDbReq } from './dbutils'
 import { initDbs } from './initDbs'
 import { asApps } from './types'
 import { datelog, snooze } from './util'
@@ -64,15 +65,52 @@ export async function cacheEngine(): Promise<void> {
         ) {
           continue
         }
+
+        const query = {
+          selector: {
+            status: { $eq: 'complete' },
+            usdValue: { $gte: 0 },
+            timestamp: { $gte: start, $lt: end }
+          },
+          fields: [
+            'orderId',
+            'depositCurrency',
+            'payoutCurrency',
+            'timestamp',
+            'usdValue'
+          ],
+          use_index: 'timestamp-p',
+          sort: ['timestamp'],
+          limit: 1000000
+        }
+        const appAndPartnerId = `${app.appId}_${partnerId}`
+        let data
+        try {
+          data = await reportsTransactions.partitionedFind(
+            appAndPartnerId,
+            query
+          )
+        } catch (e) {
+          datelog('Error fetching transactions', e)
+          console.error(e)
+          continue
+        }
+
+        const dbReq = asDbReq(data)
+        const dbTxs = dbReq.docs
+
         for (const timePeriod of TIME_PERIODS) {
-          const result = await getAnalytic(
+          const analytic = getAnalytics(
+            dbTxs,
             start,
             end,
             app.appId,
-            partnerId,
-            timePeriod,
-            reportsTransactions
+            appAndPartnerId,
+            timePeriod
           )
+          const { result } = analytic
+          if (result.numAllTxs === 0) continue
+
           // Create cache docs
           if (result != null) {
             const cacheResult = result[timePeriod].map(bucket => {
