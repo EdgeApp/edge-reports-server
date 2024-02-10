@@ -9,7 +9,7 @@ import { datelog, promiseTimeout } from './util'
 const BATCH_ADVANCE = 100
 const SIX_DAYS_IN_SECONDS = 6 * 24 * 60 * 60
 
-const asDbReq = asObject({
+export const asDbReq = asObject({
   docs: asArray(
     asObject({
       orderId: asString,
@@ -20,6 +20,8 @@ const asDbReq = asObject({
     })
   )
 })
+
+export type DbReq = ReturnType<typeof asDbReq>
 
 export const pagination = async <T>(
   txArray: any[],
@@ -48,53 +50,6 @@ export const pagination = async <T>(
     }
   }
   datelog(`total errors: ${numErrors}`)
-}
-
-export const getAnalytic = async (
-  start: number,
-  end: number,
-  appId: string,
-  partnerId: string,
-  timePeriod: string,
-  transactionDatabase: any
-): Promise<AnalyticsResult | undefined> => {
-  const query = {
-    selector: {
-      status: { $eq: 'complete' },
-      usdValue: { $gte: 0 },
-      timestamp: { $gte: start, $lt: end }
-    },
-    fields: [
-      'orderId',
-      'depositCurrency',
-      'payoutCurrency',
-      'timestamp',
-      'usdValue'
-    ],
-    use_index: 'timestamp-p',
-    sort: ['timestamp'],
-    limit: 1000000
-  }
-  try {
-    const appAndPartnerId = `${appId}_${partnerId}`
-    const data = await transactionDatabase.partitionedFind(
-      appAndPartnerId,
-      query
-    )
-
-    const analytic = getAnalytics(
-      asDbReq(data).docs,
-      start,
-      end,
-      appId,
-      appAndPartnerId,
-      timePeriod
-    )
-    return analytic.result.numAllTxs > 0 ? analytic : undefined
-  } catch (e) {
-    console.log(e)
-    throw new Error(`getAnalytic: Internal server error.`)
-  }
 }
 
 export const cacheAnalytic = async (
