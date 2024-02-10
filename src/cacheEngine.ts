@@ -65,17 +65,17 @@ export async function cacheEngine(): Promise<void> {
           continue
         }
         for (const timePeriod of TIME_PERIODS) {
-          const data = await getAnalytic(
+          const result = await getAnalytic(
             start,
             end,
             app.appId,
-            [partnerId],
+            partnerId,
             timePeriod,
             reportsTransactions
           )
           // Create cache docs
-          if (data.length > 0) {
-            const cacheResult = data[0].result[timePeriod].map(bucket => {
+          if (result != null) {
+            const cacheResult = result[timePeriod].map(bucket => {
               return {
                 _id: `${app.appId}_${partnerId}:${bucket.isoDate}`,
                 timestamp: bucket.start,

@@ -54,10 +54,10 @@ export const getAnalytic = async (
   start: number,
   end: number,
   appId: string,
-  partnerIds: string[],
+  partnerId: string,
   timePeriod: string,
   transactionDatabase: any
-): Promise<any> => {
+): Promise<AnalyticsResult | undefined> => {
   const query = {
     selector: {
       status: { $eq: 'complete' },
@@ -75,41 +75,25 @@ export const getAnalytic = async (
     sort: ['timestamp'],
     limit: 1000000
   }
-  const results: any[] = []
-  const promises: Array<Promise<any>> = []
   try {
-    for (const partnerId of partnerIds) {
-      const appAndPartnerId = `${appId}_${partnerId}`
-      const result = transactionDatabase
-        .partitionedFind(appAndPartnerId, query)
-        .then(data => {
-          const analytic = getAnalytics(
-            asDbReq(data).docs,
-            start,
-            end,
-            appId,
-            appAndPartnerId,
-            timePeriod
-          )
-          if (analytic.result.numAllTxs > 0) results.push(analytic)
-        })
-      promises.push(result)
-    }
-    console.time(`${appId} promiseAll`)
-    await Promise.all(promises)
-    console.timeEnd(`${appId} promiseAll`)
-    return results.sort((a, b) => {
-      if (a.pluginId < b.pluginId) {
-        return -1
-      }
-      if (a.pluginId > b.pluginId) {
-        return 1
-      }
-      return 0
-    })
+    const appAndPartnerId = `${appId}_${partnerId}`
+    const data = await transactionDatabase.partitionedFind(
+      appAndPartnerId,
+      query
+    )
+
+    const analytic = getAnalytics(
+      asDbReq(data).docs,
+      start,
+      end,
+      appId,
+      appAndPartnerId,
+      timePeriod
+    )
+    return analytic.result.numAllTxs > 0 ? analytic : undefined
   } catch (e) {
     console.log(e)
-    return `Internal server error.`
+    throw new Error(`getAnalytic: Internal server error.`)
   }
 }
 
