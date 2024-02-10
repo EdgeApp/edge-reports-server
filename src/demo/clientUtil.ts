@@ -8,10 +8,13 @@ import sub from 'date-fns/sub'
 import { getTimezoneOffset } from 'date-fns-tz'
 import fetch from 'node-fetch'
 
+import clientConfigRaw from '../../clientConfig.json'
 import { AnalyticsResult, asAnalyticsResult, Bucket } from '../types'
-import { clientConfig } from './clientConfig'
+import { asClientConfig } from './clientConfig'
 import { Data, DataPlusSevenDayAve } from './components/Graphs'
 import Partners from './partners'
+
+const clientConfig = asClientConfig(clientConfigRaw)
 
 export const SIX_DAYS = 6
 
