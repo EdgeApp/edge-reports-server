@@ -13,6 +13,7 @@ const CACHE_UPDATE_LOOKBACK_MONTHS = config.cacheLookbackMonths ?? 3
 
 const BULK_WRITE_SIZE = 50
 const UPDATE_FREQUENCY_MS = 1000 * 60 * 30
+const CACHE_UPDATE_BLOCK_S = 60 * 60 * 24 * 60 // 60 days
 
 const nanoDb = nano(config.couchDbFullpath)
 
@@ -66,53 +67,62 @@ export async function cacheEngine(): Promise<void> {
           continue
         }
 
-        const query = {
-          selector: {
-            status: { $eq: 'complete' },
-            usdValue: { $gte: 0 },
-            timestamp: { $gte: start, $lt: end }
-          },
-          fields: [
-            'orderId',
-            'depositCurrency',
-            'payoutCurrency',
-            'timestamp',
-            'usdValue'
-          ],
-          use_index: 'timestamp-p',
-          sort: ['timestamp'],
-          limit: 1000000
-        }
-        const appAndPartnerId = `${app.appId}_${partnerId}`
-        let data
-        try {
-          data = await reportsTransactions.partitionedFind(
-            appAndPartnerId,
-            query
-          )
-        } catch (e) {
-          datelog('Error fetching transactions', e)
-          console.error(e)
-          continue
-        }
+        for (
+          let localStart = start;
+          localStart < end + CACHE_UPDATE_BLOCK_S;
+          localStart += CACHE_UPDATE_BLOCK_S
+        ) {
+          const localEnd = localStart + CACHE_UPDATE_BLOCK_S
 
-        const dbReq = asDbReq(data)
-        const dbTxs = dbReq.docs
+          const query = {
+            selector: {
+              status: { $eq: 'complete' },
+              usdValue: { $gte: 0 },
+              timestamp: { $gte: localStart, $lt: localEnd }
+            },
+            fields: [
+              'orderId',
+              'depositCurrency',
+              'payoutCurrency',
+              'timestamp',
+              'usdValue'
+            ],
+            use_index: 'timestamp-p',
+            sort: ['timestamp'],
+            limit: 1000000
+          }
+          const appAndPartnerId = `${app.appId}_${partnerId}`
 
-        for (const timePeriod of TIME_PERIODS) {
+          let data
+          try {
+            data = await reportsTransactions.partitionedFind(
+              appAndPartnerId,
+              query
+            )
+          } catch (e) {
+            datelog('Error fetching transactions', e)
+            console.error(e)
+            continue
+          }
+
+          const dbReq = asDbReq(data)
+          const dbTxs = dbReq.docs
+
+          if (dbTxs.length === 0) continue
+
           const analytic = getAnalytics(
             dbTxs,
-            start,
-            end,
+            localStart,
+            localEnd,
             app.appId,
             appAndPartnerId,
-            timePeriod
+            TIME_PERIODS.join(',')
           )
           const { result } = analytic
+          if (result == null) continue
           if (result.numAllTxs === 0) continue
-
-          // Create cache docs
-          if (result != null) {
+          for (const timePeriod of TIME_PERIODS) {
+            // Create cache docs
             const cacheResult = result[timePeriod].map(bucket => {
               return {
                 _id: `${app.appId}_${partnerId}:${bucket.isoDate}`,
@@ -131,7 +141,7 @@ export async function cacheEngine(): Promise<void> {
                 database = reportsMonth
               }
               // Fetch existing _revs of cache
-              if (start !== new Date(2017, 1, 20).getTime() / 1000) {
+              if (localStart !== new Date(2017, 1, 20).getTime() / 1000) {
                 const documentIds = cacheResult.map(cache => {
                   return cache._id
                 })
@@ -151,24 +161,26 @@ export async function cacheEngine(): Promise<void> {
               )
 
               for (
-                let start = 0;
-                start < cacheResult.length;
-                start += BULK_WRITE_SIZE
+                let writeStart = 0;
+                writeStart < cacheResult.length;
+                writeStart += BULK_WRITE_SIZE
               ) {
-                const end =
-                  start + BULK_WRITE_SIZE > cacheResult.length
+                const writeEnd =
+                  writeStart + BULK_WRITE_SIZE > cacheResult.length
                     ? cacheResult.length
-                    : start + BULK_WRITE_SIZE
+                    : writeStart + BULK_WRITE_SIZE
                 // datelog(`Bulk writing docs ${start} to ${end - 1}`)
-                const docs = cacheResult.slice(start, end)
+                const docs = cacheResult.slice(writeStart, writeEnd)
                 datelog(
-                  `Bulk writing docs ${start} to ${end} of ${cacheResult.length.toString()}`
+                  `Bulk writing docs ${writeStart} to ${writeEnd} of ${cacheResult.length.toString()}`
                 )
                 await database.bulk({ docs })
               }
 
+              const dateStart = new Date(localStart * 1000).toISOString()
+              const dateEnd = new Date(localEnd * 1000).toISOString()
               datelog(
-                `Finished updating ${timePeriod} cache for ${app.appId}_${partnerId}`
+                `Finished updating ${timePeriod} ${dateStart} ${dateEnd} cache for ${app.appId}_${partnerId}`
               )
             } catch (e) {
               datelog('Error doing bulk cache update', e)
