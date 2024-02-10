@@ -5,7 +5,7 @@ import { datelog } from './util'
 
 const nanoDb = nano(config.couchDbFullpath)
 
-const INDEXES: string[][] = [
+const transactionIndexFields: string[][] = [
   ['isoDate'],
   ['status'],
   ['status', 'depositCurrency', 'isoDate'],
@@ -26,25 +26,26 @@ interface Index {
   partitioned: boolean
 }
 
-const indexes: Index[] = []
+const transactionIndexes: Index[] = []
 
-INDEXES.forEach(index => {
+transactionIndexFields.forEach(index => {
   const indexLower = index.map(i => i.toLowerCase())
-  const out = {
+  const out: Index = {
     index: { fields: index },
     ddoc: indexLower.join('-'),
     name: indexLower.join('-'),
-    type: 'json' as 'json',
+    type: 'json',
     partitioned: false
   }
-  indexes.push(out)
-  out.ddoc += '-p'
-  out.name += '-p'
-  out.partitioned = true
-  indexes.push(out)
+  transactionIndexes.push(out)
+  const out2 = { ...out }
+  out2.ddoc += '-p'
+  out2.name += '-p'
+  out2.partitioned = true
+  transactionIndexes.push(out2)
 })
 
-const cacheIndexes = [
+const cacheIndexes: Index[] = [
   {
     index: { fields: ['timestamp'] },
     ddoc: 'timestamp-p',
@@ -62,7 +63,7 @@ const DB_NAMES = [
   {
     name: 'reports_transactions',
     options,
-    indexes
+    indexes: transactionIndexes
   },
   { name: 'reports_progresscache', options },
   {

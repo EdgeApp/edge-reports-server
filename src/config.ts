@@ -8,8 +8,8 @@ export const asConfig = asObject({
   ),
   httpPort: asOptional(asNumber, 8008),
   bog: asOptional(asObject({ apiKey: asString }), { apiKey: '' }),
-  soloAppIds: asOptional(asArray(asString), undefined),
-  soloPartnerIds: asOptional(asArray(asString), undefined),
+  soloAppIds: asOptional(asArray(asString), null),
+  soloPartnerIds: asOptional(asArray(asString), null),
   timeoutOverrideMins: asOptional(asNumber, 1200),
   cacheLookbackMonths: asOptional(asNumber, 24)
 })

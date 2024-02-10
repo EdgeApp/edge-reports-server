@@ -81,7 +81,7 @@ async function main(): Promise<void> {
     },
     limit: 1000000
   }
-  console.log(config)
+
   const rawApps = await reportsApps.find(query)
   const apps = asApps(rawApps.docs)
 
