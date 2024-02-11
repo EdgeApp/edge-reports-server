@@ -43,16 +43,6 @@ export async function cacheEngine(): Promise<void> {
     const now = new Date().toISOString()
     const end = getStartOfMonthsFromNow(now, 1).toISOString()
 
-    try {
-      await reportsMonth.get('initialized:initialized')
-      start = getStartOfMonthsAgo(
-        now,
-        CACHE_UPDATE_LOOKBACK_MONTHS
-      ).toISOString()
-    } catch (e) {
-      start = birthdayStart
-    }
-
     const query = {
       selector: {
         appId: { $exists: true }
@@ -73,6 +63,19 @@ export async function cacheEngine(): Promise<void> {
           !config.soloPartnerIds.includes(partnerId)
         ) {
           continue
+        }
+
+        const appAndPartnerId = `${app.appId}_${partnerId}`
+        const initializedDocId = `${appAndPartnerId}:00000000_initialized`
+
+        try {
+          await reportsMonth.get(initializedDocId)
+          start = getStartOfMonthsAgo(
+            now,
+            CACHE_UPDATE_LOOKBACK_MONTHS
+          ).toISOString()
+        } catch (e) {
+          start = birthdayStart
         }
 
         for (
@@ -107,7 +110,6 @@ export async function cacheEngine(): Promise<void> {
             sort: ['timestamp'],
             limit: 1000000
           }
-          const appAndPartnerId = `${app.appId}_${partnerId}`
 
           let data
           try {
@@ -203,20 +205,19 @@ export async function cacheEngine(): Promise<void> {
             }
           }
         }
-      }
-    }
-    try {
-      await reportsMonth.get('initialized:initialized')
-      datelog('Cache Update Complete.')
-    } catch {
-      try {
-        await reportsMonth
-          .insert({ _id: 'initialized:initialized' })
-          .then(() => {
-            datelog('Cache Initialized.')
-          })
-      } catch {
-        datelog('Failed to Create Initialized Marker.')
+
+        try {
+          await reportsMonth.get(initializedDocId)
+          datelog(`${initializedDocId} Cache Update Complete`)
+        } catch {
+          try {
+            await reportsMonth.insert({ _id: initializedDocId }).then(() => {
+              datelog(`${initializedDocId} Initialized Marker Created`)
+            })
+          } catch {
+            datelog(`${initializedDocId} Initialized Marker Creation Failed`)
+          }
+        }
       }
     }
     console.timeEnd('cacheEngine')
