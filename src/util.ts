@@ -93,3 +93,24 @@ export const retryFetch = async (
   }
   throw err
 }
+
+export const getStartOfMonthsAgo = (
+  dateString: string,
+  months: number
+): Date => {
+  const date = new Date(dateString)
+  const result: Date = new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - months, 1)
+  )
+  return result
+}
+
+export const getStartOfMonthsFromNow = (
+  dateString: string,
+  months: number
+): Date => {
+  const date = new Date(dateString)
+  const year = date.getUTCFullYear()
+  const month = date.getUTCMonth()
+  return new Date(Date.UTC(year, month + months, 1, 0, 0, 0, 0))
+}
