@@ -15,7 +15,8 @@ const transactionIndexFields: string[][] = [
   ['status', 'payoutCurrency', 'isoDate'],
   ['status', 'usdValue'],
   ['status', 'usdvalue', 'timestamp'],
-  ['usdValue']
+  ['usdValue'],
+  ['timestamp']
 ]
 
 interface Index {
