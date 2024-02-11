@@ -1,5 +1,3 @@
-import startOfMonth from 'date-fns/startOfMonth'
-import sub from 'date-fns/sub'
 import nano from 'nano'
 
 import { getAnalytics } from './apiAnalytics'
@@ -7,17 +5,26 @@ import { config } from './config'
 import { asDbReq } from './dbutils'
 import { initDbs } from './initDbs'
 import { asApps } from './types'
-import { datelog, snooze } from './util'
+import {
+  datelog,
+  getStartOfMonthsAgo,
+  getStartOfMonthsFromNow,
+  snooze
+} from './util'
 
 const CACHE_UPDATE_LOOKBACK_MONTHS = config.cacheLookbackMonths ?? 3
 
 const BULK_WRITE_SIZE = 50
 const UPDATE_FREQUENCY_MS = 1000 * 60 * 30
-const CACHE_UPDATE_BLOCK_S = 60 * 60 * 24 * 60 // 60 days
+const CACHE_UPDATE_BLOCK_MONTHS = 3
 
 const nanoDb = nano(config.couchDbFullpath)
 
 const TIME_PERIODS = ['hour', 'day', 'month']
+const birthdayStart = getStartOfMonthsAgo(
+  new Date('2017-01Z').toISOString(),
+  0
+).toISOString()
 
 export async function cacheEngine(): Promise<void> {
   datelog('Starting Cache Engine')
@@ -32,17 +39,18 @@ export async function cacheEngine(): Promise<void> {
   const reportsMonth = nanoDb.use('reports_month')
 
   while (true) {
-    let start
-    const end = new Date(Date.now()).getTime() / 1000
+    let start: string
+    const now = new Date().toISOString()
+    const end = getStartOfMonthsFromNow(now, 1).toISOString()
 
     try {
       await reportsMonth.get('initialized:initialized')
-      const monthStart = startOfMonth(new Date(Date.now()))
-      start =
-        sub(monthStart, { months: CACHE_UPDATE_LOOKBACK_MONTHS }).getTime() /
-        1000
+      start = getStartOfMonthsAgo(
+        now,
+        CACHE_UPDATE_LOOKBACK_MONTHS
+      ).toISOString()
     } catch (e) {
-      start = new Date(2017, 1, 20).getTime() / 1000
+      start = birthdayStart
     }
 
     const query = {
@@ -68,17 +76,25 @@ export async function cacheEngine(): Promise<void> {
         }
 
         for (
-          let localStart = start;
-          localStart < end + CACHE_UPDATE_BLOCK_S;
-          localStart += CACHE_UPDATE_BLOCK_S
+          let localStart: string = start;
+          localStart < end;
+          localStart = getStartOfMonthsFromNow(
+            localStart,
+            CACHE_UPDATE_BLOCK_MONTHS
+          ).toISOString()
         ) {
-          const localEnd = localStart + CACHE_UPDATE_BLOCK_S
+          const localEnd = getStartOfMonthsFromNow(
+            localStart,
+            CACHE_UPDATE_BLOCK_MONTHS
+          ).toISOString()
 
+          const tsStart = new Date(localStart).getTime() / 1000
+          const tsEnd = new Date(localEnd).getTime() / 1000
           const query = {
             selector: {
               status: { $eq: 'complete' },
               usdValue: { $gte: 0 },
-              timestamp: { $gte: localStart, $lt: localEnd }
+              timestamp: { $gte: tsStart, $lt: tsEnd }
             },
             fields: [
               'orderId',
@@ -95,6 +111,7 @@ export async function cacheEngine(): Promise<void> {
 
           let data
           try {
+            datelog('find txs', appAndPartnerId, localStart, localEnd)
             data = await reportsTransactions.partitionedFind(
               appAndPartnerId,
               query
@@ -102,7 +119,7 @@ export async function cacheEngine(): Promise<void> {
           } catch (e) {
             datelog('Error fetching transactions', e)
             console.error(e)
-            continue
+            break
           }
 
           const dbReq = asDbReq(data)
@@ -112,8 +129,8 @@ export async function cacheEngine(): Promise<void> {
 
           const analytic = getAnalytics(
             dbTxs,
-            localStart,
-            localEnd,
+            tsStart,
+            tsEnd,
             app.appId,
             appAndPartnerId,
             TIME_PERIODS.join(',')
@@ -141,7 +158,7 @@ export async function cacheEngine(): Promise<void> {
                 database = reportsMonth
               }
               // Fetch existing _revs of cache
-              if (localStart !== new Date(2017, 1, 20).getTime() / 1000) {
+              if (localStart !== birthdayStart) {
                 const documentIds = cacheResult.map(cache => {
                   return cache._id
                 })
@@ -177,10 +194,8 @@ export async function cacheEngine(): Promise<void> {
                 await database.bulk({ docs })
               }
 
-              const dateStart = new Date(localStart * 1000).toISOString()
-              const dateEnd = new Date(localEnd * 1000).toISOString()
               datelog(
-                `Finished updating ${timePeriod} ${dateStart} ${dateEnd} cache for ${app.appId}_${partnerId}`
+                `Finished updating ${timePeriod} ${localStart} ${localEnd} cache for ${app.appId}_${partnerId}`
               )
             } catch (e) {
               datelog('Error doing bulk cache update', e)
