@@ -1,4 +1,4 @@
-import { bns } from 'biggystring'
+import { div } from 'biggystring'
 import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
 import Web3 from 'web3'
@@ -394,7 +394,7 @@ export async function queryTotle(
             depositAddress: receipt.from,
             depositCurrency: sourceToken.symbol,
             depositAmount: parseFloat(
-              bns.div(
+              div(
                 sourceAmount.toString(),
                 (10 ** sourceToken.decimals).toString(),
                 10,
@@ -405,7 +405,7 @@ export async function queryTotle(
             payoutAddress: receipt.to,
             payoutCurrency: destinationToken.symbol,
             payoutAmount: parseFloat(
-              bns.div(
+              div(
                 destinationAmount.toString(),
                 (10 ** destinationToken.decimals).toString(),
                 10,

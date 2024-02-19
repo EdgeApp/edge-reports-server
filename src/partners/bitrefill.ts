@@ -1,4 +1,4 @@
-import { bns } from 'biggystring'
+import { div } from 'biggystring'
 import {
   asArray,
   asBoolean,
@@ -36,7 +36,7 @@ const asBitrefillResult = asObject({
   orders: asArray(asUnknown)
 })
 
-const div: { [key: string]: string } = {
+const multipliers: { [key: string]: string } = {
   BTC: '100000000',
   ETH: '1000000',
   LTC: '100000000',
@@ -93,8 +93,8 @@ export async function queryBitrefill(
 
         let inputAmountStr = tx.satoshiPrice?.toString()
         const inputCurrency: string = tx.coinCurrency.toUpperCase()
-        if (typeof div[inputCurrency] !== 'string') {
-          datelog(inputCurrency + ' has no div')
+        if (typeof multipliers[inputCurrency] !== 'string') {
+          datelog(inputCurrency + ' has no multipliers')
           break
         }
         if (typeof inputCurrency === 'string' && inputCurrency !== 'BTC') {
@@ -104,7 +104,7 @@ export async function queryBitrefill(
           break
         }
         const inputAmountNum = parseFloat(
-          bns.div(inputAmountStr, div[inputCurrency], 8)
+          div(inputAmountStr, multipliers[inputCurrency], 8)
         )
         const ssTx: StandardTx = {
           status: 'complete',
