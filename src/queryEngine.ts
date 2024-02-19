@@ -19,6 +19,7 @@ import { ioniaGiftCards } from './partners/ioniagiftcard'
 import { ioniaVisaRewards } from './partners/ioniavisarewards'
 import { letsexchange } from './partners/letsexchange'
 import { libertyx } from './partners/libertyx'
+import { lifi } from './partners/lifi'
 import { moonpay } from './partners/moonpay'
 import { paytrie } from './partners/paytrie'
 import { safello } from './partners/safello'
@@ -52,6 +53,7 @@ const plugins = [
   ioniaGiftCards,
   letsexchange,
   libertyx,
+  lifi,
   moonpay,
   paytrie,
   safello,
