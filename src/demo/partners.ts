@@ -73,6 +73,10 @@ export default {
     type: 'fiat',
     color: '#6381F5'
   },
+  kado: {
+    type: 'fiat',
+    color: '#9AB4F9'
+  },
   letsexchange: {
     type: 'swap',
     color: '#1A1438'
