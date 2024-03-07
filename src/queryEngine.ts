@@ -17,6 +17,7 @@ import { gebo } from './partners/gebo'
 import { godex } from './partners/godex'
 import { ioniaGiftCards } from './partners/ioniagiftcard'
 import { ioniaVisaRewards } from './partners/ioniavisarewards'
+import { kado } from './partners/kado'
 import { letsexchange } from './partners/letsexchange'
 import { libertyx } from './partners/libertyx'
 import { moonpay } from './partners/moonpay'
@@ -50,6 +51,7 @@ const plugins = [
   godex,
   ioniaVisaRewards,
   ioniaGiftCards,
+  kado,
   letsexchange,
   libertyx,
   moonpay,
