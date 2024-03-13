@@ -5,10 +5,18 @@ import { config } from './config'
 export const SIX_DAYS = 6
 
 const CURRENCY_CONVERSION = {
+  AWCBEP20: 'AWC',
+  AWCBSC: 'AWC',
+  DAIMATIC: 'DAI',
+  ETHOP: 'ETH',
+  WBTCMATIC: 'WBTC',
+  USDCERC20: 'USDC',
   USDT20: 'USDT',
   USDTERC20: 'USDT',
   USDTPOLYGON: 'USDT',
   USDCPOLYGON: 'USDC',
+  USDCTRC20: 'USDC',
+  USDTTRC20: 'USDT',
   ZADDR: 'ZEC',
   BCHABC: 'BCH',
   BCHSV: 'BSV',
@@ -92,4 +100,25 @@ export const retryFetch = async (
     }
   }
   throw err
+}
+
+export const getStartOfMonthsAgo = (
+  dateString: string,
+  months: number
+): Date => {
+  const date = new Date(dateString)
+  const year = date.getUTCFullYear()
+  const month = date.getUTCMonth()
+
+  return new Date(Date.UTC(year, month - months, 1))
+}
+
+export const getStartOfMonthsFromNow = (
+  dateString: string,
+  months: number
+): Date => {
+  const date = new Date(dateString)
+  const year = date.getUTCFullYear()
+  const month = date.getUTCMonth()
+  return new Date(Date.UTC(year, month + months, 1, 0, 0, 0, 0))
 }

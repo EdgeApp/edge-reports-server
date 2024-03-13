@@ -1,3 +1,5 @@
+import { AnalyticsResult } from './types'
+
 interface UtcValues {
   y: number
   m: number
@@ -20,19 +22,6 @@ interface Bucket {
   isoDate: string
   currencyCodes: { [currencyCode: string]: number }
   currencyPairs: { [currencyPair: string]: number }
-}
-
-interface AnalyticsResult {
-  result: {
-    hour: Bucket[]
-    day: Bucket[]
-    month: Bucket[]
-    numAllTxs: number
-  }
-  appId: string
-  partnerId: string
-  start: number
-  end: number
 }
 
 export const getAnalytics = (
@@ -126,14 +115,14 @@ export const getAnalytics = (
     }
   }
 
-  const analyticsResult = {
+  const analyticsResult: AnalyticsResult = {
     result: {
       month: monthArray,
       day: dayArray,
       hour: hourArray,
       numAllTxs: txs.length
     },
-    appId,
+    app: appId,
     partnerId,
     start: start,
     end: end

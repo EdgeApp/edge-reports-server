@@ -9,7 +9,7 @@ import { datelog, promiseTimeout } from './util'
 const BATCH_ADVANCE = 100
 const SIX_DAYS_IN_SECONDS = 6 * 24 * 60 * 60
 
-const asDbReq = asObject({
+export const asDbReq = asObject({
   docs: asArray(
     asObject({
       orderId: asString,
@@ -20,6 +20,8 @@ const asDbReq = asObject({
     })
   )
 })
+
+export type DbReq = ReturnType<typeof asDbReq>
 
 export const pagination = async <T>(
   txArray: any[],
@@ -48,69 +50,6 @@ export const pagination = async <T>(
     }
   }
   datelog(`total errors: ${numErrors}`)
-}
-
-export const getAnalytic = async (
-  start: number,
-  end: number,
-  appId: string,
-  partnerIds: string[],
-  timePeriod: string,
-  transactionDatabase: any
-): Promise<any> => {
-  const query = {
-    selector: {
-      status: { $eq: 'complete' },
-      usdValue: { $gte: 0 },
-      timestamp: { $gte: start, $lt: end }
-    },
-    fields: [
-      'orderId',
-      'depositCurrency',
-      'payoutCurrency',
-      'timestamp',
-      'usdValue'
-    ],
-    use_index: 'timestamp-p',
-    sort: ['timestamp'],
-    limit: 1000000
-  }
-  const results: any[] = []
-  const promises: Array<Promise<any>> = []
-  try {
-    for (const partnerId of partnerIds) {
-      const appAndPartnerId = `${appId}_${partnerId}`
-      const result = transactionDatabase
-        .partitionedFind(appAndPartnerId, query)
-        .then(data => {
-          const analytic = getAnalytics(
-            asDbReq(data).docs,
-            start,
-            end,
-            appId,
-            appAndPartnerId,
-            timePeriod
-          )
-          if (analytic.result.numAllTxs > 0) results.push(analytic)
-        })
-      promises.push(result)
-    }
-    console.time(`${appId} promiseAll`)
-    await Promise.all(promises)
-    console.timeEnd(`${appId} promiseAll`)
-    return results.sort((a, b) => {
-      if (a.pluginId < b.pluginId) {
-        return -1
-      }
-      if (a.pluginId > b.pluginId) {
-        return 1
-      }
-      return 0
-    })
-  } catch (e) {
-    console.log(e)
-    return `Internal server error.`
-  }
 }
 
 export const cacheAnalytic = async (
