@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- added: Add Lifi reporting
 - changed: Paginate caching engine to prevent timeouts
 - changed: Create caching engine 'initialized' document entry for each app:partner pair
 

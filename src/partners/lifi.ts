@@ -10,6 +10,7 @@ import {
 
 import {
   asStandardPluginParams,
+  EDGE_APP_START_DATE,
   PartnerPlugin,
   PluginParams,
   PluginResult,
@@ -18,6 +19,7 @@ import {
 } from '../types'
 import { datelog, retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
 
+const PLUGIN_START_DATE = '2023-01-01T00:00:00.000Z'
 const asStatuses = asMaybe(asValue('DONE'), 'other')
 const asToken = asObject({
   // address: asString,
@@ -85,8 +87,8 @@ export async function queryLifi(
   const { apiKey } = apiKeys
   let { latestIsoDate } = settings
 
-  if (latestIsoDate === '2018-01-01T00:00:00.000Z') {
-    latestIsoDate = new Date('2023-01-01T00:00:00.000Z').toISOString()
+  if (latestIsoDate === EDGE_APP_START_DATE) {
+    latestIsoDate = new Date(PLUGIN_START_DATE).toISOString()
   }
 
   let lastCheckedTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK

@@ -9,6 +9,9 @@ import {
   asValue
 } from 'cleaners'
 
+/** Earliest date that transactions may show in Edge */
+export const EDGE_APP_START_DATE = '2018-01-01T00:00:00.000Z'
+
 export const asPluginParams = asObject({
   settings: asMap((raw: any): any => raw),
   apiKeys: asMap((raw: any): any => raw)
@@ -71,7 +74,7 @@ export const asDbCurrencyCodeMappings = asObject({
 
 export const asStandardPluginParams = asObject({
   settings: asObject({
-    latestIsoDate: asOptional(asString, '2018-01-01T00:00:00.000Z')
+    latestIsoDate: asOptional(asString, EDGE_APP_START_DATE)
   }),
   apiKeys: asObject({
     apiKey: asOptional(asString)
