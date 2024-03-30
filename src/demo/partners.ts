@@ -89,6 +89,10 @@ export default {
     type: 'fiat',
     color: '#7214F5'
   },
+  paybis: {
+    type: 'fiat',
+    color: '#FFB400'
+  },
   paytrie: {
     type: 'fiat',
     color: '#99A5DE'

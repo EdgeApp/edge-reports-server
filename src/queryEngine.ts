@@ -21,6 +21,7 @@ import { letsexchange } from './partners/letsexchange'
 import { libertyx } from './partners/libertyx'
 import { lifi } from './partners/lifi'
 import { moonpay } from './partners/moonpay'
+import { paybis } from './partners/paybis'
 import { paytrie } from './partners/paytrie'
 import { safello } from './partners/safello'
 import { sideshift } from './partners/sideshift'
@@ -55,6 +56,7 @@ const plugins = [
   libertyx,
   lifi,
   moonpay,
+  paybis,
   paytrie,
   safello,
   sideshift,
