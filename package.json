@@ -11,7 +11,7 @@
     "build.lib": "sucrase -q -t typescript,imports,jsx -d ./lib ./src",
     "build.types": "tsc",
     "build.dist": "parcel build",
-    "clean": "rimraf lib dist",
+    "clean": "rimraf lib dist .parcel-cache",
     "fix": "npm run lint -- --fix",
     "fio:promo": "node -r sucrase/register src/bin/fioPromo/fioPromo.ts",
     "precommit": "lint-staged && npm run prepare",
