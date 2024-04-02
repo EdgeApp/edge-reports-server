@@ -35,16 +35,16 @@ const asToken = asObject({
 const asTransaction = asObject({
   txHash: asString,
   // txLink: asString,
-  amount: asString,
-  token: asToken,
+  // amount: asString,
+  token: asOptional(asToken),
   // chainId: asNumber,
   // gasPrice: asString,
   // gasUsed: asString,
-  // gasToken: asToken,
+  gasToken: asOptional(asToken),
   // gasAmount: asString,
   // gasAmountUSD: asString,
   amountUSD: asOptional(asString),
-  // value: asString,
+  value: asString,
   timestamp: asOptional(asNumber)
 })
 
@@ -121,22 +121,27 @@ export async function queryLifi(
         }
         const { isoDate, timestamp } = smartIsoDateFromTimestamp(txTimestamp)
 
+        const depositToken = tx.sending.token ?? tx.sending.gasToken
+        const payoutToken = tx.receiving.token ?? tx.receiving.gasToken
+        if (depositToken == null || payoutToken == null) {
+          throw new Error('Missing token details')
+        }
         const depositAmount =
-          Number(tx.sending.amount) / 10 ** tx.sending.token.decimals
+          Number(tx.sending.value) / 10 ** depositToken.decimals
 
         const payoutAmount =
-          Number(tx.receiving.amount) / 10 ** tx.receiving.token.decimals
+          Number(tx.receiving.value) / 10 ** payoutToken.decimals
 
         const ssTx: StandardTx = {
           status: statusMap[tx.status],
           orderId: tx.sending.txHash,
           depositTxid: tx.sending.txHash,
           depositAddress: undefined,
-          depositCurrency: tx.sending.token.symbol,
+          depositCurrency: depositToken.symbol,
           depositAmount,
           payoutTxid: undefined,
           payoutAddress: tx.toAddress,
-          payoutCurrency: tx.receiving.token.symbol,
+          payoutCurrency: payoutToken.symbol,
           payoutAmount,
           timestamp,
           isoDate,
