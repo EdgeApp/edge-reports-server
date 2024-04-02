@@ -9,6 +9,7 @@ import {
 } from 'cleaners'
 
 import {
+  EDGE_APP_START_DATE,
   PartnerPlugin,
   PluginParams,
   PluginResult,
@@ -19,7 +20,7 @@ import { datelog, retryFetch, smartIsoDateFromTimestamp } from '../util'
 
 export const asLetsExchangePluginParams = asObject({
   settings: asObject({
-    latestIsoDate: asOptional(asString, '2018-01-01T00:00:00.000Z')
+    latestIsoDate: asOptional(asString, EDGE_APP_START_DATE)
   }),
   apiKeys: asObject({
     affiliateId: asOptional(asString),

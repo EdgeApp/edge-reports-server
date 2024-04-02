@@ -12,6 +12,7 @@ import crypto from 'crypto'
 import { Response } from 'node-fetch'
 
 import {
+  EDGE_APP_START_DATE,
   PartnerPlugin,
   PluginParams,
   PluginResult,
@@ -22,7 +23,7 @@ import { datelog, retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
 
 export const asBanxaParams = asObject({
   settings: asObject({
-    latestIsoDate: asOptional(asString, '2018-01-01T00:00:00.000Z')
+    latestIsoDate: asOptional(asString, EDGE_APP_START_DATE)
   }),
   apiKeys: asObject({
     apiKey: asString,

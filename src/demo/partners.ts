@@ -81,6 +81,10 @@ export default {
     type: 'fiat',
     color: '#2551E8'
   },
+  lifi: {
+    type: 'swap',
+    color: '#EBB8FA'
+  },
   moonpay: {
     type: 'fiat',
     color: '#7214F5'
