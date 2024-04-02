@@ -19,6 +19,11 @@ const transactionIndexFields: string[][] = [
   ['timestamp']
 ]
 
+const transactionIndexFieldsNoPartition: string[][] = [
+  ['depositAddress'],
+  ['payoutAddress']
+]
+
 interface Index {
   index: { fields: string[] }
   ddoc: string
@@ -44,6 +49,18 @@ transactionIndexFields.forEach(index => {
   out2.name += '-p'
   out2.partitioned = true
   transactionIndexes.push(out2)
+})
+
+transactionIndexFieldsNoPartition.forEach(index => {
+  const indexLower = index.map(i => i.toLowerCase())
+  const out: Index = {
+    index: { fields: index },
+    ddoc: indexLower.join('-'),
+    name: indexLower.join('-'),
+    type: 'json',
+    partitioned: false
+  }
+  transactionIndexes.push(out)
 })
 
 const cacheIndexes: Index[] = [
