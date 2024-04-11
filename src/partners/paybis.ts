@@ -154,6 +154,12 @@ export async function queryPaybis(
 ): Promise<PluginResult> {
   const { settings, apiKeys } = asStandardPluginParams(pluginParams)
   const { apiKey } = apiKeys
+  const nowDate = new Date()
+  const now = nowDate.getTime()
+  const nowMidnightDate = new Date(nowDate)
+  nowMidnightDate.setUTCHours(0, 0, 0, 0)
+  const nowMidnight = nowMidnightDate.getTime()
+
   let { latestIsoDate } = settings
 
   if (latestIsoDate === EDGE_APP_START_DATE) {
@@ -169,7 +175,6 @@ export async function queryPaybis(
 
   while (true) {
     const endTime = startTime + QUERY_TIME_BLOCK_MS
-    const now = Date.now()
 
     try {
       let cursor: string | undefined
@@ -177,11 +182,15 @@ export async function queryPaybis(
       while (true) {
         const urlObj = new URL(URLS.prod, true)
 
+        // From value cannot exceed midnight of the current day
+        const fromTime = startTime > nowMidnight ? nowMidnight : startTime
+
         const queryParams: any = {
-          from: new Date(startTime).toISOString(),
+          from: new Date(fromTime).toISOString(),
           to: new Date(endTime).toISOString(),
           limit: QUERY_LIMIT_TXS
         }
+        datelog(`Querying from:${queryParams.from} to:${queryParams.to}`)
         if (cursor != null) queryParams.cursor = cursor
 
         urlObj.set('query', queryParams)
