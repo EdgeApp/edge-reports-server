@@ -122,3 +122,11 @@ export const getStartOfMonthsFromNow = (
   const month = date.getUTCMonth()
   return new Date(Date.UTC(year, month + months, 1, 0, 0, 0, 0))
 }
+
+/**
+ * Parses number strings, treating blank inputs as 0
+ */
+export const safeParseFloat = (val: string): number => {
+  if (val === '') return 0
+  return parseFloat(val)
+}

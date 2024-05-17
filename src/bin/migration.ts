@@ -15,7 +15,7 @@ import nano from 'nano'
 
 import { pagination } from '../dbutils'
 import { DbTx, StandardTx } from '../types'
-import { datelog } from '../util'
+import { datelog, safeParseFloat } from '../util'
 
 const config = js.readFileSync('./config.json')
 
@@ -143,7 +143,9 @@ async function migration(): Promise<void> {
                   payoutTxid: cleanedShapeshiftTx.outputTXID,
                   payoutAddress: cleanedShapeshiftTx.outputAddress,
                   payoutCurrency: cleanedShapeshiftTx.outputCurrency,
-                  payoutAmount: parseFloat(cleanedShapeshiftTx.outputAmount),
+                  payoutAmount: safeParseFloat(
+                    cleanedShapeshiftTx.outputAmount
+                  ),
                   timestamp: cleanedShapeshiftTx.timestamp,
                   isoDate: new Date(
                     cleanedShapeshiftTx.timestamp * 1000
@@ -161,7 +163,7 @@ async function migration(): Promise<void> {
               const timestamp =
                 typeof cleanedOldTx.timestamp === 'number'
                   ? cleanedOldTx.timestamp
-                  : parseFloat(cleanedOldTx.timestamp)
+                  : safeParseFloat(cleanedOldTx.timestamp)
               const isoDate = new Date(timestamp * 1000).toISOString()
               const depositAddress =
                 typeof cleanedOldTx.inputAddress === 'string' &&
@@ -175,11 +177,11 @@ async function migration(): Promise<void> {
               const depositAmount =
                 typeof cleanedOldTx.inputAmount === 'number'
                   ? cleanedOldTx.inputAmount
-                  : parseFloat(cleanedOldTx.inputAmount)
+                  : safeParseFloat(cleanedOldTx.inputAmount)
               const payoutAmount =
                 typeof cleanedOldTx.outputAmount === 'number'
                   ? cleanedOldTx.outputAmount
-                  : parseFloat(cleanedOldTx.outputAmount)
+                  : safeParseFloat(cleanedOldTx.outputAmount)
               const newTx: StandardTx = {
                 orderId: cleanedOldTx.inputTXID,
                 depositTxid: undefined,

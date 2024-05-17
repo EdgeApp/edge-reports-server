@@ -16,7 +16,12 @@ import {
   StandardTx,
   Status
 } from '../types'
-import { datelog, retryFetch, smartIsoDateFromTimestamp } from '../util'
+import {
+  datelog,
+  retryFetch,
+  safeParseFloat,
+  smartIsoDateFromTimestamp
+} from '../util'
 
 export const asLetsExchangePluginParams = asObject({
   settings: asObject({
@@ -126,11 +131,11 @@ export async function queryLetsExchange(
           depositTxid: tx.hash_in,
           depositAddress: tx.deposit,
           depositCurrency: tx.coin_from.toUpperCase(),
-          depositAmount: parseFloat(tx.deposit_amount),
+          depositAmount: safeParseFloat(tx.deposit_amount),
           payoutTxid: undefined,
           payoutAddress: tx.withdrawal,
           payoutCurrency: tx.coin_to.toUpperCase(),
-          payoutAmount: parseFloat(tx.withdrawal_amount),
+          payoutAmount: safeParseFloat(tx.withdrawal_amount),
           timestamp,
           isoDate,
           usdValue: -1,

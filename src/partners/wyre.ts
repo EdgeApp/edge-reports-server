@@ -2,6 +2,7 @@ import { asNumber, asObject, asOptional, asString } from 'cleaners'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import { safeParseFloat } from '../util'
 
 const asWyreTx = asObject({
   id: asString,
@@ -96,14 +97,14 @@ export async function queryWyre(
         depositTxid: undefined,
         depositAddress: undefined,
         depositCurrency: tx.sourceCurrency,
-        depositAmount: parseFloat(tx.sourceAmount),
+        depositAmount: safeParseFloat(tx.sourceAmount),
         payoutTxid: undefined,
         payoutAddress: undefined,
         payoutCurrency: tx.destCurrency,
-        payoutAmount: parseFloat(tx.destAmount),
+        payoutAmount: safeParseFloat(tx.destAmount),
         timestamp: dateMs / 1000,
         isoDate: date.toISOString(),
-        usdValue: parseFloat(tx.usdEquiv),
+        usdValue: safeParseFloat(tx.usdEquiv),
         rawTx: txStr
       }
 

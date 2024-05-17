@@ -1,6 +1,7 @@
 import fetch from 'node-fetch'
 
 import { config } from '../config'
+import { safeParseFloat } from '../util'
 
 const BITS_OF_GOLD_API_KEY = config.bog.apiKey
 
@@ -74,7 +75,7 @@ async function queryFiatRate(
     throw new Error(`queryFiatRate failed with status code ${result.status}`)
   }
   const json = await result.json()
-  return parseFloat(json.exchangeRate)
+  return safeParseFloat(json.exchangeRate)
 }
 
 async function queryCryptoRate(
@@ -91,7 +92,7 @@ async function queryCryptoRate(
     throw new Error(`queryCryptoRate failed with status code ${result.status}`)
   }
   const json = await result.json()
-  return parseFloat(json.exchangeRate)
+  return safeParseFloat(json.exchangeRate)
 }
 
 queryBog().catch(e => console.log(e))

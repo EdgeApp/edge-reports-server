@@ -11,7 +11,7 @@ import {
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog } from '../util'
+import { datelog, safeParseFloat } from '../util'
 
 const asBitrefillTx = asObject({
   paymentReceived: asBoolean,
@@ -103,7 +103,7 @@ export async function queryBitrefill(
         if (inputAmountStr == null) {
           break
         }
-        const inputAmountNum = parseFloat(
+        const inputAmountNum = safeParseFloat(
           div(inputAmountStr, multipliers[inputCurrency], 8)
         )
         const ssTx: StandardTx = {

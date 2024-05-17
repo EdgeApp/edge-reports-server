@@ -16,7 +16,12 @@ import {
   StandardTx,
   Status
 } from '../types'
-import { datelog, retryFetch, smartIsoDateFromTimestamp } from '../util'
+import {
+  datelog,
+  retryFetch,
+  safeParseFloat,
+  smartIsoDateFromTimestamp
+} from '../util'
 
 const asChangeHeroStatus = asMaybe(asValue('finished', 'expired'), 'other')
 
@@ -127,11 +132,11 @@ export async function queryChangeHero(
           depositTxid: tx.payinHash,
           depositAddress: tx.payinAddress,
           depositCurrency: tx.currencyFrom.toUpperCase(),
-          depositAmount: parseFloat(tx.amountFrom),
+          depositAmount: safeParseFloat(tx.amountFrom),
           payoutTxid: tx.payoutHash,
           payoutAddress: tx.payoutAddress,
           payoutCurrency: tx.currencyTo.toUpperCase(),
-          payoutAmount: parseFloat(tx.amountTo),
+          payoutAmount: safeParseFloat(tx.amountTo),
           timestamp: tx.createdAt,
           isoDate: smartIsoDateFromTimestamp(tx.createdAt).isoDate,
           usdValue: -1,

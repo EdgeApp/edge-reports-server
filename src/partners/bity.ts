@@ -2,7 +2,7 @@ import { asArray, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog } from '../util'
+import { datelog, safeParseFloat } from '../util'
 
 const asBityTx = asObject({
   id: asString,
@@ -123,11 +123,11 @@ export async function queryBity(
           depositTxid: undefined,
           depositAddress: undefined,
           depositCurrency: tx.input.currency.toUpperCase(),
-          depositAmount: parseFloat(tx.input.amount),
+          depositAmount: safeParseFloat(tx.input.amount),
           payoutTxid: undefined,
           payoutAddress: undefined,
           payoutCurrency: tx.output.currency.toUpperCase(),
-          payoutAmount: parseFloat(tx.output.amount),
+          payoutAmount: safeParseFloat(tx.output.amount),
           timestamp: Date.parse(tx.timestamp_created.concat('Z')) / 1000,
           isoDate: new Date(tx.timestamp_created.concat('Z')).toISOString(),
           usdValue: -1,

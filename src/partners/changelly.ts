@@ -2,7 +2,7 @@ import Changelly from 'api-changelly/lib.js'
 import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog } from '../util'
+import { datelog, safeParseFloat } from '../util'
 
 const asChangellyTx = asObject({
   id: asString,
@@ -138,11 +138,11 @@ export async function queryChangelly(
             depositTxid: tx.payinHash,
             depositAddress: tx.payinAddress,
             depositCurrency: tx.currencyFrom.toUpperCase(),
-            depositAmount: parseFloat(tx.amountFrom),
+            depositAmount: safeParseFloat(tx.amountFrom),
             payoutTxid: tx.payoutHash,
             payoutAddress: tx.payoutAddress,
             payoutCurrency: tx.currencyTo.toUpperCase(),
-            payoutAmount: parseFloat(tx.amountTo),
+            payoutAmount: safeParseFloat(tx.amountTo),
             timestamp: tx.createdAt,
             isoDate: new Date(tx.createdAt * 1000).toISOString(),
             usdValue: -1,

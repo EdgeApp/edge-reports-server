@@ -9,7 +9,7 @@ import {
   CurrencyCodeMappings,
   DbTx
 } from './types'
-import { datelog, standardizeNames } from './util'
+import { datelog, safeParseFloat, standardizeNames } from './util'
 
 const nanoDb = nano(config.couchDbFullpath)
 const QUERY_FREQ_MS = 15000
@@ -222,7 +222,7 @@ async function getExchangeRate(
     datelog(
       `Rate for ${currencyA} -> ${currencyB} ${date}: ${jsonObj.exchangeRate}`
     )
-    return parseFloat(jsonObj.exchangeRate)
+    return safeParseFloat(jsonObj.exchangeRate)
   } catch (e) {
     datelog(
       `Could not not get exchange rate for ${currencyA} and ${currencyB} at ${date}.`,

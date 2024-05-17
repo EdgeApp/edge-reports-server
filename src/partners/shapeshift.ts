@@ -2,7 +2,7 @@ import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog } from '../util'
+import { datelog, safeParseFloat } from '../util'
 
 const asShapeshiftTx = asObject({
   orderId: asString,
@@ -63,7 +63,7 @@ export async function queryShapeshift(
           payoutTxid: tx.outputTXID,
           payoutAddress: tx.outputAddress,
           payoutCurrency: tx.outputCurrency,
-          payoutAmount: parseFloat(tx.outputAmount),
+          payoutAmount: safeParseFloat(tx.outputAmount),
           timestamp: tx.timestamp,
           isoDate: new Date(tx.timestamp * 1000).toISOString(),
           usdValue: -1,
