@@ -7,7 +7,7 @@ import fetch from 'node-fetch'
 // import fetch from 'node-fetch'
 import config from '../../config.json'
 import { asDbTx, DbTx } from '../types'
-import { datelog, standardizeNames } from '../util'
+import { datelog, safeParseFloat, standardizeNames } from '../util'
 
 const nanoDb = nano(config.couchDbFullpath)
 const QUERY_LIMIT = 100
@@ -201,7 +201,7 @@ async function getExchangeRate(
     datelog(
       `Rate for ${currencyA} -> ${currencyB} ${date}: ${jsonObj.exchangeRate}`
     )
-    return parseFloat(jsonObj.exchangeRate)
+    return safeParseFloat(jsonObj.exchangeRate)
   } catch (e) {
     datelog(
       `Could not not get exchange rate for ${currencyA} and ${currencyB} at ${date}.`,

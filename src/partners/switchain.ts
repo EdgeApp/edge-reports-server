@@ -2,7 +2,7 @@ import { asArray, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog } from '../util'
+import { datelog, safeParseFloat } from '../util'
 
 const asSwitchainTx = asObject({
   id: asString,
@@ -78,11 +78,11 @@ export async function querySwitchain(
           depositTxid: tx.depositTxId,
           depositAddress: tx.depositAddress,
           depositCurrency: pair[0].toUpperCase(),
-          depositAmount: parseFloat(tx.amountFrom),
+          depositAmount: safeParseFloat(tx.amountFrom),
           payoutTxid: tx.withdrawTxId,
           payoutAddress: tx.withdrawAddress,
           payoutCurrency: pair[1].toUpperCase(),
-          payoutAmount: parseFloat(tx.rate),
+          payoutAmount: safeParseFloat(tx.rate),
           timestamp: timestamp / 1000,
           isoDate: tx.createdAt,
           usdValue: -1,

@@ -38,16 +38,24 @@ const asStatus = asValue(
   'refunded',
   'other'
 )
+
+const asSafeNumber = (raw: any): number => {
+  if (isNaN(raw) || raw === null) {
+    return 0
+  }
+  return asNumber(raw)
+}
+
 const standardTxFields = {
   orderId: asString,
   depositTxid: asOptional(asString),
   depositAddress: asOptional(asString),
   depositCurrency: asString,
-  depositAmount: asNumber,
+  depositAmount: asSafeNumber,
   payoutTxid: asOptional(asString),
   payoutAddress: asOptional(asString),
   payoutCurrency: asString,
-  payoutAmount: asNumber,
+  payoutAmount: asSafeNumber,
   status: asStatus,
   isoDate: asString,
   timestamp: asNumber,

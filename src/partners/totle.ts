@@ -4,7 +4,7 @@ import fetch from 'node-fetch'
 import Web3 from 'web3'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog } from '../util'
+import { datelog, safeParseFloat } from '../util'
 
 const asCurrentBlockResult = asNumber
 
@@ -393,7 +393,7 @@ export async function queryTotle(
             depositTxid: receipt.transactionHash,
             depositAddress: receipt.from,
             depositCurrency: sourceToken.symbol,
-            depositAmount: parseFloat(
+            depositAmount: safeParseFloat(
               div(
                 sourceAmount.toString(),
                 (10 ** sourceToken.decimals).toString(),
@@ -404,7 +404,7 @@ export async function queryTotle(
             payoutTxid: receipt.transactionHash,
             payoutAddress: receipt.to,
             payoutCurrency: destinationToken.symbol,
-            payoutAmount: parseFloat(
+            payoutAmount: safeParseFloat(
               div(
                 destinationAmount.toString(),
                 (10 ** destinationToken.decimals).toString(),

@@ -11,6 +11,7 @@ import {
 } from 'cleaners'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import { safeParseFloat } from '../util'
 
 const asSimplexTx = asObject({
   amount_usd: asString,
@@ -111,14 +112,14 @@ export async function querySimplex(
           depositTxid: undefined,
           depositAddress: undefined,
           depositCurrency: tx.currency,
-          depositAmount: parseFloat(tx.fiat_total_amount),
+          depositAmount: safeParseFloat(tx.fiat_total_amount),
           payoutTxid: undefined,
           payoutAddress: undefined,
           payoutCurrency: tx.crypto_currency,
-          payoutAmount: parseFloat(tx.amount_crypto),
+          payoutAmount: safeParseFloat(tx.amount_crypto),
           timestamp,
           isoDate: new Date(timestamp * 1000).toISOString(),
-          usdValue: parseFloat(tx.amount_usd),
+          usdValue: safeParseFloat(tx.amount_usd),
           rawTx
         }
         ssFormatTxs.push(ssTx)
