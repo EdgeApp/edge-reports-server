@@ -97,6 +97,9 @@ export const queryChangeNow = async (
       const result = await response.json()
       const txs = asChangeNowResult(result).exchanges
 
+      if (txs.length === 0) {
+        break
+      }
       for (const rawTx of txs) {
         let tx: ChangeNowTx
         try {
@@ -130,11 +133,8 @@ export const queryChangeNow = async (
           latestIsoDate = ssTx.isoDate
         }
       }
-      datelog(`ChangeNow latestIsoDate ${latestIsoDate}`)
-      offset += LIMIT
-      if (txs.length < LIMIT) {
-        break
-      }
+      datelog(`ChangeNow offset ${offset} latestIsoDate ${latestIsoDate}`)
+      offset += txs.length
       retry = 0
     } catch (e) {
       datelog(e)
