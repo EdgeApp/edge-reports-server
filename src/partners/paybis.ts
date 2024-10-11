@@ -130,7 +130,7 @@ const QUERY_LIMIT_TXS = 50
  * How far to rollback from the last successful query
  * date when starting a new query
  */
-const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 30 // 30 days
+const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 7 // 30 days
 
 /** Time period to query per loop */
 const QUERY_TIME_BLOCK_MS = QUERY_LOOKBACK
