@@ -65,156 +65,175 @@ const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 const LIMIT = 50
 const THORCHAIN_MULTIPLIER = 100000000
 
-export const queryThorchain = async (
-  pluginParams: PluginParams
-): Promise<PluginResult> => {
-  const ssFormatTxs: StandardTx[] = []
+interface ThorchainInfo {
+  pluginName: string
+  pluginId: string
+  midgardUrl: string
+}
 
-  const { settings, apiKeys } = asThorchainPluginParams(pluginParams)
-  const { thorchainAddress } = apiKeys
-  let { latestIsoDate } = settings
+const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
+  const { midgardUrl, pluginId, pluginName } = info
+  const queryThorchain = async (
+    pluginParams: PluginParams
+  ): Promise<PluginResult> => {
+    const ssFormatTxs: StandardTx[] = []
 
-  let previousTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
-  if (previousTimestamp < 0) previousTimestamp = 0
-  const previousLatestIsoDate = new Date(previousTimestamp).toISOString()
+    const { settings, apiKeys } = asThorchainPluginParams(pluginParams)
+    const { thorchainAddress } = apiKeys
+    let { latestIsoDate } = settings
 
-  let done = false
-  let oldestIsoDate = new Date(99999999999999).toISOString()
+    let previousTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
+    if (previousTimestamp < 0) previousTimestamp = 0
+    const previousLatestIsoDate = new Date(previousTimestamp).toISOString()
 
-  let offset = 0
+    let done = false
+    let oldestIsoDate = new Date(99999999999999).toISOString()
 
-  while (!done) {
-    const url = `https://midgard.ninerealms.com/v2/actions?address=${thorchainAddress}&type=swap,refund&affiliate=ej&offset=${offset}&limit=${LIMIT}`
-    let jsonObj: ThorchainResult
-    try {
-      const result = await fetch(url, {
-        method: 'GET'
-      })
-      const resultJson = await result.json()
-      jsonObj = asThorchainResult(resultJson)
-    } catch (e) {
-      datelog(e)
-      break
-    }
-    const txs = jsonObj.actions
-    for (const rawTx of txs) {
-      const {
-        date,
-        in: txIns,
-        out: txOuts,
-        pools,
-        status: txStatus
-      } = asThorchainTx(rawTx) // Check RAW trasaction
+    let offset = 0
 
-      const status = 'complete'
-      if (txStatus !== 'success') {
-        continue
+    while (!done) {
+      const url = `https://${midgardUrl}/v2/actions?address=${thorchainAddress}&type=swap,refund&affiliate=ej&offset=${offset}&limit=${LIMIT}`
+      let jsonObj: ThorchainResult
+      try {
+        const result = await fetch(url, {
+          method: 'GET'
+        })
+        const resultJson = await result.json()
+        jsonObj = asThorchainResult(resultJson)
+      } catch (e) {
+        datelog(e)
+        break
       }
-      if (pools.length !== 2) {
-        continue
-      }
+      const txs = jsonObj.actions
+      for (const rawTx of txs) {
+        const {
+          date,
+          in: txIns,
+          out: txOuts,
+          pools,
+          status: txStatus
+        } = asThorchainTx(rawTx) // Check RAW trasaction
 
-      const srcAsset = txIns[0].coins[0].asset
-      const match = txOuts.find(o => {
-        const match2 = o.coins.find(c => c.asset === srcAsset)
-        return match2 != null
-      })
+        const status = 'complete'
+        if (txStatus !== 'success') {
+          continue
+        }
+        if (pools.length !== 2) {
+          continue
+        }
 
-      // If there is a match between source and dest asset that means a refund was made
-      // and the transaction failed
-      if (match != null) {
-        continue
-      }
+        const srcAsset = txIns[0].coins[0].asset
+        const match = txOuts.find(o => {
+          const match2 = o.coins.find(c => c.asset === srcAsset)
+          return match2 != null
+        })
 
-      const timestampMs = div(date, '1000000', 16)
-      const { timestamp, isoDate } = smartIsoDateFromTimestamp(
-        Number(timestampMs)
-      )
+        // If there is a match between source and dest asset that means a refund was made
+        // and the transaction failed
+        if (match != null) {
+          continue
+        }
 
-      const [chainAsset] = srcAsset.split('-')
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const [_chain, asset] = chainAsset.split('.')
-
-      const depositAmount =
-        Number(txIns[0].coins[0].amount) / THORCHAIN_MULTIPLIER
-
-      const txOut = txOuts.find(o => o.coins[0].asset !== 'THOR.RUNE')
-      if (txOut == null) {
-        continue
-      }
-
-      let payoutCurrency
-      let payoutAmount = 0
-      if (txOut != null) {
-        const [destChainAsset] = txOut.coins[0].asset.split('-')
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const [_destChain, destAsset] = destChainAsset.split('.')
-        payoutCurrency = destAsset
-        payoutAmount = Number(txOut.coins[0].amount) / THORCHAIN_MULTIPLIER
-      }
-
-      const ssTx: StandardTx = {
-        status,
-        orderId: txIns[0].txID,
-        depositTxid: txIns[0].txID,
-        depositAddress: undefined,
-        depositCurrency: asset.toUpperCase(),
-        depositAmount,
-        payoutTxid: txOut?.txID,
-        payoutAddress: txOut?.address,
-        payoutCurrency,
-        payoutAmount,
-        timestamp,
-        isoDate,
-        usdValue: -1,
-        rawTx
-      }
-
-      // See if the transaction exists already
-      const matchTx = ssFormatTxs.find(
-        tx =>
-          tx.orderId === ssTx.orderId &&
-          tx.timestamp === ssTx.timestamp &&
-          tx.depositCurrency === ssTx.depositCurrency &&
-          tx.payoutCurrency === ssTx.payoutCurrency &&
-          tx.payoutAmount === ssTx.payoutAmount &&
-          tx.depositAmount !== ssTx.depositAmount
-      )
-      if (matchTx == null) {
-        ssFormatTxs.push(ssTx)
-      } else {
-        matchTx.depositAmount += ssTx.depositAmount
-      }
-      if (ssTx.isoDate > latestIsoDate) {
-        latestIsoDate = ssTx.isoDate
-      }
-      if (ssTx.isoDate < oldestIsoDate) {
-        oldestIsoDate = ssTx.isoDate
-      }
-      if (ssTx.isoDate < previousLatestIsoDate && !done) {
-        datelog(
-          `Thorchain done: date ${ssTx.isoDate} < ${previousLatestIsoDate}`
+        const timestampMs = div(date, '1000000', 16)
+        const { timestamp, isoDate } = smartIsoDateFromTimestamp(
+          Number(timestampMs)
         )
-        done = true
+
+        const [chainAsset] = srcAsset.split('-')
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const [_chain, asset] = chainAsset.split('.')
+
+        const depositAmount =
+          Number(txIns[0].coins[0].amount) / THORCHAIN_MULTIPLIER
+
+        const txOut = txOuts.find(o => o.coins[0].asset !== 'THOR.RUNE')
+        if (txOut == null) {
+          continue
+        }
+
+        let payoutCurrency
+        let payoutAmount = 0
+        if (txOut != null) {
+          const [destChainAsset] = txOut.coins[0].asset.split('-')
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const [_destChain, destAsset] = destChainAsset.split('.')
+          payoutCurrency = destAsset
+          payoutAmount = Number(txOut.coins[0].amount) / THORCHAIN_MULTIPLIER
+        }
+
+        const ssTx: StandardTx = {
+          status,
+          orderId: txIns[0].txID,
+          depositTxid: txIns[0].txID,
+          depositAddress: undefined,
+          depositCurrency: asset.toUpperCase(),
+          depositAmount,
+          payoutTxid: txOut?.txID,
+          payoutAddress: txOut?.address,
+          payoutCurrency,
+          payoutAmount,
+          timestamp,
+          isoDate,
+          usdValue: -1,
+          rawTx
+        }
+
+        // See if the transaction exists already
+        const matchTx = ssFormatTxs.find(
+          tx =>
+            tx.orderId === ssTx.orderId &&
+            tx.timestamp === ssTx.timestamp &&
+            tx.depositCurrency === ssTx.depositCurrency &&
+            tx.payoutCurrency === ssTx.payoutCurrency &&
+            tx.payoutAmount === ssTx.payoutAmount &&
+            tx.depositAmount !== ssTx.depositAmount
+        )
+        if (matchTx == null) {
+          ssFormatTxs.push(ssTx)
+        } else {
+          matchTx.depositAmount += ssTx.depositAmount
+        }
+        if (ssTx.isoDate > latestIsoDate) {
+          latestIsoDate = ssTx.isoDate
+        }
+        if (ssTx.isoDate < oldestIsoDate) {
+          oldestIsoDate = ssTx.isoDate
+        }
+        if (ssTx.isoDate < previousLatestIsoDate && !done) {
+          datelog(
+            `Thorchain done: date ${ssTx.isoDate} < ${previousLatestIsoDate}`
+          )
+          done = true
+        }
       }
-    }
 
-    if (txs.length < LIMIT) {
-      break
+      if (txs.length < LIMIT) {
+        break
+      }
+      offset += LIMIT
     }
-    offset += LIMIT
+    const out: PluginResult = {
+      settings: { latestIsoDate },
+      transactions: ssFormatTxs
+    }
+    return out
   }
-  const out: PluginResult = {
-    settings: { latestIsoDate },
-    transactions: ssFormatTxs
+
+  return {
+    queryFunc: queryThorchain,
+    pluginName,
+    pluginId
   }
-  return out
 }
 
-export const thorchain: PartnerPlugin = {
-  // queryFunc will take PluginSettings as arg and return PluginResult
-  queryFunc: queryThorchain,
-  // results in a PluginResult
+export const thorchain = makeThorchainPlugin({
   pluginName: 'Thorchain',
-  pluginId: 'thorchain'
-}
+  pluginId: 'thorchain',
+  midgardUrl: 'midgard.ninerealms.com'
+})
+
+export const maya = makeThorchainPlugin({
+  pluginName: 'Maya',
+  pluginId: 'maya',
+  midgardUrl: 'midgard.mayachain.info'
+})
