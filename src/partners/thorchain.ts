@@ -7,13 +7,20 @@ import {
   asString,
   asUnknown
 } from 'cleaners'
-import fetch from 'node-fetch'
+import { HeadersInit } from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog, smartIsoDateFromTimestamp } from '../util'
+import { datelog, retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
 
 const asThorchainTx = asObject({
   date: asString,
+  metadata: asObject({
+    swap: asOptional(
+      asObject({
+        affiliateAddress: asOptional(asString)
+      })
+    )
+  }),
   in: asArray(
     asObject({
       address: asString,
@@ -52,7 +59,11 @@ const asThorchainResult = asObject({
 })
 
 const asThorchainPluginParams = asObject({
-  apiKeys: asObject({ thorchainAddress: asString }),
+  apiKeys: asObject({
+    thorchainAddress: asString,
+    affiliateAddress: asString,
+    xClientId: asOptional(asString)
+  }),
   settings: asObject({
     latestIsoDate: asOptional(asString, '1970-01-01T00:00:00.000Z')
   })
@@ -79,7 +90,7 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
     const ssFormatTxs: StandardTx[] = []
 
     const { settings, apiKeys } = asThorchainPluginParams(pluginParams)
-    const { thorchainAddress } = apiKeys
+    const { affiliateAddress, thorchainAddress, xClientId } = apiKeys
     let { latestIsoDate } = settings
 
     let previousTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
@@ -91,12 +102,21 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
 
     let offset = 0
 
+    let headers: HeadersInit | undefined
+    if (xClientId != null) {
+      headers = {
+        'x-client-id': xClientId
+      }
+    }
+
     while (!done) {
       const url = `https://${midgardUrl}/v2/actions?address=${thorchainAddress}&type=swap,refund&affiliate=ej&offset=${offset}&limit=${LIMIT}`
       let jsonObj: ThorchainResult
       try {
-        const result = await fetch(url, {
-          method: 'GET'
+        await snooze(500)
+        const result = await retryFetch(url, {
+          method: 'GET',
+          headers
         })
         if (!result.ok) {
           const text = await result.text()
@@ -112,12 +132,17 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
       for (const rawTx of txs) {
         const {
           date,
+          metadata,
           in: txIns,
           out: txOuts,
           pools,
           status: txStatus
         } = asThorchainTx(rawTx) // Check RAW trasaction
 
+        const { swap } = metadata
+        if (swap?.affiliateAddress !== affiliateAddress) {
+          continue
+        }
         const status = 'complete'
         if (txStatus !== 'success') {
           continue
