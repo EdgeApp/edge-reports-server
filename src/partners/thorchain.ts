@@ -98,6 +98,10 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
         const result = await fetch(url, {
           method: 'GET'
         })
+        if (!result.ok) {
+          const text = await result.text()
+          throw new Error(`Thorchain error: ${text}`)
+        }
         const resultJson = await result.json()
         jsonObj = asThorchainResult(resultJson)
       } catch (e) {
