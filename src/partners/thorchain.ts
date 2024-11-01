@@ -71,6 +71,7 @@ const asThorchainPluginParams = asObject({
 
 type Settings = ReturnType<typeof asSettings>
 type ThorchainResult = ReturnType<typeof asThorchainResult>
+type ThorchainTx = ReturnType<typeof asThorchainTx>
 
 const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 const LIMIT = 50
@@ -147,19 +148,43 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
         if (txStatus !== 'success') {
           continue
         }
-        if (pools.length !== 2) {
+
+        // Find the source asset
+        let srcAsset: string | undefined
+        let depositAmount: number | undefined
+        let srcAddress: string | undefined
+        for (const txIn of txIns) {
+          for (const coin of txIn.coins) {
+            if (pools.includes(coin.asset)) {
+              srcAsset = coin.asset
+              depositAmount = Number(coin.amount) / THORCHAIN_MULTIPLIER
+              srcAddress = txIn.address
+              break
+            } else {
+              if (pools.length === 1) {
+                // Either src or dest is the main asset (RUNE/CACOA)
+                srcAsset = coin.asset
+                depositAmount = Number(coin.amount) / THORCHAIN_MULTIPLIER
+                srcAddress = txIn.address
+              }
+            }
+          }
+          if (srcAsset != null) {
+            break
+          }
+        }
+        if (srcAsset == null || depositAmount == null) {
           continue
         }
 
-        const srcAsset = txIns[0].coins[0].asset
-        const match = txOuts.find(o => {
-          const match2 = o.coins.find(c => c.asset === srcAsset)
-          return match2 != null
+        const match = txOuts.some(o => {
+          const match2 = o.coins.some(c => c.asset === srcAsset)
+          return match2
         })
 
         // If there is a match between source and dest asset that means a refund was made
         // and the transaction failed
-        if (match != null) {
+        if (match) {
           continue
         }
 
@@ -172,12 +197,22 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const [_chain, asset] = chainAsset.split('.')
 
-        const depositAmount =
-          Number(txIns[0].coins[0].amount) / THORCHAIN_MULTIPLIER
+        let txOut: ThorchainTx['out'][0] | undefined
 
-        const txOut = txOuts.find(o => o.coins[0].asset !== 'THOR.RUNE')
+        // Find the first output that does not match the affiliate address
+        // as this is assumed to be the true destination asset/address
+        // If we can't find one, then just match the affiliate address as
+        // this means the affiliate address is the actual destination.
+        for (const txo of txOuts) {
+          txOut = txo
+          if (txo.address !== thorchainAddress) {
+            break
+          }
+        }
+
         if (txOut == null) {
-          continue
+          // Should never happen
+          throw new Error(`${pluginId}: No output found`)
         }
 
         const [destChainAsset] = txOut.coins[0].asset.split('-')
