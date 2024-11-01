@@ -23,13 +23,6 @@
       "script": "lib/indexCache.js",
       "error_file": "/var/log/pm2/reportsCache.error.log",
       "out_file": "/var/log/pm2/reportsCache.out.log"
-    },
-    {
-      "name": "gitRefresher",
-      "script": "npx",
-      "args": ["git-refresher"],
-      "autorestart": false,
-      "cron_restart": "*/5 * * * *"
     }
   ]
 }
