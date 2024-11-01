@@ -155,15 +155,12 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
           continue
         }
 
-        let payoutCurrency
-        let payoutAmount = 0
-        if (txOut != null) {
-          const [destChainAsset] = txOut.coins[0].asset.split('-')
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const [_destChain, destAsset] = destChainAsset.split('.')
-          payoutCurrency = destAsset
-          payoutAmount = Number(txOut.coins[0].amount) / THORCHAIN_MULTIPLIER
-        }
+        const [destChainAsset] = txOut.coins[0].asset.split('-')
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const [_destChain, destAsset] = destChainAsset.split('.')
+        const payoutCurrency = destAsset
+        const payoutAmount =
+          Number(txOut.coins[0].amount) / THORCHAIN_MULTIPLIER
 
         const ssTx: StandardTx = {
           status,
