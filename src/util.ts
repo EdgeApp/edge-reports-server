@@ -14,6 +14,7 @@ const CURRENCY_CONVERSION = {
   GALAERC20: 'GALA',
   WBTCMATIC: 'WBTC',
   USDCERC20: 'USDC',
+  USDCSOLO: 'USDC',
   USDT20: 'USDT',
   USDTERC20: 'USDT',
   USDTPOLYGON: 'USDT',
@@ -30,7 +31,8 @@ const CURRENCY_CONVERSION = {
   FTMMAINNET: 'FTM',
   BNBMAINNET: 'BNB',
   AVAXC: 'AVAX',
-  POLYGON: 'MATIC'
+  POLYGON: 'MATIC',
+  ZKSYNC: 'ETH'
 }
 
 export const standardizeNames = (field: string): string => {
