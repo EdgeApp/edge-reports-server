@@ -12,8 +12,8 @@ import {
 import { datelog, safeParseFloat, standardizeNames } from './util'
 
 const nanoDb = nano(config.couchDbFullpath)
-const QUERY_FREQ_MS = 15000
-const QUERY_LIMIT = 50
+const QUERY_FREQ_MS = 3000
+const QUERY_LIMIT = 10
 const snooze: Function = async (ms: number) =>
   await new Promise((resolve: Function) => setTimeout(resolve, ms))
 
@@ -207,10 +207,14 @@ const dateRoundDownHour = (dateString: string): string => {
   return new Date(date).toISOString()
 }
 
+const RETRY_DELAY = 1500
+const MAX_RETRIES = 5
+
 async function getExchangeRate(
   ca: string,
   cb: string,
-  date: string
+  date: string,
+  retry: number = 0
 ): Promise<number> {
   const hourDate = dateRoundDownHour(date)
   const currencyA = standardizeNames(ca)
@@ -218,12 +222,26 @@ async function getExchangeRate(
   const url = `https://rates2.edge.app/v1/exchangeRate?currency_pair=${currencyA}_${currencyB}&date=${hourDate}`
   try {
     const result = await fetch(url, { method: 'GET' })
+    if (!result.ok) {
+      if (result.status === 429) {
+        datelog(`Rate limit hit`)
+      }
+      const text = await result.text()
+      throw new Error(`Rates error: ${text}`)
+    }
     const jsonObj = await result.json()
     datelog(
       `Rate for ${currencyA} -> ${currencyB} ${date}: ${jsonObj.exchangeRate}`
     )
     return safeParseFloat(jsonObj.exchangeRate)
   } catch (e) {
+    if (retry < MAX_RETRIES) {
+      const snoozeTime = Math.pow(2, retry) * RETRY_DELAY
+
+      datelog(`snoozing for ${snoozeTime}ms`)
+      await snooze(snoozeTime)
+      return await getExchangeRate(ca, cb, date, retry + 1)
+    }
     datelog(
       `Could not not get exchange rate for ${currencyA} and ${currencyB} at ${date}.`,
       e
