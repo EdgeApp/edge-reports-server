@@ -1,6 +1,7 @@
 import { div } from 'biggystring'
 import {
   asArray,
+  asBoolean,
   asNumber,
   asObject,
   asOptional,
@@ -36,6 +37,7 @@ const asThorchainTx = asObject({
   out: asArray(
     asObject({
       address: asString,
+      affiliate: asOptional(asBoolean),
       coins: asArray(
         asObject({
           amount: asString,
@@ -111,7 +113,7 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
     }
 
     while (!done) {
-      const url = `https://${midgardUrl}/v2/actions?address=${thorchainAddress}&type=swap,refund&affiliate=ej&offset=${offset}&limit=${LIMIT}`
+      const url = `https://${midgardUrl}/v2/actions?address=${thorchainAddress}&type=swap,refund&affiliate=${affiliateAddress}&offset=${offset}&limit=${LIMIT}`
       let jsonObj: ThorchainResult
       try {
         await snooze(500)
@@ -127,7 +129,7 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
         jsonObj = asThorchainResult(resultJson)
       } catch (e) {
         datelog(e)
-        break
+        throw e
       }
       const txs = jsonObj.actions
       for (const rawTx of txs) {
@@ -149,42 +151,40 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
           continue
         }
 
-        // Find the source asset
-        let srcAsset: string | undefined
-        let depositAmount: number | undefined
-        let srcAddress: string | undefined
-        for (const txIn of txIns) {
-          for (const coin of txIn.coins) {
-            if (pools.includes(coin.asset)) {
-              srcAsset = coin.asset
-              depositAmount = Number(coin.amount) / THORCHAIN_MULTIPLIER
-              srcAddress = txIn.address
-              break
-            } else {
-              if (pools.length === 1) {
-                // Either src or dest is the main asset (RUNE/CACOA)
-                srcAsset = coin.asset
-                depositAmount = Number(coin.amount) / THORCHAIN_MULTIPLIER
-                srcAddress = txIn.address
-              }
-            }
-          }
-          if (srcAsset != null) {
-            break
-          }
-        }
-        if (srcAsset == null || depositAmount == null) {
+        // There must be an affiliate output
+        const affiliateOut = txOuts.some(
+          o => o.affiliate === true || o.address === thorchainAddress
+        )
+        if (!affiliateOut) {
           continue
         }
 
-        const match = txOuts.some(o => {
-          const match2 = o.coins.some(c => c.asset === srcAsset)
-          return match2
+        // Find the source asset
+        if (txIns.length !== 1) {
+          throw new Error(
+            `${pluginId}: Unexpected ${txIns.length} txIns. Expected 1`
+          )
+        }
+        const txIn = txIns[0]
+        if (txIn.coins.length !== 1) {
+          throw new Error(
+            `${pluginId}: Unexpected ${txIn.coins.length} txIn.coins. Expected 1`
+          )
+        }
+        const coin = txIn.coins[0]
+        const srcAsset = coin.asset
+        const depositAmount = Number(coin.amount) / THORCHAIN_MULTIPLIER
+
+        const srcDestMatch = txOuts.some(o => {
+          const match = o.coins.some(
+            c => c.asset === srcAsset && o.affiliate !== true
+          )
+          return match
         })
 
         // If there is a match between source and dest asset that means a refund was made
         // and the transaction failed
-        if (match) {
+        if (srcDestMatch) {
           continue
         }
 
@@ -197,22 +197,30 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const [_chain, asset] = chainAsset.split('.')
 
-        let txOut: ThorchainTx['out'][0] | undefined
-
         // Find the first output that does not match the affiliate address
         // as this is assumed to be the true destination asset/address
         // If we can't find one, then just match the affiliate address as
         // this means the affiliate address is the actual destination.
-        for (const txo of txOuts) {
-          txOut = txo
-          if (txo.address !== thorchainAddress) {
-            break
+        const hasAffiliateFlag = txOuts.some(o => o.affiliate === true)
+        let txOut = txOuts.find(out => {
+          if (hasAffiliateFlag) {
+            return out.affiliate !== true
+          } else {
+            return out.address !== thorchainAddress
           }
-        }
-
+        })
         if (txOut == null) {
-          // Should never happen
-          throw new Error(`${pluginId}: No output found`)
+          // If there are two pools but only one output, there's a problem and we should skip
+          // this transaction. Midgard sometimes doesn't return the correct output until the transaction
+          // has completed for awhile.
+          if (pools.length === 2 && txOuts.length === 1) {
+            continue
+          } else if (pools.length === 1 && txOuts.length === 1) {
+            // The output is a native currency output (maya/rune)
+            txOut = txOuts[0]
+          } else {
+            throw new Error(`${pluginId}: Cannot find output`)
+          }
         }
 
         const [destChainAsset] = txOut.coins[0].asset.split('-')
@@ -229,8 +237,8 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
           depositAddress: undefined,
           depositCurrency: asset.toUpperCase(),
           depositAmount,
-          payoutTxid: txOut?.txID,
-          payoutAddress: txOut?.address,
+          payoutTxid: txOut.txID,
+          payoutAddress: txOut.address,
           payoutCurrency,
           payoutAmount,
           timestamp,
