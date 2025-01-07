@@ -89,6 +89,10 @@ export default {
     type: 'swap',
     color: '#EBB8FA'
   },
+  maya: {
+    type: 'swap',
+    color: '#000055'
+  },
   moonpay: {
     type: 'fiat',
     color: '#7214F5'

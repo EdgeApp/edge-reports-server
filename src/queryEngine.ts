@@ -29,7 +29,7 @@ import { sideshift } from './partners/sideshift'
 import { simplex } from './partners/simplex'
 import { swapuz } from './partners/swapuz'
 import { switchain } from './partners/switchain'
-import { thorchain } from './partners/thorchain'
+import { maya, thorchain } from './partners/thorchain'
 import { transak } from './partners/transak'
 import { wyre } from './partners/wyre'
 import { xanpool } from './partners/xanpool'
@@ -57,6 +57,7 @@ const plugins = [
   letsexchange,
   libertyx,
   lifi,
+  maya,
   moonpay,
   paybis,
   paytrie,

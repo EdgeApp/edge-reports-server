@@ -1,19 +1,27 @@
 import { div } from 'biggystring'
 import {
   asArray,
+  asBoolean,
   asNumber,
   asObject,
   asOptional,
   asString,
   asUnknown
 } from 'cleaners'
-import fetch from 'node-fetch'
+import { HeadersInit } from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog, smartIsoDateFromTimestamp } from '../util'
+import { datelog, retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
 
 const asThorchainTx = asObject({
   date: asString,
+  metadata: asObject({
+    swap: asOptional(
+      asObject({
+        affiliateAddress: asOptional(asString)
+      })
+    )
+  }),
   in: asArray(
     asObject({
       address: asString,
@@ -29,6 +37,7 @@ const asThorchainTx = asObject({
   out: asArray(
     asObject({
       address: asString,
+      affiliate: asOptional(asBoolean),
       coins: asArray(
         asObject({
           amount: asString,
@@ -52,7 +61,11 @@ const asThorchainResult = asObject({
 })
 
 const asThorchainPluginParams = asObject({
-  apiKeys: asObject({ thorchainAddress: asString }),
+  apiKeys: asObject({
+    thorchainAddress: asString,
+    affiliateAddress: asString,
+    xClientId: asOptional(asString)
+  }),
   settings: asObject({
     latestIsoDate: asOptional(asString, '1970-01-01T00:00:00.000Z')
   })
@@ -60,161 +73,236 @@ const asThorchainPluginParams = asObject({
 
 type Settings = ReturnType<typeof asSettings>
 type ThorchainResult = ReturnType<typeof asThorchainResult>
+type ThorchainTx = ReturnType<typeof asThorchainTx>
 
 const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 const LIMIT = 50
 const THORCHAIN_MULTIPLIER = 100000000
 
-export const queryThorchain = async (
-  pluginParams: PluginParams
-): Promise<PluginResult> => {
-  const ssFormatTxs: StandardTx[] = []
+interface ThorchainInfo {
+  pluginName: string
+  pluginId: string
+  midgardUrl: string
+}
 
-  const { settings, apiKeys } = asThorchainPluginParams(pluginParams)
-  const { thorchainAddress } = apiKeys
-  let { latestIsoDate } = settings
+const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
+  const { midgardUrl, pluginId, pluginName } = info
+  const queryThorchain = async (
+    pluginParams: PluginParams
+  ): Promise<PluginResult> => {
+    const ssFormatTxs: StandardTx[] = []
 
-  let previousTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
-  if (previousTimestamp < 0) previousTimestamp = 0
-  const previousLatestIsoDate = new Date(previousTimestamp).toISOString()
+    const { settings, apiKeys } = asThorchainPluginParams(pluginParams)
+    const { affiliateAddress, thorchainAddress, xClientId } = apiKeys
+    let { latestIsoDate } = settings
 
-  let done = false
-  let oldestIsoDate = new Date(99999999999999).toISOString()
+    let previousTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
+    if (previousTimestamp < 0) previousTimestamp = 0
+    const previousLatestIsoDate = new Date(previousTimestamp).toISOString()
 
-  let offset = 0
+    let done = false
+    let oldestIsoDate = new Date(99999999999999).toISOString()
 
-  while (!done) {
-    const url = `https://midgard.ninerealms.com/v2/actions?address=${thorchainAddress}&type=swap,refund&affiliate=ej&offset=${offset}&limit=${LIMIT}`
-    let jsonObj: ThorchainResult
-    try {
-      const result = await fetch(url, {
-        method: 'GET'
-      })
-      const resultJson = await result.json()
-      jsonObj = asThorchainResult(resultJson)
-    } catch (e) {
-      datelog(e)
-      break
+    let offset = 0
+
+    let headers: HeadersInit | undefined
+    if (xClientId != null) {
+      headers = {
+        'x-client-id': xClientId
+      }
     }
-    const txs = jsonObj.actions
-    for (const rawTx of txs) {
-      const {
-        date,
-        in: txIns,
-        out: txOuts,
-        pools,
-        status: txStatus
-      } = asThorchainTx(rawTx) // Check RAW trasaction
 
-      const status = 'complete'
-      if (txStatus !== 'success') {
-        continue
+    while (!done) {
+      const url = `https://${midgardUrl}/v2/actions?address=${thorchainAddress}&type=swap,refund&affiliate=${affiliateAddress}&offset=${offset}&limit=${LIMIT}`
+      let jsonObj: ThorchainResult
+      try {
+        await snooze(500)
+        const result = await retryFetch(url, {
+          method: 'GET',
+          headers
+        })
+        if (!result.ok) {
+          const text = await result.text()
+          throw new Error(`Thorchain error: ${text}`)
+        }
+        const resultJson = await result.json()
+        jsonObj = asThorchainResult(resultJson)
+      } catch (e) {
+        datelog(e)
+        throw e
       }
-      if (pools.length !== 2) {
-        continue
-      }
+      const txs = jsonObj.actions
+      for (const rawTx of txs) {
+        const {
+          date,
+          metadata,
+          in: txIns,
+          out: txOuts,
+          pools,
+          status: txStatus
+        } = asThorchainTx(rawTx) // Check RAW trasaction
 
-      const srcAsset = txIns[0].coins[0].asset
-      const match = txOuts.find(o => {
-        const match2 = o.coins.find(c => c.asset === srcAsset)
-        return match2 != null
-      })
+        const { swap } = metadata
+        if (swap?.affiliateAddress !== affiliateAddress) {
+          continue
+        }
+        const status = 'complete'
+        if (txStatus !== 'success') {
+          continue
+        }
 
-      // If there is a match between source and dest asset that means a refund was made
-      // and the transaction failed
-      if (match != null) {
-        continue
-      }
+        // There must be an affiliate output
+        const affiliateOut = txOuts.some(
+          o => o.affiliate === true || o.address === thorchainAddress
+        )
+        if (!affiliateOut) {
+          continue
+        }
 
-      const timestampMs = div(date, '1000000', 16)
-      const { timestamp, isoDate } = smartIsoDateFromTimestamp(
-        Number(timestampMs)
-      )
+        // Find the source asset
+        if (txIns.length !== 1) {
+          throw new Error(
+            `${pluginId}: Unexpected ${txIns.length} txIns. Expected 1`
+          )
+        }
+        const txIn = txIns[0]
+        if (txIn.coins.length !== 1) {
+          throw new Error(
+            `${pluginId}: Unexpected ${txIn.coins.length} txIn.coins. Expected 1`
+          )
+        }
+        const coin = txIn.coins[0]
+        const srcAsset = coin.asset
+        const depositAmount = Number(coin.amount) / THORCHAIN_MULTIPLIER
 
-      const [chainAsset] = srcAsset.split('-')
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const [_chain, asset] = chainAsset.split('.')
+        const srcDestMatch = txOuts.some(o => {
+          const match = o.coins.some(
+            c => c.asset === srcAsset && o.affiliate !== true
+          )
+          return match
+        })
 
-      const depositAmount =
-        Number(txIns[0].coins[0].amount) / THORCHAIN_MULTIPLIER
+        // If there is a match between source and dest asset that means a refund was made
+        // and the transaction failed
+        if (srcDestMatch) {
+          continue
+        }
 
-      const txOut = txOuts.find(o => o.coins[0].asset !== 'THOR.RUNE')
-      if (txOut == null) {
-        continue
-      }
+        const timestampMs = div(date, '1000000', 16)
+        const { timestamp, isoDate } = smartIsoDateFromTimestamp(
+          Number(timestampMs)
+        )
 
-      let payoutCurrency
-      let payoutAmount = 0
-      if (txOut != null) {
+        const [chainAsset] = srcAsset.split('-')
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const [_chain, asset] = chainAsset.split('.')
+
+        // Find the first output that does not match the affiliate address
+        // as this is assumed to be the true destination asset/address
+        // If we can't find one, then just match the affiliate address as
+        // this means the affiliate address is the actual destination.
+        const hasAffiliateFlag = txOuts.some(o => o.affiliate === true)
+        let txOut = txOuts.find(out => {
+          if (hasAffiliateFlag) {
+            return out.affiliate !== true
+          } else {
+            return out.address !== thorchainAddress
+          }
+        })
+        if (txOut == null) {
+          // If there are two pools but only one output, there's a problem and we should skip
+          // this transaction. Midgard sometimes doesn't return the correct output until the transaction
+          // has completed for awhile.
+          if (pools.length === 2 && txOuts.length === 1) {
+            continue
+          } else if (pools.length === 1 && txOuts.length === 1) {
+            // The output is a native currency output (maya/rune)
+            txOut = txOuts[0]
+          } else {
+            throw new Error(`${pluginId}: Cannot find output`)
+          }
+        }
+
         const [destChainAsset] = txOut.coins[0].asset.split('-')
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const [_destChain, destAsset] = destChainAsset.split('.')
-        payoutCurrency = destAsset
-        payoutAmount = Number(txOut.coins[0].amount) / THORCHAIN_MULTIPLIER
-      }
+        const payoutCurrency = destAsset
+        const payoutAmount =
+          Number(txOut.coins[0].amount) / THORCHAIN_MULTIPLIER
 
-      const ssTx: StandardTx = {
-        status,
-        orderId: txIns[0].txID,
-        depositTxid: txIns[0].txID,
-        depositAddress: undefined,
-        depositCurrency: asset.toUpperCase(),
-        depositAmount,
-        payoutTxid: txOut?.txID,
-        payoutAddress: txOut?.address,
-        payoutCurrency,
-        payoutAmount,
-        timestamp,
-        isoDate,
-        usdValue: -1,
-        rawTx
-      }
+        const ssTx: StandardTx = {
+          status,
+          orderId: txIns[0].txID,
+          depositTxid: txIns[0].txID,
+          depositAddress: undefined,
+          depositCurrency: asset.toUpperCase(),
+          depositAmount,
+          payoutTxid: txOut.txID,
+          payoutAddress: txOut.address,
+          payoutCurrency,
+          payoutAmount,
+          timestamp,
+          isoDate,
+          usdValue: -1,
+          rawTx
+        }
 
-      // See if the transaction exists already
-      const matchTx = ssFormatTxs.find(
-        tx =>
-          tx.orderId === ssTx.orderId &&
-          tx.timestamp === ssTx.timestamp &&
-          tx.depositCurrency === ssTx.depositCurrency &&
-          tx.payoutCurrency === ssTx.payoutCurrency &&
-          tx.payoutAmount === ssTx.payoutAmount &&
-          tx.depositAmount !== ssTx.depositAmount
-      )
-      if (matchTx == null) {
-        ssFormatTxs.push(ssTx)
-      } else {
-        matchTx.depositAmount += ssTx.depositAmount
-      }
-      if (ssTx.isoDate > latestIsoDate) {
-        latestIsoDate = ssTx.isoDate
-      }
-      if (ssTx.isoDate < oldestIsoDate) {
-        oldestIsoDate = ssTx.isoDate
-      }
-      if (ssTx.isoDate < previousLatestIsoDate && !done) {
-        datelog(
-          `Thorchain done: date ${ssTx.isoDate} < ${previousLatestIsoDate}`
+        // See if the transaction exists already
+        const matchTx = ssFormatTxs.find(
+          tx =>
+            tx.orderId === ssTx.orderId &&
+            tx.timestamp === ssTx.timestamp &&
+            tx.depositCurrency === ssTx.depositCurrency &&
+            tx.payoutCurrency === ssTx.payoutCurrency &&
+            tx.payoutAmount === ssTx.payoutAmount &&
+            tx.depositAmount !== ssTx.depositAmount
         )
-        done = true
+        if (matchTx == null) {
+          ssFormatTxs.push(ssTx)
+        } else {
+          matchTx.depositAmount += ssTx.depositAmount
+        }
+        if (ssTx.isoDate > latestIsoDate) {
+          latestIsoDate = ssTx.isoDate
+        }
+        if (ssTx.isoDate < oldestIsoDate) {
+          oldestIsoDate = ssTx.isoDate
+        }
+        if (ssTx.isoDate < previousLatestIsoDate && !done) {
+          datelog(
+            `Thorchain done: date ${ssTx.isoDate} < ${previousLatestIsoDate}`
+          )
+          done = true
+        }
       }
-    }
 
-    if (txs.length < LIMIT) {
-      break
+      if (txs.length < LIMIT) {
+        break
+      }
+      offset += LIMIT
     }
-    offset += LIMIT
+    const out: PluginResult = {
+      settings: { latestIsoDate },
+      transactions: ssFormatTxs
+    }
+    return out
   }
-  const out: PluginResult = {
-    settings: { latestIsoDate },
-    transactions: ssFormatTxs
+
+  return {
+    queryFunc: queryThorchain,
+    pluginName,
+    pluginId
   }
-  return out
 }
 
-export const thorchain: PartnerPlugin = {
-  // queryFunc will take PluginSettings as arg and return PluginResult
-  queryFunc: queryThorchain,
-  // results in a PluginResult
+export const thorchain = makeThorchainPlugin({
   pluginName: 'Thorchain',
-  pluginId: 'thorchain'
-}
+  pluginId: 'thorchain',
+  midgardUrl: 'midgard.ninerealms.com'
+})
+
+export const maya = makeThorchainPlugin({
+  pluginName: 'Maya',
+  pluginId: 'maya',
+  midgardUrl: 'midgard.mayachain.info'
+})
