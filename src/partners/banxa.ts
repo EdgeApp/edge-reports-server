@@ -202,61 +202,33 @@ async function fetchBanxaAPI(
   return await retryFetch(`${partnerUrl}${apiQuery}`, { headers: headers })
 }
 
-function processBanxaOrders(rawtxs, ssFormatTxs): void {
+function processBanxaOrders(
+  rawtxs: unknown[],
+  ssFormatTxs: StandardTx[]
+): void {
   let numComplete = 0
   let newestIsoDate = new Date(0).toISOString()
   let oldestIsoDate = new Date(9999999999999).toISOString()
   for (const rawTx of rawtxs) {
-    let tx: BanxaTx
+    let standardTx: StandardTx
     try {
-      tx = asBanxaTx(rawTx)
+      standardTx = processBanxaTx(rawTx)
     } catch (e) {
       datelog(String(e))
       throw e
     }
-    if (tx.status === 'complete') {
+
+    ssFormatTxs.push(standardTx)
+
+    if (standardTx.status === 'complete') {
       numComplete++
     }
-    const { isoDate, timestamp } = smartIsoDateFromTimestamp(tx.created_at)
-
-    if (isoDate > newestIsoDate) {
-      newestIsoDate = isoDate
+    if (standardTx.isoDate > newestIsoDate) {
+      newestIsoDate = standardTx.isoDate
     }
-    if (isoDate < oldestIsoDate) {
-      oldestIsoDate = isoDate
+    if (standardTx.isoDate < oldestIsoDate) {
+      oldestIsoDate = standardTx.isoDate
     }
-    // Flip the amounts if the order is a SELL
-    let payoutAddress
-    let inputAmount = tx.fiat_amount
-    let inputCurrency = tx.fiat_code
-    let outputAmount = tx.coin_amount
-    let outputCurrency = tx.coin_code
-    if (tx.order_type === 'CRYPTO-SELL') {
-      inputAmount = tx.coin_amount
-      inputCurrency = tx.coin_code
-      outputAmount = tx.fiat_amount
-      outputCurrency = tx.fiat_code
-    } else {
-      payoutAddress = tx.wallet_address
-    }
-
-    const ssTx: StandardTx = {
-      status: statusMap[tx.status],
-      orderId: tx.id,
-      depositTxid: undefined,
-      depositAddress: undefined,
-      depositCurrency: inputCurrency,
-      depositAmount: inputAmount,
-      payoutTxid: undefined,
-      payoutAddress,
-      payoutCurrency: outputCurrency,
-      payoutAmount: outputAmount,
-      timestamp,
-      isoDate,
-      usdValue: -1,
-      rawTx
-    }
-    ssFormatTxs.push(ssTx)
   }
   if (rawtxs.length > 1) {
     datelog(
@@ -270,4 +242,43 @@ function processBanxaOrders(rawtxs, ssFormatTxs): void {
   } else {
     datelog(`BANXA: Processed ${rawtxs.length}`)
   }
+}
+
+export function processBanxaTx(rawTx: unknown): StandardTx {
+  const banxaTx: BanxaTx = asBanxaTx(rawTx)
+  const { isoDate, timestamp } = smartIsoDateFromTimestamp(banxaTx.created_at)
+
+  // Flip the amounts if the order is a SELL
+  let payoutAddress
+  let inputAmount = banxaTx.fiat_amount
+  let inputCurrency = banxaTx.fiat_code
+  let outputAmount = banxaTx.coin_amount
+  let outputCurrency = banxaTx.coin_code
+  if (banxaTx.order_type === 'CRYPTO-SELL') {
+    inputAmount = banxaTx.coin_amount
+    inputCurrency = banxaTx.coin_code
+    outputAmount = banxaTx.fiat_amount
+    outputCurrency = banxaTx.fiat_code
+  } else {
+    payoutAddress = banxaTx.wallet_address
+  }
+
+  const standardTx: StandardTx = {
+    status: statusMap[banxaTx.status],
+    orderId: banxaTx.id,
+    depositTxid: undefined,
+    depositAddress: undefined,
+    depositCurrency: inputCurrency,
+    depositAmount: inputAmount,
+    payoutTxid: undefined,
+    payoutAddress,
+    payoutCurrency: outputCurrency,
+    payoutAmount: outputAmount,
+    timestamp,
+    isoDate,
+    usdValue: -1,
+    rawTx
+  }
+
+  return standardTx
 }
