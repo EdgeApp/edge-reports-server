@@ -27,7 +27,11 @@ const asBitrefillTx = asObject({
   usdPrice: asNumber
 })
 
-const asRawBitrefillTx = asObject({
+// Partial type for Bitrefill txs for pre-processing
+const asPreBitrefillTx = asObject({
+  expired: asBoolean,
+  paymentReceived: asBoolean,
+  sent: asBoolean,
   status: asString
 })
 
@@ -66,7 +70,7 @@ export async function queryBitrefill(
     Authorization:
       'Basic ' + Buffer.from(username + ':' + password).toString('base64')
   }
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
 
   let url = `https://api.bitrefill.com/v1/orders/`
   let count = 0
@@ -83,46 +87,15 @@ export async function queryBitrefill(
       break
     }
     const txs = jsonObj.orders
-    for (const rawtx of txs) {
-      if (asRawBitrefillTx(rawtx).status === 'unpaid') {
+    for (const rawTx of txs) {
+      // Pre-process the tx to see if it's meets criteria for inclusion:
+      const preTx = asPreBitrefillTx(rawTx)
+      if (preTx.status === 'unpaid') {
         continue
       }
-      const tx = asBitrefillTx(rawtx)
-      if (tx.paymentReceived && !tx.expired && tx.sent) {
-        const timestamp = tx.invoiceTime / 1000
-
-        let inputAmountStr = tx.satoshiPrice?.toString()
-        const inputCurrency: string = tx.coinCurrency.toUpperCase()
-        if (typeof multipliers[inputCurrency] !== 'string') {
-          datelog(inputCurrency + ' has no multipliers')
-          break
-        }
-        if (typeof inputCurrency === 'string' && inputCurrency !== 'BTC') {
-          inputAmountStr = tx.receivedPaymentAltcoin?.toString()
-        }
-        if (inputAmountStr == null) {
-          break
-        }
-        const inputAmountNum = safeParseFloat(
-          div(inputAmountStr, multipliers[inputCurrency], 8)
-        )
-        const ssTx: StandardTx = {
-          status: 'complete',
-          orderId: tx.orderId,
-          depositTxid: undefined,
-          depositAddress: undefined,
-          depositCurrency: inputCurrency,
-          depositAmount: inputAmountNum,
-          payoutTxid: undefined,
-          payoutAddress: undefined,
-          payoutCurrency: tx.currency,
-          payoutAmount: parseInt(tx.value),
-          timestamp,
-          isoDate: new Date(tx.invoiceTime).toISOString(),
-          usdValue: tx.usdPrice,
-          rawTx: rawtx
-        }
-        ssFormatTxs.push(ssTx)
+      if (preTx.paymentReceived && !preTx.expired && preTx.sent) {
+        const standardTx = processBitrefillTx(rawTx)
+        standardTxs.push(standardTx)
       }
     }
 
@@ -139,7 +112,7 @@ export async function queryBitrefill(
   }
   const out: PluginResult = {
     settings: {},
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
   return out
 }
@@ -150,4 +123,42 @@ export const bitrefill: PartnerPlugin = {
   // results in a PluginResult
   pluginName: 'Bitrefill',
   pluginId: 'bitrefill'
+}
+
+export function processBitrefillTx(rawTx: unknown): StandardTx {
+  const tx = asBitrefillTx(rawTx)
+  const timestamp = tx.invoiceTime / 1000
+
+  const inputCurrency: string = tx.coinCurrency.toUpperCase()
+  if (typeof multipliers[inputCurrency] !== 'string') {
+    throw new Error(inputCurrency + ' has no multipliers')
+  }
+  let depositAmountStr = tx.satoshiPrice?.toString()
+  if (typeof inputCurrency === 'string' && inputCurrency !== 'BTC') {
+    depositAmountStr = tx.receivedPaymentAltcoin?.toString()
+  }
+  if (depositAmountStr == null) {
+    throw new Error(`Missing depositAmount for tx: ${tx.orderId}`)
+  }
+  const depositAmount = safeParseFloat(
+    div(depositAmountStr, multipliers[inputCurrency], 8)
+  )
+  const standardTx: StandardTx = {
+    status: 'complete',
+    orderId: tx.orderId,
+    depositTxid: undefined,
+    depositAddress: undefined,
+    depositCurrency: inputCurrency,
+    depositAmount,
+    payoutTxid: undefined,
+    payoutAddress: undefined,
+    payoutCurrency: tx.currency,
+    payoutAmount: parseInt(tx.value),
+    timestamp,
+    isoDate: new Date(tx.invoiceTime).toISOString(),
+    usdValue: tx.usdPrice,
+    rawTx
+  }
+
+  return standardTx
 }
