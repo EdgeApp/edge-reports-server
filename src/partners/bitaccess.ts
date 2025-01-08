@@ -53,7 +53,7 @@ export async function queryBitaccess(
     }
   }
 
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
   lastTimestamp -= QUERY_LOOKBACK
   let newestTimestamp = 0
   let page = 1
@@ -83,38 +83,13 @@ export async function queryBitaccess(
       const txs = result.result
       for (const rawTx of txs) {
         if (asBitaccessRawTx(rawTx).status === 'complete') {
-          const tx = asBitaccessTx(rawTx)
-          const timestamp = new Date(tx.updated_at).getTime() / 1000
-          let depositTxid
-          let payoutTxid
-          if (typeof tx.deposit_address === 'string') {
-            depositTxid = tx.tx_hash
-          }
-          if (typeof tx.withdrawal_address === 'string') {
-            payoutTxid = tx.tx_hash
-          }
+          const standardTx = processBitaccessTx(rawTx)
+          standardTxs.push(standardTx)
 
-          const ssTx: StandardTx = {
-            status: 'complete',
-            orderId: tx.transaction_id,
-            depositTxid,
-            depositAddress: tx.deposit_address,
-            depositCurrency: tx.deposit_currency.toUpperCase(),
-            depositAmount: tx.deposit_amount,
-            payoutTxid,
-            payoutAddress: tx.withdrawal_address,
-            payoutCurrency: tx.withdrawal_currency.toUpperCase(),
-            payoutAmount: tx.withdrawal_amount,
-            timestamp,
-            isoDate: tx.updated_at,
-            usdValue: -1,
-            rawTx
+          if (standardTx.timestamp > newestTimestamp) {
+            newestTimestamp = standardTx.timestamp
           }
-          ssFormatTxs.push(ssTx)
-          if (timestamp > newestTimestamp) {
-            newestTimestamp = timestamp
-          }
-          if (timestamp < lastTimestamp) {
+          if (standardTx.timestamp < lastTimestamp) {
             done = true
             break
           }
@@ -132,7 +107,7 @@ export async function queryBitaccess(
 
   const out = {
     settings: { lastTimestamp: newestTimestamp },
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
   return out
 }
@@ -143,4 +118,35 @@ export const bitaccess: PartnerPlugin = {
   // results in a PluginResult
   pluginName: 'Bitaccess',
   pluginId: 'bitaccess'
+}
+
+export function processBitaccessTx(rawTx: unknown): StandardTx {
+  const tx = asBitaccessTx(rawTx)
+  const timestamp = new Date(tx.updated_at).getTime() / 1000
+  let depositTxid
+  let payoutTxid
+  if (typeof tx.deposit_address === 'string') {
+    depositTxid = tx.tx_hash
+  }
+  if (typeof tx.withdrawal_address === 'string') {
+    payoutTxid = tx.tx_hash
+  }
+
+  const standardTx: StandardTx = {
+    status: 'complete',
+    orderId: tx.transaction_id,
+    depositTxid,
+    depositAddress: tx.deposit_address,
+    depositCurrency: tx.deposit_currency.toUpperCase(),
+    depositAmount: tx.deposit_amount,
+    payoutTxid,
+    payoutAddress: tx.withdrawal_address,
+    payoutCurrency: tx.withdrawal_currency.toUpperCase(),
+    payoutAmount: tx.withdrawal_amount,
+    timestamp,
+    isoDate: tx.updated_at,
+    usdValue: -1,
+    rawTx
+  }
+  return standardTx
 }
