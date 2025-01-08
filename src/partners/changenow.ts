@@ -71,7 +71,7 @@ export const queryChangeNow = async (
     return { settings: { latestIsoDate }, transactions: [] }
   }
 
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
   let previousTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
   if (previousTimestamp < 0) previousTimestamp = 0
   const previousLatestIsoDate = new Date(previousTimestamp).toISOString()
@@ -101,36 +101,10 @@ export const queryChangeNow = async (
         break
       }
       for (const rawTx of txs) {
-        let tx: ChangeNowTx
-        try {
-          tx = asChangeNowTx(rawTx)
-        } catch (e) {
-          datelog(e)
-          throw e
-        }
-        const date = new Date(
-          tx.createdAt.endsWith('Z') ? tx.createdAt : tx.createdAt + 'Z'
-        )
-        const timestamp = date.getTime() / 1000
-        const ssTx: StandardTx = {
-          status: statusMap[tx.status],
-          orderId: tx.requestId,
-          depositTxid: tx.payin.hash,
-          depositAddress: tx.payin.address,
-          depositCurrency: tx.payin.currency.toUpperCase(),
-          depositAmount: tx.payin.amount ?? tx.payin.expectedAmount ?? 0,
-          payoutTxid: tx.payout.hash,
-          payoutAddress: tx.payout.address,
-          payoutCurrency: tx.payout.currency.toUpperCase(),
-          payoutAmount: tx.payout.amount ?? tx.payout.expectedAmount ?? 0,
-          timestamp,
-          isoDate: date.toISOString(),
-          usdValue: -1,
-          rawTx
-        }
-        ssFormatTxs.push(ssTx)
-        if (ssTx.isoDate > latestIsoDate) {
-          latestIsoDate = ssTx.isoDate
+        const standardTx = processChangeNowTx(rawTx)
+        standardTxs.push(standardTx)
+        if (standardTx.isoDate > latestIsoDate) {
+          latestIsoDate = standardTx.isoDate
         }
       }
       datelog(`ChangeNow offset ${offset} latestIsoDate ${latestIsoDate}`)
@@ -151,7 +125,7 @@ export const queryChangeNow = async (
   }
   const out: PluginResult = {
     settings: { latestIsoDate },
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
   return out
 }
@@ -162,4 +136,30 @@ export const changenow: PartnerPlugin = {
   // results in a PluginResult
   pluginName: 'Changenow',
   pluginId: 'changenow'
+}
+
+export function processChangeNowTx(rawTx: unknown): StandardTx {
+  const tx: ChangeNowTx = asChangeNowTx(rawTx)
+  const date = new Date(
+    tx.createdAt.endsWith('Z') ? tx.createdAt : tx.createdAt + 'Z'
+  )
+  const timestamp = date.getTime() / 1000
+  const standardTx: StandardTx = {
+    status: statusMap[tx.status],
+    orderId: tx.requestId,
+    depositTxid: tx.payin.hash,
+    depositAddress: tx.payin.address,
+    depositCurrency: tx.payin.currency.toUpperCase(),
+    depositAmount: tx.payin.amount ?? tx.payin.expectedAmount ?? 0,
+    payoutTxid: tx.payout.hash,
+    payoutAddress: tx.payout.address,
+    payoutCurrency: tx.payout.currency.toUpperCase(),
+    payoutAmount: tx.payout.amount ?? tx.payout.expectedAmount ?? 0,
+    timestamp,
+    isoDate: date.toISOString(),
+    usdValue: -1,
+    rawTx
+  }
+
+  return standardTx
 }
