@@ -77,7 +77,7 @@ export async function queryChangeHero(
     return { settings: { latestIsoDate }, transactions: [] }
   }
 
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
   let previousTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
   if (previousTimestamp < 0) previousTimestamp = 0
   const previousLatestIsoDate = new Date(previousTimestamp).toISOString()
@@ -119,39 +119,18 @@ export async function queryChangeHero(
         break
       }
       for (const rawTx of txs) {
-        let tx: ChangeHeroTx
-        try {
-          tx = asChangeHeroTx(rawTx)
-        } catch (e) {
-          console.log(e)
-          throw e
+        const standardTx = processChangeHeroTx(rawTx)
+        standardTxs.push(standardTx)
+
+        if (standardTx.isoDate > latestIsoDate) {
+          latestIsoDate = standardTx.isoDate
         }
-        const ssTx: StandardTx = {
-          status: statusMap[tx.status],
-          orderId: tx.id,
-          depositTxid: tx.payinHash,
-          depositAddress: tx.payinAddress,
-          depositCurrency: tx.currencyFrom.toUpperCase(),
-          depositAmount: safeParseFloat(tx.amountFrom),
-          payoutTxid: tx.payoutHash,
-          payoutAddress: tx.payoutAddress,
-          payoutCurrency: tx.currencyTo.toUpperCase(),
-          payoutAmount: safeParseFloat(tx.amountTo),
-          timestamp: tx.createdAt,
-          isoDate: smartIsoDateFromTimestamp(tx.createdAt).isoDate,
-          usdValue: -1,
-          rawTx
+        if (standardTx.isoDate < oldestIsoDate) {
+          oldestIsoDate = standardTx.isoDate
         }
-        ssFormatTxs.push(ssTx)
-        if (ssTx.isoDate > latestIsoDate) {
-          latestIsoDate = ssTx.isoDate
-        }
-        if (ssTx.isoDate < oldestIsoDate) {
-          oldestIsoDate = ssTx.isoDate
-        }
-        if (ssTx.isoDate < previousLatestIsoDate && !done) {
+        if (standardTx.isoDate < previousLatestIsoDate && !done) {
           datelog(
-            `ChangeHero done: date ${ssTx.isoDate} < ${previousLatestIsoDate}`
+            `ChangeHero done: date ${standardTx.isoDate} < ${previousLatestIsoDate}`
           )
           done = true
         }
@@ -166,7 +145,7 @@ export async function queryChangeHero(
     settings: {
       latestIsoDate
     },
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
   return out
 }
@@ -177,4 +156,27 @@ export const changehero: PartnerPlugin = {
   // results in a PluginResult
   pluginName: 'Changehero',
   pluginId: 'changehero'
+}
+
+export function processChangeHeroTx(rawTx: unknown): StandardTx {
+  const tx: ChangeHeroTx = asChangeHeroTx(rawTx)
+
+  const standardTx: StandardTx = {
+    status: statusMap[tx.status],
+    orderId: tx.id,
+    depositTxid: tx.payinHash,
+    depositAddress: tx.payinAddress,
+    depositCurrency: tx.currencyFrom.toUpperCase(),
+    depositAmount: safeParseFloat(tx.amountFrom),
+    payoutTxid: tx.payoutHash,
+    payoutAddress: tx.payoutAddress,
+    payoutCurrency: tx.currencyTo.toUpperCase(),
+    payoutAmount: safeParseFloat(tx.amountTo),
+    timestamp: tx.createdAt,
+    isoDate: smartIsoDateFromTimestamp(tx.createdAt).isoDate,
+    usdValue: -1,
+    rawTx
+  }
+
+  return standardTx
 }
