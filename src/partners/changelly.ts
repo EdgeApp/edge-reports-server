@@ -109,7 +109,7 @@ export async function queryChangelly(
     }
   }
 
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
   let newLatestTimeStamp = latestTimeStamp
   let done = false
   try {
@@ -131,35 +131,20 @@ export async function queryChangelly(
       }
       for (const rawTx of txs) {
         if (asChangellyRawTx(rawTx).status === 'finished') {
-          const tx = asChangellyTx(rawTx)
-          const ssTx: StandardTx = {
-            status: 'complete',
-            orderId: tx.id,
-            depositTxid: tx.payinHash,
-            depositAddress: tx.payinAddress,
-            depositCurrency: tx.currencyFrom.toUpperCase(),
-            depositAmount: safeParseFloat(tx.amountFrom),
-            payoutTxid: tx.payoutHash,
-            payoutAddress: tx.payoutAddress,
-            payoutCurrency: tx.currencyTo.toUpperCase(),
-            payoutAmount: safeParseFloat(tx.amountTo),
-            timestamp: tx.createdAt,
-            isoDate: new Date(tx.createdAt * 1000).toISOString(),
-            usdValue: -1,
-            rawTx
-          }
-          ssFormatTxs.push(ssTx)
-          if (tx.createdAt > newLatestTimeStamp) {
-            newLatestTimeStamp = tx.createdAt
+          const standardTx = processChangellyTx(rawTx)
+          standardTxs.push(standardTx)
+          if (standardTx.timestamp > newLatestTimeStamp) {
+            newLatestTimeStamp = standardTx.timestamp
           }
           if (
-            tx.createdAt < latestTimeStamp - QUERY_LOOKBACK &&
+            standardTx.timestamp < latestTimeStamp - QUERY_LOOKBACK &&
             !done &&
             !firstAttempt
           ) {
             datelog(
-              `Changelly done: date ${tx.createdAt} < ${latestTimeStamp -
-                QUERY_LOOKBACK}`
+              `Changelly done: date ${
+                standardTx.timestamp
+              } < ${latestTimeStamp - QUERY_LOOKBACK}`
             )
             done = true
           }
@@ -172,7 +157,7 @@ export async function queryChangelly(
   }
   const out = {
     settings: { latestTimeStamp: newLatestTimeStamp, firstAttempt, offset },
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
   return out
 }
@@ -183,4 +168,27 @@ export const changelly: PartnerPlugin = {
   // results in a PluginResult
   pluginName: 'Changelly',
   pluginId: 'changelly'
+}
+
+export function processChangellyTx(rawTx: unknown): StandardTx {
+  const tx = asChangellyTx(rawTx)
+
+  const standardTx: StandardTx = {
+    status: 'complete',
+    orderId: tx.id,
+    depositTxid: tx.payinHash,
+    depositAddress: tx.payinAddress,
+    depositCurrency: tx.currencyFrom.toUpperCase(),
+    depositAmount: safeParseFloat(tx.amountFrom),
+    payoutTxid: tx.payoutHash,
+    payoutAddress: tx.payoutAddress,
+    payoutCurrency: tx.currencyTo.toUpperCase(),
+    payoutAmount: safeParseFloat(tx.amountTo),
+    timestamp: tx.createdAt,
+    isoDate: new Date(tx.createdAt * 1000).toISOString(),
+    usdValue: -1,
+    rawTx
+  }
+
+  return standardTx
 }
