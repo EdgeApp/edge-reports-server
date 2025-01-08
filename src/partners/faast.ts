@@ -33,7 +33,7 @@ export async function queryFaast(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
   let page = 1
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
   let signature = ''
   let latestTimeStamp = 0
   if (typeof pluginParams.settings.latestTimeStamp === 'number') {
@@ -75,30 +75,12 @@ export async function queryFaast(
     const txs = jsonObj.orders
     for (const rawtx of txs) {
       if (asRawFaastTx(rawtx).status === 'complete') {
-        const tx = asFaastTx(rawtx)
-        const date = new Date(tx.created_at)
-        const timestamp = date.getTime() / 1000
-        const ssTx: StandardTx = {
-          status: 'complete',
-          orderId: tx.swap_id,
-          depositTxid: undefined,
-          depositAddress: tx.deposit_address,
-          depositCurrency: tx.deposit_currency.toUpperCase(),
-          depositAmount: tx.amount_deposited,
-          payoutTxid: tx.transaction_id,
-          payoutAddress: tx.withdrawal_address,
-          payoutCurrency: tx.withdrawal_currency.toUpperCase(),
-          payoutAmount: tx.amount_withdrawn,
-          timestamp,
-          isoDate: tx.created_at,
-          usdValue: -1,
-          rawTx: rawtx
+        const standardTx = processFaastTx(rawtx)
+        standardTxs.push(standardTx)
+        if (standardTx.timestamp > newLatestTimeStamp) {
+          newLatestTimeStamp = standardTx.timestamp
         }
-        ssFormatTxs.push(ssTx)
-        if (timestamp > newLatestTimeStamp) {
-          newLatestTimeStamp = timestamp
-        }
-        if (timestamp < latestTimeStamp - QUERY_LOOKBACK) {
+        if (standardTx.timestamp < latestTimeStamp - QUERY_LOOKBACK) {
           done = true
         }
       }
@@ -110,7 +92,7 @@ export async function queryFaast(
   }
   const out: PluginResult = {
     settings: { latestTimeStamp: newLatestTimeStamp },
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
   return out
 }
@@ -121,4 +103,27 @@ export const faast: PartnerPlugin = {
   // results in a PluginResult
   pluginName: 'Faast',
   pluginId: 'faast'
+}
+
+export function processFaastTx(rawTx: unknown): StandardTx {
+  const tx = asFaastTx(rawTx)
+  const date = new Date(tx.created_at)
+  const timestamp = date.getTime() / 1000
+  const standardTx: StandardTx = {
+    status: 'complete',
+    orderId: tx.swap_id,
+    depositTxid: undefined,
+    depositAddress: tx.deposit_address,
+    depositCurrency: tx.deposit_currency.toUpperCase(),
+    depositAmount: tx.amount_deposited,
+    payoutTxid: tx.transaction_id,
+    payoutAddress: tx.withdrawal_address,
+    payoutCurrency: tx.withdrawal_currency.toUpperCase(),
+    payoutAmount: tx.amount_withdrawn,
+    timestamp,
+    isoDate: tx.created_at,
+    usdValue: -1,
+    rawTx
+  }
+  return standardTx
 }
