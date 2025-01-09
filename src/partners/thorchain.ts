@@ -68,7 +68,7 @@ const THORCHAIN_MULTIPLIER = 100000000
 export const queryThorchain = async (
   pluginParams: PluginParams
 ): Promise<PluginResult> => {
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
 
   const { settings, apiKeys } = asThorchainPluginParams(pluginParams)
   const { thorchainAddress } = apiKeys
@@ -98,24 +98,17 @@ export const queryThorchain = async (
     }
     const txs = jsonObj.actions
     for (const rawTx of txs) {
-      const {
-        date,
-        in: txIns,
-        out: txOuts,
-        pools,
-        status: txStatus
-      } = asThorchainTx(rawTx) // Check RAW trasaction
+      const tx = asThorchainTx(rawTx)
 
-      const status = 'complete'
-      if (txStatus !== 'success') {
+      if (tx.status !== 'success') {
         continue
       }
-      if (pools.length !== 2) {
+      if (tx.pools.length !== 2) {
         continue
       }
 
-      const srcAsset = txIns[0].coins[0].asset
-      const match = txOuts.find(o => {
+      const srcAsset = tx.in[0].coins[0].asset
+      const match = tx.out.find(o => {
         const match2 = o.coins.find(c => c.asset === srcAsset)
         return match2 != null
       })
@@ -126,74 +119,37 @@ export const queryThorchain = async (
         continue
       }
 
-      const timestampMs = div(date, '1000000', 16)
-      const { timestamp, isoDate } = smartIsoDateFromTimestamp(
-        Number(timestampMs)
-      )
-
-      const [chainAsset] = srcAsset.split('-')
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const [_chain, asset] = chainAsset.split('.')
-
-      const depositAmount =
-        Number(txIns[0].coins[0].amount) / THORCHAIN_MULTIPLIER
-
-      const txOut = txOuts.find(o => o.coins[0].asset !== 'THOR.RUNE')
+      const txOut = tx.out.find(o => o.coins[0].asset !== 'THOR.RUNE')
       if (txOut == null) {
         continue
       }
 
-      let payoutCurrency
-      let payoutAmount = 0
-      if (txOut != null) {
-        const [destChainAsset] = txOut.coins[0].asset.split('-')
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const [_destChain, destAsset] = destChainAsset.split('.')
-        payoutCurrency = destAsset
-        payoutAmount = Number(txOut.coins[0].amount) / THORCHAIN_MULTIPLIER
-      }
-
-      const ssTx: StandardTx = {
-        status,
-        orderId: txIns[0].txID,
-        depositTxid: txIns[0].txID,
-        depositAddress: undefined,
-        depositCurrency: asset.toUpperCase(),
-        depositAmount,
-        payoutTxid: txOut?.txID,
-        payoutAddress: txOut?.address,
-        payoutCurrency,
-        payoutAmount,
-        timestamp,
-        isoDate,
-        usdValue: -1,
-        rawTx
-      }
+      const standardTx = processThorchainTx(rawTx)
 
       // See if the transaction exists already
-      const matchTx = ssFormatTxs.find(
+      const matchTx = standardTxs.find(
         tx =>
-          tx.orderId === ssTx.orderId &&
-          tx.timestamp === ssTx.timestamp &&
-          tx.depositCurrency === ssTx.depositCurrency &&
-          tx.payoutCurrency === ssTx.payoutCurrency &&
-          tx.payoutAmount === ssTx.payoutAmount &&
-          tx.depositAmount !== ssTx.depositAmount
+          tx.orderId === standardTx.orderId &&
+          tx.timestamp === standardTx.timestamp &&
+          tx.depositCurrency === standardTx.depositCurrency &&
+          tx.payoutCurrency === standardTx.payoutCurrency &&
+          tx.payoutAmount === standardTx.payoutAmount &&
+          tx.depositAmount !== standardTx.depositAmount
       )
       if (matchTx == null) {
-        ssFormatTxs.push(ssTx)
+        standardTxs.push(standardTx)
       } else {
-        matchTx.depositAmount += ssTx.depositAmount
+        matchTx.depositAmount += standardTx.depositAmount
       }
-      if (ssTx.isoDate > latestIsoDate) {
-        latestIsoDate = ssTx.isoDate
+      if (standardTx.isoDate > latestIsoDate) {
+        latestIsoDate = standardTx.isoDate
       }
-      if (ssTx.isoDate < oldestIsoDate) {
-        oldestIsoDate = ssTx.isoDate
+      if (standardTx.isoDate < oldestIsoDate) {
+        oldestIsoDate = standardTx.isoDate
       }
-      if (ssTx.isoDate < previousLatestIsoDate && !done) {
+      if (standardTx.isoDate < previousLatestIsoDate && !done) {
         datelog(
-          `Thorchain done: date ${ssTx.isoDate} < ${previousLatestIsoDate}`
+          `Thorchain done: date ${standardTx.isoDate} < ${previousLatestIsoDate}`
         )
         done = true
       }
@@ -206,7 +162,7 @@ export const queryThorchain = async (
   }
   const out: PluginResult = {
     settings: { latestIsoDate },
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
   return out
 }
@@ -217,4 +173,45 @@ export const thorchain: PartnerPlugin = {
   // results in a PluginResult
   pluginName: 'Thorchain',
   pluginId: 'thorchain'
+}
+
+export function processThorchainTx(rawTx: unknown): StandardTx {
+  const tx = asThorchainTx(rawTx)
+  const srcAsset = tx.in[0].coins[0].asset
+  const [chainAsset] = srcAsset.split('-')
+  const [, asset] = chainAsset.split('.')
+
+  const depositAmount = Number(tx.in[0].coins[0].amount) / THORCHAIN_MULTIPLIER
+
+  const txOut = tx.out.find(o => o.coins[0].asset !== 'THOR.RUNE')
+
+  if (txOut == null) {
+    throw new Error('Unable to find THOR.RUNE asset in tx.out')
+  }
+
+  const [destChainAsset] = txOut.coins[0].asset.split('-')
+  const [, destAsset] = destChainAsset.split('.')
+  const payoutCurrency = destAsset
+  const payoutAmount = Number(txOut.coins[0].amount) / THORCHAIN_MULTIPLIER
+
+  const timestampMs = div(tx.date, '1000000', 16)
+  const { timestamp, isoDate } = smartIsoDateFromTimestamp(Number(timestampMs))
+
+  const standardTx: StandardTx = {
+    status: 'complete',
+    orderId: tx.in[0].txID,
+    depositTxid: tx.in[0].txID,
+    depositAddress: undefined,
+    depositCurrency: asset.toUpperCase(),
+    depositAmount,
+    payoutTxid: txOut?.txID,
+    payoutAddress: txOut?.address,
+    payoutCurrency,
+    payoutAmount,
+    timestamp,
+    isoDate,
+    usdValue: -1,
+    rawTx
+  }
+  return standardTx
 }
