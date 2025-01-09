@@ -12,8 +12,11 @@ import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { datelog } from '../util'
 
 const asLibertyxTx = asObject({
-  all_transactions_usd_sum: asOptional(asNumber),
+  all_transactions_usd_sum: asNumber,
   date_us_eastern: asString
+})
+const asPreLibertyxTx = asObject({
+  all_transactions_usd_sum: asOptional(asNumber)
 })
 
 const asLibertyxResult = asObject({ stats: asArray(asUnknown) })
@@ -23,7 +26,7 @@ const INCOMPLETE_DAY_RANGE = 3
 export async function queryLibertyx(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
   let apiKey
   let result
   if (typeof pluginParams.apiKeys.apiKey === 'string') {
@@ -53,34 +56,17 @@ export async function queryLibertyx(
       continue
     }
     const rawTx = result.stats[index]
-    const tx = asLibertyxTx(rawTx)
-    if (typeof tx.all_transactions_usd_sum !== 'number') {
+    const preTx = asPreLibertyxTx(rawTx)
+    if (typeof preTx.all_transactions_usd_sum !== 'number') {
       continue
     }
-    const date = new Date(tx.date_us_eastern)
-    const timestamp = date.getTime() / 1000
-    const ssTx: StandardTx = {
-      status: 'complete',
-      orderId: tx.date_us_eastern,
-      depositTxid: undefined,
-      depositAddress: undefined,
-      depositCurrency: 'USD',
-      depositAmount: tx.all_transactions_usd_sum,
-      payoutTxid: undefined,
-      payoutAddress: undefined,
-      payoutCurrency: 'BTC',
-      payoutAmount: 0,
-      timestamp: timestamp,
-      isoDate: date.toISOString(),
-      usdValue: tx.all_transactions_usd_sum,
-      rawTx
-    }
-    ssFormatTxs.push(ssTx)
+    const standardTx = processLibertyxTx(rawTx)
+    standardTxs.push(standardTx)
   }
 
   const out: PluginResult = {
     settings: {},
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
   return out
 }
@@ -91,4 +77,27 @@ export const libertyx: PartnerPlugin = {
   // results in a PluginResult
   pluginName: 'Libertyx',
   pluginId: 'libertyx'
+}
+
+export function processLibertyxTx(rawTx: unknown): StandardTx {
+  const tx = asLibertyxTx(rawTx)
+  const date = new Date(tx.date_us_eastern)
+  const timestamp = date.getTime() / 1000
+  const standardTx: StandardTx = {
+    status: 'complete',
+    orderId: tx.date_us_eastern,
+    depositTxid: undefined,
+    depositAddress: undefined,
+    depositCurrency: 'USD',
+    depositAmount: tx.all_transactions_usd_sum,
+    payoutTxid: undefined,
+    payoutAddress: undefined,
+    payoutCurrency: 'BTC',
+    payoutAmount: 0,
+    timestamp: timestamp,
+    isoDate: date.toISOString(),
+    usdValue: tx.all_transactions_usd_sum,
+    rawTx
+  }
+  return standardTx
 }
