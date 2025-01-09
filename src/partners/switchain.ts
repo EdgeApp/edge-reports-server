@@ -6,8 +6,6 @@ import { datelog, safeParseFloat } from '../util'
 
 const asSwitchainTx = asObject({
   id: asString,
-  status: asString,
-  appId: asString,
   createdAt: asString,
   pair: asString,
   depositTxId: asString,
@@ -16,6 +14,11 @@ const asSwitchainTx = asObject({
   withdrawTxId: asString,
   withdrawAddress: asString,
   rate: asString
+})
+
+const asPreSwitchainTx = asObject({
+  status: asString,
+  appId: asString
 })
 
 const asSwitchainResult = asObject({
@@ -28,7 +31,7 @@ const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 4 // 4 days ago
 export async function querySwitchain(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
   let apiKey
   let latestTimestamp = 0
   if (typeof pluginParams.settings.latestTimestamp === 'number') {
@@ -67,29 +70,13 @@ export async function querySwitchain(
     }
 
     const txs = result.orders
-    for (const rawtx of txs) {
-      const tx = asSwitchainTx(rawtx)
-      if (tx.status === 'confirmed' && tx.appId === apiKey) {
-        const timestamp = new Date(tx.createdAt).getTime()
-        const pair = tx.pair.split('-')
-        const ssTx: StandardTx = {
-          status: 'complete',
-          orderId: tx.id,
-          depositTxid: tx.depositTxId,
-          depositAddress: tx.depositAddress,
-          depositCurrency: pair[0].toUpperCase(),
-          depositAmount: safeParseFloat(tx.amountFrom),
-          payoutTxid: tx.withdrawTxId,
-          payoutAddress: tx.withdrawAddress,
-          payoutCurrency: pair[1].toUpperCase(),
-          payoutAmount: safeParseFloat(tx.rate),
-          timestamp: timestamp / 1000,
-          isoDate: tx.createdAt,
-          usdValue: -1,
-          rawTx: rawtx
-        }
+    for (const rawTx of txs) {
+      const preTx = asPreSwitchainTx(rawTx)
+      if (preTx.status === 'confirmed' && preTx.appId === apiKey) {
+        const standardTx = processSwitchainTx(rawTx)
 
-        ssFormatTxs.push(ssTx)
+        standardTxs.push(standardTx)
+        const timestamp = standardTx.timestamp * 1000
         if (latestTimestamp - QUERY_LOOKBACK > timestamp) {
           done = true
         }
@@ -108,7 +95,7 @@ export async function querySwitchain(
 
   const out: PluginResult = {
     settings: { latestTimestamp: newestTimestamp },
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
   return out
 }
@@ -119,4 +106,27 @@ export const switchain: PartnerPlugin = {
   // results in a PluginResult
   pluginName: 'Switchain',
   pluginId: 'switchain'
+}
+
+export function processSwitchainTx(rawTx: unknown): StandardTx {
+  const tx = asSwitchainTx(rawTx)
+  const timestamp = new Date(tx.createdAt).getTime()
+  const pair = tx.pair.split('-')
+  const standardTx: StandardTx = {
+    status: 'complete',
+    orderId: tx.id,
+    depositTxid: tx.depositTxId,
+    depositAddress: tx.depositAddress,
+    depositCurrency: pair[0].toUpperCase(),
+    depositAmount: safeParseFloat(tx.amountFrom),
+    payoutTxid: tx.withdrawTxId,
+    payoutAddress: tx.withdrawAddress,
+    payoutCurrency: pair[1].toUpperCase(),
+    payoutAmount: safeParseFloat(tx.rate),
+    timestamp: timestamp / 1000,
+    isoDate: tx.createdAt,
+    usdValue: -1,
+    rawTx
+  }
+  return standardTx
 }
