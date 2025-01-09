@@ -169,7 +169,7 @@ export async function queryPaybis(
   let lastCheckedTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
   if (lastCheckedTimestamp < 0) lastCheckedTimestamp = 0
 
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
   let retry = 0
   let startTime = lastCheckedTimestamp
 
@@ -209,38 +209,10 @@ export async function queryPaybis(
         const txs = asTransactions(jsonObj)
         cursor = txs.meta.nextCursor
         for (const rawTx of txs.data) {
-          const tx = asTransaction(rawTx)
-          const { amounts, createdAt, gateway, hash, id } = tx
-          const { spentOriginal, receivedOriginal } = amounts
-
-          const { isoDate, timestamp } = smartIsoDateFromTimestamp(
-            createdAt.getTime()
-          )
-
-          const depositAmount = Number(spentOriginal.amount)
-          const payoutAmount = Number(receivedOriginal.amount)
-          const depositTxid = gateway === 'crypto_to_fiat' ? hash : undefined
-          const payoutTxid = gateway === 'fiat_to_crypto' ? hash : undefined
-
-          const ssTx: StandardTx = {
-            status: statusMap[tx.status],
-            orderId: id,
-            depositTxid,
-            depositAddress: undefined,
-            depositCurrency: spentOriginal.currency,
-            depositAmount,
-            payoutTxid,
-            payoutAddress: tx.to.address ?? undefined,
-            payoutCurrency: receivedOriginal.currency,
-            payoutAmount,
-            timestamp,
-            isoDate,
-            usdValue: -1,
-            rawTx
-          }
-          ssFormatTxs.push(ssTx)
-          if (ssTx.isoDate > latestIsoDate) {
-            latestIsoDate = ssTx.isoDate
+          const standardTx = processPaybisTx(rawTx)
+          standardTxs.push(standardTx)
+          if (standardTx.isoDate > latestIsoDate) {
+            latestIsoDate = standardTx.isoDate
           }
         }
         if (cursor == null) {
@@ -276,7 +248,7 @@ export async function queryPaybis(
 
   const out = {
     settings: { latestIsoDate },
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
   return out
 }
@@ -285,4 +257,35 @@ export const paybis: PartnerPlugin = {
   queryFunc: queryPaybis,
   pluginName: 'Paybis',
   pluginId: 'paybis'
+}
+
+export function processPaybisTx(rawTx: unknown): StandardTx {
+  const tx = asTransaction(rawTx)
+  const { amounts, createdAt, gateway, hash, id } = tx
+  const { spentOriginal, receivedOriginal } = amounts
+
+  const { isoDate, timestamp } = smartIsoDateFromTimestamp(createdAt.getTime())
+
+  const depositAmount = Number(spentOriginal.amount)
+  const payoutAmount = Number(receivedOriginal.amount)
+  const depositTxid = gateway === 'crypto_to_fiat' ? hash : undefined
+  const payoutTxid = gateway === 'fiat_to_crypto' ? hash : undefined
+
+  const standardTx: StandardTx = {
+    status: statusMap[tx.status],
+    orderId: id,
+    depositTxid,
+    depositAddress: undefined,
+    depositCurrency: spentOriginal.currency,
+    depositAmount,
+    payoutTxid,
+    payoutAddress: tx.to.address ?? undefined,
+    payoutCurrency: receivedOriginal.currency,
+    payoutAmount,
+    timestamp,
+    isoDate,
+    usdValue: -1,
+    rawTx
+  }
+  return standardTx
 }
