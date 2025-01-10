@@ -106,13 +106,24 @@ export function processBitsOfGoldTx(rawTx: unknown): StandardTx {
     payoutAmount = data.fiat_amount
   }
 
+  const direction =
+    bogTx.type === 'sell' ? 'sell' : bogTx.type === 'buy' ? 'buy' : undefined
+
+  if (direction == null) {
+    throw new Error(`Invalid direction ${bogTx.type}`)
+  }
+
   const standardTx: StandardTx = {
     status: 'complete',
     orderId: bogTx.id,
+    countryCode: null,
     depositTxid: undefined,
     depositAddress: undefined,
     depositCurrency,
     depositAmount,
+    direction,
+    exchangeType: 'fiat',
+    paymentType: null,
     payoutTxid: undefined,
     payoutAddress: undefined,
     payoutCurrency,

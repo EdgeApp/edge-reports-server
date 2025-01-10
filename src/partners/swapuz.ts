@@ -16,6 +16,7 @@ import {
   Status
 } from '../types'
 import { datelog, retryFetch, smartIsoDateFromTimestamp } from '../util'
+import { isFiatCurrency } from '../util/fiatCurrency'
 
 const asSwapuzLogin = asObject({
   result: asObject({
@@ -172,10 +173,14 @@ export function processSwapuzTx(rawTx: unknown): StandardTx {
   const standardTx: StandardTx = {
     status,
     orderId: tx.uid,
+    countryCode: null,
     depositTxid: tx.dTxId ?? tx.depositTransactionID,
     depositCurrency: tx.from.toUpperCase(),
     depositAddress: tx.depositAddress,
     depositAmount: tx.amount,
+    direction: null,
+    exchangeType: 'swap',
+    paymentType: null,
     payoutTxid: tx.wTxId ?? tx.withdrawalTransactionID,
     payoutCurrency: tx.to.toUpperCase(),
     payoutAddress: undefined,

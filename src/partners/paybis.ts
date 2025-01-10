@@ -1,7 +1,9 @@
 import {
   asArray,
   asDate,
+  asEither,
   asMaybe,
+  asNull,
   asNumber,
   asObject,
   asOptional,
@@ -14,6 +16,7 @@ import URL from 'url-parse'
 import {
   asStandardPluginParams,
   EDGE_APP_START_DATE,
+  FiatPaymentType,
   PartnerPlugin,
   PluginParams,
   PluginResult,
@@ -36,15 +39,15 @@ const asCurrency = asObject({
   amount: asAmount,
   currency: asCurrencyCode
 })
-// const asUserCountry = asObject({
-//   name: asString,
-//   code: asString
-// })
-// const asUser = asObject({
-//   id: asString,
-//   email: asString,
-//   country: asUserCountry
-// })
+const asUserCountry = asObject({
+  name: asString,
+  code: asString
+})
+const asUser = asObject({
+  id: asString,
+  email: asString,
+  country: asEither(asUserCountry, asNull)
+})
 // const asExchangeRate = asObject({
 //   currencyTo: asCurrency,
 //   currencyFrom: asCurrency
@@ -68,7 +71,7 @@ const asCurrency = asObject({
 //   blockchain: asOptional(asBlockchain)
 // })
 const asFromToStructure = asObject({
-  // name: asString,
+  name: asString,
   // asset: asOptional(asCurrencyDetail),
   address: asOptional(asString)
   // destinationTag: asOptional(asString)
@@ -91,7 +94,8 @@ const asAmounts = asObject({
 //   flow: asString,
 //   createdAt: asDate
 // })
-const asTransaction = asObject({
+type PaybisTx = ReturnType<typeof asPaybisTx>
+const asPaybisTx = asObject({
   id: asString,
   gateway: asValue('crypto_to_fiat', 'fiat_to_crypto'),
   status: asString,
@@ -103,9 +107,9 @@ const asTransaction = asObject({
   createdAt: asDate,
   // paidAt: asOptional(asDate),
   // completedAt: asOptional(asDate),
-  amounts: asAmounts
+  amounts: asAmounts,
   // fees: asFees,
-  // user: asUser,
+  user: asUser
   // request: asRequest
 })
 const asMeta = asObject({
@@ -260,7 +264,7 @@ export const paybis: PartnerPlugin = {
 }
 
 export function processPaybisTx(rawTx: unknown): StandardTx {
-  const tx = asTransaction(rawTx)
+  const tx = asPaybisTx(rawTx)
   const { amounts, createdAt, gateway, hash, id } = tx
   const { spentOriginal, receivedOriginal } = amounts
 
@@ -271,15 +275,21 @@ export function processPaybisTx(rawTx: unknown): StandardTx {
   const depositTxid = gateway === 'crypto_to_fiat' ? hash : undefined
   const payoutTxid = gateway === 'fiat_to_crypto' ? hash : undefined
 
+  const direction = (gateway === 'fiat_to_crypto') == null ? 'buy' : 'sell'
+
   const standardTx: StandardTx = {
     status: statusMap[tx.status],
     orderId: id,
+    countryCode: tx.user.country?.code ?? null,
     depositTxid,
     depositAddress: undefined,
     depositCurrency: spentOriginal.currency,
     depositAmount,
+    direction,
+    exchangeType: 'fiat',
+    paymentType: getFiatPaymentType(tx, direction),
     payoutTxid,
-    payoutAddress: tx.to.address ?? undefined,
+    payoutAddress: tx.to.address,
     payoutCurrency: receivedOriginal.currency,
     payoutAmount,
     timestamp,
@@ -288,4 +298,46 @@ export function processPaybisTx(rawTx: unknown): StandardTx {
     rawTx
   }
   return standardTx
+}
+
+function getFiatPaymentType(
+  tx: PaybisTx,
+  direction: 'buy' | 'sell'
+): FiatPaymentType | null {
+  const name = direction === 'buy' ? tx.from.name : tx.to.name
+  switch (name) {
+    case undefined:
+      return null
+    case 'AstroPay':
+      // Idk?
+      return null
+    case 'Credit/Debit Card':
+      return 'credit'
+    case 'FPX':
+      // Idk?
+      return null
+    case 'Giropay':
+      // Idk?
+      return null
+    case 'Neteller':
+      // Idk?
+      return null
+    case 'Online Banking':
+      return 'colombiabank'
+    case 'PIX':
+      return 'pix'
+    case 'Revolut Pay':
+      return 'revolut'
+    case 'SEPA Bank Transfer':
+      return 'sepa'
+    case 'SPEI Bank Transfer':
+      return 'spei'
+    case 'SWIFT Bank Transfer':
+      return 'mexicobank'
+    case 'Skrill':
+      // Idk?
+      return null
+    default:
+      throw new Error(`Unknown payment method: ${name} for ${tx.id}`)
+  }
 }

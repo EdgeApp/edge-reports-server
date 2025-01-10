@@ -1,7 +1,20 @@
-import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
+import {
+  asArray,
+  asNumber,
+  asObject,
+  asOptional,
+  asString,
+  asUnknown
+} from 'cleaners'
 import fetch from 'node-fetch'
 
-import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import {
+  FiatPaymentType,
+  PartnerPlugin,
+  PluginParams,
+  PluginResult,
+  StandardTx
+} from '../types'
 import { datelog } from '../util'
 
 const asMoonpayCurrency = asObject({
@@ -12,16 +25,18 @@ const asMoonpayCurrency = asObject({
 })
 
 const asMoonpayTx = asObject({
-  cryptoTransactionId: asString,
+  baseCurrency: asMoonpayCurrency,
   baseCurrencyAmount: asNumber,
-  walletAddress: asString,
-  quoteCurrencyAmount: asNumber,
-  createdAt: asString,
-  id: asString,
   baseCurrencyId: asString,
+  country: asString,
+  createdAt: asString,
+  cryptoTransactionId: asString,
   currencyId: asString,
   currency: asMoonpayCurrency,
-  baseCurrency: asMoonpayCurrency
+  id: asString,
+  paymentMethod: asOptional(asString),
+  quoteCurrencyAmount: asNumber,
+  walletAddress: asString
 })
 
 type MoonpayTx = ReturnType<typeof asMoonpayTx>
@@ -111,10 +126,15 @@ export function processMoonpayTx(rawTx: unknown): StandardTx {
   const standardTx: StandardTx = {
     status: 'complete',
     orderId: tx.id,
+
+    countryCode: tx.country,
     depositTxid: undefined,
     depositAddress: undefined,
     depositCurrency: tx.baseCurrency.code.toUpperCase(),
     depositAmount: tx.baseCurrencyAmount,
+    direction: 'buy',
+    exchangeType: 'fiat',
+    paymentType: getFiatPaymentType(tx),
     payoutTxid: tx.cryptoTransactionId,
     payoutAddress: tx.walletAddress,
     payoutCurrency: tx.currency.code.toUpperCase(),
@@ -125,4 +145,42 @@ export function processMoonpayTx(rawTx: unknown): StandardTx {
     rawTx
   }
   return standardTx
+}
+
+function getFiatPaymentType(tx: MoonpayTx): FiatPaymentType | null {
+  switch (tx.paymentMethod) {
+    case undefined:
+      return null
+    case 'ach_bank_transfer':
+      return 'ach'
+    case 'apple_pay':
+      return 'applepay'
+    case 'credit_debit_card':
+      return 'credit'
+    case 'gbp_open_banking_payment':
+      return 'fasterpayments'
+    case 'google_pay':
+      return 'googlepay'
+    case 'mobile_wallet':
+      // Idk?
+      return null
+    case 'moonpay_balance':
+      // Idk?
+      return null
+    case 'paypal':
+      return 'paypal'
+    case 'pix_instant_payment':
+      return 'pix'
+    case 'sepa_bank_transfer':
+      return 'sepa'
+    case 'venmo':
+      return 'venmo'
+    case 'yellow_card_bank_transfer':
+      // Idk?
+      return null
+    default:
+      throw new Error(
+        `Unknown payment method: ${tx.paymentMethod} for ${tx.id}`
+      )
+  }
 }
