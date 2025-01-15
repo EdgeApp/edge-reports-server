@@ -175,6 +175,7 @@ export async function queryPaybis(
 
   while (true) {
     const endTime = startTime + QUERY_TIME_BLOCK_MS
+    let latestBlockIsoDate = latestIsoDate
 
     try {
       let cursor: string | undefined
@@ -239,8 +240,8 @@ export async function queryPaybis(
             rawTx
           }
           ssFormatTxs.push(ssTx)
-          if (ssTx.isoDate > latestIsoDate) {
-            latestIsoDate = ssTx.isoDate
+          if (ssTx.isoDate > latestBlockIsoDate) {
+            latestBlockIsoDate = ssTx.isoDate
           }
         }
         if (cursor == null) {
@@ -252,6 +253,7 @@ export async function queryPaybis(
 
       const endDate = new Date(endTime)
       startTime = endTime
+      latestIsoDate = latestBlockIsoDate
       datelog(
         `Paybis endDate:${endDate.toISOString()} latestIsoDate:${latestIsoDate}`
       )

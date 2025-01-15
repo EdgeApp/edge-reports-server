@@ -73,6 +73,7 @@ export async function query0xGasless(
   let retry = 0
 
   while (true) {
+    let latestBlockIsoDate = latestIsoDate
     const startTimestamp = lastCheckedTimestamp
     const endTimestamp = lastCheckedTimestamp + QUERY_TIME_BLOCK_MS
 
@@ -155,8 +156,8 @@ export async function query0xGasless(
             rawTx: trade
           }
           ssFormatTxs.push(ssTx)
-          if (ssTx.isoDate > latestIsoDate) {
-            latestIsoDate = ssTx.isoDate
+          if (ssTx.isoDate > latestBlockIsoDate) {
+            latestBlockIsoDate = ssTx.isoDate
           }
         }
 
@@ -172,6 +173,7 @@ export async function query0xGasless(
       }
 
       lastCheckedTimestamp = endTimestamp
+      latestIsoDate = latestBlockIsoDate
       datelog(
         `0xGasless endDate:${new Date(
           lastCheckedTimestamp
@@ -189,8 +191,8 @@ export async function query0xGasless(
         datelog(`Snoozing ${60 * retry}s`)
         await snooze(60000 * retry)
       } else {
-        // We can't safely save our progress since we go from newest to oldest.
-        throw error
+        // We can safely save our progress since we go from oldest to newest.
+        break
       }
     }
 
