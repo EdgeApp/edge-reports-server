@@ -33,22 +33,6 @@ const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 30 // 30 Days
 /** Time period to query per loop */
 const QUERY_TIME_BLOCK_MS = QUERY_LOOKBACK
 
-type PartnerStatuses =
-  | 'other'
-  | 'created'
-  | 'completed'
-  | 'cancelled'
-  | 'payment_error'
-  | 'rejected'
-const statusMap: { [key in PartnerStatuses]: Status } = {
-  created: 'pending',
-  cancelled: 'refunded',
-  payment_error: 'refunded',
-  completed: 'complete',
-  rejected: 'refunded',
-  other: 'other'
-}
-
 export async function query0xGasless(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
@@ -123,7 +107,7 @@ export async function query0xGasless(
 
           if (buySymbol == null || sellSymbol == null) {
             throw new Error(
-              `Could not find buy or sell symbol for trade ${trade.zid}; txid: ${trade.transactionHash}`
+              `Could not find buy or sell symbol for trade with txid ${trade.transactionHash}`
             )
           }
 
@@ -141,7 +125,7 @@ export async function query0xGasless(
 
           const ssTx: StandardTx = {
             status,
-            orderId: trade.zid,
+            orderId: trade.transactionHash,
             depositTxid: trade.transactionHash,
             depositAddress: undefined,
             depositCurrency: sellSymbol,
