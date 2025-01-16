@@ -6,6 +6,7 @@ import {
   asNumber,
   asObject,
   asString,
+  asUnknown,
   asValue
 } from 'cleaners'
 import URL from 'url-parse'
@@ -98,50 +99,12 @@ export async function query0xGasless(
         }
         const responseBody = asGetGaslessTradesResponse(responseJson)
 
-        for (const trade of responseBody.trades) {
-          const buySymbol = trade.tokens.find(t => t.address === trade.buyToken)
-            ?.symbol
-          const sellSymbol = trade.tokens.find(
-            t => t.address === trade.sellToken
-          )?.symbol
+        for (const rawTx of responseBody.trades) {
+          const standardTx = process0xGaslessTx(rawTx)
 
-          if (buySymbol == null || sellSymbol == null) {
-            throw new Error(
-              `Could not find buy or sell symbol for trade with txid ${trade.transactionHash}`
-            )
-          }
-
-          const {
-            isoDate: tradeIsoDate,
-            timestamp: tradeTimestamp
-          } = smartIsoDateFromTimestamp(trade.timestamp * 1000)
-
-          // If trade is 2 days or older, then it's finalized according to 0x
-          // documentation.
-          const status: Status =
-            tradeTimestamp + 2 * 24 * 60 * 60 * 1000 < now
-              ? 'complete'
-              : 'pending'
-
-          const ssTx: StandardTx = {
-            status,
-            orderId: trade.transactionHash,
-            depositTxid: trade.transactionHash,
-            depositAddress: undefined,
-            depositCurrency: sellSymbol,
-            depositAmount: Number(trade.sellAmount),
-            payoutTxid: trade.transactionHash,
-            payoutAddress: trade.taker ?? undefined,
-            payoutCurrency: buySymbol,
-            payoutAmount: Number(trade.buyAmount),
-            timestamp: tradeTimestamp,
-            isoDate: tradeIsoDate,
-            usdValue: parseFloat(trade.volumeUsd),
-            rawTx: trade
-          }
-          ssFormatTxs.push(ssTx)
-          if (ssTx.isoDate > latestBlockIsoDate) {
-            latestBlockIsoDate = ssTx.isoDate
+          ssFormatTxs.push(standardTx)
+          if (standardTx.isoDate > latestBlockIsoDate) {
+            latestBlockIsoDate = standardTx.isoDate
           }
         }
 
@@ -199,10 +162,54 @@ export const zeroxgasless: PartnerPlugin = {
   pluginId: '0xgasless'
 }
 
+export function process0xGaslessTx(rawTx: unknown): StandardTx {
+  const trade = asGaslessTrade(rawTx)
+  const buySymbol = trade.tokens.find(t => t.address === trade.buyToken)?.symbol
+  const sellSymbol = trade.tokens.find(t => t.address === trade.sellToken)
+    ?.symbol
+
+  if (buySymbol == null || sellSymbol == null) {
+    throw new Error(
+      `Could not find buy or sell symbol for trade with txid ${trade.transactionHash}`
+    )
+  }
+
+  const {
+    isoDate: tradeIsoDate,
+    timestamp: tradeTimestamp
+  } = smartIsoDateFromTimestamp(trade.timestamp * 1000)
+
+  // If trade is 2 days or older, then it's finalized according to 0x
+  // documentation.
+  const status: Status =
+    tradeTimestamp + 2 * 24 * 60 * 60 * 1000 < Date.now()
+      ? 'complete'
+      : 'pending'
+
+  const standardTx: StandardTx = {
+    status,
+    orderId: trade.transactionHash,
+    depositTxid: trade.transactionHash,
+    depositAddress: undefined,
+    depositCurrency: sellSymbol,
+    depositAmount: Number(trade.sellAmount),
+    payoutTxid: trade.transactionHash,
+    payoutAddress: trade.taker ?? undefined,
+    payoutCurrency: buySymbol,
+    payoutAmount: Number(trade.buyAmount),
+    timestamp: tradeTimestamp,
+    isoDate: tradeIsoDate,
+    usdValue: parseFloat(trade.volumeUsd),
+    rawTx: trade
+  }
+
+  return standardTx
+}
+
 const asGetGaslessTradesResponse = asJSON(
   asObject({
     nextCursor: asEither(asString, asNull),
-    trades: asArray(v => asGaslessTrade(v))
+    trades: asArray(asUnknown)
   })
 )
 
