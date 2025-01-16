@@ -175,7 +175,9 @@ export async function query0xGasless(
         datelog(`Snoozing ${60 * retry}s`)
         await snooze(60000 * retry)
       } else {
-        // We can safely save our progress since we go from oldest to newest.
+        // We can safely save our progress since we go from oldest to newest,
+        // and we don't update the lastIsoDate until the page is processed
+        // fully.
         break
       }
     }
