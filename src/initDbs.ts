@@ -14,7 +14,7 @@ const transactionIndexFields: string[][] = [
   ['status', 'payoutAmount', 'depositAmount'],
   ['status', 'payoutCurrency', 'isoDate'],
   ['status', 'usdValue'],
-  ['status', 'usdvalue', 'timestamp'],
+  ['status', 'usdValue', 'timestamp'],
   ['usdValue'],
   ['timestamp']
 ]
