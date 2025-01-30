@@ -5,6 +5,7 @@ import {
   asObject,
   asOptional,
   asString,
+  asUnknown,
   asValue
 } from 'cleaners'
 
@@ -66,7 +67,7 @@ const asTransfer = asObject({
 
 // Define the cleaner for the whole JSON
 const asTransfersResult = asObject({
-  transfers: asArray(asTransfer)
+  transfers: asArray(asUnknown)
 })
 
 type PartnerStatuses = ReturnType<typeof asStatuses>
@@ -94,7 +95,7 @@ export async function queryLifi(
   let lastCheckedTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
   if (lastCheckedTimestamp < 0) lastCheckedTimestamp = 0
 
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
   let retry = 0
   let startTime = lastCheckedTimestamp
 
@@ -114,45 +115,11 @@ export async function queryLifi(
       }
       const jsonObj = await response.json()
       const transferResults = asTransfersResult(jsonObj)
-      for (const tx of transferResults.transfers) {
-        const txTimestamp = tx.receiving.timestamp ?? tx.sending.timestamp ?? 0
-        if (txTimestamp === 0) {
-          throw new Error('No timestamp')
-        }
-        const { isoDate, timestamp } = smartIsoDateFromTimestamp(txTimestamp)
-
-        const depositToken = tx.sending.token ?? tx.sending.gasToken
-        const payoutToken = tx.receiving.token ?? tx.receiving.gasToken
-        if (depositToken == null || payoutToken == null) {
-          throw new Error('Missing token details')
-        }
-        const depositAmount =
-          Number(tx.sending.value) / 10 ** depositToken.decimals
-
-        const payoutAmount =
-          Number(tx.receiving.value) / 10 ** payoutToken.decimals
-
-        const ssTx: StandardTx = {
-          status: statusMap[tx.status],
-          orderId: tx.sending.txHash,
-          depositTxid: tx.sending.txHash,
-          depositAddress: undefined,
-          depositCurrency: depositToken.symbol,
-          depositAmount,
-          payoutTxid: undefined,
-          payoutAddress: tx.toAddress,
-          payoutCurrency: payoutToken.symbol,
-          payoutAmount,
-          timestamp,
-          isoDate,
-          usdValue: Number(
-            tx.receiving.amountUSD ?? tx.sending.amountUSD ?? '-1'
-          ),
-          rawTx: tx
-        }
-        ssFormatTxs.push(ssTx)
-        if (ssTx.isoDate > latestIsoDate) {
-          latestIsoDate = ssTx.isoDate
+      for (const rawTx of transferResults.transfers) {
+        const standardTx = processLifiTx(rawTx)
+        standardTxs.push(standardTx)
+        if (standardTx.isoDate > latestIsoDate) {
+          latestIsoDate = standardTx.isoDate
         }
       }
       const endDate = new Date(endTime)
@@ -181,7 +148,7 @@ export async function queryLifi(
 
   const out = {
     settings: { latestIsoDate },
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
   return out
 }
@@ -190,4 +157,44 @@ export const lifi: PartnerPlugin = {
   queryFunc: queryLifi,
   pluginName: 'Li.Fi',
   pluginId: 'lifi'
+}
+
+export function processLifiTx(rawTx: unknown): StandardTx {
+  const tx = asTransfer(rawTx)
+  const txTimestamp = tx.receiving.timestamp ?? tx.sending.timestamp ?? 0
+  if (txTimestamp === 0) {
+    throw new Error('No timestamp')
+  }
+  const { isoDate, timestamp } = smartIsoDateFromTimestamp(txTimestamp)
+
+  const depositToken = tx.sending.token ?? tx.sending.gasToken
+  const payoutToken = tx.receiving.token ?? tx.receiving.gasToken
+  if (depositToken == null || payoutToken == null) {
+    throw new Error('Missing token details')
+  }
+  const depositAmount = Number(tx.sending.value) / 10 ** depositToken.decimals
+
+  const payoutAmount = Number(tx.receiving.value) / 10 ** payoutToken.decimals
+
+  const standardTx: StandardTx = {
+    status: statusMap[tx.status],
+    orderId: tx.sending.txHash,
+    countryCode: null,
+    depositTxid: tx.sending.txHash,
+    depositAddress: undefined,
+    depositCurrency: depositToken.symbol,
+    depositAmount,
+    direction: null,
+    exchangeType: 'swap',
+    paymentType: null,
+    payoutTxid: undefined,
+    payoutAddress: tx.toAddress,
+    payoutCurrency: payoutToken.symbol,
+    payoutAmount,
+    timestamp,
+    isoDate,
+    usdValue: Number(tx.receiving.amountUSD ?? tx.sending.amountUSD ?? '-1'),
+    rawTx
+  }
+  return standardTx
 }

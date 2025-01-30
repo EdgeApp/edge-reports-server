@@ -1,6 +1,8 @@
 import {
   asArray,
+  asEither,
   asMap,
+  asNull,
   asNumber,
   asObject,
   asOptional,
@@ -46,12 +48,52 @@ const asSafeNumber = (raw: any): number => {
   return asNumber(raw)
 }
 
-const standardTxFields = {
+/** A null direction is for swap exchange types. */
+const asDirection = asEither(asValue('buy', 'sell'), asNull)
+
+/**
+ * Exact copy from GUI (src/plugins/gui/fiatPluginTypes.ts); please keep it
+ * matching
+ */
+const asFiatPaymentType = asValue(
+  'ach',
+  'applepay',
+  'colombiabank',
+  'credit',
+  'directtobank',
+  'fasterpayments',
+  'googlepay',
+  'iach',
+  'ideal',
+  'interac',
+  'iobank',
+  'mexicobank',
+  'payid',
+  'paypal',
+  'pix',
+  'pse',
+  'revolut',
+  'sepa',
+  'spei',
+  'turkishbank',
+  'venmo',
+  'wire'
+)
+export type FiatPaymentType = ReturnType<typeof asFiatPaymentType>
+
+/** The type of exchange that the partner is. A 'fiat' type means on/off ramp. */
+const asExchangeType = asValue('fiat', 'swap')
+
+export const asStandardTx = asObject({
   orderId: asString,
+  countryCode: asEither(asString, asNull),
   depositTxid: asOptional(asString),
   depositAddress: asOptional(asString),
   depositCurrency: asString,
   depositAmount: asSafeNumber,
+  direction: asDirection,
+  exchangeType: asExchangeType,
+  paymentType: asEither(asFiatPaymentType, asNull),
   payoutTxid: asOptional(asString),
   payoutAddress: asOptional(asString),
   payoutCurrency: asString,
@@ -61,13 +103,13 @@ const standardTxFields = {
   timestamp: asNumber,
   usdValue: asNumber,
   rawTx: asUnknown
-}
+})
+
 export const asDbTx = asObject({
-  ...standardTxFields,
+  ...asStandardTx.shape,
   _id: asOptional(asString),
   _rev: asOptional(asString)
 })
-export const asStandardTx = asObject(standardTxFields)
 
 export const asProgressSettings = asObject({
   _id: asOptional(asString),

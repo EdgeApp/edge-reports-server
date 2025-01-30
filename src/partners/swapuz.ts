@@ -16,6 +16,7 @@ import {
   Status
 } from '../types'
 import { datelog, retryFetch, smartIsoDateFromTimestamp } from '../util'
+import { isFiatCurrency } from '../util/fiatCurrency'
 
 const asSwapuzLogin = asObject({
   result: asObject({
@@ -61,7 +62,7 @@ const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 export const querySwapuz = async (
   pluginParams: PluginParams
 ): Promise<PluginResult> => {
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
 
   const { settings, apiKeys } = asSwapuzPluginParams(pluginParams)
   const { login, password } = apiKeys
@@ -117,55 +118,17 @@ export const querySwapuz = async (
       const jsonObj = asSwapuzResult(reply)
       const { currentPage, maxPage, result: txs } = jsonObj.result
       for (const rawTx of txs) {
-        const {
-          uid,
-          status: statusNum,
-          dTxId,
-          wTxId,
-          withdrawalTransactionID,
-          depositTransactionID,
-          depositAddress,
-          amount,
-          amountResult,
-          createDate,
-          from,
-          to
-        } = asSwapuzTx(rawTx)
-
-        // Status === 6 seems to be the "complete" status
-        let status: Status = 'other'
-        if (statusNum === 6) {
-          status = 'complete'
+        const standardTx = processSwapuzTx(rawTx)
+        standardTxs.push(standardTx)
+        if (standardTx.isoDate > latestIsoDate) {
+          latestIsoDate = standardTx.isoDate
         }
-
-        const { isoDate, timestamp } = smartIsoDateFromTimestamp(createDate)
-
-        const ssTx: StandardTx = {
-          status,
-          orderId: uid,
-          depositTxid: dTxId ?? depositTransactionID,
-          depositCurrency: from.toUpperCase(),
-          depositAddress,
-          depositAmount: amount,
-          payoutTxid: wTxId ?? withdrawalTransactionID,
-          payoutCurrency: to.toUpperCase(),
-          payoutAddress: undefined,
-          payoutAmount: amountResult,
-          timestamp,
-          isoDate,
-          usdValue: -1,
-          rawTx
+        if (standardTx.isoDate < oldestIsoDate) {
+          oldestIsoDate = standardTx.isoDate
         }
-        ssFormatTxs.push(ssTx)
-        if (ssTx.isoDate > latestIsoDate) {
-          latestIsoDate = ssTx.isoDate
-        }
-        if (ssTx.isoDate < oldestIsoDate) {
-          oldestIsoDate = ssTx.isoDate
-        }
-        if (ssTx.isoDate < previousLatestIsoDate && !done) {
+        if (standardTx.isoDate < previousLatestIsoDate && !done) {
           datelog(
-            `Swapuz done: date ${ssTx.isoDate} < ${previousLatestIsoDate}`
+            `Swapuz done: date ${standardTx.isoDate} < ${previousLatestIsoDate}`
           )
           done = true
         }
@@ -183,7 +146,7 @@ export const querySwapuz = async (
   }
   const out: PluginResult = {
     settings: { latestIsoDate },
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
   return out
 }
@@ -194,4 +157,38 @@ export const swapuz: PartnerPlugin = {
   // results in a PluginResult
   pluginName: 'Swapuz',
   pluginId: 'swapuz'
+}
+
+export function processSwapuzTx(rawTx: unknown): StandardTx {
+  const tx = asSwapuzTx(rawTx)
+
+  // Status === 6 seems to be the "complete" status
+  let status: Status = 'other'
+  if (tx.status === 6) {
+    status = 'complete'
+  }
+
+  const { isoDate, timestamp } = smartIsoDateFromTimestamp(tx.createDate)
+
+  const standardTx: StandardTx = {
+    status,
+    orderId: tx.uid,
+    countryCode: null,
+    depositTxid: tx.dTxId ?? tx.depositTransactionID,
+    depositCurrency: tx.from.toUpperCase(),
+    depositAddress: tx.depositAddress,
+    depositAmount: tx.amount,
+    direction: null,
+    exchangeType: 'swap',
+    paymentType: null,
+    payoutTxid: tx.wTxId ?? tx.withdrawalTransactionID,
+    payoutCurrency: tx.to.toUpperCase(),
+    payoutAddress: undefined,
+    payoutAmount: tx.amountResult,
+    timestamp,
+    isoDate,
+    usdValue: -1,
+    rawTx
+  }
+  return standardTx
 }

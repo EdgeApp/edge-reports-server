@@ -1,7 +1,20 @@
-import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
+import {
+  asArray,
+  asNumber,
+  asObject,
+  asOptional,
+  asString,
+  asUnknown
+} from 'cleaners'
 import fetch from 'node-fetch'
 
-import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import {
+  FiatPaymentType,
+  PartnerPlugin,
+  PluginParams,
+  PluginResult,
+  StandardTx
+} from '../types'
 import { datelog } from '../util'
 
 const asMoonpayCurrency = asObject({
@@ -12,21 +25,23 @@ const asMoonpayCurrency = asObject({
 })
 
 const asMoonpayTx = asObject({
-  cryptoTransactionId: asString,
+  baseCurrency: asMoonpayCurrency,
   baseCurrencyAmount: asNumber,
-  walletAddress: asString,
-  quoteCurrencyAmount: asNumber,
-  createdAt: asString,
-  id: asString,
   baseCurrencyId: asString,
+  country: asString,
+  createdAt: asString,
+  cryptoTransactionId: asString,
   currencyId: asString,
   currency: asMoonpayCurrency,
-  baseCurrency: asMoonpayCurrency
+  id: asString,
+  paymentMethod: asOptional(asString),
+  quoteCurrencyAmount: asNumber,
+  walletAddress: asString
 })
 
 type MoonpayTx = ReturnType<typeof asMoonpayTx>
 
-const asMoonpayRawTx = asObject({
+const asPreMoonpayTx = asObject({
   status: asString
 })
 
@@ -38,7 +53,7 @@ const PER_REQUEST_LIMIT = 50
 export async function queryMoonpay(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
 
   let headers
   let latestTimestamp = 0
@@ -74,36 +89,12 @@ export async function queryMoonpay(
     // cryptoTransactionId is a duplicate among other transactions sometimes
     // in bulk update it throws an error for document update conflict because of this.
 
-    for (const rawtx of txs) {
-      if (asMoonpayRawTx(rawtx).status === 'completed') {
-        let tx: MoonpayTx
-        try {
-          tx = asMoonpayTx(rawtx)
-        } catch (e) {
-          datelog(e)
-          datelog(rawtx)
-          throw e
-        }
-
-        const date = new Date(tx.createdAt)
-        const timestamp = date.getTime()
-        const ssTx: StandardTx = {
-          status: 'complete',
-          orderId: tx.id,
-          depositTxid: undefined,
-          depositAddress: undefined,
-          depositCurrency: tx.baseCurrency.code.toUpperCase(),
-          depositAmount: tx.baseCurrencyAmount,
-          payoutTxid: tx.cryptoTransactionId,
-          payoutAddress: tx.walletAddress,
-          payoutCurrency: tx.currency.code.toUpperCase(),
-          payoutAmount: tx.quoteCurrencyAmount,
-          timestamp: timestamp / 1000,
-          isoDate: tx.createdAt,
-          usdValue: -1,
-          rawTx: rawtx
-        }
-        ssFormatTxs.push(ssTx)
+    for (const rawTx of txs) {
+      const preTx = asPreMoonpayTx(rawTx)
+      if (preTx.status === 'completed') {
+        const standardTx = processMoonpayTx(rawTx)
+        standardTxs.push(standardTx)
+        const timestamp = standardTx.timestamp * 1000
         done = latestTimestamp > timestamp || txs.length < PER_REQUEST_LIMIT
         newestTimestamp =
           newestTimestamp > timestamp ? newestTimestamp : timestamp
@@ -115,7 +106,7 @@ export async function queryMoonpay(
 
   const out: PluginResult = {
     settings: { latestTimestamp: newestTimestamp },
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
   return out
 }
@@ -126,4 +117,70 @@ export const moonpay: PartnerPlugin = {
   // results in a PluginResult
   pluginName: 'Moonpay',
   pluginId: 'moonpay'
+}
+
+export function processMoonpayTx(rawTx: unknown): StandardTx {
+  const tx: MoonpayTx = asMoonpayTx(rawTx)
+  const date = new Date(tx.createdAt)
+  const timestamp = date.getTime()
+  const standardTx: StandardTx = {
+    status: 'complete',
+    orderId: tx.id,
+
+    countryCode: tx.country,
+    depositTxid: undefined,
+    depositAddress: undefined,
+    depositCurrency: tx.baseCurrency.code.toUpperCase(),
+    depositAmount: tx.baseCurrencyAmount,
+    direction: 'buy',
+    exchangeType: 'fiat',
+    paymentType: getFiatPaymentType(tx),
+    payoutTxid: tx.cryptoTransactionId,
+    payoutAddress: tx.walletAddress,
+    payoutCurrency: tx.currency.code.toUpperCase(),
+    payoutAmount: tx.quoteCurrencyAmount,
+    timestamp: timestamp / 1000,
+    isoDate: tx.createdAt,
+    usdValue: -1,
+    rawTx
+  }
+  return standardTx
+}
+
+function getFiatPaymentType(tx: MoonpayTx): FiatPaymentType | null {
+  switch (tx.paymentMethod) {
+    case undefined:
+      return null
+    case 'ach_bank_transfer':
+      return 'ach'
+    case 'apple_pay':
+      return 'applepay'
+    case 'credit_debit_card':
+      return 'credit'
+    case 'gbp_open_banking_payment':
+      return 'fasterpayments'
+    case 'google_pay':
+      return 'googlepay'
+    case 'mobile_wallet':
+      // Idk?
+      return null
+    case 'moonpay_balance':
+      // Idk?
+      return null
+    case 'paypal':
+      return 'paypal'
+    case 'pix_instant_payment':
+      return 'pix'
+    case 'sepa_bank_transfer':
+      return 'sepa'
+    case 'venmo':
+      return 'venmo'
+    case 'yellow_card_bank_transfer':
+      // Idk?
+      return null
+    default:
+      throw new Error(
+        `Unknown payment method: ${tx.paymentMethod} for ${tx.id}`
+      )
+  }
 }

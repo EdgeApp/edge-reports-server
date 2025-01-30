@@ -8,8 +8,12 @@ export const asConfig = asObject({
   ),
   httpPort: asOptional(asNumber, 8008),
   bog: asOptional(asObject({ apiKey: asString }), { apiKey: '' }),
+
+  /** Only run specific appIds (e.g. edge, coinhub, etc) */
   soloAppIds: asOptional(asArray(asString), null),
+  /** Only run specific partnerIds (e.g. moonpay, paybis, etc) */
   soloPartnerIds: asOptional(asArray(asString), null),
+
   timeoutOverrideMins: asOptional(asNumber, 1200),
   cacheLookbackMonths: asOptional(asNumber, 24)
 })

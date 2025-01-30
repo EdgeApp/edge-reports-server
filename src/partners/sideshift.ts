@@ -104,7 +104,7 @@ export async function querySideshift(
   let lastCheckedTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
   if (lastCheckedTimestamp < 0) lastCheckedTimestamp = 0
 
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
   let retry = 0
   let startTime = lastCheckedTimestamp
 
@@ -130,37 +130,11 @@ export async function querySideshift(
       if (orders.length === 0) {
         break
       }
-      for (const order of orders) {
-        let tx: SideshiftTx
-        try {
-          tx = asSideshiftTx(order)
-        } catch (e) {
-          datelog(e)
-          throw e
-        }
-        const depositAddress =
-          tx.depositAddress?.address ?? tx.prevDepositAddresses?.address
-        const { isoDate, timestamp } = smartIsoDateFromTimestamp(tx.createdAt)
-
-        const ssTx: StandardTx = {
-          status: statusMap[tx.status],
-          orderId: tx.id,
-          depositTxid: undefined,
-          depositAddress,
-          depositCurrency: tx.depositAsset,
-          depositAmount: Number(tx.invoiceAmount),
-          payoutTxid: undefined,
-          payoutAddress: tx.settleAddress.address,
-          payoutCurrency: tx.settleAsset,
-          payoutAmount: Number(tx.settleAmount),
-          timestamp,
-          isoDate,
-          usdValue: -1,
-          rawTx: order
-        }
-        ssFormatTxs.push(ssTx)
-        if (ssTx.isoDate > latestIsoDate) {
-          latestIsoDate = ssTx.isoDate
+      for (const rawTx of orders) {
+        const standardTx = processSideshiftTx(rawTx)
+        standardTxs.push(standardTx)
+        if (standardTx.isoDate > latestIsoDate) {
+          latestIsoDate = standardTx.isoDate
         }
       }
       startTime = new Date(latestIsoDate).getTime()
@@ -185,7 +159,7 @@ export async function querySideshift(
 
   const out = {
     settings: { latestIsoDate },
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
   return out
 }
@@ -194,4 +168,33 @@ export const sideshift: PartnerPlugin = {
   queryFunc: querySideshift,
   pluginName: 'SideShift.ai',
   pluginId: 'sideshift'
+}
+
+export function processSideshiftTx(rawTx: unknown): StandardTx {
+  const tx: SideshiftTx = asSideshiftTx(rawTx)
+  const depositAddress =
+    tx.depositAddress?.address ?? tx.prevDepositAddresses?.address
+  const { isoDate, timestamp } = smartIsoDateFromTimestamp(tx.createdAt)
+
+  const standardTx: StandardTx = {
+    status: statusMap[tx.status],
+    orderId: tx.id,
+    countryCode: null,
+    depositTxid: undefined,
+    depositAddress,
+    depositCurrency: tx.depositAsset,
+    depositAmount: Number(tx.invoiceAmount),
+    direction: null,
+    exchangeType: 'swap',
+    paymentType: null,
+    payoutTxid: undefined,
+    payoutAddress: tx.settleAddress.address,
+    payoutCurrency: tx.settleAsset,
+    payoutAmount: Number(tx.settleAmount),
+    timestamp,
+    isoDate,
+    usdValue: -1,
+    rawTx
+  }
+  return standardTx
 }

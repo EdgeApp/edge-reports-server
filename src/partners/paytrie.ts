@@ -20,7 +20,7 @@ const asPaytrieTxs = asArray(asUnknown)
 export async function queryPaytrie(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
   let startDate = '2020-01-01'
   const endDate = new Date().toISOString().slice(0, 10)
   let apiKey, secretToken
@@ -58,29 +58,13 @@ export async function queryPaytrie(
   const orders = asPaytrieTxs(await apiResponse.json())
 
   for (const rawOrder of orders) {
-    const order = asPaytrieTx(rawOrder)
-    const ssTx: StandardTx = {
-      status: 'complete',
-      orderId: order.inputTXID,
-      depositTxid: undefined,
-      depositAddress: order.inputAddress,
-      depositCurrency: order.inputCurrency,
-      depositAmount: order.inputAmount,
-      payoutTxid: undefined,
-      payoutAddress: order.outputAddress,
-      payoutCurrency: order.outputCurrency,
-      payoutAmount: order.outputAmount,
-      timestamp: new Date(order.timestamp).getTime() / 1000,
-      isoDate: order.timestamp,
-      usdValue: -1,
-      rawTx: rawOrder
-    }
-    ssFormatTxs.push(ssTx)
+    const standardTx = processPaytrieTx(rawOrder)
+    standardTxs.push(standardTx)
   }
 
   const out: PluginResult = {
     settings: { lastCheckedDate: endDate },
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
   return out
 }
@@ -91,4 +75,29 @@ export const paytrie: PartnerPlugin = {
   // results in a PluginResult
   pluginName: 'Paytrie',
   pluginId: 'paytrie'
+}
+
+export function processPaytrieTx(rawTx: unknown): StandardTx {
+  const order = asPaytrieTx(rawTx)
+  const standardTx: StandardTx = {
+    status: 'complete',
+    orderId: order.inputTXID,
+    countryCode: null, // No records of paytrie in the DB to determine
+    depositTxid: undefined,
+    depositAddress: order.inputAddress,
+    depositCurrency: order.inputCurrency,
+    depositAmount: order.inputAmount,
+    direction: null, // No records of paytrie in the DB to determine
+    exchangeType: 'fiat', // IDK what paytrie is, but I assume it's a fiat exchange
+    paymentType: null,
+    payoutTxid: undefined,
+    payoutAddress: order.outputAddress,
+    payoutCurrency: order.outputCurrency,
+    payoutAmount: order.outputAmount,
+    timestamp: new Date(order.timestamp).getTime() / 1000,
+    isoDate: order.timestamp,
+    usdValue: -1,
+    rawTx
+  }
+  return standardTx
 }
