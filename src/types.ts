@@ -1,5 +1,6 @@
 import {
   asArray,
+  asDate,
   asEither,
   asMap,
   asNull,
@@ -8,7 +9,8 @@ import {
   asOptional,
   asString,
   asUnknown,
-  asValue
+  asValue,
+  uncleaner
 } from 'cleaners'
 
 /** Earliest date that transactions may show in Edge */
@@ -125,6 +127,7 @@ export const asStandardTx = asObject({
   status: asStatus,
   isoDate: asString,
   timestamp: asNumber,
+  updateTime: asOptional(asDate, () => new Date()),
   usdValue: asNumber,
   rawTx: asUnknown
 })
@@ -134,6 +137,7 @@ export const asDbTx = asObject({
   _id: asOptional(asString),
   _rev: asOptional(asString)
 })
+export const wasDbTx = uncleaner(asDbTx)
 
 export const asProgressSettings = asObject({
   _id: asOptional(asString),

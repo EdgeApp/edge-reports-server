@@ -9,6 +9,7 @@ import {
 } from 'cleaners'
 import fetch from 'node-fetch'
 
+import { config } from '../config'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { datelog } from '../util'
 
@@ -136,6 +137,7 @@ export function processBitsOfGoldTx(rawTx: unknown): StandardTx {
     payoutCurrency,
     payoutAmount,
     timestamp: timestamp / 1000,
+    updateTime: new Date(),
     isoDate: date.toISOString(),
     usdValue: -1,
     rawTx

@@ -9,6 +9,7 @@ import {
   asValue
 } from 'cleaners'
 
+import { config } from '../config'
 import {
   asStandardPluginParams,
   PartnerPlugin,
@@ -160,6 +161,7 @@ export function processChangeNowTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.payout.currency.toUpperCase(),
     payoutAmount: tx.payout.amount ?? tx.payout.expectedAmount ?? 0,
     timestamp,
+    updateTime: new Date(),
     isoDate: date.toISOString(),
     usdValue: -1,
     rawTx

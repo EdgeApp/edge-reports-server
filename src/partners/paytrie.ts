@@ -1,6 +1,7 @@
 import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
 
+import { config } from '../config'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { datelog } from '../util'
 
@@ -95,6 +96,7 @@ export function processPaytrieTx(rawTx: unknown): StandardTx {
     payoutCurrency: order.outputCurrency,
     payoutAmount: order.outputAmount,
     timestamp: new Date(order.timestamp).getTime() / 1000,
+    updateTime: new Date(),
     isoDate: order.timestamp,
     usdValue: -1,
     rawTx

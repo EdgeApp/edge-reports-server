@@ -10,6 +10,7 @@ import {
 } from 'cleaners'
 import fetch from 'node-fetch'
 
+import { config } from '../config'
 import {
   FiatPaymentType,
   PartnerPlugin,
@@ -138,6 +139,7 @@ export function processTransakTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.cryptoCurrency,
     payoutAmount: tx.cryptoAmount,
     timestamp: date.getTime() / 1000,
+    updateTime: new Date(),
     isoDate: date.toISOString(),
     usdValue: -1,
     rawTx

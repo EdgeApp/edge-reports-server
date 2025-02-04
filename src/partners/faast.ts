@@ -2,6 +2,7 @@ import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import crypto from 'crypto'
 import fetch from 'node-fetch'
 
+import { config } from '../config'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { datelog } from '../util'
 
@@ -125,6 +126,7 @@ export function processFaastTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.withdrawal_currency.toUpperCase(),
     payoutAmount: tx.amount_withdrawn,
     timestamp,
+    updateTime: new Date(),
     isoDate: tx.created_at,
     usdValue: -1,
     rawTx

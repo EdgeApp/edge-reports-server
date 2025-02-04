@@ -11,6 +11,7 @@ import {
   asValue
 } from 'cleaners'
 
+import { config } from '../config'
 import {
   asStandardPluginParams,
   FiatPaymentType,
@@ -147,6 +148,7 @@ export function processKadoTx(rawTx: unknown): StandardTx {
       payoutCurrency: tx.cryptoCurrency,
       payoutAmount: tx.receiveUnitCount,
       timestamp,
+      updateTime: new Date(),
       isoDate,
       usdValue: tx.paidAmountUsd,
       rawTx
@@ -168,6 +170,7 @@ export function processKadoTx(rawTx: unknown): StandardTx {
       payoutCurrency: 'USD',
       payoutAmount: tx.receiveUsd,
       timestamp,
+      updateTime: new Date(),
       isoDate,
       usdValue: tx.receiveUsd,
       rawTx
