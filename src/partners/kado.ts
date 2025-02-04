@@ -10,6 +10,7 @@ import {
   asValue
 } from 'cleaners'
 
+import { config } from '../config'
 import {
   asStandardPluginParams,
   FiatPaymentType,
@@ -142,6 +143,7 @@ export function processKadoTx(rawTx: unknown): StandardTx {
       payoutCurrency: tx.cryptoCurrency,
       payoutAmount: tx.receiveUnitCount,
       timestamp,
+      indexVersion: config.clickhouseIndexVersion,
       isoDate,
       usdValue: tx.paidAmountUsd,
       rawTx: tx
@@ -163,6 +165,7 @@ export function processKadoTx(rawTx: unknown): StandardTx {
       payoutCurrency: 'USD',
       payoutAmount: tx.receiveUsd,
       timestamp,
+      indexVersion: config.clickhouseIndexVersion,
       isoDate,
       usdValue: tx.receiveUsd,
       rawTx: tx

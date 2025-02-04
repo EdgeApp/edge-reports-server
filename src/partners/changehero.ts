@@ -9,6 +9,7 @@ import {
   asValue
 } from 'cleaners'
 
+import { config } from '../config'
 import {
   PartnerPlugin,
   PluginParams,
@@ -177,6 +178,7 @@ export function processChangeHeroTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.currencyTo.toUpperCase(),
     payoutAmount: safeParseFloat(tx.amountTo),
     timestamp: tx.createdAt,
+    indexVersion: config.clickhouseIndexVersion,
     isoDate: smartIsoDateFromTimestamp(tx.createdAt).isoDate,
     usdValue: -1,
     rawTx

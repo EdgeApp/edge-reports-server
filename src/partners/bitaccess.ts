@@ -10,6 +10,7 @@ import {
 import crypto from 'crypto'
 import fetch from 'node-fetch'
 
+import { config } from '../config'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { datelog } from '../util'
 
@@ -153,6 +154,7 @@ export function processBitaccessTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.withdrawal_currency.toUpperCase(),
     payoutAmount: tx.withdrawal_amount,
     timestamp,
+    indexVersion: config.clickhouseIndexVersion,
     isoDate: tx.updated_at,
     usdValue: -1,
     rawTx

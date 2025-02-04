@@ -10,6 +10,7 @@ import {
   asUnknown
 } from 'cleaners'
 
+import { config } from '../config'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { safeParseFloat } from '../util'
 import { isFiatCurrency } from '../util/fiatCurrency'
@@ -172,6 +173,7 @@ export function processSimplexTx(rawTx: unknown): StandardTx {
     payoutCurrency,
     payoutAmount: safeParseFloat(tx.amount_crypto),
     timestamp: tx.created_at,
+    indexVersion: config.clickhouseIndexVersion,
     isoDate: new Date(tx.created_at * 1000).toISOString(),
     usdValue: safeParseFloat(tx.amount_usd),
     rawTx

@@ -49,6 +49,18 @@
   dependencies:
     regenerator-runtime "^0.13.4"
 
+"@clickhouse/client-common@1.10.1":
+  version "1.10.1"
+  resolved "https://registry.yarnpkg.com/@clickhouse/client-common/-/client-common-1.10.1.tgz#570271f01c1b35b2de634f1710919e2b706301f0"
+  integrity sha512-Duh3cign2ChvXABpjVj9Hkz5y20Zf48OE0Y50S4qBVPdhI81S4Rh4MI/bEwvwMnzHubSkiEQ+VhC5HzV8ybnpg==
+
+"@clickhouse/client@^1.10.1":
+  version "1.10.1"
+  resolved "https://registry.yarnpkg.com/@clickhouse/client/-/client-1.10.1.tgz#eacad0cd5feff892a24f1367d565af7a04eabe08"
+  integrity sha512-Ot/6l4hFALK6NtZDS2UegukfRXWkkftWHCnzKUwanpOQ3Jd+RVKx5dxQreeBG5XcRjt1xyf5904PFjbCnaulXg==
+  dependencies:
+    "@clickhouse/client-common" "1.10.1"
+
 "@eslint-community/eslint-utils@^4.2.0":
   version "4.4.0"
   resolved "https://registry.yarnpkg.com/@eslint-community/eslint-utils/-/eslint-utils-4.4.0.tgz#a23514e8fb9af1269d5f7788aa556798d61c6b59"
@@ -1055,7 +1067,7 @@
     "@types/node" "*"
     form-data "^3.0.0"
 
-"@types/node@*", "@types/node@^14.0.22":
+"@types/node@*":
   version "14.6.0"
   resolved "https://registry.npmjs.org/@types/node/-/node-14.6.0.tgz"
   integrity sha512-mikldZQitV94akrc4sCcSjtJfsTKt4p+e/s0AGscVA6XArQ9kFclP+ZiYUMnq987rc6QlYxXv/EivqlfSLxpKA==
@@ -1069,6 +1081,13 @@
   version "12.12.54"
   resolved "https://registry.npmjs.org/@types/node/-/node-12.12.54.tgz"
   integrity sha512-ge4xZ3vSBornVYlDnk7yZ0gK6ChHf/CHB7Gl1I0Jhah8DDnEQqBzgohYG4FX4p81TNirSETOiSyn+y1r9/IR6w==
+
+"@types/node@^20.17.17":
+  version "20.17.17"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.17.17.tgz#5cea2af2e271313742c14f418eaf5dcfa8ae2e3a"
+  integrity sha512-/WndGO4kIfMicEQLTi/mDANUu/iVUhT7KboZPdEqqHQ4aTS+3qT3U5gIqWDFV+XouorjfgGqvKILJeHhuQgFYg==
+  dependencies:
+    undici-types "~6.19.2"
 
 "@types/node@^22.7.4":
   version "22.7.6"

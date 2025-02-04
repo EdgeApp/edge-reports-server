@@ -9,6 +9,7 @@ import {
 } from 'cleaners'
 import fetch from 'node-fetch'
 
+import { config } from '../config'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { datelog } from '../util'
 
@@ -125,6 +126,7 @@ export function processCoinSwitchTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.destinationCoin.toUpperCase(),
     payoutAmount: tx.destinationCoinAmount,
     timestamp: tx.createdAt / 1000,
+    indexVersion: config.clickhouseIndexVersion,
     isoDate: new Date(tx.createdAt).toISOString(),
     usdValue: -1,
     rawTx: rawTx

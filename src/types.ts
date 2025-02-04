@@ -99,6 +99,7 @@ export const asStandardTx = asObject({
   payoutCurrency: asString,
   payoutAmount: asSafeNumber,
   status: asStatus,
+  indexVersion: asOptional(asNumber),
   isoDate: asString,
   timestamp: asNumber,
   usdValue: asNumber,

@@ -8,6 +8,7 @@ import {
 } from 'cleaners'
 import fetch from 'node-fetch'
 
+import { config } from '../config'
 import {
   PartnerPlugin,
   PluginParams,
@@ -186,6 +187,7 @@ export function processSwapuzTx(rawTx: unknown): StandardTx {
     payoutAddress: undefined,
     payoutAmount: tx.amountResult,
     timestamp,
+    indexVersion: config.clickhouseIndexVersion,
     isoDate,
     usdValue: -1,
     rawTx

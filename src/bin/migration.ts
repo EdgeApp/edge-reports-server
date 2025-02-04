@@ -147,6 +147,7 @@ async function migration(): Promise<void> {
                     cleanedShapeshiftTx.outputAmount
                   ),
                   timestamp: cleanedShapeshiftTx.timestamp,
+                  indexVersion: 0,
                   isoDate: new Date(
                     cleanedShapeshiftTx.timestamp * 1000
                   ).toISOString(),
@@ -198,6 +199,7 @@ async function migration(): Promise<void> {
                 payoutCurrency: cleanedOldTx.outputCurrency,
                 payoutAmount,
                 status: 'complete',
+                indexVersion: 0,
                 isoDate,
                 timestamp,
                 usdValue: -1,
