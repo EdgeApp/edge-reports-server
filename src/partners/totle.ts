@@ -3,6 +3,7 @@ import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
 import Web3 from 'web3'
 
+import { config } from '../config'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { datelog, safeParseFloat } from '../util'
 
@@ -417,6 +418,7 @@ export async function queryTotle(
               )
             ),
             timestamp: timestamp,
+            indexVersion: config.clickhouseIndexVersion,
             isoDate: new Date(timestamp * 1000).toISOString(),
             usdValue: -1,
             rawTx: rawSwapEvent

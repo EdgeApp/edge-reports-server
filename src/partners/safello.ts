@@ -1,6 +1,7 @@
 import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
 
+import { config } from '../config'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 
 const asSafelloTx = asObject({
@@ -100,6 +101,7 @@ export function processSafelloTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.cryptoCurrency,
     payoutAmount: 0,
     timestamp: timestamp / 1000,
+    indexVersion: config.clickhouseIndexVersion,
     isoDate: date.toISOString(),
     usdValue: -1,
     rawTx

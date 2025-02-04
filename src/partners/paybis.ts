@@ -13,6 +13,7 @@ import {
 } from 'cleaners'
 import URL from 'url-parse'
 
+import { config } from '../config'
 import {
   asStandardPluginParams,
   EDGE_APP_START_DATE,
@@ -293,6 +294,7 @@ export function processPaybisTx(rawTx: unknown): StandardTx {
     payoutCurrency: receivedOriginal.currency,
     payoutAmount,
     timestamp,
+    indexVersion: config.clickhouseIndexVersion,
     isoDate,
     usdValue: -1,
     rawTx

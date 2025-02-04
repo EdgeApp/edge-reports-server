@@ -10,6 +10,7 @@ import {
 } from 'cleaners'
 import fetch from 'node-fetch'
 
+import { config } from '../config'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { datelog, safeParseFloat } from '../util'
 
@@ -160,6 +161,7 @@ export function processBitrefillTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.currency,
     payoutAmount: parseInt(tx.value),
     timestamp,
+    indexVersion: config.clickhouseIndexVersion,
     isoDate: new Date(tx.invoiceTime).toISOString(),
     usdValue: tx.usdPrice,
     rawTx

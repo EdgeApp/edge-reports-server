@@ -1,6 +1,7 @@
 import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
 
+import { config } from '../config'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { datelog, safeParseFloat } from '../util'
 
@@ -101,6 +102,7 @@ export function processShapeshiftTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.outputCurrency,
     payoutAmount: safeParseFloat(tx.outputAmount),
     timestamp: tx.timestamp,
+    indexVersion: config.clickhouseIndexVersion,
     isoDate: new Date(tx.timestamp * 1000).toISOString(),
     usdValue: -1,
     rawTx

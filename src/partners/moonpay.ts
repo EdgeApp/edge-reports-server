@@ -8,6 +8,7 @@ import {
 } from 'cleaners'
 import fetch from 'node-fetch'
 
+import { config } from '../config'
 import {
   FiatPaymentType,
   PartnerPlugin,
@@ -140,6 +141,7 @@ export function processMoonpayTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.currency.code.toUpperCase(),
     payoutAmount: tx.quoteCurrencyAmount,
     timestamp: timestamp / 1000,
+    indexVersion: config.clickhouseIndexVersion,
     isoDate: tx.createdAt,
     usdValue: -1,
     rawTx

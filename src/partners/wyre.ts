@@ -1,6 +1,7 @@
 import { asNumber, asObject, asOptional, asString } from 'cleaners'
 import fetch from 'node-fetch'
 
+import { config } from '../config'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { safeParseFloat } from '../util'
 import { isFiatCurrency } from '../util/fiatCurrency'
@@ -130,6 +131,7 @@ export function processWyreTx(rawTx: unknown): StandardTx {
     payoutCurrency,
     payoutAmount: safeParseFloat(tx.destAmount),
     timestamp: dateMs / 1000,
+    indexVersion: config.clickhouseIndexVersion,
     isoDate: date.toISOString(),
     usdValue: safeParseFloat(tx.usdEquiv),
     rawTx

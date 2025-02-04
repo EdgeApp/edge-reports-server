@@ -9,6 +9,7 @@ import {
 } from 'cleaners'
 import crypto from 'crypto'
 
+import { config } from '../config'
 import {
   PartnerPlugin,
   PluginParams,
@@ -192,6 +193,7 @@ export function processSideshiftTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.settleAsset,
     payoutAmount: Number(tx.settleAmount),
     timestamp,
+    indexVersion: config.clickhouseIndexVersion,
     isoDate,
     usdValue: -1,
     rawTx
