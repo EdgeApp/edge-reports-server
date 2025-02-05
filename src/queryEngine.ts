@@ -3,6 +3,7 @@ import nano from 'nano'
 import { config } from './config'
 import { pagination } from './dbutils'
 import { initDbs } from './initDbs'
+import { zeroxgasless } from './partners/0xgasless'
 import { banxa } from './partners/banxa'
 import { bitaccess } from './partners/bitaccess'
 import { bitrefill } from './partners/bitrefill'
@@ -69,7 +70,8 @@ const plugins = [
   thorchain,
   transak,
   wyre,
-  xanpool
+  xanpool,
+  zeroxgasless
 ]
 const QUERY_FREQ_MS = 60 * 1000
 const MAX_CONCURRENT_QUERIES = 3
