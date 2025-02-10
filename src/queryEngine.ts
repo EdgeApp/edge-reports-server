@@ -24,6 +24,7 @@ import { lifi } from './partners/lifi'
 import { moonpay } from './partners/moonpay'
 import { paybis } from './partners/paybis'
 import { paytrie } from './partners/paytrie'
+import { rango } from './partners/rango'
 import { safello } from './partners/safello'
 import { sideshift } from './partners/sideshift'
 import { simplex } from './partners/simplex'
@@ -61,6 +62,7 @@ const plugins = [
   moonpay,
   paybis,
   paytrie,
+  rango,
   safello,
   sideshift,
   simplex,
