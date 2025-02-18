@@ -155,7 +155,7 @@ export function processXanpoolTx(rawTx: unknown): StandardTx {
       depositAmount: tx.crypto,
       direction: 'sell',
       exchangeType: 'fiat',
-      paymentType: null, // Or whatever tx.method === 'paynow' means?
+      paymentType: 'paynow', // Or whatever tx.method === 'paynow' means?
       payoutTxid: undefined,
       payoutAddress: undefined,
       payoutCurrency: tx.currency,

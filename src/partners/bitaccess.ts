@@ -147,7 +147,7 @@ export function processBitaccessTx(rawTx: unknown): StandardTx {
     depositAmount: tx.deposit_amount,
     direction: tx.trade_type,
     exchangeType: 'fiat',
-    paymentType: null,
+    paymentType: 'cash',
     payoutTxid,
     payoutAddress: tx.withdrawal_address,
     payoutCurrency: tx.withdrawal_currency.toUpperCase(),

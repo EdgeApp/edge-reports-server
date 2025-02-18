@@ -124,7 +124,7 @@ export function processWyreTx(rawTx: unknown): StandardTx {
     depositAmount: safeParseFloat(tx.sourceAmount),
     direction,
     exchangeType: 'fiat',
-    paymentType: null,
+    paymentType: 'ach',
     payoutTxid: undefined,
     payoutAddress: undefined,
     payoutCurrency,

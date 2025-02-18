@@ -180,7 +180,7 @@ export function processBityTx(rawTx: unknown): StandardTx {
     depositAmount: safeParseFloat(tx.input.amount),
     direction,
     exchangeType: 'swap',
-    paymentType: null,
+    paymentType: 'sepa',
     payoutTxid: undefined,
     payoutAddress: undefined,
     payoutCurrency: tx.output.currency.toUpperCase(),

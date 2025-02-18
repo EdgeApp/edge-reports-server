@@ -148,11 +148,11 @@ export function processTransakTx(rawTx: unknown): StandardTx {
 function getFiatPaymentType(tx: TransakOrder): FiatPaymentType | null {
   switch (tx.paymentOptionId) {
     case 'mobikwik_wallet':
-      return null
+      return 'mobikwik'
     case 'neft_bank_transfer':
-      return null
+      return 'neft'
     case 'upi':
-      return null
+      return 'upi'
     default:
       throw new Error(
         `Unknown payment method: ${tx.paymentOptionId} for ${tx.id}`

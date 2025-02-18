@@ -148,7 +148,7 @@ export function processIoniaGiftCardsTx(rawTx: unknown): StandardTx {
     depositAmount: tx.USDPaidByCustomer,
     direction: 'sell',
     exchangeType: 'fiat',
-    paymentType: null,
+    paymentType: 'giftcard',
     payoutTxid: undefined,
     payoutAddress: undefined,
     payoutCurrency: 'USD',

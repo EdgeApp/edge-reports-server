@@ -52,32 +52,48 @@ const asSafeNumber = (raw: any): number => {
 const asDirection = asEither(asValue('buy', 'sell'), asNull)
 
 /**
- * Exact copy from GUI (src/plugins/gui/fiatPluginTypes.ts); please keep it
- * matching
+ * Related to FiatPaymentType in the GUI (src/plugins/gui/fiatPluginTypes.ts).
+ * This is the source of truth for all available FiatPaymentType values, but the
+ * GUI may have less values.
  */
 const asFiatPaymentType = asValue(
   'ach',
   'applepay',
+  'astropay',
+  'cash',
   'colombiabank',
   'credit',
   'directtobank',
   'fasterpayments',
+  'fpx',
+  'giftcard',
+  'giropay',
   'googlepay',
   'iach',
   'ideal',
   'interac',
   'iobank',
+  'israelibank',
   'mexicobank',
+  'mobikwik',
+  'moonpay',
+  'neft',
+  'neteller',
   'payid',
+  'paynow',
   'paypal',
   'pix',
   'pse',
   'revolut',
   'sepa',
+  'skrill',
   'spei',
+  'swish',
   'turkishbank',
+  'upi',
   'venmo',
-  'wire'
+  'wire',
+  'yellowcard'
 )
 export type FiatPaymentType = ReturnType<typeof asFiatPaymentType>
 

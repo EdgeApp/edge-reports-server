@@ -154,7 +154,7 @@ export function processBitrefillTx(rawTx: unknown): StandardTx {
     depositAmount,
     direction: 'sell',
     exchangeType: 'fiat',
-    paymentType: null,
+    paymentType: 'giftcard',
     payoutTxid: undefined,
     payoutAddress: undefined,
     payoutCurrency: tx.currency,

@@ -143,33 +143,20 @@ export const simplex: PartnerPlugin = {
 export function processSimplexTx(rawTx: unknown): StandardTx {
   const tx = asSimplexTx(rawTx)
 
-  const depositCurrency = tx.currency
-  const payoutCurrency = tx.crypto_currency
-  const isDepositFiat = isFiatCurrency(depositCurrency)
-  const isPayoutFiat = isFiatCurrency(payoutCurrency)
-
-  const direction = isDepositFiat ? 'buy' : isPayoutFiat ? 'sell' : undefined
-
-  if (direction == null) {
-    throw new Error(
-      `Unknown direction for tx ${tx.order_id}; no fiat currency in trade from ${depositCurrency} to ${payoutCurrency}`
-    )
-  }
-
   const standardTx: StandardTx = {
     status: 'complete',
     orderId: tx.order_id,
     countryCode: tx.country,
     depositTxid: undefined,
     depositAddress: undefined,
-    depositCurrency,
+    depositCurrency: tx.currency,
     depositAmount: safeParseFloat(tx.fiat_total_amount),
-    direction,
+    direction: 'buy',
     exchangeType: 'fiat',
     paymentType: null,
     payoutTxid: undefined,
     payoutAddress: undefined,
-    payoutCurrency,
+    payoutCurrency: tx.crypto_currency,
     payoutAmount: safeParseFloat(tx.amount_crypto),
     timestamp: tx.created_at,
     isoDate: new Date(tx.created_at * 1000).toISOString(),

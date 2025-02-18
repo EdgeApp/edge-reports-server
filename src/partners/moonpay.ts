@@ -168,8 +168,7 @@ function getFiatPaymentType(tx: MoonpayTx): FiatPaymentType | null {
       // Idk?
       return null
     case 'moonpay_balance':
-      // Idk?
-      return null
+      return 'moonpay'
     case 'paypal':
       return 'paypal'
     case 'pix_instant_payment':
@@ -179,8 +178,7 @@ function getFiatPaymentType(tx: MoonpayTx): FiatPaymentType | null {
     case 'venmo':
       return 'venmo'
     case 'yellow_card_bank_transfer':
-      // Idk?
-      return null
+      return 'yellowcard'
     default:
       throw new Error(
         `Unknown payment method: ${tx.paymentMethod} for ${tx.id}`

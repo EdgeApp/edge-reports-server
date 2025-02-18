@@ -309,19 +309,16 @@ function getFiatPaymentType(
     case undefined:
       return null
     case 'AstroPay':
-      // Idk?
-      return null
+      return 'astropay'
     case 'Credit/Debit Card':
       return 'credit'
     case 'FPX':
       // Idk?
-      return null
+      return 'fpx'
     case 'Giropay':
-      // Idk?
-      return null
+      return 'giropay'
     case 'Neteller':
-      // Idk?
-      return null
+      return 'neteller'
     case 'Online Banking':
       return 'colombiabank'
     case 'PIX':
@@ -335,8 +332,7 @@ function getFiatPaymentType(
     case 'SWIFT Bank Transfer':
       return 'mexicobank'
     case 'Skrill':
-      // Idk?
-      return null
+      return 'skrill'
     default:
       throw new Error(`Unknown payment method: ${name} for ${tx.id}`)
   }
