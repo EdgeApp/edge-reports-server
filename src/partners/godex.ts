@@ -63,7 +63,7 @@ type GodexTx = ReturnType<typeof asGodexTx>
 type GodexStatus = ReturnType<typeof asGodexStatus>
 
 const LIMIT = 100
-const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
+const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 const statusMap: { [key in GodexStatus]: Status } = {
   success: 'complete',
   wait: 'pending',
