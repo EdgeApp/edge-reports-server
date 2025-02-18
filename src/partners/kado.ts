@@ -92,6 +92,10 @@ export async function queryKado(
       const standardTx: StandardTx = processKadoTx(rawTx)
       standardTxs.push(standardTx)
     }
+    for (const rawTx of offRamps) {
+      const standardTx: StandardTx = processKadoTx(rawTx)
+      standardTxs.push(standardTx)
+    }
     datelog(`Kado latestIsoDate:${latestIsoDate}`)
     retry = 0
   } catch (e) {
