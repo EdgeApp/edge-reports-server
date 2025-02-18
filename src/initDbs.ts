@@ -60,6 +60,7 @@ const settingsDatabaseSetup: DatabaseSetup = {
 }
 const transactionsDatabaseSetup: DatabaseSetup = {
   name: 'reports_transactions',
+  options: { partitioned: true },
   documents: {
     ...transactionIndexes
   }
