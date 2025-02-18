@@ -5,7 +5,6 @@ import {
   asObject,
   asOptional,
   asString,
-  asUnknown,
   asValue
 } from 'cleaners'
 
@@ -67,7 +66,7 @@ const asTransfer = asObject({
 
 // Define the cleaner for the whole JSON
 const asTransfersResult = asObject({
-  transfers: asArray(asUnknown)
+  transfers: asArray(asTransfer)
 })
 
 type PartnerStatuses = ReturnType<typeof asStatuses>
