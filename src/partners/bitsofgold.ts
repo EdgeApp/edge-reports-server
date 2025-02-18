@@ -111,7 +111,7 @@ export function processBitsOfGoldTx(rawTx: unknown): StandardTx {
     depositCurrency = data.fiat_type
     depositAmount = data.fiat_amount
     payoutCurrency = data.coin_type
-    payoutAmount = data.fiat_amount
+    payoutAmount = data.coin_amount
   }
 
   const direction = asMaybe(asValue('buy', 'sell'), undefined)(bogTx.type)
