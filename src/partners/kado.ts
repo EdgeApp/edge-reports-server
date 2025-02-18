@@ -7,6 +7,7 @@ import {
   asNumber,
   asObject,
   asString,
+  asUnknown,
   asValue
 } from 'cleaners'
 
@@ -55,8 +56,8 @@ const asResponse = asObject({
   success: asBoolean,
   // message: asString,
   data: asObject({
-    onRamps: asArray(asOnRampTx),
-    offRamps: asArray(asOffRampTx)
+    onRamps: asArray(asUnknown),
+    offRamps: asArray(asUnknown)
   })
 })
 
@@ -148,7 +149,7 @@ export function processKadoTx(rawTx: unknown): StandardTx {
       timestamp,
       isoDate,
       usdValue: tx.paidAmountUsd,
-      rawTx: tx
+      rawTx
     }
   } else {
     return {
@@ -169,7 +170,7 @@ export function processKadoTx(rawTx: unknown): StandardTx {
       timestamp,
       isoDate,
       usdValue: tx.receiveUsd,
-      rawTx: tx
+      rawTx
     }
   }
 }
