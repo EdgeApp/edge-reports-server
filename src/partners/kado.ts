@@ -175,7 +175,9 @@ export function processKadoTx(rawTx: unknown): StandardTx {
 }
 
 function getFiatPaymentType(tx: KadoTx): FiatPaymentType | null {
-  if (!('paymentMethod' in tx)) return null
+  if (!('paymentMethod' in tx)) {
+    throw new Error(`Missing paymentMethod for ${tx._id}`)
+  }
   switch (tx.paymentMethod) {
     case 'deposit_ach': {
       if (tx.type === 'buy') return 'iach'
