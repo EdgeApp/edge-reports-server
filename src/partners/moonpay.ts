@@ -123,19 +123,22 @@ export function processMoonpayTx(rawTx: unknown): StandardTx {
   const tx: MoonpayTx = asMoonpayTx(rawTx)
   const date = new Date(tx.createdAt)
   const timestamp = date.getTime()
+
+  const direction = tx.baseCurrency.type === 'fiat' ? 'buy' : 'sell'
+
   const standardTx: StandardTx = {
     status: 'complete',
     orderId: tx.id,
 
     countryCode: tx.country,
-    depositTxid: undefined,
+    depositTxid: direction === 'sell' ? tx.cryptoTransactionId : undefined,
     depositAddress: undefined,
     depositCurrency: tx.baseCurrency.code.toUpperCase(),
     depositAmount: tx.baseCurrencyAmount,
-    direction: 'buy',
+    direction,
     exchangeType: 'fiat',
     paymentType: getFiatPaymentType(tx),
-    payoutTxid: tx.cryptoTransactionId,
+    payoutTxid: direction === 'buy' ? tx.cryptoTransactionId : undefined,
     payoutAddress: tx.walletAddress,
     payoutCurrency: tx.currency.code.toUpperCase(),
     payoutAmount: tx.quoteCurrencyAmount,
