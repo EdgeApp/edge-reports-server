@@ -32,7 +32,7 @@ const asCoinSwitchResult = asObject({
   })
 })
 const COUNT = 25
-const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
+const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 
 export async function queryCoinSwitch(
   pluginParams: PluginParams

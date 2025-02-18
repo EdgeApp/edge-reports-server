@@ -67,7 +67,7 @@ type LetsExchangeTx = ReturnType<typeof asLetsExchangeTx>
 type LetsExchangeStatus = ReturnType<typeof asLetsExchangeStatus>
 
 const LIMIT = 100
-const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
+const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 const statusMap: { [key in LetsExchangeStatus]: Status } = {
   success: 'complete',
   wait: 'pending',

@@ -69,7 +69,7 @@ const asExolixResult = asObject({
 })
 
 const PAGE_LIMIT = 100
-const QUERY_LOOKBACK = 60 * 60 * 24 * 3 // 3 days
+const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 3 // 3 days
 
 type ExolixTx = ReturnType<typeof asExolixTx>
 type ExolixStatus = ReturnType<typeof asExolixStatus>
