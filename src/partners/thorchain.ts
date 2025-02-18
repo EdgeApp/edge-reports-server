@@ -127,7 +127,7 @@ export const queryThorchain = async (
       const standardTx = processThorchainTx(rawTx)
 
       // See if the transaction exists already
-      const matchTx = standardTxs.find(
+      const previousTxIndex = standardTxs.findIndex(
         tx =>
           tx.orderId === standardTx.orderId &&
           tx.timestamp === standardTx.timestamp &&
@@ -136,10 +136,18 @@ export const queryThorchain = async (
           tx.payoutAmount === standardTx.payoutAmount &&
           tx.depositAmount !== standardTx.depositAmount
       )
-      if (matchTx == null) {
+      if (previousTxIndex === -1) {
         standardTxs.push(standardTx)
       } else {
-        matchTx.depositAmount += standardTx.depositAmount
+        const previousTx = standardTxs[previousTxIndex]
+        const previousRawTxs: unknown[] = Array.isArray(previousTx.rawTx)
+          ? previousTx.rawTx
+          : [previousTx.rawTx]
+        const updatedStandardTx = processThorchainTx([
+          ...previousRawTxs,
+          standardTx.rawTx
+        ])
+        standardTxs.splice(previousTxIndex, 1, updatedStandardTx)
       }
       if (standardTx.isoDate > latestIsoDate) {
         latestIsoDate = standardTx.isoDate
@@ -176,12 +184,25 @@ export const thorchain: PartnerPlugin = {
 }
 
 export function processThorchainTx(rawTx: unknown): StandardTx {
-  const tx = asThorchainTx(rawTx)
+  const rawTxs: unknown[] = Array.isArray(rawTx) ? rawTx : [rawTx]
+  const txs = asArray(asThorchainTx)(rawTxs)
+  const tx = txs.shift()
+
+  if (tx == null) {
+    throw new Error('Missing rawTx')
+  }
+
   const srcAsset = tx.in[0].coins[0].asset
   const [chainAsset] = srcAsset.split('-')
   const [, asset] = chainAsset.split('.')
 
-  const depositAmount = Number(tx.in[0].coins[0].amount) / THORCHAIN_MULTIPLIER
+  const extraDepositAmount = txs.reduce((sum, tx) => {
+    const depositAmount =
+      Number(tx.in[0].coins[0].amount) / THORCHAIN_MULTIPLIER
+    return sum + depositAmount
+  }, 0)
+  const depositAmount =
+    Number(tx.in[0].coins[0].amount) / THORCHAIN_MULTIPLIER + extraDepositAmount
 
   const txOut = tx.out.find(o => o.coins[0].asset !== 'THOR.RUNE')
 
