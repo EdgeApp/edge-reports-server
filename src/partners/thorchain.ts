@@ -143,7 +143,7 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
         }
 
         // See if the transaction exists already
-        const matchTx = standardTxs.find(
+        const previousTxIndex = standardTxs.findIndex(
           tx =>
             tx.orderId === standardTx.orderId &&
             tx.timestamp === standardTx.timestamp &&
@@ -152,10 +152,21 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
             tx.payoutAmount === standardTx.payoutAmount &&
             tx.depositAmount !== standardTx.depositAmount
         )
-        if (matchTx == null) {
+        if (previousTxIndex === -1) {
           standardTxs.push(standardTx)
         } else {
-          matchTx.depositAmount += standardTx.depositAmount
+          const previousTx = standardTxs[previousTxIndex]
+          const previousRawTxs: unknown[] = Array.isArray(previousTx.rawTx)
+            ? previousTx.rawTx
+            : [previousTx.rawTx]
+          const updatedStandardTx = processThorchainTx(
+            [...previousRawTxs, standardTx.rawTx],
+            info,
+            pluginParamsClean
+          )
+          if (updatedStandardTx != null) {
+            standardTxs.splice(previousTxIndex, 1, updatedStandardTx)
+          }
         }
         if (standardTx.isoDate > latestIsoDate) {
           latestIsoDate = standardTx.isoDate
@@ -209,7 +220,14 @@ export function processThorchainTx(
 ): StandardTx | null {
   const { pluginId } = info
   const { affiliateAddress, thorchainAddress } = pluginParams.apiKeys
-  const tx = asThorchainTx(rawTx)
+
+  const rawTxs: unknown[] = Array.isArray(rawTx) ? rawTx : [rawTx]
+  const txs = asArray(asThorchainTx)(rawTxs)
+  const tx = txs[0]
+
+  if (tx == null) {
+    throw new Error(`${pluginId}: Missing rawTx`)
+  }
 
   const { swap } = tx.metadata
   if (swap?.affiliateAddress !== affiliateAddress) {
@@ -238,13 +256,15 @@ export function processThorchainTx(
       `${pluginId}: Unexpected ${txIn.coins.length} txIn.coins. Expected 1`
     )
   }
-  const coin = txIn.coins[0]
-  const srcAsset = coin.asset
-  const depositAmount = Number(coin.amount) / THORCHAIN_MULTIPLIER
+  const depositAmount = txs.reduce((sum, txInternal) => {
+    const amount =
+      Number(txInternal.in[0].coins[0].amount) / THORCHAIN_MULTIPLIER
+    return sum + amount
+  }, 0)
 
   const srcDestMatch = tx.out.some(o => {
     const match = o.coins.some(
-      c => c.asset === srcAsset && o.affiliate !== true
+      c => c.asset === txIn.coins[0].asset && o.affiliate !== true
     )
     return match
   })
@@ -258,7 +278,7 @@ export function processThorchainTx(
   const timestampMs = div(tx.date, '1000000', 16)
   const { timestamp, isoDate } = smartIsoDateFromTimestamp(Number(timestampMs))
 
-  const [chainAsset] = srcAsset.split('-')
+  const [chainAsset] = txIn.coins[0].asset.split('-')
   const [, asset] = chainAsset.split('.')
 
   // Find the first output that does not match the affiliate address
