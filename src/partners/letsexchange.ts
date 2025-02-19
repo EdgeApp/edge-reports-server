@@ -179,7 +179,7 @@ export function processLetsExchangeTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.coin_to.toUpperCase(),
     payoutAmount: safeParseFloat(tx.withdrawal_amount),
     timestamp,
-    indexVersion: config.clickhouseIndexVersion,
+    updateTime: new Date(),
     isoDate,
     usdValue: -1,
     rawTx

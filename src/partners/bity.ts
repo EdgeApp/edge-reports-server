@@ -187,7 +187,7 @@ export function processBityTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.output.currency.toUpperCase(),
     payoutAmount: safeParseFloat(tx.output.amount),
     timestamp: Date.parse(tx.timestamp_created.concat('Z')) / 1000,
-    indexVersion: config.clickhouseIndexVersion,
+    updateTime: new Date(),
     isoDate: new Date(tx.timestamp_created.concat('Z')).toISOString(),
     usdValue: -1,
     rawTx

@@ -101,7 +101,7 @@ export function processSafelloTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.cryptoCurrency,
     payoutAmount: 0,
     timestamp: timestamp / 1000,
-    indexVersion: config.clickhouseIndexVersion,
+    updateTime: new Date(),
     isoDate: date.toISOString(),
     usdValue: -1,
     rawTx

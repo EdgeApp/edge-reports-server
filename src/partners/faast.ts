@@ -126,7 +126,7 @@ export function processFaastTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.withdrawal_currency.toUpperCase(),
     payoutAmount: tx.amount_withdrawn,
     timestamp,
-    indexVersion: config.clickhouseIndexVersion,
+    updateTime: new Date(),
     isoDate: tx.created_at,
     usdValue: -1,
     rawTx

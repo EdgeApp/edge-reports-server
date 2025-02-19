@@ -1,6 +1,7 @@
 import { createClient } from '@clickhouse/client'
 import nano from 'nano'
 
+import { clientConfig } from './bin/configure'
 import { config } from './config'
 import { initDbs } from './initDbs'
 import { processBanxaTx } from './partners/banxa'
@@ -35,7 +36,7 @@ import { processThorchainTx } from './partners/thorchain'
 import { processTransakTx } from './partners/transak'
 import { processWyreTx } from './partners/wyre'
 import { processXanpoolTx } from './partners/xanpool'
-import { DbTx, StandardTx } from './types'
+import { DbTx, StandardTx, wasDbTx } from './types'
 import { datelog, snooze } from './util'
 
 // Clickhouse recommends large batch inserts. We consider the couchdb
@@ -90,53 +91,53 @@ export async function clickhouseEngine(): Promise<void> {
 
   const dbTransactions = nanoDb.db.use<StandardTx>('reports_transactions')
 
+  let afterTime = new Date(0).toISOString()
+  let i = 0
+
   while (true) {
-    const response = await dbTransactions.view('versioning', 'indexVersion', {
-      include_docs: true,
+    const response = await dbTransactions.find({
+      selector: {
+        status: { $eq: 'complete' },
+        updateTime: { $gt: afterTime }
+      },
+      sort: [{ updateTime: 'asc' }],
+      use_index: 'status-updatetime',
       limit: PAGE_SIZE,
-      start_key: 0,
-      end_key: config.clickhouseIndexVersion,
-      inclusive_end: false
+      skip: PAGE_SIZE * i++
     })
 
-    const startDocId = response.rows[0]?.id
-    const endDocId = response.rows[response.rows.length - 1]?.id
-    datelog(
-      `Processing ${response.rows.length} rows from ${startDocId} to ${endDocId}.`
-    )
+    const startDocId = response.docs[0]?._id
+    const endDocId = response.docs[response.docs.length - 1]?._id
+
+    if (response.docs.length > 0) {
+      datelog(
+        `Processing ${response.docs.length} rows from ${startDocId} to ${endDocId}.`
+      )
+    } else {
+      datelog(`Queried for new documents after ${afterTime}.`)
+    }
 
     const newDocs: DbTx[] = []
     const newRows: any[][] = []
+    let lastDocUpdateTime: string | undefined
 
-    for (const row of response.rows) {
-      if (row.doc == null) {
-        throw new Error(`No doc for ${row.id}`)
-      }
-
-      const { appId, partnerId } = getDocumentIdentifiers(row.id)
+    for (const doc of response.docs) {
+      const { appId, partnerId } = getDocumentIdentifiers(doc._id)
       const processor = processors[partnerId]
 
       if (processor == null) {
-        datelog(`Not found ${partnerId} for document ${row.id}`)
-        newDocs.push({
-          ...row.doc,
-          indexVersion: -1
-        })
+        datelog(`Not found ${partnerId} for document ${doc._id}`)
         continue
       }
 
       let standardTx: StandardTx
       try {
-        standardTx = processor(row.doc?.rawTx)
+        standardTx = processor(doc.rawTx)
       } catch (error) {
         datelog(
-          `Failed processing ${row.id} with '${partnerId}' processor`,
+          `Failed processing ${doc._id} with '${partnerId}' processor`,
           String(error)
         )
-        newDocs.push({
-          ...row.doc,
-          indexVersion: -1
-        })
         continue
       }
 
@@ -159,14 +160,18 @@ export async function clickhouseEngine(): Promise<void> {
         standardTx.status,
         Math.round(standardTx.timestamp),
         standardTx.usdValue,
-        standardTx.indexVersion
+        config.clickhouseIndexVersion
       ])
 
-      newDocs.push({
-        _id: row.id,
-        _rev: row.doc._rev,
-        ...standardTx
-      })
+      newDocs.push(
+        wasDbTx({
+          _id: doc._id,
+          _rev: doc._rev,
+          ...standardTx
+        })
+      )
+
+      lastDocUpdateTime = standardTx.updateTime.toISOString()
     }
 
     // Add the standardTx to the clickhouse database
@@ -200,7 +205,11 @@ export async function clickhouseEngine(): Promise<void> {
 
     // We've reached the end of the view index, so we'll continue but with a
     // delay so as not to thrash the couchdb unnecessarily.
-    if (response.rows.length !== PAGE_SIZE) {
+    if (response.docs.length !== PAGE_SIZE) {
+      i = 0
+      if (lastDocUpdateTime != null) {
+        afterTime = lastDocUpdateTime
+      }
       await snooze(5000)
     }
   }

@@ -143,7 +143,7 @@ export function processKadoTx(rawTx: unknown): StandardTx {
       payoutCurrency: tx.cryptoCurrency,
       payoutAmount: tx.receiveUnitCount,
       timestamp,
-      indexVersion: config.clickhouseIndexVersion,
+      updateTime: new Date(),
       isoDate,
       usdValue: tx.paidAmountUsd,
       rawTx: tx
@@ -165,7 +165,7 @@ export function processKadoTx(rawTx: unknown): StandardTx {
       payoutCurrency: 'USD',
       payoutAmount: tx.receiveUsd,
       timestamp,
-      indexVersion: config.clickhouseIndexVersion,
+      updateTime: new Date(),
       isoDate,
       usdValue: tx.receiveUsd,
       rawTx: tx

@@ -214,7 +214,7 @@ export function processThorchainTx(rawTx: unknown): StandardTx {
     payoutCurrency,
     payoutAmount,
     timestamp,
-    indexVersion: config.clickhouseIndexVersion,
+    updateTime: new Date(),
     isoDate,
     usdValue: -1,
     rawTx

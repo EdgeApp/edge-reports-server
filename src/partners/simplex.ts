@@ -173,7 +173,7 @@ export function processSimplexTx(rawTx: unknown): StandardTx {
     payoutCurrency,
     payoutAmount: safeParseFloat(tx.amount_crypto),
     timestamp: tx.created_at,
-    indexVersion: config.clickhouseIndexVersion,
+    updateTime: new Date(),
     isoDate: new Date(tx.created_at * 1000).toISOString(),
     usdValue: safeParseFloat(tx.amount_usd),
     rawTx

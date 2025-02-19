@@ -139,7 +139,7 @@ export function processTransakTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.cryptoCurrency,
     payoutAmount: tx.cryptoAmount,
     timestamp: date.getTime() / 1000,
-    indexVersion: config.clickhouseIndexVersion,
+    updateTime: new Date(),
     isoDate: date.toISOString(),
     usdValue: -1,
     rawTx

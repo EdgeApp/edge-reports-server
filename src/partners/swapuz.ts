@@ -187,7 +187,7 @@ export function processSwapuzTx(rawTx: unknown): StandardTx {
     payoutAddress: undefined,
     payoutAmount: tx.amountResult,
     timestamp,
-    indexVersion: config.clickhouseIndexVersion,
+    updateTime: new Date(),
     isoDate,
     usdValue: -1,
     rawTx

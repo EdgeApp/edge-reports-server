@@ -190,7 +190,7 @@ export function processChangellyTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.currencyTo.toUpperCase(),
     payoutAmount: safeParseFloat(tx.amountTo),
     timestamp: tx.createdAt,
-    indexVersion: config.clickhouseIndexVersion,
+    updateTime: new Date(),
     isoDate: new Date(tx.createdAt * 1000).toISOString(),
     usdValue: -1,
     rawTx

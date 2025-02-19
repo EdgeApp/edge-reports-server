@@ -155,7 +155,7 @@ export function processIoniaVisaRewardsTx(rawTx: unknown): StandardTx {
     payoutCurrency: 'USD',
     payoutAmount: tx.GiftCardFaceValue,
     timestamp,
-    indexVersion: config.clickhouseIndexVersion,
+    updateTime: new Date(),
     isoDate,
     usdValue: tx.GiftCardFaceValue,
     rawTx

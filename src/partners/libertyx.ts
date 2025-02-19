@@ -100,7 +100,7 @@ export function processLibertyxTx(rawTx: unknown): StandardTx {
     payoutCurrency: 'BTC',
     payoutAmount: 0,
     timestamp,
-    indexVersion: config.clickhouseIndexVersion,
+    updateTime: new Date(),
     isoDate: date.toISOString(),
     usdValue: tx.all_transactions_usd_sum,
     rawTx

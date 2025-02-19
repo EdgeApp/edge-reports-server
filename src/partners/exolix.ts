@@ -185,7 +185,7 @@ export function processExolixTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.coinTo.coinCode,
     payoutAmount: tx.amountTo,
     timestamp,
-    indexVersion: config.clickhouseIndexVersion,
+    updateTime: new Date(),
     isoDate,
     usdValue: -1,
     rawTx

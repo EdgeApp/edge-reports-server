@@ -286,7 +286,7 @@ export function processBanxaTx(rawTx: unknown): StandardTx {
     payoutCurrency: outputCurrency,
     payoutAmount: outputAmount,
     timestamp,
-    indexVersion: config.clickhouseIndexVersion,
+    updateTime: new Date(),
     isoDate,
     usdValue: -1,
     rawTx

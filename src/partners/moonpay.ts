@@ -141,7 +141,7 @@ export function processMoonpayTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.currency.code.toUpperCase(),
     payoutAmount: tx.quoteCurrencyAmount,
     timestamp: timestamp / 1000,
-    indexVersion: config.clickhouseIndexVersion,
+    updateTime: new Date(),
     isoDate: tx.createdAt,
     usdValue: -1,
     rawTx

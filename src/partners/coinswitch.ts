@@ -126,7 +126,7 @@ export function processCoinSwitchTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.destinationCoin.toUpperCase(),
     payoutAmount: tx.destinationCoinAmount,
     timestamp: tx.createdAt / 1000,
-    indexVersion: config.clickhouseIndexVersion,
+    updateTime: new Date(),
     isoDate: new Date(tx.createdAt).toISOString(),
     usdValue: -1,
     rawTx: rawTx

@@ -178,7 +178,7 @@ export function processChangeHeroTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.currencyTo.toUpperCase(),
     payoutAmount: safeParseFloat(tx.amountTo),
     timestamp: tx.createdAt,
-    indexVersion: config.clickhouseIndexVersion,
+    updateTime: new Date(),
     isoDate: smartIsoDateFromTimestamp(tx.createdAt).isoDate,
     usdValue: -1,
     rawTx

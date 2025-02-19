@@ -129,7 +129,7 @@ export function processSwitchainTx(rawTx: unknown): StandardTx {
     payoutCurrency: pair[1].toUpperCase(),
     payoutAmount: safeParseFloat(tx.rate),
     timestamp: timestamp / 1000,
-    indexVersion: config.clickhouseIndexVersion,
+    updateTime: new Date(),
     isoDate: tx.createdAt,
     usdValue: -1,
     rawTx
