@@ -7,6 +7,7 @@ import {
   asObject,
   asOptional,
   asString,
+  asUnknown,
   asValue
 } from 'cleaners'
 
@@ -35,7 +36,7 @@ const asTransaction = asObject({
 
 const asOnRampTx = asObject({
   ...asTransaction.shape,
-  receiveUnitCount: asNumber,
+  receiveUnitCount: asOptional(asNumber),
   paidAmountUsd: asNumber,
   paymentMethod: asString
 })
@@ -52,8 +53,8 @@ const asResponse = asObject({
   success: asBoolean,
   // message: asString,
   data: asObject({
-    onRamps: asArray(asOnRampTx),
-    offRamps: asArray(asOffRampTx)
+    onRamps: asArray(asUnknown),
+    offRamps: asArray(asUnknown)
   })
 })
 
@@ -85,7 +86,10 @@ export async function queryKado(
     const jsonObj = await response.json()
     const transferResults = asResponse(jsonObj)
     const { onRamps, offRamps } = transferResults.data
-    for (const tx of onRamps) {
+    const missingAmountOnRampTxs: unknown[] = []
+    const missingAmountOffRampTxs: unknown[] = []
+    for (const rawTx of onRamps) {
+      const tx = asOnRampTx(rawTx)
       const {
         _id,
         createdAt,
@@ -94,6 +98,10 @@ export async function queryKado(
         receiveUnitCount,
         walletAddress
       } = tx
+      if (receiveUnitCount === undefined) {
+        missingAmountOnRampTxs.push(rawTx)
+        continue
+      }
       const { isoDate, timestamp } = smartIsoDateFromTimestamp(
         createdAt.toISOString()
       )
@@ -111,11 +119,12 @@ export async function queryKado(
         timestamp,
         isoDate,
         usdValue: paidAmountUsd,
-        rawTx: tx
+        rawTx
       }
       ssFormatTxs.push(ssTx)
     }
-    for (const tx of offRamps) {
+    for (const rawTx of offRamps) {
+      const tx = asOffRampTx(rawTx)
       const {
         _id,
         createdAt,
@@ -123,6 +132,10 @@ export async function queryKado(
         depositUnitCount,
         receiveUsd
       } = tx
+      if (depositUnitCount === undefined) {
+        missingAmountOffRampTxs.push(rawTx)
+        continue
+      }
       const { isoDate, timestamp } = smartIsoDateFromTimestamp(
         createdAt.toISOString()
       )
@@ -140,9 +153,25 @@ export async function queryKado(
         timestamp,
         isoDate,
         usdValue: receiveUsd,
-        rawTx: tx
+        rawTx
       }
       ssFormatTxs.push(ssTx)
+    }
+    if (
+      missingAmountOnRampTxs.length > 0 ||
+      missingAmountOffRampTxs.length > 0
+    ) {
+      datelog(
+        `Kado missing amount onRamp txs: ${missingAmountOnRampTxs.length}`
+      )
+      datelog(JSON.stringify(missingAmountOnRampTxs, null, 2))
+      datelog(
+        `Kado missing amount offRamp txs: ${missingAmountOffRampTxs.length}`
+      )
+      datelog(JSON.stringify(missingAmountOffRampTxs, null, 2))
+      // Even though there are some invalid transactions, we'll still continue
+      // as this seems to be rare (only 1 tx in all of history) and hopefully
+      // Kado will fix this soon.
     }
     datelog(`Kado latestIsoDate:${latestIsoDate}`)
     retry = 0
