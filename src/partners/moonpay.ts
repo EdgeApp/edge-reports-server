@@ -1,7 +1,20 @@
-import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
+import {
+  asArray,
+  asDate,
+  asNumber,
+  asObject,
+  asString,
+  asUnknown
+} from 'cleaners'
 import fetch from 'node-fetch'
 
-import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import {
+  asStandardPluginParams,
+  PartnerPlugin,
+  PluginParams,
+  PluginResult,
+  StandardTx
+} from '../types'
 import { datelog } from '../util'
 
 const asMoonpayCurrency = asObject({
@@ -16,7 +29,7 @@ const asMoonpayTx = asObject({
   baseCurrencyAmount: asNumber,
   walletAddress: asString,
   quoteCurrencyAmount: asNumber,
-  createdAt: asString,
+  createdAt: asDate,
   id: asString,
   baseCurrencyId: asString,
   currencyId: asString,
@@ -41,31 +54,29 @@ export async function queryMoonpay(
   const ssFormatTxs: StandardTx[] = []
 
   let headers
-  let latestTimestamp = 0
-  if (typeof pluginParams.settings.latestTimestamp === 'number') {
-    latestTimestamp = pluginParams.settings.latestTimestamp
-  }
+  const { apiKeys, settings } = asStandardPluginParams(pluginParams)
+  const { latestIsoDate } = settings
+  const { apiKey } = pluginParams.apiKeys
 
-  const apiKey = pluginParams.apiKeys.apiKey
   if (typeof apiKey === 'string') {
     headers = {
       Authorization: `Api-Key ${apiKey}`
     }
   } else {
     return {
-      settings: { latestTimestamp: latestTimestamp },
+      settings: { latestIsoDate },
       transactions: []
     }
   }
 
-  if (latestTimestamp > QUERY_LOOKBACK) {
-    latestTimestamp -= QUERY_LOOKBACK
-  }
-  let done = false
   let offset = 0
-  let newestTimestamp = latestTimestamp
-  while (!done) {
-    const url = `https://api.moonpay.io/v1/transactions?limit=${PER_REQUEST_LIMIT}&offset=${offset}`
+
+  const queryTimeStamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
+  const queryIsoDate = new Date(queryTimeStamp).toISOString()
+  let newestIsoDate = queryIsoDate
+
+  while (true) {
+    const url = `https://api.moonpay.io/v1/transactions?limit=${PER_REQUEST_LIMIT}&offset=${offset}&startDate=${queryIsoDate}`
     const result = await fetch(url, {
       method: 'GET',
       headers
@@ -85,8 +96,8 @@ export async function queryMoonpay(
           throw e
         }
 
-        const date = new Date(tx.createdAt)
-        const timestamp = date.getTime()
+        const isoDate = tx.createdAt.toISOString()
+        const timestamp = tx.createdAt.getTime()
         const ssTx: StandardTx = {
           status: 'complete',
           orderId: tx.id,
@@ -99,22 +110,24 @@ export async function queryMoonpay(
           payoutCurrency: tx.currency.code.toUpperCase(),
           payoutAmount: tx.quoteCurrencyAmount,
           timestamp: timestamp / 1000,
-          isoDate: tx.createdAt,
+          isoDate,
           usdValue: -1,
           rawTx: rawtx
         }
         ssFormatTxs.push(ssTx)
-        done = latestTimestamp > timestamp || txs.length < PER_REQUEST_LIMIT
-        newestTimestamp =
-          newestTimestamp > timestamp ? newestTimestamp : timestamp
+        newestIsoDate = isoDate > newestIsoDate ? isoDate : newestIsoDate
       }
+    }
+
+    if (txs.length < PER_REQUEST_LIMIT) {
+      break
     }
 
     offset += PER_REQUEST_LIMIT
   }
 
   const out: PluginResult = {
-    settings: { latestTimestamp: newestTimestamp },
+    settings: { latestIsoDate: newestIsoDate },
     transactions: ssFormatTxs
   }
   return out
