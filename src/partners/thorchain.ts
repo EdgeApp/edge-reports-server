@@ -304,5 +304,5 @@ export const thorchain = makeThorchainPlugin({
 export const maya = makeThorchainPlugin({
   pluginName: 'Maya',
   pluginId: 'maya',
-  midgardUrl: 'midgard.mayachain.info'
+  midgardUrl: 'midgard-maya.liquify.com'
 })
