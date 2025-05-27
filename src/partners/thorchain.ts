@@ -90,7 +90,7 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
   const queryThorchain = async (
     pluginParams: PluginParams
   ): Promise<PluginResult> => {
-    const ssFormatTxs: StandardTx[] = []
+    const standardTxs: StandardTx[] = []
 
     const { settings, apiKeys } = asThorchainPluginParams(pluginParams)
     const { affiliateAddress, thorchainAddress, xClientId } = apiKeys
@@ -248,7 +248,7 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
         }
 
         // See if the transaction exists already
-        const matchTx = ssFormatTxs.find(
+        const matchTx = standardTxs.find(
           tx =>
             tx.orderId === ssTx.orderId &&
             tx.timestamp === ssTx.timestamp &&
@@ -258,7 +258,7 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
             tx.depositAmount !== ssTx.depositAmount
         )
         if (matchTx == null) {
-          ssFormatTxs.push(ssTx)
+          standardTxs.push(ssTx)
         } else {
           matchTx.depositAmount += ssTx.depositAmount
         }
@@ -283,7 +283,7 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
     }
     const out: PluginResult = {
       settings: { latestIsoDate },
-      transactions: ssFormatTxs
+      transactions: standardTxs
     }
     return out
   }
