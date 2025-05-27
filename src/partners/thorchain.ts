@@ -133,26 +133,19 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
       }
       const txs = jsonObj.actions
       for (const rawTx of txs) {
-        const {
-          date,
-          metadata,
-          in: txIns,
-          out: txOuts,
-          pools,
-          status: txStatus
-        } = asThorchainTx(rawTx) // Check RAW trasaction
+        const tx = asThorchainTx(rawTx) // Check RAW trasaction
 
-        const { swap } = metadata
+        const { swap } = tx.metadata
         if (swap?.affiliateAddress !== affiliateAddress) {
           continue
         }
         const status = 'complete'
-        if (txStatus !== 'success') {
+        if (tx.status !== 'success') {
           continue
         }
 
         // There must be an affiliate output
-        const affiliateOut = txOuts.some(
+        const affiliateOut = tx.out.some(
           o => o.affiliate === true || o.address === thorchainAddress
         )
         if (!affiliateOut) {
@@ -160,12 +153,12 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
         }
 
         // Find the source asset
-        if (txIns.length !== 1) {
+        if (tx.in.length !== 1) {
           throw new Error(
-            `${pluginId}: Unexpected ${txIns.length} txIns. Expected 1`
+            `${pluginId}: Unexpected ${tx.in.length} txIns. Expected 1`
           )
         }
-        const txIn = txIns[0]
+        const txIn = tx.in[0]
         if (txIn.coins.length !== 1) {
           throw new Error(
             `${pluginId}: Unexpected ${txIn.coins.length} txIn.coins. Expected 1`
@@ -175,7 +168,7 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
         const srcAsset = coin.asset
         const depositAmount = Number(coin.amount) / THORCHAIN_MULTIPLIER
 
-        const srcDestMatch = txOuts.some(o => {
+        const srcDestMatch = tx.out.some(o => {
           const match = o.coins.some(
             c => c.asset === srcAsset && o.affiliate !== true
           )
@@ -188,7 +181,7 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
           continue
         }
 
-        const timestampMs = div(date, '1000000', 16)
+        const timestampMs = div(tx.date, '1000000', 16)
         const { timestamp, isoDate } = smartIsoDateFromTimestamp(
           Number(timestampMs)
         )
@@ -201,8 +194,8 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
         // as this is assumed to be the true destination asset/address
         // If we can't find one, then just match the affiliate address as
         // this means the affiliate address is the actual destination.
-        const hasAffiliateFlag = txOuts.some(o => o.affiliate === true)
-        let txOut = txOuts.find(out => {
+        const hasAffiliateFlag = tx.out.some(o => o.affiliate === true)
+        let txOut = tx.out.find(out => {
           if (hasAffiliateFlag) {
             return out.affiliate !== true
           } else {
@@ -213,11 +206,11 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
           // If there are two pools but only one output, there's a problem and we should skip
           // this transaction. Midgard sometimes doesn't return the correct output until the transaction
           // has completed for awhile.
-          if (pools.length === 2 && txOuts.length === 1) {
+          if (tx.pools.length === 2 && tx.out.length === 1) {
             continue
-          } else if (pools.length === 1 && txOuts.length === 1) {
+          } else if (tx.pools.length === 1 && tx.out.length === 1) {
             // The output is a native currency output (maya/rune)
-            txOut = txOuts[0]
+            txOut = tx.out[0]
           } else {
             throw new Error(`${pluginId}: Cannot find output`)
           }
@@ -232,8 +225,8 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
 
         const ssTx: StandardTx = {
           status,
-          orderId: txIns[0].txID,
-          depositTxid: txIns[0].txID,
+          orderId: tx.in[0].txID,
+          depositTxid: tx.in[0].txID,
           depositAddress: undefined,
           depositCurrency: asset.toUpperCase(),
           depositAmount,
