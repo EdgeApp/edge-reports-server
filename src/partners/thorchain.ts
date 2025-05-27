@@ -223,7 +223,7 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
         const payoutAmount =
           Number(txOut.coins[0].amount) / THORCHAIN_MULTIPLIER
 
-        const ssTx: StandardTx = {
+        const standardTx: StandardTx = {
           status,
           orderId: tx.in[0].txID,
           depositTxid: tx.in[0].txID,
@@ -243,27 +243,27 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
         // See if the transaction exists already
         const matchTx = standardTxs.find(
           tx =>
-            tx.orderId === ssTx.orderId &&
-            tx.timestamp === ssTx.timestamp &&
-            tx.depositCurrency === ssTx.depositCurrency &&
-            tx.payoutCurrency === ssTx.payoutCurrency &&
-            tx.payoutAmount === ssTx.payoutAmount &&
-            tx.depositAmount !== ssTx.depositAmount
+            tx.orderId === standardTx.orderId &&
+            tx.timestamp === standardTx.timestamp &&
+            tx.depositCurrency === standardTx.depositCurrency &&
+            tx.payoutCurrency === standardTx.payoutCurrency &&
+            tx.payoutAmount === standardTx.payoutAmount &&
+            tx.depositAmount !== standardTx.depositAmount
         )
         if (matchTx == null) {
-          standardTxs.push(ssTx)
+          standardTxs.push(standardTx)
         } else {
-          matchTx.depositAmount += ssTx.depositAmount
+          matchTx.depositAmount += standardTx.depositAmount
         }
-        if (ssTx.isoDate > latestIsoDate) {
-          latestIsoDate = ssTx.isoDate
+        if (standardTx.isoDate > latestIsoDate) {
+          latestIsoDate = standardTx.isoDate
         }
-        if (ssTx.isoDate < oldestIsoDate) {
-          oldestIsoDate = ssTx.isoDate
+        if (standardTx.isoDate < oldestIsoDate) {
+          oldestIsoDate = standardTx.isoDate
         }
-        if (ssTx.isoDate < previousLatestIsoDate && !done) {
+        if (standardTx.isoDate < previousLatestIsoDate && !done) {
           datelog(
-            `Thorchain done: date ${ssTx.isoDate} < ${previousLatestIsoDate}`
+            `Thorchain done: date ${standardTx.isoDate} < ${previousLatestIsoDate}`
           )
           done = true
         }
