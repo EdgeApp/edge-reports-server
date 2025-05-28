@@ -10,6 +10,7 @@ import fetch from 'node-fetch'
 
 import {
   asStandardPluginParams,
+  EDGE_APP_START_DATE,
   PartnerPlugin,
   PluginParams,
   PluginResult,
@@ -56,7 +57,8 @@ const asMoonpayRawTx = asObject({
 
 const asMoonpayResult = asArray(asUnknown)
 
-const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5
+const PARTNER_START_DATE = '2024-06-17T00:00:00.000Z'
+const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 7
 const PER_REQUEST_LIMIT = 50
 
 export async function queryMoonpay(
@@ -66,7 +68,10 @@ export async function queryMoonpay(
 
   let headers
   const { apiKeys, settings } = asStandardPluginParams(pluginParams)
-  const { latestIsoDate } = settings
+  let { latestIsoDate } = settings
+  if (latestIsoDate === EDGE_APP_START_DATE) {
+    latestIsoDate = PARTNER_START_DATE
+  }
   const { apiKey } = pluginParams.apiKeys
 
   if (typeof apiKey === 'string') {
@@ -80,120 +85,149 @@ export async function queryMoonpay(
     }
   }
 
-  let offset = 0
+  // Make endDate a week after the query date
+  let queryIsoDate = new Date(
+    new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
+  ).toISOString()
 
-  const queryTimeStamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
-  const queryIsoDate = new Date(queryTimeStamp).toISOString()
-  let newestIsoDate = queryIsoDate
+  const isoNow = new Date().toISOString()
 
-  while (true) {
-    const url = `https://api.moonpay.io/v3/sell_transactions?limit=${PER_REQUEST_LIMIT}&offset=${offset}&startDate=${queryIsoDate}`
-    const result = await fetch(url, {
-      method: 'GET',
-      headers
-    })
-    const txs = asMoonpayResult(await result.json())
+  try {
+    do {
+      console.log(`Querying Moonpay from ${queryIsoDate} to ${latestIsoDate}`)
+      let offset = 0
 
-    for (const rawtx of txs) {
-      if (asMoonpayRawTx(rawtx).status === 'completed') {
-        let tx: MoonpaySellTx
-        try {
-          tx = asMoonpaySellTx(rawtx)
-        } catch (e) {
-          datelog(e)
-          datelog(rawtx)
-          throw e
+      while (true) {
+        const url = `https://api.moonpay.io/v3/sell_transactions?limit=${PER_REQUEST_LIMIT}&offset=${offset}&startDate=${queryIsoDate}&endDate=${latestIsoDate}`
+        const result = await fetch(url, {
+          method: 'GET',
+          headers
+        })
+        const txs = asMoonpayResult(await result.json())
+
+        for (const rawtx of txs) {
+          if (asMoonpayRawTx(rawtx).status === 'completed') {
+            let tx: MoonpaySellTx
+            try {
+              tx = asMoonpaySellTx(rawtx)
+            } catch (e) {
+              datelog(e)
+              datelog(rawtx)
+              throw e
+            }
+
+            const isoDate = tx.createdAt.toISOString()
+            const timestamp = tx.createdAt.getTime()
+            const ssTx: StandardTx = {
+              status: 'complete',
+              orderId: tx.id,
+              depositTxid: tx.depositHash,
+              depositAddress: undefined,
+              depositCurrency: tx.baseCurrency.code.toUpperCase(),
+              depositAmount: tx.baseCurrencyAmount,
+              payoutTxid: undefined,
+              payoutAddress: undefined,
+              payoutCurrency: tx.quoteCurrency.code.toUpperCase(),
+              payoutAmount: tx.quoteCurrencyAmount,
+              timestamp: timestamp / 1000,
+              isoDate,
+              usdValue: -1,
+              rawTx: rawtx
+            }
+            ssFormatTxs.push(ssTx)
+          }
         }
 
-        const isoDate = tx.createdAt.toISOString()
-        const timestamp = tx.createdAt.getTime()
-        const ssTx: StandardTx = {
-          status: 'complete',
-          orderId: tx.id,
-          depositTxid: tx.depositHash,
-          depositAddress: undefined,
-          depositCurrency: tx.baseCurrency.code.toUpperCase(),
-          depositAmount: tx.baseCurrencyAmount,
-          payoutTxid: undefined,
-          payoutAddress: undefined,
-          payoutCurrency: tx.quoteCurrency.code.toUpperCase(),
-          payoutAmount: tx.quoteCurrencyAmount,
-          timestamp: timestamp / 1000,
-          isoDate,
-          usdValue: -1,
-          rawTx: rawtx
+        if (txs.length > 0) {
+          console.log(
+            `Moonpay sell txs ${txs.length}: ${JSON.stringify(
+              txs.slice(-1)
+            ).slice(0, 100)}`
+          )
         }
-        ssFormatTxs.push(ssTx)
-        newestIsoDate = isoDate > newestIsoDate ? isoDate : newestIsoDate
+
+        if (txs.length < PER_REQUEST_LIMIT) {
+          break
+        }
+
+        offset += PER_REQUEST_LIMIT
       }
-    }
 
-    if (txs.length < PER_REQUEST_LIMIT) {
-      break
-    }
-    console.log(
-      `Moonpay sell txs: ${JSON.stringify(txs[txs.length - 1]).slice(0, 100)}`
-    )
+      offset = 0
+      while (true) {
+        const url = `https://api.moonpay.io/v1/transactions?limit=${PER_REQUEST_LIMIT}&offset=${offset}&startDate=${queryIsoDate}&endDate=${latestIsoDate}`
+        const result = await fetch(url, {
+          method: 'GET',
+          headers
+        })
+        const txs = asMoonpayResult(await result.json())
+        // cryptoTransactionId is a duplicate among other transactions sometimes
+        // in bulk update it throws an error for document update conflict because of this.
 
-    offset += PER_REQUEST_LIMIT
-  }
+        for (const rawtx of txs) {
+          if (asMoonpayRawTx(rawtx).status === 'completed') {
+            let tx: MoonpayTx
+            try {
+              tx = asMoonpayTx(rawtx)
+            } catch (e) {
+              datelog(e)
+              datelog(rawtx)
+              throw e
+            }
 
-  while (true) {
-    const url = `https://api.moonpay.io/v1/transactions?limit=${PER_REQUEST_LIMIT}&offset=${offset}&startDate=${queryIsoDate}`
-    const result = await fetch(url, {
-      method: 'GET',
-      headers
-    })
-    const txs = asMoonpayResult(await result.json())
-    // cryptoTransactionId is a duplicate among other transactions sometimes
-    // in bulk update it throws an error for document update conflict because of this.
-
-    for (const rawtx of txs) {
-      if (asMoonpayRawTx(rawtx).status === 'completed') {
-        let tx: MoonpayTx
-        try {
-          tx = asMoonpayTx(rawtx)
-        } catch (e) {
-          datelog(e)
-          datelog(rawtx)
-          throw e
+            const isoDate = tx.createdAt.toISOString()
+            const timestamp = tx.createdAt.getTime()
+            const ssTx: StandardTx = {
+              status: 'complete',
+              orderId: tx.id,
+              depositTxid: undefined,
+              depositAddress: undefined,
+              depositCurrency: tx.baseCurrency.code.toUpperCase(),
+              depositAmount: tx.baseCurrencyAmount,
+              payoutTxid: tx.cryptoTransactionId,
+              payoutAddress: tx.walletAddress,
+              payoutCurrency: tx.currency.code.toUpperCase(),
+              payoutAmount: tx.quoteCurrencyAmount,
+              timestamp: timestamp / 1000,
+              isoDate,
+              usdValue: -1,
+              rawTx: rawtx
+            }
+            ssFormatTxs.push(ssTx)
+          }
+        }
+        if (txs.length > 0) {
+          console.log(
+            `Moonpay buy txs ${txs.length}: ${JSON.stringify(
+              txs.slice(-1)
+            ).slice(0, 100)}`
+          )
         }
 
-        const isoDate = tx.createdAt.toISOString()
-        const timestamp = tx.createdAt.getTime()
-        const ssTx: StandardTx = {
-          status: 'complete',
-          orderId: tx.id,
-          depositTxid: undefined,
-          depositAddress: undefined,
-          depositCurrency: tx.baseCurrency.code.toUpperCase(),
-          depositAmount: tx.baseCurrencyAmount,
-          payoutTxid: tx.cryptoTransactionId,
-          payoutAddress: tx.walletAddress,
-          payoutCurrency: tx.currency.code.toUpperCase(),
-          payoutAmount: tx.quoteCurrencyAmount,
-          timestamp: timestamp / 1000,
-          isoDate,
-          usdValue: -1,
-          rawTx: rawtx
+        if (txs.length < PER_REQUEST_LIMIT) {
+          break
         }
-        ssFormatTxs.push(ssTx)
-        newestIsoDate = isoDate > newestIsoDate ? isoDate : newestIsoDate
+
+        offset += PER_REQUEST_LIMIT
       }
-    }
+      queryIsoDate = latestIsoDate
+      latestIsoDate = new Date(
+        new Date(latestIsoDate).getTime() + QUERY_LOOKBACK
+      ).toISOString()
+    } while (isoNow > latestIsoDate)
+    latestIsoDate = isoNow
+  } catch (e) {
+    datelog(e)
+    console.log(`Moonpay error: ${e}`)
+    console.log(`Saving progress up until ${queryIsoDate}`)
 
-    if (txs.length < PER_REQUEST_LIMIT) {
-      break
-    }
-
-    console.log(
-      `Moonpay buy txs: ${JSON.stringify(txs[txs.length - 1]).slice(0, 100)}`
-    )
-    offset += PER_REQUEST_LIMIT
+    // Set the latestIsoDate to the queryIsoDate so that the next query will
+    // query the same time range again since we had a failure in that time range
+    latestIsoDate = queryIsoDate
   }
 
   const out: PluginResult = {
-    settings: { latestIsoDate: newestIsoDate },
+    settings: { latestIsoDate },
     transactions: ssFormatTxs
   }
   return out
