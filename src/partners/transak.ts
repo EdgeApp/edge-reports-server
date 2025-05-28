@@ -10,7 +10,13 @@ import {
 } from 'cleaners'
 import fetch from 'node-fetch'
 
-import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import {
+  FiatPaymentType,
+  PartnerPlugin,
+  PluginParams,
+  PluginResult,
+  StandardTx
+} from '../types'
 import { datelog } from '../util'
 
 const PAGE_LIMIT = 100
@@ -22,10 +28,12 @@ const asTransakOrder = asObject({
   fromWalletAddress: asOptional(asEither(asBoolean, asString)),
   fiatCurrency: asString,
   fiatAmount: asNumber,
+  isBuyOrSell: asString,
   walletAddress: asString,
   cryptoCurrency: asString,
   cryptoAmount: asNumber,
-  completedAt: asString
+  completedAt: asString,
+  paymentOptionId: asString
 })
 
 type TransakOrder = ReturnType<typeof asTransakOrder>
@@ -102,13 +110,29 @@ export function processTransakTx(rawTx: unknown): StandardTx {
   const date = new Date(tx.completedAt)
   const depositAddress =
     typeof tx.fromWalletAddress === 'string' ? tx.fromWalletAddress : undefined
+
+  const direction =
+    tx.isBuyOrSell === 'BUY'
+      ? 'buy'
+      : tx.isBuyOrSell === 'SELL'
+      ? 'sell'
+      : undefined
+
+  if (direction == null) {
+    throw new Error(`Unexpected isBuyOrSell '${tx.isBuyOrSell}' for ${tx.id}`)
+  }
+
   const standardTx: StandardTx = {
     status: 'complete',
     orderId: tx.id,
+    countryCode: null,
     depositTxid: undefined,
     depositAddress,
     depositCurrency: tx.fiatCurrency,
     depositAmount: tx.fiatAmount,
+    direction,
+    exchangeType: 'fiat',
+    paymentType: getFiatPaymentType(tx),
     payoutTxid: undefined,
     payoutAddress: tx.walletAddress,
     payoutCurrency: tx.cryptoCurrency,
@@ -119,4 +143,19 @@ export function processTransakTx(rawTx: unknown): StandardTx {
     rawTx
   }
   return standardTx
+}
+
+function getFiatPaymentType(tx: TransakOrder): FiatPaymentType | null {
+  switch (tx.paymentOptionId) {
+    case 'mobikwik_wallet':
+      return 'mobikwik'
+    case 'neft_bank_transfer':
+      return 'neft'
+    case 'upi':
+      return 'upi'
+    default:
+      throw new Error(
+        `Unknown payment method: ${tx.paymentOptionId} for ${tx.id}`
+      )
+  }
 }

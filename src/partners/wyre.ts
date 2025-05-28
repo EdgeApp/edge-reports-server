@@ -3,6 +3,7 @@ import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { safeParseFloat } from '../util'
+import { isFiatCurrency } from '../util/fiatCurrency'
 
 const asWyreTx = asObject({
   id: asString,
@@ -100,16 +101,33 @@ export function processWyreTx(rawTx: unknown): StandardTx {
   const date = new Date(tx.createdAt)
   const dateMs = date.getTime()
 
+  const depositCurrency = tx.sourceCurrency
+  const payoutCurrency = tx.destCurrency
+  const isDepositFiat = isFiatCurrency(depositCurrency)
+  const isPayoutFiat = isFiatCurrency(payoutCurrency)
+
+  const direction = isDepositFiat ? 'buy' : isPayoutFiat ? 'sell' : undefined
+
+  if (direction == null) {
+    throw new Error(
+      `Unknown direction for tx ${tx.id}; no fiat currency in trade from ${depositCurrency} to ${payoutCurrency}`
+    )
+  }
+
   const standardTx: StandardTx = {
     status: 'complete',
     orderId: tx.id,
+    countryCode: null,
     depositTxid: undefined,
     depositAddress: undefined,
-    depositCurrency: tx.sourceCurrency,
+    depositCurrency,
     depositAmount: safeParseFloat(tx.sourceAmount),
+    direction,
+    exchangeType: 'fiat',
+    paymentType: 'ach',
     payoutTxid: undefined,
     payoutAddress: undefined,
-    payoutCurrency: tx.destCurrency,
+    payoutCurrency,
     payoutAmount: safeParseFloat(tx.destAmount),
     timestamp: dateMs / 1000,
     isoDate: date.toISOString(),

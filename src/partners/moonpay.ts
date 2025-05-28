@@ -3,14 +3,17 @@ import {
   asDate,
   asNumber,
   asObject,
+  asOptional,
   asString,
-  asUnknown
+  asUnknown,
+  asValue
 } from 'cleaners'
 import fetch from 'node-fetch'
 
 import {
   asStandardPluginParams,
   EDGE_APP_START_DATE,
+  FiatPaymentType,
   PartnerPlugin,
   PluginParams,
   PluginResult,
@@ -26,26 +29,32 @@ const asMoonpayCurrency = asObject({
 })
 
 const asMoonpayTx = asObject({
-  cryptoTransactionId: asString,
+  baseCurrency: asMoonpayCurrency,
   baseCurrencyAmount: asNumber,
-  walletAddress: asString,
-  quoteCurrencyAmount: asNumber,
-  createdAt: asDate,
-  id: asString,
   baseCurrencyId: asString,
+  cardType: asOptional(asValue('apple_pay', 'google_pay')),
+  country: asString,
+  createdAt: asDate,
+  cryptoTransactionId: asString,
+  currencyId: asString,
   currency: asMoonpayCurrency,
-  baseCurrency: asMoonpayCurrency
+  id: asString,
+  paymentMethod: asOptional(asString),
+  quoteCurrencyAmount: asNumber,
+  walletAddress: asString
 })
 
 const asMoonpaySellTx = asObject({
+  baseCurrency: asMoonpayCurrency,
   baseCurrencyAmount: asNumber,
-  quoteCurrencyAmount: asNumber,
-  createdAt: asDate,
-  id: asString,
   baseCurrencyId: asString,
+  country: asString,
+  createdAt: asDate,
   depositHash: asString,
+  id: asString,
+  paymentMethod: asOptional(asString),
   quoteCurrency: asMoonpayCurrency,
-  baseCurrency: asMoonpayCurrency
+  quoteCurrencyAmount: asNumber
 })
 
 type MoonpayTx = ReturnType<typeof asMoonpayTx>
@@ -196,10 +205,15 @@ export function processMoonpayTx(rawTx: unknown): StandardTx {
   const standardTx: StandardTx = {
     status: 'complete',
     orderId: tx.id,
+
+    countryCode: tx.country,
     depositTxid: undefined,
     depositAddress: undefined,
     depositCurrency: tx.baseCurrency.code.toUpperCase(),
     depositAmount: tx.baseCurrencyAmount,
+    direction: 'buy',
+    exchangeType: 'fiat',
+    paymentType: getFiatPaymentType(tx),
     payoutTxid: tx.cryptoTransactionId,
     payoutAddress: tx.walletAddress,
     payoutCurrency: tx.currency.code.toUpperCase(),
@@ -219,10 +233,15 @@ export function processMoonpaySellTx(rawTx: unknown): StandardTx {
   const standardTx: StandardTx = {
     status: 'complete',
     orderId: tx.id,
+
+    countryCode: tx.country,
     depositTxid: tx.depositHash,
     depositAddress: undefined,
     depositCurrency: tx.baseCurrency.code.toUpperCase(),
     depositAmount: tx.baseCurrencyAmount,
+    direction: 'sell',
+    exchangeType: 'fiat',
+    paymentType: getFiatPaymentType(tx),
     payoutTxid: undefined,
     payoutAddress: undefined,
     payoutCurrency: tx.quoteCurrency.code.toUpperCase(),
@@ -233,4 +252,48 @@ export function processMoonpaySellTx(rawTx: unknown): StandardTx {
     rawTx: rawTx
   }
   return standardTx
+}
+
+function getFiatPaymentType(
+  tx: MoonpayTx | MoonpaySellTx
+): FiatPaymentType | null {
+  switch (tx.paymentMethod) {
+    case undefined:
+      return null
+    case 'ach_bank_transfer':
+      return 'ach'
+    case 'apple_pay':
+      return 'applepay'
+    case 'credit_debit_card':
+      return 'credit'
+    case 'gbp_open_banking_payment':
+      return 'fasterpayments'
+    case 'google_pay':
+      return 'googlepay'
+    case 'mobile_wallet':
+      // Older versions of Moonpay data had a separate cardType field.
+      return 'cardType' in tx
+        ? tx.cardType === 'apple_pay'
+          ? 'applepay'
+          : tx.cardType === 'google_pay'
+          ? 'googlepay'
+          : null
+        : null
+    case 'moonpay_balance':
+      return 'moonpaybalance'
+    case 'paypal':
+      return 'paypal'
+    case 'pix_instant_payment':
+      return 'pix'
+    case 'sepa_bank_transfer':
+      return 'sepa'
+    case 'venmo':
+      return 'venmo'
+    case 'yellow_card_bank_transfer':
+      return 'yellowcard'
+    default:
+      throw new Error(
+        `Unknown payment method: ${tx.paymentMethod} for ${tx.id}`
+      )
+  }
 }

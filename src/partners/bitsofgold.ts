@@ -1,4 +1,12 @@
-import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
+import {
+  asArray,
+  asMaybe,
+  asNumber,
+  asObject,
+  asString,
+  asUnknown,
+  asValue
+} from 'cleaners'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
@@ -106,13 +114,23 @@ export function processBitsOfGoldTx(rawTx: unknown): StandardTx {
     payoutAmount = data.fiat_amount
   }
 
+  const direction = asMaybe(asValue('buy', 'sell'), undefined)(bogTx.type)
+
+  if (direction == null) {
+    throw new Error(`Invalid direction ${bogTx.type}`)
+  }
+
   const standardTx: StandardTx = {
     status: 'complete',
     orderId: bogTx.id,
+    countryCode: null,
     depositTxid: undefined,
     depositAddress: undefined,
     depositCurrency,
     depositAmount,
+    direction,
+    exchangeType: 'fiat',
+    paymentType: data.fiat_type === 'ILS' ? 'israelibank' : 'sepa',
     payoutTxid: undefined,
     payoutAddress: undefined,
     payoutCurrency,

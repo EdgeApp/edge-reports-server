@@ -4,7 +4,8 @@ import {
   asObject,
   asOptional,
   asString,
-  asUnknown
+  asUnknown,
+  asValue
 } from 'cleaners'
 import crypto from 'crypto'
 import fetch from 'node-fetch'
@@ -13,11 +14,13 @@ import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { datelog } from '../util'
 
 const asBitaccessTx = asObject({
+  trade_type: asValue<['buy', 'sell']>('buy', 'sell'),
   transaction_id: asString,
   tx_hash: asOptional(asString),
   deposit_address: asString,
   deposit_currency: asString,
   deposit_amount: asNumber,
+  location_address: asString,
   withdrawal_address: asOptional(asString),
   withdrawal_currency: asString,
   withdrawal_amount: asNumber,
@@ -132,13 +135,19 @@ export function processBitaccessTx(rawTx: unknown): StandardTx {
     payoutTxid = tx.tx_hash
   }
 
+  const countryCode = parseLocationAddressForCountryCode(tx.location_address)
+
   const standardTx: StandardTx = {
     status: 'complete',
     orderId: tx.transaction_id,
+    countryCode,
     depositTxid,
     depositAddress: tx.deposit_address,
     depositCurrency: tx.deposit_currency.toUpperCase(),
     depositAmount: tx.deposit_amount,
+    direction: tx.trade_type,
+    exchangeType: 'fiat',
+    paymentType: 'cash',
     payoutTxid,
     payoutAddress: tx.withdrawal_address,
     payoutCurrency: tx.withdrawal_currency.toUpperCase(),
@@ -149,4 +158,12 @@ export function processBitaccessTx(rawTx: unknown): StandardTx {
     rawTx
   }
   return standardTx
+}
+
+function parseLocationAddressForCountryCode(location: string): string {
+  const parts = location.split(', ')
+  if (parts.length !== 4 || parts[3].length > 3) {
+    throw new Error(`Unexpected location address: ${location}`)
+  }
+  return parts[3]
 }

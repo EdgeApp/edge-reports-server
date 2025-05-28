@@ -12,6 +12,7 @@ import {
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { safeParseFloat } from '../util'
+import { isFiatCurrency } from '../util/fiatCurrency'
 
 const asSimplexTx = asObject({
   amount_usd: asString,
@@ -19,6 +20,7 @@ const asSimplexTx = asObject({
   fiat_total_amount: asString,
   created_at: asNumber,
   order_id: asString,
+  country: asString,
   crypto_currency: asString,
   currency: asString
 })
@@ -140,13 +142,18 @@ export const simplex: PartnerPlugin = {
 
 export function processSimplexTx(rawTx: unknown): StandardTx {
   const tx = asSimplexTx(rawTx)
+
   const standardTx: StandardTx = {
     status: 'complete',
     orderId: tx.order_id,
+    countryCode: tx.country,
     depositTxid: undefined,
     depositAddress: undefined,
     depositCurrency: tx.currency,
     depositAmount: safeParseFloat(tx.fiat_total_amount),
+    direction: 'buy',
+    exchangeType: 'fiat',
+    paymentType: null,
     payoutTxid: undefined,
     payoutAddress: undefined,
     payoutCurrency: tx.crypto_currency,

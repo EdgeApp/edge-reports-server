@@ -28,6 +28,7 @@ const asXanpoolTx = asObject({
   cryptoPriceUsd: asNumber,
   blockchainTxId: asOptional(asString),
   wallet: asOptional(asString),
+  userCountry: asString,
   depositWallets: asOptional(asMap(asString)),
   createdAt: asString
 })
@@ -125,10 +126,14 @@ export function processXanpoolTx(rawTx: unknown): StandardTx {
     return {
       status: tx.status === 'completed' ? 'complete' : 'expired',
       orderId: tx.id,
+      countryCode: tx.userCountry,
       depositTxid: undefined,
       depositAddress: undefined,
       depositCurrency: tx.currency,
       depositAmount: tx.fiat,
+      direction: 'buy',
+      exchangeType: 'fiat',
+      paymentType: null, // Or whatever tx.method === 'paynow' means?
       payoutTxid: tx.blockchainTxId,
       payoutAddress: tx.wallet,
       payoutCurrency: tx.cryptoCurrency,
@@ -143,10 +148,14 @@ export function processXanpoolTx(rawTx: unknown): StandardTx {
     return {
       status: tx.status === 'completed' ? 'complete' : 'expired',
       orderId: tx.id,
+      countryCode: tx.userCountry,
       depositTxid: tx.blockchainTxId,
       depositAddress: Object.values(tx.depositWallets ?? {})[0],
       depositCurrency: tx.cryptoCurrency,
       depositAmount: tx.crypto,
+      direction: 'sell',
+      exchangeType: 'fiat',
+      paymentType: 'paynow', // Or whatever tx.method === 'paynow' means?
       payoutTxid: undefined,
       payoutAddress: undefined,
       payoutCurrency: tx.currency,
@@ -158,6 +167,6 @@ export function processXanpoolTx(rawTx: unknown): StandardTx {
       rawTx
     }
   } else {
-    throw new Error(`Invalid tx type ${tx.type}`)
+    throw new Error(`Invalid tx type ${tx.type} for ${tx.id}`)
   }
 }

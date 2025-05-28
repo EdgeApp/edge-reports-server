@@ -390,6 +390,7 @@ export async function queryTotle(
           const ssTx: StandardTx = {
             status: 'complete',
             orderId: receipt.transactionHash,
+            countryCode: null,
             depositTxid: receipt.transactionHash,
             depositAddress: receipt.from,
             depositCurrency: sourceToken.symbol,
@@ -401,6 +402,9 @@ export async function queryTotle(
                 10
               )
             ),
+            direction: null,
+            exchangeType: 'swap',
+            paymentType: null,
             payoutTxid: receipt.transactionHash,
             payoutAddress: receipt.to,
             payoutCurrency: destinationToken.symbol,

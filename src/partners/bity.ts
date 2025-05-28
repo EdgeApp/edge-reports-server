@@ -158,13 +158,29 @@ export const bity: PartnerPlugin = {
 export function processBityTx(rawTx: unknown): StandardTx {
   const tx = asBityTx(rawTx)
 
+  // Assume that one currency is EUR and that's the only fiat currency supported
+  // by Bity.
+  if (
+    tx.input.currency.toUpperCase() !== 'EUR' &&
+    tx.output.currency.toUpperCase() !== 'EUR'
+  ) {
+    throw new Error(
+      `Unknown fiat currency ${tx.input.currency} or ${tx.output.currency}`
+    )
+  }
+  const direction = tx.input.currency.toUpperCase() === 'EUR' ? 'buy' : 'sell'
+
   const standardTx: StandardTx = {
     status: 'complete',
     orderId: tx.id,
+    countryCode: null,
     depositTxid: undefined,
     depositAddress: undefined,
     depositCurrency: tx.input.currency.toUpperCase(),
     depositAmount: safeParseFloat(tx.input.amount),
+    direction,
+    exchangeType: 'fiat',
+    paymentType: 'sepa',
     payoutTxid: undefined,
     payoutAddress: undefined,
     payoutCurrency: tx.output.currency.toUpperCase(),

@@ -82,10 +82,14 @@ export function processPaytrieTx(rawTx: unknown): StandardTx {
   const standardTx: StandardTx = {
     status: 'complete',
     orderId: order.inputTXID,
+    countryCode: null, // No records of paytrie in the DB to determine
     depositTxid: undefined,
     depositAddress: order.inputAddress,
     depositCurrency: order.inputCurrency,
     depositAmount: order.inputAmount,
+    direction: null, // No records of paytrie in the DB to determine
+    exchangeType: 'fiat', // IDK what paytrie is, but I assume it's a fiat exchange
+    paymentType: null,
     payoutTxid: undefined,
     payoutAddress: order.outputAddress,
     payoutCurrency: order.outputCurrency,

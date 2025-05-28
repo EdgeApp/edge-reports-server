@@ -3,6 +3,7 @@ import {
   asBoolean,
   asDate,
   asEither,
+  asNull,
   asNumber,
   asObject,
   asString,
@@ -11,6 +12,7 @@ import {
 
 import {
   asStandardPluginParams,
+  FiatPaymentType,
   PartnerPlugin,
   PluginParams,
   PluginResult,
@@ -45,6 +47,7 @@ const asOffRampTx = asObject({
   // disburseMethod: asString
 })
 
+type KadoTx = ReturnType<typeof asKadoTx>
 const asKadoTx = asEither(asOnRampTx, asOffRampTx)
 
 // Define cleaner for the main data structure
@@ -130,10 +133,14 @@ export function processKadoTx(rawTx: unknown): StandardTx {
     return {
       status: 'complete',
       orderId: tx._id,
+      countryCode: null,
       depositTxid: undefined,
       depositAddress: undefined,
       depositCurrency: 'USD',
       depositAmount: tx.paidAmountUsd,
+      direction: tx.type,
+      exchangeType: 'fiat',
+      paymentType: getFiatPaymentType(tx),
       payoutTxid: undefined,
       payoutAddress: tx.walletAddress,
       payoutCurrency: tx.cryptoCurrency,
@@ -147,10 +154,14 @@ export function processKadoTx(rawTx: unknown): StandardTx {
     return {
       status: 'complete',
       orderId: tx._id,
+      countryCode: null,
       depositTxid: undefined,
       depositAddress: undefined,
       depositCurrency: tx.cryptoCurrency,
       depositAmount: tx.depositUnitCount,
+      direction: tx.type,
+      exchangeType: 'fiat',
+      paymentType: getFiatPaymentType(tx),
       payoutTxid: undefined,
       payoutAddress: undefined,
       payoutCurrency: 'USD',
@@ -160,5 +171,23 @@ export function processKadoTx(rawTx: unknown): StandardTx {
       usdValue: tx.receiveUsd,
       rawTx: tx
     }
+  }
+}
+
+function getFiatPaymentType(tx: KadoTx): FiatPaymentType | null {
+  if (!('paymentMethod' in tx)) {
+    throw new Error(`Missing paymentMethod for ${tx._id}`)
+  }
+  switch (tx.paymentMethod) {
+    case 'deposit_ach': {
+      if (tx.type === 'buy') return 'iach'
+      return 'ach'
+    }
+    case 'wire_transfer':
+      return 'wire'
+    default:
+      throw new Error(
+        `Unknown payment method: ${tx.paymentMethod} for ${tx._id}`
+      )
   }
 }

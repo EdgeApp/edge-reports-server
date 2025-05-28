@@ -13,6 +13,7 @@ import { Response } from 'node-fetch'
 
 import {
   EDGE_APP_START_DATE,
+  FiatPaymentType,
   PartnerPlugin,
   PluginParams,
   PluginResult,
@@ -32,6 +33,7 @@ export const asBanxaParams = asObject({
   })
 })
 
+type BanxaStatus = ReturnType<typeof asBanxaStatus>
 const asBanxaStatus = asMaybe(
   asValue(
     'complete',
@@ -44,15 +46,18 @@ const asBanxaStatus = asMaybe(
   'other'
 )
 
+type BanxaTx = ReturnType<typeof asBanxaTx>
 const asBanxaTx = asObject({
   id: asString,
   status: asBanxaStatus,
   created_at: asString,
+  country: asString,
   fiat_amount: asNumber,
   fiat_code: asString,
   coin_amount: asNumber,
   coin_code: asString,
   order_type: asString,
+  payment_type: asString,
   wallet_address: asMaybe(asString, '')
 })
 
@@ -66,9 +71,6 @@ const MAX_ATTEMPTS = 1
 const PAGE_LIMIT = 100
 const ONE_DAY_MS = 1000 * 60 * 60 * 24
 const ROLLBACK = ONE_DAY_MS * 7 // 7 days
-
-type BanxaTx = ReturnType<typeof asBanxaTx>
-type BanxaStatus = ReturnType<typeof asBanxaStatus>
 
 const statusMap: { [key in BanxaStatus]: Status } = {
   complete: 'complete',
@@ -263,13 +265,21 @@ export function processBanxaTx(rawTx: unknown): StandardTx {
     payoutAddress = banxaTx.wallet_address
   }
 
+  const direction = banxaTx.order_type === 'CRYPTO-SELL' ? 'sell' : 'buy'
+
+  const paymentType = getFiatPaymentType(banxaTx)
+
   const standardTx: StandardTx = {
     status: statusMap[banxaTx.status],
     orderId: banxaTx.id,
+    countryCode: banxaTx.country,
     depositTxid: undefined,
     depositAddress: undefined,
     depositCurrency: inputCurrency,
     depositAmount: inputAmount,
+    direction,
+    exchangeType: 'fiat',
+    paymentType,
     payoutTxid: undefined,
     payoutAddress,
     payoutCurrency: outputCurrency,
@@ -281,4 +291,46 @@ export function processBanxaTx(rawTx: unknown): StandardTx {
   }
 
   return standardTx
+}
+
+function getFiatPaymentType(tx: BanxaTx): FiatPaymentType {
+  switch (tx.payment_type) {
+    case 'AusPost Retail':
+      return 'auspost'
+    case 'BPay':
+      return 'bpay'
+    case 'Blueshyft Online':
+      return 'blueshyft'
+    case 'POLi Transfer':
+      return 'poli'
+    case 'Sofort Transfer':
+      return 'sofort'
+    case 'Checkout Credit Card':
+    case 'WorldPay Credit Card':
+      return 'credit'
+    case 'ClearJunction Fast Pay':
+    case 'ClearJunction Sell Fast Pay':
+      return 'fasterpayments'
+    case 'ClearJunction Sepa':
+    case 'Ten31 Sepa':
+      return 'sepa'
+    case 'DCBank Interac':
+    case 'DCBank Interac Sell':
+      return 'interac'
+    case 'Enumis Transfer':
+      return 'fasterpayments'
+    case 'Monoova Sell':
+      return 'banktransfer'
+    case 'NPP PayID':
+    case 'PayID via Monoova':
+      return 'payid'
+    case 'WorldPay ApplePay':
+      return 'applepay'
+    case 'WorldPay GooglePay':
+      return 'googlepay'
+    case 'iDEAL Transfer':
+      return 'ideal'
+    default:
+      throw new Error(`Unknown payment method: ${tx.payment_type} for ${tx.id}`)
+  }
 }
