@@ -120,7 +120,10 @@ export async function queryEngine(): Promise<void> {
               string => string !== partnerId
             )
             if (remainingPartners.length > 0) {
-              datelog('REMAINING PLUGINS:', remainingPartners.join(', '))
+              datelog(
+                `REMAINING PLUGINS for ${app.appId}:`,
+                remainingPartners.join(', ')
+              )
             }
           })
         )
