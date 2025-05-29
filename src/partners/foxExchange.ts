@@ -31,7 +31,7 @@ const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 3 // 3 days ago
 export async function queryFoxExchange(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
   let apiKey
   let secretToken
   let lastCheckedTimestamp
@@ -80,36 +80,15 @@ export async function queryFoxExchange(
       throw e
     }
 
-    for (const rawtx of txs.data.items) {
-      if (asFoxExchangeRawTx(rawtx).status === 'complete') {
-        let tx
-        try {
-          tx = asFoxExchangeTx(rawtx)
-        } catch (e) {
-          datelog(e)
-          throw e
+    for (const rawTx of txs.data.items) {
+      if (asFoxExchangeRawTx(rawTx).status === 'complete') {
+        const standardTx = processFoxExchangeTx(rawTx)
+        standardTxs.push(standardTx)
+        const createdAt = standardTx.timestamp * 1000
+        if (createdAt > newestTimestamp) {
+          newestTimestamp = createdAt
         }
-        const ssTx: StandardTx = {
-          status: 'complete',
-          orderId: tx.orderId,
-          depositTxid: undefined,
-          depositAddress: tx.exchangeAddress.address,
-          depositCurrency: tx.depositCoin.toUpperCase(),
-          depositAmount: tx.depositCoinAmount,
-          payoutTxid: tx.outputTransactionHash,
-          payoutAddress: tx.destinationAddress.address,
-          payoutCurrency: tx.destinationCoin.toUpperCase(),
-          payoutAmount: tx.destinationCoinAmount,
-          timestamp: tx.createdAt / 1000,
-          isoDate: new Date(tx.createdAt).toISOString(),
-          usdValue: -1,
-          rawTx: rawtx
-        }
-        ssFormatTxs.push(ssTx)
-        if (tx.createdAt > newestTimestamp) {
-          newestTimestamp = tx.createdAt
-        }
-        if (lastCheckedTimestamp > tx.createdAt) {
+        if (lastCheckedTimestamp > createdAt) {
           done = true
         }
       }
@@ -125,7 +104,7 @@ export async function queryFoxExchange(
 
   const out: PluginResult = {
     settings: { lastCheckedTimestamp: newestTimestamp },
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
   return out
 }
@@ -136,4 +115,35 @@ export const foxExchange: PartnerPlugin = {
   // results in a PluginResult
   pluginName: 'FoxExchange',
   pluginId: 'foxExchange'
+}
+
+export function processFoxExchangeTx(rawTx: unknown): StandardTx {
+  let tx
+  try {
+    tx = asFoxExchangeTx(rawTx)
+  } catch (e) {
+    datelog(e)
+    throw e
+  }
+  const standardTx: StandardTx = {
+    status: 'complete',
+    orderId: tx.orderId,
+    countryCode: null,
+    depositTxid: undefined,
+    depositAddress: tx.exchangeAddress.address,
+    depositCurrency: tx.depositCoin.toUpperCase(),
+    depositAmount: tx.depositCoinAmount,
+    direction: null,
+    exchangeType: 'swap',
+    paymentType: null,
+    payoutTxid: tx.outputTransactionHash,
+    payoutAddress: tx.destinationAddress.address,
+    payoutCurrency: tx.destinationCoin.toUpperCase(),
+    payoutAmount: tx.destinationCoinAmount,
+    timestamp: tx.createdAt / 1000,
+    isoDate: new Date(tx.createdAt).toISOString(),
+    usdValue: -1,
+    rawTx
+  }
+  return standardTx
 }

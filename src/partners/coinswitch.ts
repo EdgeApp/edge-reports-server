@@ -12,7 +12,7 @@ import fetch from 'node-fetch'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { datelog } from '../util'
 
-const asCoinswitchTx = asObject({
+const asCoinSwitchTx = asObject({
   status: asString,
   orderId: asString,
   inputTransactionHash: asEither(asString, asNull),
@@ -32,12 +32,12 @@ const asCoinSwitchResult = asObject({
   })
 })
 const COUNT = 25
-const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
+const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 
 export async function queryCoinSwitch(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
   let start = 0
   let apiKey = ''
   let latestTimeStamp = 0
@@ -72,36 +72,13 @@ export async function queryCoinSwitch(
     }
     const txs = jsonObj.data.items
     for (const rawTx of txs) {
-      const tx = asCoinswitchTx(rawTx)
-      const depositTxid =
-        tx.inputTransactionHash === 'string'
-          ? tx.inputTransactionHash
-          : undefined
-      const payoutTxid =
-        tx.outputTransactionHash === 'string'
-          ? tx.outputTransactionHash
-          : undefined
-      const ssTx: StandardTx = {
-        status: 'complete',
-        orderId: tx.orderId,
-        depositTxid,
-        depositAddress: tx.exchangeAddress.address,
-        depositCurrency: tx.depositCoin.toUpperCase(),
-        depositAmount: tx.depositCoinAmount,
-        payoutTxid,
-        payoutAddress: tx.destinationAddress.address,
-        payoutCurrency: tx.destinationCoin.toUpperCase(),
-        payoutAmount: tx.destinationCoinAmount,
-        timestamp: tx.createdAt / 1000,
-        isoDate: new Date(tx.createdAt).toISOString(),
-        usdValue: -1,
-        rawTx: rawTx
+      const standardTx = processCoinSwitchTx(rawTx)
+      standardTxs.push(standardTx)
+      const createdAt = standardTx.timestamp * 1000
+      if (createdAt > newLatestTimeStamp) {
+        newLatestTimeStamp = createdAt
       }
-      ssFormatTxs.push(ssTx)
-      if (tx.createdAt > newLatestTimeStamp) {
-        newLatestTimeStamp = tx.createdAt
-      }
-      if (tx.createdAt < latestTimeStamp - QUERY_LOOKBACK) {
+      if (createdAt < latestTimeStamp - QUERY_LOOKBACK) {
         done = true
       }
     }
@@ -113,7 +90,7 @@ export async function queryCoinSwitch(
   }
   const out: PluginResult = {
     settings: { latestTimeStamp: newLatestTimeStamp },
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
   return out
 }
@@ -124,4 +101,33 @@ export const coinswitch: PartnerPlugin = {
   // results in a PluginResult
   pluginName: 'CoinSwitch',
   pluginId: 'coinswitch'
+}
+
+export function processCoinSwitchTx(rawTx: unknown): StandardTx {
+  const tx = asCoinSwitchTx(rawTx)
+  const depositTxid =
+    tx.inputTransactionHash === 'string' ? tx.inputTransactionHash : undefined
+  const payoutTxid =
+    tx.outputTransactionHash === 'string' ? tx.outputTransactionHash : undefined
+  const standardTx: StandardTx = {
+    status: 'complete',
+    orderId: tx.orderId,
+    countryCode: null,
+    depositTxid,
+    depositAddress: tx.exchangeAddress.address,
+    depositCurrency: tx.depositCoin.toUpperCase(),
+    depositAmount: tx.depositCoinAmount,
+    direction: null,
+    exchangeType: 'swap',
+    paymentType: null,
+    payoutTxid,
+    payoutAddress: tx.destinationAddress.address,
+    payoutCurrency: tx.destinationCoin.toUpperCase(),
+    payoutAmount: tx.destinationCoinAmount,
+    timestamp: tx.createdAt / 1000,
+    isoDate: new Date(tx.createdAt).toISOString(),
+    usdValue: -1,
+    rawTx: rawTx
+  }
+  return standardTx
 }

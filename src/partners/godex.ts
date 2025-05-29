@@ -63,7 +63,7 @@ type GodexTx = ReturnType<typeof asGodexTx>
 type GodexStatus = ReturnType<typeof asGodexStatus>
 
 const LIMIT = 100
-const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
+const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 const statusMap: { [key in GodexStatus]: Status } = {
   success: 'complete',
   wait: 'pending',
@@ -86,7 +86,7 @@ export async function queryGodex(
     return { settings: { latestIsoDate }, transactions: [] }
   }
 
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
   let previousTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
   if (previousTimestamp < 0) previousTimestamp = 0
   const previousLatestIsoDate = new Date(previousTimestamp).toISOString()
@@ -106,41 +106,19 @@ export async function queryGodex(
       const resultJSON = await result.json()
       const txs = asGodexResult(resultJSON)
 
-      for (const rawtx of txs) {
-        let tx: GodexTx
-        try {
-          tx = asGodexTx(rawtx)
-        } catch (e) {
-          datelog(e)
-          throw e
+      for (const rawTx of txs) {
+        const standardTx = processGodexTx(rawTx)
+        standardTxs.push(standardTx)
+        if (standardTx.isoDate > latestIsoDate) {
+          latestIsoDate = standardTx.isoDate
         }
-        const ts = parseInt(tx.created_at)
-        const { isoDate, timestamp } = smartIsoDateFromTimestamp(ts)
-        const ssTx: StandardTx = {
-          status: statusMap[tx.status],
-          orderId: tx.transaction_id,
-          depositTxid: tx.hash_in,
-          depositAddress: tx.deposit,
-          depositCurrency: tx.coin_from.toUpperCase(),
-          depositAmount: safeParseFloat(tx.deposit_amount),
-          payoutTxid: undefined,
-          payoutAddress: tx.withdrawal,
-          payoutCurrency: tx.coin_to.toUpperCase(),
-          payoutAmount: safeParseFloat(tx.withdrawal_amount),
-          timestamp,
-          isoDate,
-          usdValue: -1,
-          rawTx: rawtx
+        if (standardTx.isoDate < oldestIsoDate) {
+          oldestIsoDate = standardTx.isoDate
         }
-        ssFormatTxs.push(ssTx)
-        if (isoDate > latestIsoDate) {
-          latestIsoDate = isoDate
-        }
-        if (isoDate < oldestIsoDate) {
-          oldestIsoDate = isoDate
-        }
-        if (isoDate < previousLatestIsoDate && !done) {
-          datelog(`Godex done: date ${isoDate} < ${previousLatestIsoDate}`)
+        if (standardTx.isoDate < previousLatestIsoDate && !done) {
+          datelog(
+            `Godex done: date ${standardTx.isoDate} < ${previousLatestIsoDate}`
+          )
           done = true
         }
       }
@@ -158,7 +136,7 @@ export async function queryGodex(
   }
   const out: PluginResult = {
     settings: { latestIsoDate },
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
   return out
 }
@@ -168,4 +146,31 @@ export const godex: PartnerPlugin = {
   // results in a PluginResult
   pluginName: 'Godex',
   pluginId: 'godex'
+}
+
+export function processGodexTx(rawTx: unknown): StandardTx {
+  const tx: GodexTx = asGodexTx(rawTx)
+  const ts = parseInt(tx.created_at)
+  const { isoDate, timestamp } = smartIsoDateFromTimestamp(ts)
+  const standardTx: StandardTx = {
+    status: statusMap[tx.status],
+    orderId: tx.transaction_id,
+    countryCode: null,
+    depositTxid: tx.hash_in,
+    depositAddress: tx.deposit,
+    depositCurrency: tx.coin_from.toUpperCase(),
+    depositAmount: safeParseFloat(tx.deposit_amount),
+    direction: null,
+    exchangeType: 'swap',
+    paymentType: null,
+    payoutTxid: undefined,
+    payoutAddress: tx.withdrawal,
+    payoutCurrency: tx.coin_to.toUpperCase(),
+    payoutAmount: safeParseFloat(tx.withdrawal_amount),
+    timestamp,
+    isoDate,
+    usdValue: -1,
+    rawTx: rawTx
+  }
+  return standardTx
 }

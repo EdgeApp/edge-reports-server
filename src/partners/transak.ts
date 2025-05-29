@@ -10,7 +10,13 @@ import {
 } from 'cleaners'
 import fetch from 'node-fetch'
 
-import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import {
+  FiatPaymentType,
+  PartnerPlugin,
+  PluginParams,
+  PluginResult,
+  StandardTx
+} from '../types'
 import { datelog } from '../util'
 
 const PAGE_LIMIT = 100
@@ -22,15 +28,17 @@ const asTransakOrder = asObject({
   fromWalletAddress: asOptional(asEither(asBoolean, asString)),
   fiatCurrency: asString,
   fiatAmount: asNumber,
+  isBuyOrSell: asString,
   walletAddress: asString,
   cryptoCurrency: asString,
   cryptoAmount: asNumber,
-  completedAt: asString
+  completedAt: asString,
+  paymentOptionId: asString
 })
 
 type TransakOrder = ReturnType<typeof asTransakOrder>
 
-const asRawTxOrder = asObject({
+const asPreTransakOrder = asObject({
   status: asString
 })
 
@@ -41,7 +49,7 @@ const asTransakResult = asObject({
 export async function queryTransak(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
   let apiKey: string
 
   let { offset = 0 } = pluginParams.settings
@@ -68,38 +76,10 @@ export async function queryTransak(
     }
     const txs = resultJSON.response
 
-    for (const rawtx of txs) {
-      if (asRawTxOrder(rawtx).status === 'COMPLETED') {
-        let tx: TransakOrder
-        try {
-          tx = asTransakOrder(rawtx)
-        } catch (e) {
-          datelog(e)
-          datelog(rawtx)
-          throw e
-        }
-        const date = new Date(tx.completedAt)
-        const depositAddress =
-          typeof tx.fromWalletAddress === 'string'
-            ? tx.fromWalletAddress
-            : undefined
-        const ssTx: StandardTx = {
-          status: 'complete',
-          orderId: tx.id,
-          depositTxid: undefined,
-          depositAddress,
-          depositCurrency: tx.fiatCurrency,
-          depositAmount: tx.fiatAmount,
-          payoutTxid: undefined,
-          payoutAddress: tx.walletAddress,
-          payoutCurrency: tx.cryptoCurrency,
-          payoutAmount: tx.cryptoAmount,
-          timestamp: date.getTime() / 1000,
-          isoDate: date.toISOString(),
-          usdValue: -1,
-          rawTx: rawtx
-        }
-        ssFormatTxs.push(ssTx)
+    for (const rawTx of txs) {
+      if (asPreTransakOrder(rawTx).status === 'COMPLETED') {
+        const standardTx = processTransakTx(rawTx)
+        standardTxs.push(standardTx)
       }
     }
     if (txs.length < PAGE_LIMIT) {
@@ -112,7 +92,7 @@ export async function queryTransak(
 
   const out: PluginResult = {
     settings: { offset },
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
   return out
 }
@@ -123,4 +103,59 @@ export const transak: PartnerPlugin = {
   // results in a PluginResult
   pluginName: 'Transak',
   pluginId: 'transak'
+}
+
+export function processTransakTx(rawTx: unknown): StandardTx {
+  const tx: TransakOrder = asTransakOrder(rawTx)
+  const date = new Date(tx.completedAt)
+  const depositAddress =
+    typeof tx.fromWalletAddress === 'string' ? tx.fromWalletAddress : undefined
+
+  const direction =
+    tx.isBuyOrSell === 'BUY'
+      ? 'buy'
+      : tx.isBuyOrSell === 'SELL'
+      ? 'sell'
+      : undefined
+
+  if (direction == null) {
+    throw new Error(`Unexpected isBuyOrSell '${tx.isBuyOrSell}' for ${tx.id}`)
+  }
+
+  const standardTx: StandardTx = {
+    status: 'complete',
+    orderId: tx.id,
+    countryCode: null,
+    depositTxid: undefined,
+    depositAddress,
+    depositCurrency: tx.fiatCurrency,
+    depositAmount: tx.fiatAmount,
+    direction,
+    exchangeType: 'fiat',
+    paymentType: getFiatPaymentType(tx),
+    payoutTxid: undefined,
+    payoutAddress: tx.walletAddress,
+    payoutCurrency: tx.cryptoCurrency,
+    payoutAmount: tx.cryptoAmount,
+    timestamp: date.getTime() / 1000,
+    isoDate: date.toISOString(),
+    usdValue: -1,
+    rawTx
+  }
+  return standardTx
+}
+
+function getFiatPaymentType(tx: TransakOrder): FiatPaymentType | null {
+  switch (tx.paymentOptionId) {
+    case 'mobikwik_wallet':
+      return 'mobikwik'
+    case 'neft_bank_transfer':
+      return 'neft'
+    case 'upi':
+      return 'upi'
+    default:
+      throw new Error(
+        `Unknown payment method: ${tx.paymentOptionId} for ${tx.id}`
+      )
+  }
 }

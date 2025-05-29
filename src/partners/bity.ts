@@ -25,7 +25,7 @@ const PAGE_SIZE = 100
 export async function queryBity(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
   let tokenParams
   let credentials
   let authToken
@@ -115,25 +115,9 @@ export async function queryBity(
         throw e
       }
 
-      for (const rawtx of monthlyTxs) {
-        const tx = asBityTx(rawtx)
-        const ssTx: StandardTx = {
-          status: 'complete',
-          orderId: tx.id,
-          depositTxid: undefined,
-          depositAddress: undefined,
-          depositCurrency: tx.input.currency.toUpperCase(),
-          depositAmount: safeParseFloat(tx.input.amount),
-          payoutTxid: undefined,
-          payoutAddress: undefined,
-          payoutCurrency: tx.output.currency.toUpperCase(),
-          payoutAmount: safeParseFloat(tx.output.amount),
-          timestamp: Date.parse(tx.timestamp_created.concat('Z')) / 1000,
-          isoDate: new Date(tx.timestamp_created.concat('Z')).toISOString(),
-          usdValue: -1,
-          rawTx: rawtx
-        }
-        ssFormatTxs.push(ssTx)
+      for (const rawTx of monthlyTxs) {
+        const standardTx = processBityTx(rawTx)
+        standardTxs.push(standardTx)
       }
       moreCurrentMonthsTransactions = monthlyTxs.length === PAGE_SIZE
       page++
@@ -159,7 +143,7 @@ export async function queryBity(
 
   return {
     settings: { lastCheckedMonth: currentMonth, lastCheckedYear: currentYear },
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
 }
 
@@ -169,4 +153,43 @@ export const bity: PartnerPlugin = {
   // results in a PluginResult
   pluginName: 'Bity',
   pluginId: 'bity'
+}
+
+export function processBityTx(rawTx: unknown): StandardTx {
+  const tx = asBityTx(rawTx)
+
+  // Assume that one currency is EUR and that's the only fiat currency supported
+  // by Bity.
+  if (
+    tx.input.currency.toUpperCase() !== 'EUR' &&
+    tx.output.currency.toUpperCase() !== 'EUR'
+  ) {
+    throw new Error(
+      `Unknown fiat currency ${tx.input.currency} or ${tx.output.currency}`
+    )
+  }
+  const direction = tx.input.currency.toUpperCase() === 'EUR' ? 'buy' : 'sell'
+
+  const standardTx: StandardTx = {
+    status: 'complete',
+    orderId: tx.id,
+    countryCode: null,
+    depositTxid: undefined,
+    depositAddress: undefined,
+    depositCurrency: tx.input.currency.toUpperCase(),
+    depositAmount: safeParseFloat(tx.input.amount),
+    direction,
+    exchangeType: 'fiat',
+    paymentType: 'sepa',
+    payoutTxid: undefined,
+    payoutAddress: undefined,
+    payoutCurrency: tx.output.currency.toUpperCase(),
+    payoutAmount: safeParseFloat(tx.output.amount),
+    timestamp: Date.parse(tx.timestamp_created.concat('Z')) / 1000,
+    isoDate: new Date(tx.timestamp_created.concat('Z')).toISOString(),
+    usdValue: -1,
+    rawTx
+  }
+
+  return standardTx
 }

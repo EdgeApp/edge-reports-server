@@ -12,6 +12,7 @@ import {
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { safeParseFloat } from '../util'
+import { isFiatCurrency } from '../util/fiatCurrency'
 
 const asSimplexTx = asObject({
   amount_usd: asString,
@@ -19,8 +20,13 @@ const asSimplexTx = asObject({
   fiat_total_amount: asString,
   created_at: asNumber,
   order_id: asString,
+  country: asString,
   crypto_currency: asString,
   currency: asString
+})
+
+const asPreSimpleTx = asObject({
+  created_at: asNumber
 })
 
 const asRawSimplexTx = asObject({
@@ -42,7 +48,7 @@ const LIMIT = 100
 export async function querySimplex(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
   let apiKey
   let lastTimestamp = API_START_DATE
   if (typeof pluginParams.settings.lastTimestamp === 'number') {
@@ -100,31 +106,15 @@ export async function querySimplex(
     const txs = csvData.data.data
     for (const rawTx of txs) {
       if (asRawSimplexTx(rawTx).status_name === 'approved') {
-        const tx = asSimplexTx(rawTx)
-        const timestamp = tx.created_at
-        if (lastTimestamp > timestamp) {
+        const preTx = asPreSimpleTx(rawTx)
+        if (lastTimestamp > preTx.created_at) {
           done = true
           break
         }
-        const ssTx: StandardTx = {
-          status: 'complete',
-          orderId: tx.order_id,
-          depositTxid: undefined,
-          depositAddress: undefined,
-          depositCurrency: tx.currency,
-          depositAmount: safeParseFloat(tx.fiat_total_amount),
-          payoutTxid: undefined,
-          payoutAddress: undefined,
-          payoutCurrency: tx.crypto_currency,
-          payoutAmount: safeParseFloat(tx.amount_crypto),
-          timestamp,
-          isoDate: new Date(timestamp * 1000).toISOString(),
-          usdValue: safeParseFloat(tx.amount_usd),
-          rawTx
-        }
-        ssFormatTxs.push(ssTx)
-        if (timestamp > newestTimestamp) {
-          newestTimestamp = timestamp
+        const standardTx = processSimplexTx(rawTx)
+        standardTxs.push(standardTx)
+        if (standardTx.timestamp > newestTimestamp) {
+          newestTimestamp = standardTx.timestamp
         }
       }
     }
@@ -137,7 +127,7 @@ export async function querySimplex(
 
   const out: PluginResult = {
     settings: { lastTimestamp: newestTimestamp },
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
   return out
 }
@@ -148,4 +138,30 @@ export const simplex: PartnerPlugin = {
   // results in a PluginResult
   pluginName: 'Simplex',
   pluginId: 'simplex'
+}
+
+export function processSimplexTx(rawTx: unknown): StandardTx {
+  const tx = asSimplexTx(rawTx)
+
+  const standardTx: StandardTx = {
+    status: 'complete',
+    orderId: tx.order_id,
+    countryCode: tx.country,
+    depositTxid: undefined,
+    depositAddress: undefined,
+    depositCurrency: tx.currency,
+    depositAmount: safeParseFloat(tx.fiat_total_amount),
+    direction: 'buy',
+    exchangeType: 'fiat',
+    paymentType: null,
+    payoutTxid: undefined,
+    payoutAddress: undefined,
+    payoutCurrency: tx.crypto_currency,
+    payoutAmount: safeParseFloat(tx.amount_crypto),
+    timestamp: tx.created_at,
+    isoDate: new Date(tx.created_at * 1000).toISOString(),
+    usdValue: safeParseFloat(tx.amount_usd),
+    rawTx
+  }
+  return standardTx
 }

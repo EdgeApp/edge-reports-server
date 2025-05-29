@@ -67,7 +67,7 @@ type LetsExchangeTx = ReturnType<typeof asLetsExchangeTx>
 type LetsExchangeStatus = ReturnType<typeof asLetsExchangeStatus>
 
 const LIMIT = 100
-const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
+const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 const statusMap: { [key in LetsExchangeStatus]: Status } = {
   success: 'complete',
   wait: 'pending',
@@ -90,7 +90,7 @@ export async function queryLetsExchange(
     return { settings: { latestIsoDate }, transactions: [] }
   }
 
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
   let previousTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
   if (previousTimestamp < 0) previousTimestamp = 0
   const previousLatestIsoDate = new Date(previousTimestamp).toISOString()
@@ -116,40 +116,18 @@ export async function queryLetsExchange(
       const { data: txs } = asLetsExchangeResult(resultJSON)
 
       for (const rawTx of txs) {
-        let tx: LetsExchangeTx
-        try {
-          tx = asLetsExchangeTx(rawTx)
-        } catch (e) {
-          datelog(e)
-          throw e
+        const standardTx = processLetsExchangeTx(rawTx)
+        standardTxs.push(standardTx)
+        if (standardTx.isoDate > latestIsoDate) {
+          latestIsoDate = standardTx.isoDate
         }
-        const ts = parseInt(tx.created_at)
-        const { isoDate, timestamp } = smartIsoDateFromTimestamp(ts)
-        const ssTx: StandardTx = {
-          status: statusMap[tx.status],
-          orderId: tx.transaction_id,
-          depositTxid: tx.hash_in,
-          depositAddress: tx.deposit,
-          depositCurrency: tx.coin_from.toUpperCase(),
-          depositAmount: safeParseFloat(tx.deposit_amount),
-          payoutTxid: undefined,
-          payoutAddress: tx.withdrawal,
-          payoutCurrency: tx.coin_to.toUpperCase(),
-          payoutAmount: safeParseFloat(tx.withdrawal_amount),
-          timestamp,
-          isoDate,
-          usdValue: -1,
-          rawTx
+        if (standardTx.isoDate < oldestIsoDate) {
+          oldestIsoDate = standardTx.isoDate
         }
-        ssFormatTxs.push(ssTx)
-        if (isoDate > latestIsoDate) {
-          latestIsoDate = isoDate
-        }
-        if (isoDate < oldestIsoDate) {
-          oldestIsoDate = isoDate
-        }
-        if (isoDate < previousLatestIsoDate && !done) {
-          datelog(`Godex done: date ${isoDate} < ${previousLatestIsoDate}`)
+        if (standardTx.isoDate < previousLatestIsoDate && !done) {
+          datelog(
+            `Godex done: date ${standardTx.isoDate} < ${previousLatestIsoDate}`
+          )
           done = true
         }
       }
@@ -168,7 +146,7 @@ export async function queryLetsExchange(
 
   const out: PluginResult = {
     settings: { latestIsoDate },
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
   return out
 }
@@ -178,4 +156,31 @@ export const letsexchange: PartnerPlugin = {
   // results in a PluginResult
   pluginName: 'LetsExchange',
   pluginId: 'letsexchange'
+}
+
+export function processLetsExchangeTx(rawTx: unknown): StandardTx {
+  const tx: LetsExchangeTx = asLetsExchangeTx(rawTx)
+  const ts = parseInt(tx.created_at)
+  const { isoDate, timestamp } = smartIsoDateFromTimestamp(ts)
+  const standardTx: StandardTx = {
+    status: statusMap[tx.status],
+    orderId: tx.transaction_id,
+    countryCode: null,
+    depositTxid: tx.hash_in,
+    depositAddress: tx.deposit,
+    depositCurrency: tx.coin_from.toUpperCase(),
+    depositAmount: safeParseFloat(tx.deposit_amount),
+    direction: null,
+    exchangeType: 'swap',
+    paymentType: null,
+    payoutTxid: undefined,
+    payoutAddress: tx.withdrawal,
+    payoutCurrency: tx.coin_to.toUpperCase(),
+    payoutAmount: safeParseFloat(tx.withdrawal_amount),
+    timestamp,
+    isoDate,
+    usdValue: -1,
+    rawTx
+  }
+  return standardTx
 }

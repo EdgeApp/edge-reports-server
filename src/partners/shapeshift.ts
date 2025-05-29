@@ -25,7 +25,7 @@ const asShapeshiftResult = asArray(asUnknown)
 export async function queryShapeshift(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
   let apiKey
 
   if (typeof pluginParams.apiKeys.apiKey === 'string') {
@@ -52,24 +52,8 @@ export async function queryShapeshift(
     const txs = asShapeshiftResult(result)
     for (const rawTx of txs) {
       if (asRawShapeshiftTx(rawTx).status === 'complete') {
-        const tx = asShapeshiftTx(rawTx)
-        const ssTx: StandardTx = {
-          status: 'complete',
-          orderId: tx.orderId,
-          depositTxid: tx.inputTXID,
-          depositAddress: tx.inputAddress,
-          depositCurrency: tx.inputCurrency,
-          depositAmount: tx.inputAmount,
-          payoutTxid: tx.outputTXID,
-          payoutAddress: tx.outputAddress,
-          payoutCurrency: tx.outputCurrency,
-          payoutAmount: safeParseFloat(tx.outputAmount),
-          timestamp: tx.timestamp,
-          isoDate: new Date(tx.timestamp * 1000).toISOString(),
-          usdValue: -1,
-          rawTx
-        }
-        ssFormatTxs.push(ssTx)
+        const standardTx = processShapeshiftTx(rawTx)
+        standardTxs.push(standardTx)
       }
     }
     // if (txs.length < 500) {
@@ -86,7 +70,7 @@ export async function queryShapeshift(
   // }
   const out: PluginResult = {
     settings: {},
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
   return out
 }
@@ -97,4 +81,29 @@ export const shapeshift: PartnerPlugin = {
   // results in a PluginResult
   pluginName: 'Shapeshift',
   pluginId: 'shapeshift'
+}
+
+export function processShapeshiftTx(rawTx: unknown): StandardTx {
+  const tx = asShapeshiftTx(rawTx)
+  const standardTx: StandardTx = {
+    status: 'complete',
+    orderId: tx.orderId,
+    countryCode: null,
+    depositTxid: tx.inputTXID,
+    depositAddress: tx.inputAddress,
+    depositCurrency: tx.inputCurrency,
+    depositAmount: tx.inputAmount,
+    direction: null,
+    exchangeType: 'swap',
+    paymentType: null,
+    payoutTxid: tx.outputTXID,
+    payoutAddress: tx.outputAddress,
+    payoutCurrency: tx.outputCurrency,
+    payoutAmount: safeParseFloat(tx.outputAmount),
+    timestamp: tx.timestamp,
+    isoDate: new Date(tx.timestamp * 1000).toISOString(),
+    usdValue: -1,
+    rawTx
+  }
+  return standardTx
 }

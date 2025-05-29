@@ -69,7 +69,7 @@ const asExolixResult = asObject({
 })
 
 const PAGE_LIMIT = 100
-const QUERY_LOOKBACK = 60 * 60 * 24 * 3 // 3 days
+const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 3 // 3 days
 
 type ExolixTx = ReturnType<typeof asExolixTx>
 type ExolixStatus = ReturnType<typeof asExolixStatus>
@@ -97,7 +97,7 @@ export async function queryExolix(
     return { settings: { latestIsoDate }, transactions: [] }
   }
 
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
   let previousTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
   if (previousTimestamp < 0) previousTimestamp = 0
   const previousLatestIsoDate = new Date(previousTimestamp).toISOString()
@@ -125,41 +125,18 @@ export async function queryExolix(
 
     const txs = result.data
     for (const rawTx of txs) {
-      let tx: ExolixTx
-      try {
-        tx = asExolixTx(rawTx)
-      } catch (e) {
-        datelog(e)
-        throw e
+      const standardTx = processExolixTx(rawTx)
+      standardTxs.push(standardTx)
+      if (standardTx.isoDate > latestIsoDate) {
+        latestIsoDate = standardTx.isoDate
       }
-      const dateInMillis = Date.parse(tx.createdAt)
-      const { isoDate, timestamp } = smartIsoDateFromTimestamp(dateInMillis)
-      const ssTx: StandardTx = {
-        status: statusMap[tx.status],
-        orderId: tx.id,
-        depositTxid: tx.hashIn?.hash ?? '',
-        depositAddress: tx.depositAddress,
-        depositCurrency: tx.coinFrom.coinCode,
-        depositAmount: tx.amount,
-        payoutTxid: tx.hashOut?.hash ?? '',
-        payoutAddress: tx.withdrawalAddress,
-        payoutCurrency: tx.coinTo.coinCode,
-        payoutAmount: tx.amountTo,
-        timestamp,
-        isoDate,
-        usdValue: -1,
-        rawTx
+      if (standardTx.isoDate < oldestIsoDate) {
+        oldestIsoDate = standardTx.isoDate
       }
-
-      ssFormatTxs.push(ssTx)
-      if (isoDate > latestIsoDate) {
-        latestIsoDate = isoDate
-      }
-      if (isoDate < oldestIsoDate) {
-        oldestIsoDate = isoDate
-      }
-      if (isoDate < previousLatestIsoDate && !done) {
-        datelog(`Exolix done: date ${isoDate} < ${previousLatestIsoDate}`)
+      if (standardTx.isoDate < previousLatestIsoDate && !done) {
+        datelog(
+          `Exolix done: date ${standardTx.isoDate} < ${previousLatestIsoDate}`
+        )
         done = true
       }
     }
@@ -174,7 +151,7 @@ export async function queryExolix(
 
   const out: PluginResult = {
     settings: { latestIsoDate },
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
   return out
 }
@@ -185,4 +162,31 @@ export const exolix: PartnerPlugin = {
   // results in a PluginResult
   pluginName: 'Exolix',
   pluginId: 'exolix'
+}
+
+export function processExolixTx(rawTx: unknown): StandardTx {
+  const tx: ExolixTx = asExolixTx(rawTx)
+  const dateInMillis = Date.parse(tx.createdAt)
+  const { isoDate, timestamp } = smartIsoDateFromTimestamp(dateInMillis)
+  const standardTx: StandardTx = {
+    status: statusMap[tx.status],
+    orderId: tx.id,
+    countryCode: null,
+    depositTxid: tx.hashIn?.hash ?? '',
+    depositAddress: tx.depositAddress,
+    depositCurrency: tx.coinFrom.coinCode,
+    depositAmount: tx.amount,
+    direction: null,
+    exchangeType: 'swap',
+    paymentType: null,
+    payoutTxid: tx.hashOut?.hash ?? '',
+    payoutAddress: tx.withdrawalAddress,
+    payoutCurrency: tx.coinTo.coinCode,
+    payoutAmount: tx.amountTo,
+    timestamp,
+    isoDate,
+    usdValue: -1,
+    rawTx
+  }
+  return standardTx
 }

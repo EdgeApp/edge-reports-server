@@ -18,7 +18,7 @@ const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 export async function querySafello(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
   let latestTimestamp = 0
   if (typeof pluginParams.settings.lastCheckedTimestamp === 'number') {
     latestTimestamp = pluginParams.settings.lastCheckedTimestamp
@@ -45,27 +45,10 @@ export async function querySafello(
     })
     const txs = asSafelloResult(await result.json())
 
-    for (const rawtx of txs.orders) {
-      const tx = asSafelloTx(rawtx)
-      const date = new Date(tx.completedDate)
-      const timestamp = date.getTime()
-      const ssTx: StandardTx = {
-        status: 'complete',
-        orderId: tx.id,
-        depositTxid: undefined,
-        depositAddress: undefined,
-        depositCurrency: tx.currency,
-        depositAmount: tx.amount,
-        payoutTxid: undefined,
-        payoutAddress: undefined,
-        payoutCurrency: tx.cryptoCurrency,
-        payoutAmount: 0,
-        timestamp: timestamp / 1000,
-        isoDate: date.toISOString(),
-        usdValue: -1,
-        rawTx: rawtx
-      }
-      ssFormatTxs.push(ssTx)
+    for (const rawTx of txs.orders) {
+      const standardTx = processSafelloTx(rawTx)
+      standardTxs.push(standardTx)
+      const timestamp = standardTx.timestamp * 1000
       if (timestamp > newestTimestamp) {
         newestTimestamp = timestamp
       }
@@ -84,7 +67,7 @@ export async function querySafello(
 
   const out: PluginResult = {
     settings: { lastCheckedTimestamp: newestTimestamp },
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
   return out
 }
@@ -95,4 +78,31 @@ export const safello: PartnerPlugin = {
   // results in a PluginResult
   pluginName: 'Safello',
   pluginId: 'safello'
+}
+
+export function processSafelloTx(rawTx: unknown): StandardTx {
+  const tx = asSafelloTx(rawTx)
+  const date = new Date(tx.completedDate)
+  const timestamp = date.getTime()
+  const standardTx: StandardTx = {
+    status: 'complete',
+    orderId: tx.id,
+    countryCode: 'SE',
+    depositTxid: undefined,
+    depositAddress: undefined,
+    depositCurrency: tx.currency,
+    depositAmount: tx.amount,
+    direction: 'buy',
+    exchangeType: 'fiat',
+    paymentType: 'swish',
+    payoutTxid: undefined,
+    payoutAddress: undefined,
+    payoutCurrency: tx.cryptoCurrency,
+    payoutAmount: 0,
+    timestamp: timestamp / 1000,
+    isoDate: date.toISOString(),
+    usdValue: -1,
+    rawTx
+  }
+  return standardTx
 }

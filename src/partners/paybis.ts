@@ -1,8 +1,9 @@
 import {
   asArray,
   asDate,
+  asEither,
   asMaybe,
-  asNumber,
+  asNull,
   asObject,
   asOptional,
   asString,
@@ -14,6 +15,7 @@ import URL from 'url-parse'
 import {
   asStandardPluginParams,
   EDGE_APP_START_DATE,
+  FiatPaymentType,
   PartnerPlugin,
   PluginParams,
   PluginResult,
@@ -36,15 +38,15 @@ const asCurrency = asObject({
   amount: asAmount,
   currency: asCurrencyCode
 })
-// const asUserCountry = asObject({
-//   name: asString,
-//   code: asString
-// })
-// const asUser = asObject({
-//   id: asString,
-//   email: asString,
-//   country: asUserCountry
-// })
+const asUserCountry = asObject({
+  name: asString,
+  code: asString
+})
+const asUser = asObject({
+  id: asString,
+  email: asString,
+  country: asEither(asUserCountry, asNull)
+})
 // const asExchangeRate = asObject({
 //   currencyTo: asCurrency,
 //   currencyFrom: asCurrency
@@ -68,7 +70,7 @@ const asCurrency = asObject({
 //   blockchain: asOptional(asBlockchain)
 // })
 const asFromToStructure = asObject({
-  // name: asString,
+  name: asString,
   // asset: asOptional(asCurrencyDetail),
   address: asOptional(asString)
   // destinationTag: asOptional(asString)
@@ -91,7 +93,8 @@ const asAmounts = asObject({
 //   flow: asString,
 //   createdAt: asDate
 // })
-const asTransaction = asObject({
+type PaybisTx = ReturnType<typeof asPaybisTx>
+const asPaybisTx = asObject({
   id: asString,
   gateway: asValue('crypto_to_fiat', 'fiat_to_crypto'),
   status: asString,
@@ -103,9 +106,9 @@ const asTransaction = asObject({
   createdAt: asDate,
   // paidAt: asOptional(asDate),
   // completedAt: asOptional(asDate),
-  amounts: asAmounts
+  amounts: asAmounts,
   // fees: asFees,
-  // user: asUser,
+  user: asUser
   // request: asRequest
 })
 const asMeta = asObject({
@@ -169,7 +172,7 @@ export async function queryPaybis(
   let lastCheckedTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
   if (lastCheckedTimestamp < 0) lastCheckedTimestamp = 0
 
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
   let retry = 0
   let startTime = lastCheckedTimestamp
 
@@ -209,38 +212,10 @@ export async function queryPaybis(
         const txs = asTransactions(jsonObj)
         cursor = txs.meta.nextCursor
         for (const rawTx of txs.data) {
-          const tx = asTransaction(rawTx)
-          const { amounts, createdAt, gateway, hash, id } = tx
-          const { spentOriginal, receivedOriginal } = amounts
-
-          const { isoDate, timestamp } = smartIsoDateFromTimestamp(
-            createdAt.getTime()
-          )
-
-          const depositAmount = Number(spentOriginal.amount)
-          const payoutAmount = Number(receivedOriginal.amount)
-          const depositTxid = gateway === 'crypto_to_fiat' ? hash : undefined
-          const payoutTxid = gateway === 'fiat_to_crypto' ? hash : undefined
-
-          const ssTx: StandardTx = {
-            status: statusMap[tx.status],
-            orderId: id,
-            depositTxid,
-            depositAddress: undefined,
-            depositCurrency: spentOriginal.currency,
-            depositAmount,
-            payoutTxid,
-            payoutAddress: tx.to.address ?? undefined,
-            payoutCurrency: receivedOriginal.currency,
-            payoutAmount,
-            timestamp,
-            isoDate,
-            usdValue: -1,
-            rawTx
-          }
-          ssFormatTxs.push(ssTx)
-          if (ssTx.isoDate > latestIsoDate) {
-            latestIsoDate = ssTx.isoDate
+          const standardTx = processPaybisTx(rawTx)
+          standardTxs.push(standardTx)
+          if (standardTx.isoDate > latestIsoDate) {
+            latestIsoDate = standardTx.isoDate
           }
         }
         if (cursor == null) {
@@ -276,7 +251,7 @@ export async function queryPaybis(
 
   const out = {
     settings: { latestIsoDate },
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
   return out
 }
@@ -285,4 +260,79 @@ export const paybis: PartnerPlugin = {
   queryFunc: queryPaybis,
   pluginName: 'Paybis',
   pluginId: 'paybis'
+}
+
+export function processPaybisTx(rawTx: unknown): StandardTx {
+  const tx = asPaybisTx(rawTx)
+  const { amounts, createdAt, gateway, hash, id } = tx
+  const { spentOriginal, receivedOriginal } = amounts
+
+  const { isoDate, timestamp } = smartIsoDateFromTimestamp(createdAt.getTime())
+
+  const depositAmount = Number(spentOriginal.amount)
+  const payoutAmount = Number(receivedOriginal.amount)
+  const depositTxid = gateway === 'crypto_to_fiat' ? hash : undefined
+  const payoutTxid = gateway === 'fiat_to_crypto' ? hash : undefined
+
+  const direction = (gateway === 'fiat_to_crypto') == null ? 'buy' : 'sell'
+
+  const standardTx: StandardTx = {
+    status: statusMap[tx.status],
+    orderId: id,
+    countryCode: tx.user.country?.code ?? null,
+    depositTxid,
+    depositAddress: undefined,
+    depositCurrency: spentOriginal.currency,
+    depositAmount,
+    direction,
+    exchangeType: 'fiat',
+    paymentType: getFiatPaymentType(tx, direction),
+    payoutTxid,
+    payoutAddress: tx.to.address,
+    payoutCurrency: receivedOriginal.currency,
+    payoutAmount,
+    timestamp,
+    isoDate,
+    usdValue: -1,
+    rawTx
+  }
+  return standardTx
+}
+
+function getFiatPaymentType(
+  tx: PaybisTx,
+  direction: 'buy' | 'sell'
+): FiatPaymentType | null {
+  const name = direction === 'buy' ? tx.from.name : tx.to.name
+  switch (name) {
+    case undefined:
+      return null
+    case 'AstroPay':
+      return 'astropay'
+    case 'Credit/Debit Card':
+      return 'credit'
+    case 'FPX':
+      // Idk?
+      return 'fpx'
+    case 'Giropay':
+      return 'giropay'
+    case 'Neteller':
+      return 'neteller'
+    case 'Online Banking':
+      return 'banktransfer'
+    case 'PIX':
+      return 'pix'
+    case 'Revolut Pay':
+      return 'revolut'
+    case 'SEPA Bank Transfer':
+      return 'sepa'
+    case 'SPEI Bank Transfer':
+      return 'spei'
+    case 'SWIFT Bank Transfer':
+      return 'swift'
+    case 'Skrill':
+      return 'skrill'
+    default:
+      throw new Error(`Unknown payment method: ${name} for ${tx.id}`)
+  }
 }

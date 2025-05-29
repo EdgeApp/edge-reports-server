@@ -24,7 +24,10 @@ const asIoniaTx = asObject({
   Id: asNumber,
   CreatedDate: asString,
   GiftCardFaceValue: asNumber,
-  USDPaidByCustomer: asNumber,
+  USDPaidByCustomer: asNumber
+})
+
+const asPreIoniaTx = asObject({
   MerchantName: asString
 })
 
@@ -46,7 +49,7 @@ const statusMap: { [key in IoniaStatus]: Status } = {
   other: 'complete'
 }
 
-export const queryIonia = async (
+export const queryIoniaVisaRewards = async (
   pluginParams: PluginParams
 ): Promise<PluginResult> => {
   const { settings, apiKeys } = asStandardPluginParams(pluginParams)
@@ -57,7 +60,7 @@ export const queryIonia = async (
     return { settings: { latestIsoDate }, transactions: [] }
   }
 
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
   let previousTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
   if (previousTimestamp < 0) previousTimestamp = 0
   const previousLatestIsoDate = new Date(previousTimestamp).toISOString()
@@ -89,36 +92,13 @@ export const queryIonia = async (
       const txs = asIoniaResult(result).Data.Transactions
 
       for (const rawTx of txs) {
-        let tx: IoniaTx
-        try {
-          tx = asIoniaTx(rawTx)
-        } catch (e) {
-          datelog(e)
-          throw e
-        }
-        if (tx.MerchantName !== 'Visa eReward Card') {
+        if (asPreIoniaTx(rawTx).MerchantName !== 'Visa eReward Card') {
           continue
         }
-        const { isoDate, timestamp } = smartIsoDateFromTimestamp(tx.CreatedDate)
-        const ssTx: StandardTx = {
-          status: statusMap.complete,
-          orderId: tx.Id.toString(),
-          depositTxid: undefined,
-          depositAddress: undefined,
-          depositCurrency: 'USD',
-          depositAmount: tx.USDPaidByCustomer,
-          payoutTxid: undefined,
-          payoutAddress: undefined,
-          payoutCurrency: 'USD',
-          payoutAmount: tx.GiftCardFaceValue,
-          timestamp,
-          isoDate,
-          usdValue: tx.GiftCardFaceValue,
-          rawTx
-        }
-        ssFormatTxs.push(ssTx)
-        if (ssTx.isoDate > latestIsoDate) {
-          latestIsoDate = ssTx.isoDate
+        const standardTx = processIoniaVisaRewardsTx(rawTx)
+        standardTxs.push(standardTx)
+        if (standardTx.isoDate > latestIsoDate) {
+          latestIsoDate = standardTx.isoDate
         }
       }
       datelog(`IoniaVisaRewards latestIsoDate ${latestIsoDate}`)
@@ -142,15 +122,41 @@ export const queryIonia = async (
   }
   const out: PluginResult = {
     settings: { latestIsoDate },
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
   return out
 }
 
 export const ioniaVisaRewards: PartnerPlugin = {
   // queryFunc will take PluginSettings as arg and return PluginResult
-  queryFunc: queryIonia,
+  queryFunc: queryIoniaVisaRewards,
   // results in a PluginResult
   pluginName: 'Ionia Visa Rewards',
   pluginId: 'ioniavisarewards'
+}
+
+export function processIoniaVisaRewardsTx(rawTx: unknown): StandardTx {
+  const tx: IoniaTx = asIoniaTx(rawTx)
+  const { isoDate, timestamp } = smartIsoDateFromTimestamp(tx.CreatedDate)
+  const standardTx: StandardTx = {
+    status: statusMap.complete,
+    orderId: tx.Id.toString(),
+    countryCode: null,
+    depositTxid: undefined,
+    depositAddress: undefined,
+    depositCurrency: 'USD',
+    depositAmount: tx.USDPaidByCustomer,
+    direction: 'sell',
+    exchangeType: 'fiat',
+    paymentType: null,
+    payoutTxid: undefined,
+    payoutAddress: undefined,
+    payoutCurrency: 'USD',
+    payoutAmount: tx.GiftCardFaceValue,
+    timestamp,
+    isoDate,
+    usdValue: tx.GiftCardFaceValue,
+    rawTx
+  }
+  return standardTx
 }

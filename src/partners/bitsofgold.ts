@@ -1,4 +1,12 @@
-import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
+import {
+  asArray,
+  asMaybe,
+  asNumber,
+  asObject,
+  asString,
+  asUnknown,
+  asValue
+} from 'cleaners'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
@@ -16,6 +24,7 @@ const asBogTx = asObject({
   id: asString
 })
 
+type BogResult = ReturnType<typeof asBogResult>
 const asBogResult = asObject({
   data: asArray(asUnknown)
 })
@@ -55,53 +64,21 @@ export async function queryBitsOfGold(
     'x-api-key': apiKey
   }
 
-  let resultJSON
+  let result: BogResult
   try {
-    const result = await fetch(url, { method: 'GET', headers: headers })
-    resultJSON = asBogResult(await result.json())
+    const response = await fetch(url, { method: 'GET', headers: headers })
+    result = asBogResult(await response.json())
   } catch (e) {
     datelog(e)
     throw e
   }
-  const txs = resultJSON.data
+  const txs = result.data
   let latestTimeStamp = startDate.getTime()
-  for (const rawtx of txs) {
-    const tx = asBogTx(rawtx)
-    const data = tx.attributes
-    const date = new Date(data.timestamp)
-    const timestamp = date.getTime()
-
-    let [depositCurrency, depositAmount, payoutCurrency, payoutAmount] = [
-      data.coin_type,
-      data.coin_amount,
-      data.fiat_type,
-      data.fiat_amount
-    ]
-    if (tx.type.toLowerCase() === 'buy') {
-      depositCurrency = data.fiat_type
-      depositAmount = data.fiat_amount
-      payoutCurrency = data.coin_type
-      payoutAmount = data.fiat_amount
-    }
-
-    const ssTx: StandardTx = {
-      status: 'complete',
-      orderId: tx.id,
-      depositTxid: undefined,
-      depositAddress: undefined,
-      depositCurrency,
-      depositAmount,
-      payoutTxid: undefined,
-      payoutAddress: undefined,
-      payoutCurrency,
-      payoutAmount,
-      timestamp: timestamp / 1000,
-      isoDate: date.toISOString(),
-      usdValue: -1,
-      rawTx: rawtx
-    }
+  for (const rawTx of txs) {
+    const standardTx: StandardTx = processBitsOfGoldTx(rawTx)
+    const timestamp = new Date(standardTx.isoDate).getTime()
     latestTimeStamp = latestTimeStamp > timestamp ? latestTimeStamp : timestamp
-    ssFormatTxs.push(ssTx)
+    ssFormatTxs.push(standardTx)
   }
 
   return {
@@ -116,4 +93,53 @@ export const bitsofgold: PartnerPlugin = {
   // results in a PluginResult
   pluginName: 'BitsOfGold',
   pluginId: 'bitsofgold'
+}
+
+export function processBitsOfGoldTx(rawTx: unknown): StandardTx {
+  const bogTx = asBogTx(rawTx)
+  const data = bogTx.attributes
+  const date = new Date(data.timestamp)
+  const timestamp = date.getTime()
+
+  let [depositCurrency, depositAmount, payoutCurrency, payoutAmount] = [
+    data.coin_type,
+    data.coin_amount,
+    data.fiat_type,
+    data.fiat_amount
+  ]
+  if (bogTx.type.toLowerCase() === 'buy') {
+    depositCurrency = data.fiat_type
+    depositAmount = data.fiat_amount
+    payoutCurrency = data.coin_type
+    payoutAmount = data.coin_amount
+  }
+
+  const direction = asMaybe(asValue('buy', 'sell'), undefined)(bogTx.type)
+
+  if (direction == null) {
+    throw new Error(`Invalid direction ${bogTx.type}`)
+  }
+
+  const standardTx: StandardTx = {
+    status: 'complete',
+    orderId: bogTx.id,
+    countryCode: null,
+    depositTxid: undefined,
+    depositAddress: undefined,
+    depositCurrency,
+    depositAmount,
+    direction,
+    exchangeType: 'fiat',
+    paymentType: data.fiat_type === 'ILS' ? 'israelibank' : 'sepa',
+    payoutTxid: undefined,
+    payoutAddress: undefined,
+    payoutCurrency,
+    payoutAmount,
+    timestamp: timestamp / 1000,
+    isoDate: date.toISOString(),
+    usdValue: -1,
+    rawTx
+  }
+
+  return standardTx
 }

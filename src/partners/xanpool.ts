@@ -28,6 +28,7 @@ const asXanpoolTx = asObject({
   cryptoPriceUsd: asNumber,
   blockchainTxId: asOptional(asString),
   wallet: asOptional(asString),
+  userCountry: asString,
   depositWallets: asOptional(asMap(asString)),
   createdAt: asString
 })
@@ -59,7 +60,7 @@ async function queryXanpool(pluginParams: PluginParams): Promise<PluginResult> {
     return { settings: { latestIsoDate }, transactions: [] }
   }
 
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
   let previousTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
   if (previousTimestamp < 0) previousTimestamp = 0
   const previousLatestIsoDate = new Date(previousTimestamp).toISOString()
@@ -81,69 +82,17 @@ async function queryXanpool(pluginParams: PluginParams): Promise<PluginResult> {
         break
       }
       for (const rawTx of txs) {
-        const {
-          id,
-          status,
-          type,
-          blockchainTxId,
-          wallet,
-          createdAt,
-          currency,
-          fiat,
-          cryptoCurrency,
-          crypto,
-          depositWallets
-        } = asXanpoolTx(rawTx)
-        let ssTx: StandardTx
-        if (type === 'buy') {
-          ssTx = {
-            status: status === 'completed' ? 'complete' : 'expired',
-            orderId: id,
-            depositTxid: undefined,
-            depositAddress: undefined,
-            depositCurrency: currency,
-            depositAmount: fiat,
-            payoutTxid: blockchainTxId,
-            payoutAddress: wallet,
-            payoutCurrency: cryptoCurrency,
-            payoutAmount: crypto,
-            timestamp: smartIsoDateFromTimestamp(new Date(createdAt).getTime())
-              .timestamp,
-            isoDate: createdAt,
-            usdValue: -1,
-            rawTx
-          }
-        } else if (type === 'sell') {
-          ssTx = {
-            status: status === 'completed' ? 'complete' : 'expired',
-            orderId: id,
-            depositTxid: blockchainTxId,
-            depositAddress: Object.values(depositWallets ?? {})[0],
-            depositCurrency: cryptoCurrency,
-            depositAmount: crypto,
-            payoutTxid: undefined,
-            payoutAddress: undefined,
-            payoutCurrency: currency,
-            payoutAmount: fiat,
-            timestamp: smartIsoDateFromTimestamp(new Date(createdAt).getTime())
-              .timestamp,
-            isoDate: createdAt,
-            usdValue: -1,
-            rawTx
-          }
-        } else {
-          throw new Error(`Invalid tx type ${type}`)
+        const standardTx = processXanpoolTx(rawTx)
+        standardTxs.push(standardTx)
+        if (standardTx.isoDate > latestIsoDate) {
+          latestIsoDate = standardTx.isoDate
         }
-        ssFormatTxs.push(ssTx)
-        if (ssTx.isoDate > latestIsoDate) {
-          latestIsoDate = ssTx.isoDate
+        if (standardTx.isoDate < oldestIsoDate) {
+          oldestIsoDate = standardTx.isoDate
         }
-        if (ssTx.isoDate < oldestIsoDate) {
-          oldestIsoDate = ssTx.isoDate
-        }
-        if (ssTx.isoDate < previousLatestIsoDate && !done) {
+        if (standardTx.isoDate < previousLatestIsoDate && !done) {
           datelog(
-            `Xanpool done: date ${ssTx.isoDate} < ${previousLatestIsoDate}`
+            `Xanpool done: date ${standardTx.isoDate} < ${previousLatestIsoDate}`
           )
           done = true
         }
@@ -158,7 +107,7 @@ async function queryXanpool(pluginParams: PluginParams): Promise<PluginResult> {
     settings: {
       latestIsoDate
     },
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
   return out
 }
@@ -169,4 +118,55 @@ export const xanpool: PartnerPlugin = {
   // results in a PluginResult
   pluginName: 'Xanpool',
   pluginId: 'xanpool'
+}
+
+export function processXanpoolTx(rawTx: unknown): StandardTx {
+  const tx = asXanpoolTx(rawTx)
+  if (tx.type === 'buy') {
+    return {
+      status: tx.status === 'completed' ? 'complete' : 'expired',
+      orderId: tx.id,
+      countryCode: tx.userCountry,
+      depositTxid: undefined,
+      depositAddress: undefined,
+      depositCurrency: tx.currency,
+      depositAmount: tx.fiat,
+      direction: 'buy',
+      exchangeType: 'fiat',
+      paymentType: null, // Or whatever tx.method === 'paynow' means?
+      payoutTxid: tx.blockchainTxId,
+      payoutAddress: tx.wallet,
+      payoutCurrency: tx.cryptoCurrency,
+      payoutAmount: tx.crypto,
+      timestamp: smartIsoDateFromTimestamp(new Date(tx.createdAt).getTime())
+        .timestamp,
+      isoDate: tx.createdAt,
+      usdValue: -1,
+      rawTx
+    }
+  } else if (tx.type === 'sell') {
+    return {
+      status: tx.status === 'completed' ? 'complete' : 'expired',
+      orderId: tx.id,
+      countryCode: tx.userCountry,
+      depositTxid: tx.blockchainTxId,
+      depositAddress: Object.values(tx.depositWallets ?? {})[0],
+      depositCurrency: tx.cryptoCurrency,
+      depositAmount: tx.crypto,
+      direction: 'sell',
+      exchangeType: 'fiat',
+      paymentType: 'paynow', // Or whatever tx.method === 'paynow' means?
+      payoutTxid: undefined,
+      payoutAddress: undefined,
+      payoutCurrency: tx.currency,
+      payoutAmount: tx.fiat,
+      timestamp: smartIsoDateFromTimestamp(new Date(tx.createdAt).getTime())
+        .timestamp,
+      isoDate: tx.createdAt,
+      usdValue: -1,
+      rawTx
+    }
+  } else {
+    throw new Error(`Invalid tx type ${tx.type} for ${tx.id}`)
+  }
 }

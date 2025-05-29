@@ -2,21 +2,22 @@ import {
   asArray,
   asBoolean,
   asDate,
-  asMaybe,
+  asEither,
+  asNull,
   asNumber,
   asObject,
-  asOptional,
   asString,
+  asUnknown,
   asValue
 } from 'cleaners'
 
 import {
   asStandardPluginParams,
+  FiatPaymentType,
   PartnerPlugin,
   PluginParams,
   PluginResult,
-  StandardTx,
-  Status
+  StandardTx
 } from '../types'
 import { datelog, retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
 
@@ -47,13 +48,16 @@ const asOffRampTx = asObject({
   // disburseMethod: asString
 })
 
+type KadoTx = ReturnType<typeof asKadoTx>
+const asKadoTx = asEither(asOnRampTx, asOffRampTx)
+
 // Define cleaner for the main data structure
 const asResponse = asObject({
   success: asBoolean,
   // message: asString,
   data: asObject({
-    onRamps: asArray(asOnRampTx),
-    offRamps: asArray(asOffRampTx)
+    onRamps: asArray(asUnknown),
+    offRamps: asArray(asUnknown)
   })
 })
 
@@ -72,7 +76,7 @@ export async function queryKado(
     latestIsoDate = new Date('2024-01-01T00:00:00.000Z').toISOString()
   }
 
-  const ssFormatTxs: StandardTx[] = []
+  const standardTxs: StandardTx[] = []
   let retry = 0
 
   const url = `https://api.kado.money/v2/organizations/${apiKey}/orders`
@@ -85,64 +89,13 @@ export async function queryKado(
     const jsonObj = await response.json()
     const transferResults = asResponse(jsonObj)
     const { onRamps, offRamps } = transferResults.data
-    for (const tx of onRamps) {
-      const {
-        _id,
-        createdAt,
-        cryptoCurrency,
-        paidAmountUsd,
-        receiveUnitCount,
-        walletAddress
-      } = tx
-      const { isoDate, timestamp } = smartIsoDateFromTimestamp(
-        createdAt.toISOString()
-      )
-      const ssTx: StandardTx = {
-        status: 'complete',
-        orderId: _id,
-        depositTxid: undefined,
-        depositAddress: undefined,
-        depositCurrency: 'USD',
-        depositAmount: paidAmountUsd,
-        payoutTxid: undefined,
-        payoutAddress: walletAddress,
-        payoutCurrency: cryptoCurrency,
-        payoutAmount: receiveUnitCount,
-        timestamp,
-        isoDate,
-        usdValue: paidAmountUsd,
-        rawTx: tx
-      }
-      ssFormatTxs.push(ssTx)
+    for (const rawTx of onRamps) {
+      const standardTx: StandardTx = processKadoTx(rawTx)
+      standardTxs.push(standardTx)
     }
-    for (const tx of offRamps) {
-      const {
-        _id,
-        createdAt,
-        cryptoCurrency,
-        depositUnitCount,
-        receiveUsd
-      } = tx
-      const { isoDate, timestamp } = smartIsoDateFromTimestamp(
-        createdAt.toISOString()
-      )
-      const ssTx: StandardTx = {
-        status: 'complete',
-        orderId: _id,
-        depositTxid: undefined,
-        depositAddress: undefined,
-        depositCurrency: cryptoCurrency,
-        depositAmount: depositUnitCount,
-        payoutTxid: undefined,
-        payoutAddress: undefined,
-        payoutCurrency: 'USD',
-        payoutAmount: receiveUsd,
-        timestamp,
-        isoDate,
-        usdValue: receiveUsd,
-        rawTx: tx
-      }
-      ssFormatTxs.push(ssTx)
+    for (const rawTx of offRamps) {
+      const standardTx: StandardTx = processKadoTx(rawTx)
+      standardTxs.push(standardTx)
     }
     datelog(`Kado latestIsoDate:${latestIsoDate}`)
     retry = 0
@@ -161,7 +114,7 @@ export async function queryKado(
 
   const out = {
     settings: {},
-    transactions: ssFormatTxs
+    transactions: standardTxs
   }
   return out
 }
@@ -170,4 +123,72 @@ export const kado: PartnerPlugin = {
   queryFunc: queryKado,
   pluginName: 'Kado',
   pluginId: 'kado'
+}
+
+export function processKadoTx(rawTx: unknown): StandardTx {
+  const tx = asKadoTx(rawTx)
+  const { isoDate, timestamp } = smartIsoDateFromTimestamp(
+    tx.createdAt.toISOString()
+  )
+  if ('paidAmountUsd' in tx) {
+    return {
+      status: 'complete',
+      orderId: tx._id,
+      countryCode: null,
+      depositTxid: undefined,
+      depositAddress: undefined,
+      depositCurrency: 'USD',
+      depositAmount: tx.paidAmountUsd,
+      direction: tx.type,
+      exchangeType: 'fiat',
+      paymentType: getFiatPaymentType(tx),
+      payoutTxid: undefined,
+      payoutAddress: tx.walletAddress,
+      payoutCurrency: tx.cryptoCurrency,
+      payoutAmount: tx.receiveUnitCount,
+      timestamp,
+      isoDate,
+      usdValue: tx.paidAmountUsd,
+      rawTx
+    }
+  } else {
+    return {
+      status: 'complete',
+      orderId: tx._id,
+      countryCode: null,
+      depositTxid: undefined,
+      depositAddress: undefined,
+      depositCurrency: tx.cryptoCurrency,
+      depositAmount: tx.depositUnitCount,
+      direction: tx.type,
+      exchangeType: 'fiat',
+      paymentType: getFiatPaymentType(tx),
+      payoutTxid: undefined,
+      payoutAddress: undefined,
+      payoutCurrency: 'USD',
+      payoutAmount: tx.receiveUsd,
+      timestamp,
+      isoDate,
+      usdValue: tx.receiveUsd,
+      rawTx
+    }
+  }
+}
+
+function getFiatPaymentType(tx: KadoTx): FiatPaymentType | null {
+  if (!('paymentMethod' in tx)) {
+    throw new Error(`Missing paymentMethod for ${tx._id}`)
+  }
+  switch (tx.paymentMethod) {
+    case 'deposit_ach': {
+      if (tx.type === 'buy') return 'iach'
+      return 'ach'
+    }
+    case 'wire_transfer':
+      return 'wire'
+    default:
+      throw new Error(
+        `Unknown payment method: ${tx.paymentMethod} for ${tx._id}`
+      )
+  }
 }
