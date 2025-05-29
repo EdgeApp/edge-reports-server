@@ -10,6 +10,7 @@ import {
 } from 'cleaners'
 import { HeadersInit } from 'node-fetch'
 
+import { config } from '../config'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { datelog, retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
 
@@ -329,6 +330,7 @@ export function processThorchainTx(
     payoutCurrency,
     payoutAmount,
     timestamp,
+    updateTime: new Date(),
     isoDate,
     usdValue: -1,
     rawTx

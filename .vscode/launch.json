@@ -6,72 +6,65 @@
   "configurations": [
     {
       "type": "node",
+      "request": "attach",
+      "name": "Attach to Node.js",
+      "address": "127.0.0.1",
+      "port": 9229,
+      "restart": true,
+      "timeout": 30000
+    },
+    {
+      "type": "node",
       "request": "launch",
       "name": "indexQuery",
       "args": [
         "-r",
         "sucrase/register",
-        "${workspaceFolder}/src/indexQuery.ts",
-
+        "${workspaceFolder}/src/indexQuery.ts"
       ],
       "internalConsoleOptions": "openOnSessionStart",
-      "skipFiles": [
-        "<node_internals>/**"
-      ]
+      "skipFiles": ["<node_internals>/**"]
     },
     {
       "type": "node",
       "request": "launch",
       "name": "indexRates",
-      "args":[
+      "args": [
         "-r",
         "sucrase/register",
-        "${workspaceFolder}/src/indexRates.ts",
+        "${workspaceFolder}/src/indexRates.ts"
       ],
-      "skipFiles": [
-        "<node_internals>/**"
-      ]
+      "skipFiles": ["<node_internals>/**"]
     },
     {
       "type": "node",
       "request": "launch",
       "name": "indexApi",
-      "args": [
-        "-r",
-        "sucrase/register",
-        "${workspaceFolder}/src/indexApi.ts",
-
-      ],
+      "args": ["-r", "sucrase/register", "${workspaceFolder}/src/indexApi.ts"],
       "internalConsoleOptions": "openOnSessionStart",
-      "skipFiles": [
-        "<node_internals>/**"
-      ]
+      "skipFiles": ["<node_internals>/**"]
     },
     {
       "type": "node",
       "request": "launch",
       "name": "indexCache",
-      "args":[
+      "args": [
         "-r",
         "sucrase/register",
-        "${workspaceFolder}/src/indexCache.ts",
+        "${workspaceFolder}/src/indexCache.ts"
       ],
-      "skipFiles": [
-        "<node_internals>/**"
-      ]
+      "skipFiles": ["<node_internals>/**"]
     },
     {
       "type": "node",
       "request": "launch",
       "name": "lifiReporter",
-      "args":[
+      "args": [
         "-r",
         "sucrase/register",
-        "${workspaceFolder}/src/bin/lifiReporter.ts",
+        "${workspaceFolder}/src/bin/lifiReporter.ts"
       ],
-      "skipFiles": [
-        "<node_internals>/**"
-      ]
+      "skipFiles": ["<node_internals>/**"]
     },
     {
       "type": "node",
@@ -80,13 +73,10 @@
       "args": [
         "-r",
         "sucrase/register",
-        "${workspaceFolder}/src/bin/testpartner.ts",
-
+        "${workspaceFolder}/src/bin/testpartner.ts"
       ],
       "internalConsoleOptions": "openOnSessionStart",
-      "skipFiles": [
-        "<node_internals>/**"
-      ]
+      "skipFiles": ["<node_internals>/**"]
     },
     {
       "type": "node",
@@ -95,13 +85,10 @@
       "args": [
         "-r",
         "sucrase/register",
-        "${workspaceFolder}/src/bin/partnerTotals.ts",
-
+        "${workspaceFolder}/src/bin/partnerTotals.ts"
       ],
       "internalConsoleOptions": "openOnSessionStart",
-      "skipFiles": [
-        "<node_internals>/**"
-      ]
+      "skipFiles": ["<node_internals>/**"]
     },
     {
       "type": "node",
@@ -115,10 +102,7 @@
         "edge_letsexchange"
       ],
       "internalConsoleOptions": "openOnSessionStart",
-      "skipFiles": [
-        "<node_internals>/**"
-      ]
+      "skipFiles": ["<node_internals>/**"]
     }
-
   ]
 }

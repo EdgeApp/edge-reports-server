@@ -10,6 +10,7 @@ import {
 } from 'cleaners'
 import fetch from 'node-fetch'
 
+import { config } from '../config'
 import {
   asStandardPluginParams,
   EDGE_APP_START_DATE,
@@ -222,6 +223,7 @@ export function processMoonpayTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.currency.code.toUpperCase(),
     payoutAmount: tx.quoteCurrencyAmount,
     timestamp: timestamp / 1000,
+    updateTime: new Date(),
     isoDate,
     usdValue: -1,
     rawTx

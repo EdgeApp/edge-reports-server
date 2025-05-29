@@ -8,6 +8,7 @@ import {
   asValue
 } from 'cleaners'
 
+import { config } from '../config'
 import {
   asStandardPluginParams,
   PartnerPlugin,
@@ -154,6 +155,7 @@ export function processIoniaVisaRewardsTx(rawTx: unknown): StandardTx {
     payoutCurrency: 'USD',
     payoutAmount: tx.GiftCardFaceValue,
     timestamp,
+    updateTime: new Date(),
     isoDate,
     usdValue: tx.GiftCardFaceValue,
     rawTx

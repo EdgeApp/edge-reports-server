@@ -11,6 +11,7 @@ import {
   asValue
 } from 'cleaners'
 
+import { config } from '../config'
 import {
   PartnerPlugin,
   PluginParams,
@@ -184,6 +185,7 @@ export function processExolixTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.coinTo.coinCode,
     payoutAmount: tx.amountTo,
     timestamp,
+    updateTime: new Date(),
     isoDate,
     usdValue: -1,
     rawTx

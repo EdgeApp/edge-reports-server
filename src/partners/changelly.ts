@@ -1,6 +1,7 @@
 import Changelly from 'api-changelly/lib.js'
 import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 
+import { config } from '../config'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { datelog, safeParseFloat } from '../util'
 
@@ -189,6 +190,7 @@ export function processChangellyTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.currencyTo.toUpperCase(),
     payoutAmount: safeParseFloat(tx.amountTo),
     timestamp: tx.createdAt,
+    updateTime: new Date(),
     isoDate: new Date(tx.createdAt * 1000).toISOString(),
     usdValue: -1,
     rawTx

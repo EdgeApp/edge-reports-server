@@ -11,6 +11,7 @@ import {
 import crypto from 'crypto'
 import { Response } from 'node-fetch'
 
+import { config } from '../config'
 import {
   EDGE_APP_START_DATE,
   FiatPaymentType,
@@ -285,6 +286,7 @@ export function processBanxaTx(rawTx: unknown): StandardTx {
     payoutCurrency: outputCurrency,
     payoutAmount: outputAmount,
     timestamp,
+    updateTime: new Date(),
     isoDate,
     usdValue: -1,
     rawTx

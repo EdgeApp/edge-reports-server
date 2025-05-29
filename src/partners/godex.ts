@@ -8,6 +8,7 @@ import {
   asValue
 } from 'cleaners'
 
+import { config } from '../config'
 import {
   PartnerPlugin,
   PluginParams,
@@ -168,6 +169,7 @@ export function processGodexTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.coin_to.toUpperCase(),
     payoutAmount: safeParseFloat(tx.withdrawal_amount),
     timestamp,
+    updateTime: new Date(),
     isoDate,
     usdValue: -1,
     rawTx: rawTx

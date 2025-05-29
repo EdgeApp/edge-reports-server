@@ -1,6 +1,7 @@
 import { asArray, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
 
+import { config } from '../config'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { datelog, safeParseFloat } from '../util'
 
@@ -128,6 +129,7 @@ export function processSwitchainTx(rawTx: unknown): StandardTx {
     payoutCurrency: pair[1].toUpperCase(),
     payoutAmount: safeParseFloat(tx.rate),
     timestamp: timestamp / 1000,
+    updateTime: new Date(),
     isoDate: tx.createdAt,
     usdValue: -1,
     rawTx

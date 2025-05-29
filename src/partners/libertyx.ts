@@ -8,6 +8,7 @@ import {
 } from 'cleaners'
 import fetch from 'node-fetch'
 
+import { config } from '../config'
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { datelog } from '../util'
 
@@ -98,7 +99,8 @@ export function processLibertyxTx(rawTx: unknown): StandardTx {
     payoutAddress: undefined,
     payoutCurrency: 'BTC',
     payoutAmount: 0,
-    timestamp: timestamp,
+    timestamp,
+    updateTime: new Date(),
     isoDate: date.toISOString(),
     usdValue: tx.all_transactions_usd_sum,
     rawTx

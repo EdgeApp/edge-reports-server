@@ -9,6 +9,7 @@ import {
   asValue
 } from 'cleaners'
 
+import { config } from '../config'
 import {
   asStandardPluginParams,
   EDGE_APP_START_DATE,
@@ -192,6 +193,7 @@ export function processLifiTx(rawTx: unknown): StandardTx {
     payoutCurrency: payoutToken.symbol,
     payoutAmount,
     timestamp,
+    updateTime: new Date(),
     isoDate,
     usdValue: Number(tx.receiving.amountUSD ?? tx.sending.amountUSD ?? '-1'),
     rawTx

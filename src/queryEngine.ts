@@ -33,7 +33,14 @@ import { maya, thorchain } from './partners/thorchain'
 import { transak } from './partners/transak'
 import { wyre } from './partners/wyre'
 import { xanpool } from './partners/xanpool'
-import { asApp, asApps, asProgressSettings, DbTx, StandardTx } from './types'
+import {
+  asApp,
+  asApps,
+  asProgressSettings,
+  DbTx,
+  StandardTx,
+  wasDbTx
+} from './types'
 import { datelog, promiseTimeout, standardizeNames } from './util'
 
 const nanoDb = nano(config.couchDbFullpath)
@@ -183,7 +190,11 @@ const filterAddNewTxs = async (
         if (tx.status !== queryResult.doc?.status) {
           const oldStatus = queryResult.doc?.status
           const newStatus = tx.status
-          const newObj = { _id: docId, _rev: queryResult.doc?._rev, ...tx }
+          const newObj = wasDbTx({
+            _id: docId,
+            _rev: queryResult.doc?._rev,
+            ...tx
+          })
           newDocs.push(newObj)
           datelog(`updated doc id: ${newObj._id} ${oldStatus} -> ${newStatus}`)
         }
