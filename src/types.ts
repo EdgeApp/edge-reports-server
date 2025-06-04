@@ -138,6 +138,8 @@ export interface StandardTx {
 
   /** When the document was created. */
   createTime?: Date
+  /** When the document was last updated. */
+  updateTime: Date
 
   /** The raw transaction data from the partner API. */
   rawTx?: unknown
@@ -166,6 +168,7 @@ export const asStandardTx = asObject<StandardTx>({
     // Default to now
     uncleaner(asOptional(asDate, (): Date | undefined => new Date()))
   ),
+  updateTime: asDate,
   rawTx: asUnknown
 })
 

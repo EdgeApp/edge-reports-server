@@ -192,6 +192,7 @@ export function processLifiTx(rawTx: unknown): StandardTx {
     payoutCurrency: payoutToken.symbol,
     payoutAmount,
     timestamp,
+    updateTime: new Date(),
     isoDate,
     usdValue: Number(tx.receiving.amountUSD ?? tx.sending.amountUSD ?? '-1'),
     rawTx

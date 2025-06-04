@@ -6,6 +6,17 @@ export const asConfig = asObject({
     asString,
     'http://username:password@localhost:5984'
   ),
+  clickhouseConnection: asOptional(
+    asObject({
+      url: asString,
+      password: asString
+    }),
+    {
+      url: 'http://localhost:8123',
+      password: ''
+    }
+  ),
+  clickhouseIndexVersion: asOptional(asNumber, 1),
   httpPort: asOptional(asNumber, 8008),
   bog: asOptional(asObject({ apiKey: asString }), { apiKey: '' }),
 

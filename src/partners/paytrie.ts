@@ -95,6 +95,7 @@ export function processPaytrieTx(rawTx: unknown): StandardTx {
     payoutCurrency: order.outputCurrency,
     payoutAmount: order.outputAmount,
     timestamp: new Date(order.timestamp).getTime() / 1000,
+    updateTime: new Date(),
     isoDate: order.timestamp,
     usdValue: -1,
     rawTx

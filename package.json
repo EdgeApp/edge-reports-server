@@ -20,6 +20,8 @@
     "prepare": "./scripts/prepare.sh && npm-run-all clean configure -p build.*",
     "start": "node -r sucrase/register src/indexQuery.ts",
     "start:cache": "node -r sucrase/register src/indexCache.ts",
+    "start:clickhouse": "node -r sucrase/register src/indexClickhouse.ts",
+    "start:clickhouse:inspect": "node --inspect-brk -r sucrase/register src/indexClickhouse.ts",
     "start:rates": "node -r sucrase/register src/indexRates.ts",
     "start:api": "node -r sucrase/register src/indexApi.ts",
     "start:destroyPartition": "node -r sucrase/register src/bin/destroyPartition.ts",
@@ -39,7 +41,8 @@
     "*.{js,jsx,ts,tsx}": "eslint"
   },
   "dependencies": {
-    "@types/node": "^14.0.22",
+    "@clickhouse/client": "^1.10.1",
+    "@types/node": "^20.17.17",
     "api-changelly": "git://github.com/changelly/api-changelly.git#8e350f3",
     "axios": "^0.21.2",
     "biggystring": "^4.1.3",

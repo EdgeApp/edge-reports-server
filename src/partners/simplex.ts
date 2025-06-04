@@ -12,7 +12,6 @@ import {
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { safeParseFloat } from '../util'
-import { isFiatCurrency } from '../util/fiatCurrency'
 
 const asSimplexTx = asObject({
   amount_usd: asString,
@@ -159,6 +158,7 @@ export function processSimplexTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.crypto_currency,
     payoutAmount: safeParseFloat(tx.amount_crypto),
     timestamp: tx.created_at,
+    updateTime: new Date(),
     isoDate: new Date(tx.created_at * 1000).toISOString(),
     usdValue: safeParseFloat(tx.amount_usd),
     rawTx

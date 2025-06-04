@@ -12,6 +12,7 @@ const asFoxExchangeTx = asObject({
   destinationCoin: asString,
   destinationCoinAmount: asNumber,
   destinationAddress: asObject({ address: asString }),
+  outputTransactionHash: asString,
   createdAt: asNumber
 })
 
@@ -118,13 +119,7 @@ export const foxExchange: PartnerPlugin = {
 }
 
 export function processFoxExchangeTx(rawTx: unknown): StandardTx {
-  let tx
-  try {
-    tx = asFoxExchangeTx(rawTx)
-  } catch (e) {
-    datelog(e)
-    throw e
-  }
+  const tx = asFoxExchangeTx(rawTx)
   const standardTx: StandardTx = {
     status: 'complete',
     orderId: tx.orderId,
@@ -141,6 +136,7 @@ export function processFoxExchangeTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.destinationCoin.toUpperCase(),
     payoutAmount: tx.destinationCoinAmount,
     timestamp: tx.createdAt / 1000,
+    updateTime: new Date(),
     isoDate: new Date(tx.createdAt).toISOString(),
     usdValue: -1,
     rawTx
