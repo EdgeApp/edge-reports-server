@@ -140,6 +140,7 @@ export function processXanpoolTx(rawTx: unknown): StandardTx {
       payoutAmount: tx.crypto,
       timestamp: smartIsoDateFromTimestamp(new Date(tx.createdAt).getTime())
         .timestamp,
+      updateTime: new Date(),
       isoDate: tx.createdAt,
       usdValue: -1,
       rawTx
@@ -162,6 +163,7 @@ export function processXanpoolTx(rawTx: unknown): StandardTx {
       payoutAmount: tx.fiat,
       timestamp: smartIsoDateFromTimestamp(new Date(tx.createdAt).getTime())
         .timestamp,
+      updateTime: new Date(),
       isoDate: tx.createdAt,
       usdValue: -1,
       rawTx

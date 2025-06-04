@@ -285,6 +285,7 @@ export function processBanxaTx(rawTx: unknown): StandardTx {
     payoutCurrency: outputCurrency,
     payoutAmount: outputAmount,
     timestamp,
+    updateTime: new Date(),
     isoDate,
     usdValue: -1,
     rawTx

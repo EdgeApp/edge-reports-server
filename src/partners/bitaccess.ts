@@ -153,6 +153,7 @@ export function processBitaccessTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.withdrawal_currency.toUpperCase(),
     payoutAmount: tx.withdrawal_amount,
     timestamp,
+    updateTime: new Date(),
     isoDate: tx.updated_at,
     usdValue: -1,
     rawTx

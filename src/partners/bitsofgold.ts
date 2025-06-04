@@ -136,6 +136,7 @@ export function processBitsOfGoldTx(rawTx: unknown): StandardTx {
     payoutCurrency,
     payoutAmount,
     timestamp: timestamp / 1000,
+    updateTime: new Date(),
     isoDate: date.toISOString(),
     usdValue: -1,
     rawTx
