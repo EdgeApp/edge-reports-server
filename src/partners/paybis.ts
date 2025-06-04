@@ -292,6 +292,7 @@ export function processPaybisTx(rawTx: unknown): StandardTx {
     payoutCurrency: receivedOriginal.currency,
     payoutAmount,
     timestamp,
+    updateTime: new Date(),
     isoDate,
     usdValue: -1,
     rawTx

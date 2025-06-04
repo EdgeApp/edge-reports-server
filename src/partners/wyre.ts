@@ -130,6 +130,7 @@ export function processWyreTx(rawTx: unknown): StandardTx {
     payoutCurrency,
     payoutAmount: safeParseFloat(tx.destAmount),
     timestamp: dateMs / 1000,
+    updateTime: new Date(),
     isoDate: date.toISOString(),
     usdValue: safeParseFloat(tx.usdEquiv),
     rawTx

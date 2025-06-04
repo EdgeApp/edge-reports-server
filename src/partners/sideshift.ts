@@ -192,6 +192,7 @@ export function processSideshiftTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.settleAsset,
     payoutAmount: Number(tx.settleAmount),
     timestamp,
+    updateTime: new Date(),
     isoDate,
     usdValue: -1,
     rawTx

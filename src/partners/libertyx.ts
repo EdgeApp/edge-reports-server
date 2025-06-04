@@ -98,7 +98,8 @@ export function processLibertyxTx(rawTx: unknown): StandardTx {
     payoutAddress: undefined,
     payoutCurrency: 'BTC',
     payoutAmount: 0,
-    timestamp: timestamp,
+    timestamp,
+    updateTime: new Date(),
     isoDate: date.toISOString(),
     usdValue: tx.all_transactions_usd_sum,
     rawTx
