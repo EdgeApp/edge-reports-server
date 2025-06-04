@@ -38,6 +38,7 @@ const transactionIndexes: DesignDocumentMap = {
   ...fieldsToDesign(['status', 'isoDate']),
   ...fieldsToDesign(['status', 'payoutAmount', 'depositAmount']),
   ...fieldsToDesign(['status', 'payoutCurrency', 'isoDate']),
+  ...fieldsToDesign(['status', 'createTime']),
   ...fieldsToDesign(['status', 'usdValue']),
   ...fieldsToDesign(['status', 'usdValue', 'timestamp']),
   ...fieldsToDesign(['usdValue']),

@@ -23,6 +23,8 @@
     "start:rates": "node -r sucrase/register src/indexRates.ts",
     "start:api": "node -r sucrase/register src/indexApi.ts",
     "start:destroyPartition": "node -r sucrase/register src/bin/destroyPartition.ts",
+    "start:migrate": "node -r sucrase/register src/bin/migrate.ts",
+    "start:migrate:inspect": "node --inspect-brk -r sucrase/register src/bin/migrate.ts",
     "stats": "node -r sucrase/register src/bin/partitionStats.ts",
     "test": "mocha -r sucrase/register 'test/**/*.test.ts'",
     "demo": "parcel serve src/demo/index.html",
