@@ -2,6 +2,7 @@ import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import { queryDummy } from './dummy'
 
 const asSafelloTx = asObject({
   completedDate: asString,
@@ -74,7 +75,7 @@ export async function querySafello(
 
 export const safello: PartnerPlugin = {
   // queryFunc will take PluginSettings as arg and return PluginResult
-  queryFunc: querySafello,
+  queryFunc: queryDummy,
   // results in a PluginResult
   pluginName: 'Safello',
   pluginId: 'safello'

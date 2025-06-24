@@ -3,6 +3,7 @@ import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { datelog, safeParseFloat } from '../util'
+import { queryDummy } from './dummy'
 
 const asSwitchainTx = asObject({
   id: asString,
@@ -102,7 +103,7 @@ export async function querySwitchain(
 
 export const switchain: PartnerPlugin = {
   // queryFunc will take PluginSettings as arg and return PluginResult
-  queryFunc: querySwitchain,
+  queryFunc: queryDummy,
   // results in a PluginResult
   pluginName: 'Switchain',
   pluginId: 'switchain'

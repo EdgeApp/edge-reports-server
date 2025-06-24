@@ -3,7 +3,6 @@ import {
   asBoolean,
   asDate,
   asEither,
-  asNull,
   asNumber,
   asObject,
   asString,
@@ -20,6 +19,7 @@ import {
   StandardTx
 } from '../types'
 import { datelog, retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
+import { queryDummy } from './dummy'
 
 // Define cleaner for individual transactions in onRamps and offRamps
 const asTxType = asValue('buy', 'sell')
@@ -120,7 +120,7 @@ export async function queryKado(
 }
 
 export const kado: PartnerPlugin = {
-  queryFunc: queryKado,
+  queryFunc: queryDummy,
   pluginName: 'Kado',
   pluginId: 'kado'
 }

@@ -12,6 +12,7 @@ import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { datelog } from '../util'
+import { queryDummy } from './dummy'
 
 const asBitaccessTx = asObject({
   trade_type: asValue<['buy', 'sell']>('buy', 'sell'),
@@ -117,7 +118,7 @@ export async function queryBitaccess(
 
 export const bitaccess: PartnerPlugin = {
   // queryFunc will take PluginSettings as arg and return PluginResult
-  queryFunc: queryBitaccess,
+  queryFunc: queryDummy,
   // results in a PluginResult
   pluginName: 'Bitaccess',
   pluginId: 'bitaccess'

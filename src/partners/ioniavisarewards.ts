@@ -17,6 +17,7 @@ import {
   Status
 } from '../types'
 import { datelog, retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
+import { queryDummy } from './dummy'
 
 const asIoniaStatus = asMaybe(asValue('complete'), 'other')
 
@@ -129,7 +130,7 @@ export const queryIoniaVisaRewards = async (
 
 export const ioniaVisaRewards: PartnerPlugin = {
   // queryFunc will take PluginSettings as arg and return PluginResult
-  queryFunc: queryIoniaVisaRewards,
+  queryFunc: queryDummy,
   // results in a PluginResult
   pluginName: 'Ionia Visa Rewards',
   pluginId: 'ioniavisarewards'
