@@ -101,6 +101,7 @@ export function processShapeshiftTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.outputCurrency,
     payoutAmount: safeParseFloat(tx.outputAmount),
     timestamp: tx.timestamp,
+    updateTime: new Date(),
     isoDate: new Date(tx.timestamp * 1000).toISOString(),
     usdValue: -1,
     rawTx

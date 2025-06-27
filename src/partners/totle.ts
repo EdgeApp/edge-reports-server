@@ -417,6 +417,7 @@ export async function queryTotle(
               )
             ),
             timestamp: timestamp,
+            updateTime: new Date(),
             isoDate: new Date(timestamp * 1000).toISOString(),
             usdValue: -1,
             rawTx: rawSwapEvent

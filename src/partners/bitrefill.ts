@@ -160,6 +160,7 @@ export function processBitrefillTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.currency,
     payoutAmount: parseInt(tx.value),
     timestamp,
+    updateTime: new Date(),
     isoDate: new Date(tx.invoiceTime).toISOString(),
     usdValue: tx.usdPrice,
     rawTx

@@ -329,6 +329,7 @@ export function processThorchainTx(
     payoutCurrency,
     payoutAmount,
     timestamp,
+    updateTime: new Date(),
     isoDate,
     usdValue: -1,
     rawTx

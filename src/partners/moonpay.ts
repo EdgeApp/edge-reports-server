@@ -222,6 +222,7 @@ export function processMoonpayTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.currency.code.toUpperCase(),
     payoutAmount: tx.quoteCurrencyAmount,
     timestamp: timestamp / 1000,
+    updateTime: new Date(),
     isoDate,
     usdValue: -1,
     rawTx
@@ -250,6 +251,7 @@ export function processMoonpaySellTx(rawTx: unknown): StandardTx {
     payoutCurrency: tx.quoteCurrency.code.toUpperCase(),
     payoutAmount: tx.quoteCurrencyAmount,
     timestamp: timestamp / 1000,
+    updateTime: new Date(),
     isoDate,
     usdValue: -1,
     rawTx: rawTx

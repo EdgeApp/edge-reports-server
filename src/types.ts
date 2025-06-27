@@ -1,5 +1,7 @@
 import {
   asArray,
+  asCodec,
+  asDate,
   asEither,
   asMap,
   asNull,
@@ -8,7 +10,8 @@ import {
   asOptional,
   asString,
   asUnknown,
-  asValue
+  asValue,
+  uncleaner
 } from 'cleaners'
 
 /** Earliest date that transactions may show in Edge */
@@ -41,6 +44,7 @@ const asStatus = asValue(
   'other'
 )
 
+type SafeNumber = ReturnType<typeof asSafeNumber>
 const asSafeNumber = (raw: any): number => {
   if (isNaN(raw) || raw === null) {
     return 0
@@ -49,6 +53,7 @@ const asSafeNumber = (raw: any): number => {
 }
 
 /** A null direction is for swap exchange types. */
+type Direction = ReturnType<typeof asDirection>
 const asDirection = asEither(asValue('buy', 'sell'), asNull)
 
 /**
@@ -106,9 +111,41 @@ const asFiatPaymentType = asValue(
 export type FiatPaymentType = ReturnType<typeof asFiatPaymentType>
 
 /** The type of exchange that the partner is. A 'fiat' type means on/off ramp. */
+export type ExchangeType = ReturnType<typeof asExchangeType>
 const asExchangeType = asValue('fiat', 'swap')
 
-export const asStandardTx = asObject({
+export interface StandardTx {
+  orderId: string
+  countryCode: string | null
+  depositTxid?: string
+  depositAddress?: string
+  depositCurrency: string
+  depositAmount: SafeNumber
+  direction: Direction
+  exchangeType: ExchangeType
+  paymentType: FiatPaymentType | null
+  payoutTxid?: string
+  payoutAddress?: string
+  payoutCurrency: string
+  payoutAmount: SafeNumber
+  status: Status
+  usdValue: number
+
+  /** When the transaction occurred (ISO date). */
+  isoDate: string
+  /** When the transaction occurred (unix timestamp). */
+  timestamp: number
+
+  /** When the document was created. */
+  createTime?: Date
+  /** When the document was last updated. */
+  updateTime: Date
+
+  /** The raw transaction data from the partner API. */
+  rawTx?: unknown
+}
+
+export const asStandardTx = asObject<StandardTx>({
   orderId: asString,
   countryCode: asEither(asString, asNull),
   depositTxid: asOptional(asString),
@@ -123,9 +160,15 @@ export const asStandardTx = asObject({
   payoutCurrency: asString,
   payoutAmount: asSafeNumber,
   status: asStatus,
+  usdValue: asNumber,
   isoDate: asString,
   timestamp: asNumber,
-  usdValue: asNumber,
+  createTime: asCodec(
+    asOptional(asDate),
+    // Default to now
+    uncleaner(asOptional(asDate, (): Date | undefined => new Date()))
+  ),
+  updateTime: asDate,
   rawTx: asUnknown
 })
 
@@ -134,6 +177,7 @@ export const asDbTx = asObject({
   _id: asOptional(asString),
   _rev: asOptional(asString)
 })
+export const wasDbTx = uncleaner(asDbTx)
 
 export const asProgressSettings = asObject({
   _id: asOptional(asString),
@@ -209,6 +253,5 @@ export type AnalyticsResult = ReturnType<typeof asAnalyticsResult>
 export type CurrencyCodeMappings = ReturnType<typeof asCurrencyCodeMappings>
 export type DbCurrencyCodeMappings = ReturnType<typeof asDbCurrencyCodeMappings>
 export type DbTx = ReturnType<typeof asDbTx>
-export type StandardTx = ReturnType<typeof asStandardTx>
 export type PluginParams = ReturnType<typeof asPluginParams>
 export type Status = ReturnType<typeof asStatus>

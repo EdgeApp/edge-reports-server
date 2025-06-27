@@ -16,7 +16,6 @@ import {
   Status
 } from '../types'
 import { datelog, retryFetch, smartIsoDateFromTimestamp } from '../util'
-import { isFiatCurrency } from '../util/fiatCurrency'
 
 const asSwapuzLogin = asObject({
   result: asObject({
@@ -186,6 +185,7 @@ export function processSwapuzTx(rawTx: unknown): StandardTx {
     payoutAddress: undefined,
     payoutAmount: tx.amountResult,
     timestamp,
+    updateTime: new Date(),
     isoDate,
     usdValue: -1,
     rawTx
