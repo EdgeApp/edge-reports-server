@@ -306,6 +306,7 @@ function getFiatPaymentType(tx: BanxaTx): FiatPaymentType {
     case 'Sofort Transfer':
       return 'sofort'
     case 'Checkout Credit Card':
+    case 'Primer Credit Card':
     case 'WorldPay Credit Card':
       return 'credit'
     case 'ClearJunction Fast Pay':
@@ -325,6 +326,7 @@ function getFiatPaymentType(tx: BanxaTx): FiatPaymentType {
     case 'PayID via Monoova':
       return 'payid'
     case 'WorldPay ApplePay':
+    case 'Primer Apple Pay':
       return 'applepay'
     case 'WorldPay GooglePay':
       return 'googlepay'
