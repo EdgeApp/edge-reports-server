@@ -8,6 +8,7 @@ import { analyticsRouter } from './routes/v1/analytics'
 import { checkTxsRouter } from './routes/v1/checkTxs'
 import { getAppIdRouter } from './routes/v1/getAppId'
 import { getPluginIdsRouter } from './routes/v1/getPluginIds'
+import { HttpError } from './util/httpErrors'
 
 export const nanoDb = nano(config.couchDbFullpath)
 export const reportsTransactions = nanoDb.use('reports_transactions')
@@ -26,6 +27,23 @@ async function main(): Promise<void> {
   app.use('/v1/checkTxs/', checkTxsRouter)
   app.use('/v1/getAppId/', getAppIdRouter)
   app.use('/v1/getPluginIds/', getPluginIdsRouter)
+
+  // Error router
+  app.use(function(err, _req, res, _next) {
+    console.error(err.stack)
+    if (err instanceof HttpError) {
+      console.error(`HTTP status ${err.status}:`, err.error)
+      res.status(err.status).send({
+        error: {
+          message: err.error.message
+        }
+      })
+    } else {
+      res.status(500).send({
+        error: 'Internal Server Error'
+      })
+    }
+  })
 
   app.listen(config.httpPort, function() {
     console.log(`Server started on Port ${config.httpPort}`)
