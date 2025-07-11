@@ -49,6 +49,7 @@
     "csv-stringify": "^6.2.0",
     "date-fns": "^2.16.1",
     "date-fns-tz": "^1.1.4",
+    "edge-server-tools": "^0.2.19",
     "express": "^4.17.3",
     "express-promise-router": "^4.1.1",
     "nano": "^10.1.0",
