@@ -51,7 +51,10 @@ const transactionIndexes: DesignDocumentMap = {
   ...fieldsToDesignDocs(['usdValue']),
   ...fieldsToDesignDocs(['timestamp']),
   ...fieldsToDesignDocs(['depositAddress'], { noPartitionVariant: true }),
-  ...fieldsToDesignDocs(['payoutAddress'], { noPartitionVariant: true })
+  ...fieldsToDesignDocs(['payoutAddress'], { noPartitionVariant: true }),
+  ...fieldsToDesignDocs(['payoutAddress', 'isoDate'], {
+    noPartitionVariant: true
+  })
 }
 
 const cacheIndexes: DesignDocumentMap = {
