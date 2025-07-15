@@ -3,6 +3,7 @@
 ## Unreleased
 
 - added: Add Lifi reporting
+- added: Added `/v1/getTxInfo` route.
 - added: Paybis support
 - added: Kado reporting
 - changed: Paginate caching engine to prevent timeouts
