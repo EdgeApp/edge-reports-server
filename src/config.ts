@@ -1,5 +1,6 @@
 import { makeConfig } from 'cleaner-config'
 import { asArray, asNumber, asObject, asOptional, asString } from 'cleaners'
+import { asCouchCredentials } from 'edge-server-tools'
 
 export const asConfig = asObject({
   couchDbFullpath: asOptional(
@@ -15,7 +16,9 @@ export const asConfig = asObject({
   soloPartnerIds: asOptional(asArray(asString), null),
 
   timeoutOverrideMins: asOptional(asNumber, 1200),
-  cacheLookbackMonths: asOptional(asNumber, 24)
+  cacheLookbackMonths: asOptional(asNumber, 24),
+  couchMainCluster: asOptional(asString, 'wusa'),
+  couchUris: asOptional(asCouchCredentials)
 })
 
 export const config = makeConfig(asConfig, 'config.json')
