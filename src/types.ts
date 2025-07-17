@@ -7,6 +7,7 @@ import {
   asObject,
   asOptional,
   asString,
+  asUndefined,
   asUnknown,
   asValue
 } from 'cleaners'
@@ -110,14 +111,14 @@ const asExchangeType = asValue('fiat', 'swap')
 
 export const asStandardTx = asObject({
   orderId: asString,
-  countryCode: asEither(asString, asNull),
+  countryCode: asEither(asString, asNull, asUndefined),
   depositTxid: asOptional(asString),
   depositAddress: asOptional(asString),
   depositCurrency: asString,
   depositAmount: asSafeNumber,
-  direction: asDirection,
-  exchangeType: asExchangeType,
-  paymentType: asEither(asFiatPaymentType, asNull),
+  direction: asOptional(asDirection),
+  exchangeType: asOptional(asExchangeType),
+  paymentType: asEither(asFiatPaymentType, asNull, asUndefined),
   payoutTxid: asOptional(asString),
   payoutAddress: asOptional(asString),
   payoutCurrency: asString,

@@ -1,15 +1,35 @@
-import { asArray, asObject, asOptional, asString } from 'cleaners'
+import { asArray, asObject, asOptional, asString, asValue } from 'cleaners'
 import Router from 'express-promise-router'
 
 import { reportsApps, reportsTransactions } from '../../indexApi'
-import { asApps, asDbTx } from '../../types'
+import { asApps, asDbTx, StandardTx } from '../../types'
 
-interface CheckTxsResponse {
+interface CheckTxsSuccessResponse
+  extends Omit<StandardTx, 'rawTx' | 'usdValue'> {
   pluginId: string
-  orderId: string
-  error?: string
   usdValue?: number
 }
+
+interface CheckTxsPartialSuccessResponse {
+  pluginId: string
+  orderId: string
+  usdValue?: number
+}
+
+interface CheckTxsFailureResponse {
+  pluginId: string
+  orderId: string
+  error: string
+}
+
+type CheckTxsResponse =
+  | CheckTxsSuccessResponse
+  | CheckTxsPartialSuccessResponse
+  | CheckTxsFailureResponse
+
+const asCheckTxsParams = asObject({
+  info: asOptional(asValue('all'))
+})
 
 const asCheckTxsFetch = asArray(
   asObject({
@@ -34,9 +54,10 @@ const CHECKTXS_BATCH_LIMIT = 100
 export const checkTxsRouter = Router()
 
 checkTxsRouter.post('/', async function(req, res) {
-  let queryResult
+  let queryResult, params
   try {
     queryResult = asCheckTxsReq(req.body)
+    params = asCheckTxsParams(req.query)
   } catch (e) {
     return res.status(400).send(`Missing Request fields.`)
   }
@@ -64,23 +85,34 @@ checkTxsRouter.post('/', async function(req, res) {
     const dbResult = await reportsTransactions.fetch({ keys })
     const cleanedResult = asCheckTxsFetch(dbResult.rows)
     const data: CheckTxsResponse[] = cleanedResult.map((result, index) => {
-      const tx: CheckTxsResponse = {
-        pluginId: queryResult.data[index].pluginId,
-        orderId: queryResult.data[index].orderId,
-        usdValue: undefined
-      }
-      if (result.error != null) {
-        return {
-          ...tx,
+      const { doc } = result
+      if (result.error != null || doc == null) {
+        const txError: CheckTxsFailureResponse = {
+          pluginId: queryResult.data[index].pluginId,
+          orderId: queryResult.data[index].orderId,
           error: `Could not find transaction: ${result.key}`
         }
+        return txError
       }
-      if (result.doc != null) tx.usdValue = result.doc.usdValue
+      const usdValue = doc.usdValue >= 0 ? doc.usdValue : undefined
+      if (params.info === 'all') {
+        const tx: CheckTxsSuccessResponse = {
+          pluginId: queryResult.data[index].pluginId,
+          ...doc
+        }
+        tx.usdValue = usdValue
+        return tx
+      }
+      const tx: CheckTxsPartialSuccessResponse = {
+        pluginId: queryResult.data[index].pluginId,
+        orderId: queryResult.data[index].orderId,
+        usdValue
+      }
       return tx
     })
     res.json({ appId, data })
   } catch (e) {
     console.log(e)
-    return res.status(500).send(`Internal Server Error.`)
+    res.status(500).send(`Internal Server Error.`)
   }
 })
