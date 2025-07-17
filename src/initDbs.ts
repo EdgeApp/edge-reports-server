@@ -1,12 +1,14 @@
 import {
   DatabaseSetup,
   JsDesignDocument,
+  makeJsDesign,
   makeMangoIndex,
   MangoDesignDocument,
   setupDatabase
 } from 'edge-server-tools'
 
 import { config } from './config'
+import { fixJs } from './util/fixJs'
 
 interface DesignDocumentMap {
   [designDocName: string]: MangoDesignDocument | JsDesignDocument
@@ -73,7 +75,26 @@ const transactionsDatabaseSetup: DatabaseSetup = {
   name: 'reports_transactions',
   options: { partitioned: true },
   documents: {
-    ...transactionIndexes
+    ...transactionIndexes,
+    '_design/getTxInfo': makeJsDesign(
+      'payoutHashfixByDate',
+      ({ emit }) => ({
+        map: function(doc) {
+          const space = 1099511627776 // 5 bytes of space; 2^40
+          const prime = 769 // large prime number
+          let hashfix = 0 // the final hashfix
+          for (let i = 0; i < doc.payoutAddress.length; i++) {
+            const byte = doc.payoutAddress.charCodeAt(i)
+            hashfix = (hashfix * prime + byte) % space
+          }
+          emit([hashfix, doc.isoDate], doc._id)
+        }
+      }),
+      {
+        fixJs,
+        partitioned: false
+      }
+    )
   }
 }
 const progressCacheDatabaseSetup: DatabaseSetup = {

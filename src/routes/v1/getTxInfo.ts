@@ -4,6 +4,7 @@ import Router from 'express-promise-router'
 import { reportsTransactions } from '../../indexApi'
 import { asDbTx, DbTx, Status } from '../../types'
 import { EdgeTokenId } from '../../util/asEdgeTokenId'
+import { asNumberString } from '../../util/asNumberString'
 import { HttpError } from '../../util/httpErrors'
 import { trial } from '../../util/trail'
 
@@ -12,7 +13,7 @@ const asGetTxInfoReq = asObject({
    * Prefix of the destination address.
    * Minimum 3 character; Maximum 5 characters.
    */
-  addressPrefix: asString,
+  addressHashfix: asNumberString,
 
   /**
    * ISO date string to start searching for transactions.
@@ -26,18 +27,24 @@ const asGetTxInfoReq = asObject({
 })
 
 interface TxInfo {
-  providerId: string
-  orderId: string
   isoDate: string
-  sourceAmount: number // exchangeAmount units
-  sourceCurrencyCode: string
-  sourcePluginId?: string
-  sourceTokenId?: EdgeTokenId
+  swapInfo: SwapInfo
+
+  deposit: AssetInfo
+  payout: AssetInfo
+}
+
+interface AssetInfo {
+  address: string
+  pluginId: string
+  tokenId: EdgeTokenId
+  amount: number
+}
+
+interface SwapInfo {
+  orderId: string
+  pluginId: string
   status: Status
-  destinationAddress?: string
-  destinationAmount: number // exchangeAmount units
-  destinationPluginId?: string
-  destinationTokenId?: EdgeTokenId
 }
 
 export const getTxInfoRouter = Router()
@@ -50,52 +57,59 @@ getTxInfoRouter.get('/', async function(req, res) {
     }
   )
 
-  if (query.addressPrefix.length < 3) {
-    res.status(400).send('addressPrefix must be at least 3 characters')
+  if (query.addressHashfix < 0 || query.addressHashfix > 2 ** 40) {
+    res.status(400).send('addressHashfix must be between 0 and 2^40')
     return
   }
 
   const startDate = new Date(query.startIsoDate)
   const endDate = new Date(query.endIsoDate)
+  const startKey = [query.addressHashfix, startDate.toISOString()]
+  const endKey = [query.addressHashfix, endDate.toISOString()]
 
-  const addressKey = query.addressPrefix.slice(
-    0,
-    Math.min(query.addressPrefix.length, 5)
+  const results = await reportsTransactions.view(
+    'getTxInfo',
+    'payoutHashfixByDate',
+    {
+      start_key: startKey,
+      end_key: endKey,
+      inclusive_end: true,
+      include_docs: true
+    }
   )
 
-  const results = await reportsTransactions.find({
-    selector: {
-      payoutAddress: {
-        $gte: addressKey,
-        $lte: addressKey + '\uffff'
-      },
-      isoDate: {
-        $gte: startDate.toISOString(),
-        $lte: endDate.toISOString()
-      }
-    }
-  })
-
-  const rows = results.docs
-    .map(doc => asMaybe(asDbTx)(doc))
+  const rows = results.rows
+    .map(row => asMaybe(asDbTx)(row.doc))
     .filter((item): item is DbTx => item != null)
 
-  const txs: TxInfo[] = rows.map(row => ({
-    providerId: getProviderId(row),
-    orderId: row.orderId,
-    isoDate: row.isoDate,
-    sourceAmount: row.depositAmount,
-    sourceCurrencyCode: row.depositCurrency,
-    status: row.status,
-    // TODO: Infer the pluginId and tokenId from the document:
-    // sourcePluginId?: string,
-    // sourceTokenId?: EdgeTokenId,
-    destinationAddress: row.payoutAddress,
-    destinationAmount: row.payoutAmount
-    // TODO: Infer the pluginId and tokenId from the document:
-    // destinationPluginId?: string
-    // destinationTokenId?: EdgeTokenId
-  }))
+  const txs: TxInfo[] = rows.map(row => {
+    const swapInfo = getSwapInfo(row)
+
+    const deposit: AssetInfo = {
+      // TODO: Remove empty strings after db migration
+      address: row.depositAddress ?? '',
+      pluginId: '',
+      tokenId: '',
+      amount: row.depositAmount
+    }
+
+    const payout: AssetInfo = {
+      // TODO: Remove empty strings after db migration
+      address: row.payoutAddress ?? '',
+      pluginId: '',
+      tokenId: '',
+      amount: row.payoutAmount
+    }
+
+    const result: TxInfo = {
+      swapInfo,
+      deposit,
+      payout,
+      isoDate: row.isoDate
+    }
+
+    return result
+  })
 
   res.send({
     txs
@@ -103,9 +117,21 @@ getTxInfoRouter.get('/', async function(req, res) {
 })
 
 /*
-Returns the providerId from the document id.
+Returns the pluginId from the document id.
 For example: edge_switchain:<orderId> -> switchain
 */
-function getProviderId(row: DbTx): string {
+function getPluginId(row: DbTx): string {
   return row._id?.split(':')[0].split('_')[1] ?? ''
+}
+
+function getSwapInfo(row: DbTx): SwapInfo {
+  const pluginId = getPluginId(row)
+  const orderId = row.orderId
+  const status = row.status
+
+  return {
+    orderId,
+    pluginId,
+    status
+  }
 }
