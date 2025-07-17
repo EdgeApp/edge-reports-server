@@ -2,7 +2,6 @@ import nano from 'nano'
 
 import { config } from './config'
 import { pagination } from './dbutils'
-import { initDbs } from './initDbs'
 import { banxa } from './partners/banxa'
 import { bitaccess } from './partners/bitaccess'
 import { bitrefill } from './partners/bitrefill'
@@ -78,8 +77,6 @@ const snooze: Function = async (ms: number) =>
   await new Promise((resolve: Function) => setTimeout(resolve, ms))
 
 export async function queryEngine(): Promise<void> {
-  await initDbs()
-
   const dbProgress = nanoDb.db.use('reports_progresscache')
   const dbApps = nanoDb.db.use('reports_apps')
 

@@ -139,4 +139,11 @@ export async function initDbs(): Promise<void> {
       )
     )
   }
+  console.log('Done')
+  process.exit(0)
 }
+
+initDbs().catch(err => {
+  console.error(err)
+  process.exit(1)
+})
