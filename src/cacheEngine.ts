@@ -3,7 +3,6 @@ import nano from 'nano'
 import { getAnalytics } from './apiAnalytics'
 import { config } from './config'
 import { asDbReq } from './dbutils'
-import { initDbs } from './initDbs'
 import { asApps } from './types'
 import {
   datelog,
@@ -29,8 +28,6 @@ const birthdayStart = getStartOfMonthsAgo(
 export async function cacheEngine(): Promise<void> {
   datelog('Starting Cache Engine')
   console.time('cacheEngine')
-
-  await initDbs()
 
   const reportsApps = nanoDb.use('reports_apps')
   const reportsTransactions = nanoDb.use('reports_transactions')

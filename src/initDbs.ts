@@ -1,9 +1,13 @@
 import {
+  asReplicatorSetupDocument,
+  connectCouch,
   DatabaseSetup,
   JsDesignDocument,
   makeMangoIndex,
   MangoDesignDocument,
-  setupDatabase
+  setupDatabase,
+  SetupDatabaseOptions,
+  syncedDocument
 } from 'edge-server-tools'
 
 import { config } from './config'
@@ -106,10 +110,40 @@ const databases = [
   monthDatabaseSetup
 ]
 
-export async function initDbs(): Promise<void> {
-  await Promise.all(
-    databases.map(
-      async setup => await setupDatabase(config.couchDbFullpath, setup)
-    )
-  )
+export const reportsReplication = syncedDocument(
+  'replication',
+  asReplicatorSetupDocument
+)
+
+const couchSettingsSetup: DatabaseSetup = {
+  name: 'reports_settings',
+  syncedDocuments: [reportsReplication]
 }
+
+const options: SetupDatabaseOptions = {
+  replicatorSetup: reportsReplication
+}
+
+export async function initDbs(): Promise<void> {
+  if (config.couchUris != null) {
+    const pool = connectCouch(config.couchMainCluster, config.couchUris)
+    await setupDatabase(pool, couchSettingsSetup, options)
+    await Promise.all(
+      databases.map(async setup => await setupDatabase(pool, setup, options))
+    )
+  } else {
+    await Promise.all(
+      databases.map(
+        async setup =>
+          await setupDatabase(config.couchDbFullpath, setup, options)
+      )
+    )
+  }
+  console.log('Done')
+  process.exit(0)
+}
+
+initDbs().catch(err => {
+  console.error(err)
+  process.exit(1)
+})

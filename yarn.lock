@@ -2713,10 +2713,10 @@ ecc-jsbn@~0.1.1:
     jsbn "~0.1.0"
     safer-buffer "^2.1.0"
 
-edge-server-tools@^0.2.19:
-  version "0.2.19"
-  resolved "https://registry.yarnpkg.com/edge-server-tools/-/edge-server-tools-0.2.19.tgz#495a7c691b32c9a2d9abee3115bca38ad72efd5e"
-  integrity sha512-iCHxop9064CwrJtpgmbXlMfx93FuNiwmq63c1q/i+mSk5Q0+QCRVP81GXmuxzm9ts0z2s4smhkbd715QTH2Ebw==
+edge-server-tools@^0.2.22:
+  version "0.2.22"
+  resolved "https://registry.yarnpkg.com/edge-server-tools/-/edge-server-tools-0.2.22.tgz#c4571747a25ee1d3ae27613a718fe2356c21c70c"
+  integrity sha512-C7U3Cc+smlVzPtOy6pwQbyFyrBxwj80hCePmHOK0VwGPCjfrXpYqlw/sdwdRY5gYFfm6vVoq5KrEb3hxhSJNwQ==
   dependencies:
     cleaners "^0.3.11"
     nano "^10.1.3"
