@@ -60,7 +60,7 @@ class App extends Component<
 
   async componentDidMount(): Promise<void> {
     Object.assign(document.body.style, body)
-    if (this.state.apiKey !== '') {
+    if (this.state.apiKey != null && this.state.apiKey.length > 2) {
       await this.getAppId()
     }
   }
