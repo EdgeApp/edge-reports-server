@@ -5,6 +5,7 @@ import Web3 from 'web3'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { datelog, safeParseFloat } from '../util'
+import { queryDummy } from './dummy'
 
 const asCurrentBlockResult = asNumber
 
@@ -439,7 +440,7 @@ export async function queryTotle(
 
 export const totle: PartnerPlugin = {
   // queryFunc will take PluginSettings as arg and return PluginResult
-  queryFunc: queryTotle,
+  queryFunc: queryDummy,
   // results in a PluginResult
   pluginName: 'Totle',
   pluginId: 'totle'

@@ -4,6 +4,7 @@ import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { datelog } from '../util'
+import { queryDummy } from './dummy'
 
 const asFaastTx = asObject({
   swap_id: asString,
@@ -99,7 +100,7 @@ export async function queryFaast(
 
 export const faast: PartnerPlugin = {
   // queryFunc will take PluginSettings as arg and return PluginResult
-  queryFunc: queryFaast,
+  queryFunc: queryDummy,
   // results in a PluginResult
   pluginName: 'Faast',
   pluginId: 'faast'

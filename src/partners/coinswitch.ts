@@ -11,6 +11,7 @@ import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { datelog } from '../util'
+import { queryDummy } from './dummy'
 
 const asCoinSwitchTx = asObject({
   status: asString,
@@ -97,7 +98,7 @@ export async function queryCoinSwitch(
 
 export const coinswitch: PartnerPlugin = {
   // queryFunc will take PluginSettings as arg and return PluginResult
-  queryFunc: queryCoinSwitch,
+  queryFunc: queryDummy,
   // results in a PluginResult
   pluginName: 'CoinSwitch',
   pluginId: 'coinswitch'

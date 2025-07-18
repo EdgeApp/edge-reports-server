@@ -3,6 +3,7 @@ import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { datelog } from '../util'
+import { queryDummy } from './dummy'
 
 const asFoxExchangeTx = asObject({
   orderId: asString,
@@ -111,7 +112,7 @@ export async function queryFoxExchange(
 
 export const foxExchange: PartnerPlugin = {
   // queryFunc will take PluginSettings as arg and return PluginResult
-  queryFunc: queryFoxExchange,
+  queryFunc: queryDummy,
   // results in a PluginResult
   pluginName: 'FoxExchange',
   pluginId: 'foxExchange'

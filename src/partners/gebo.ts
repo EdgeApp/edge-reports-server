@@ -1,5 +1,6 @@
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { datelog } from '../util'
+import { queryDummy } from './dummy'
 
 export async function queryGebo(
   pluginParams: PluginParams
@@ -14,7 +15,7 @@ export async function queryGebo(
 
 export const gebo: PartnerPlugin = {
   // queryFunc will take PluginSettings as arg and return PluginResult
-  queryFunc: queryGebo,
+  queryFunc: queryDummy,
   // results in a PluginResult
   pluginName: 'Gebo',
   pluginId: 'gebo'

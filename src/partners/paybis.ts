@@ -43,8 +43,8 @@ const asUserCountry = asObject({
   code: asString
 })
 const asUser = asObject({
-  id: asString,
-  email: asString,
+  // id: asString,
+  // email: asString,
   country: asEither(asUserCountry, asNull)
 })
 // const asExchangeRate = asObject({
@@ -273,8 +273,7 @@ export function processPaybisTx(rawTx: unknown): StandardTx {
   const payoutAmount = Number(receivedOriginal.amount)
   const depositTxid = gateway === 'crypto_to_fiat' ? hash : undefined
   const payoutTxid = gateway === 'fiat_to_crypto' ? hash : undefined
-
-  const direction = (gateway === 'fiat_to_crypto') == null ? 'buy' : 'sell'
+  const direction = gateway === 'fiat_to_crypto' ? 'buy' : 'sell'
 
   const standardTx: StandardTx = {
     status: statusMap[tx.status],
@@ -307,6 +306,8 @@ function getFiatPaymentType(
   switch (name) {
     case undefined:
       return null
+    case 'Apple Pay':
+      return 'applepay'
     case 'AstroPay':
       return 'astropay'
     case 'Credit/Debit Card':
@@ -314,6 +315,8 @@ function getFiatPaymentType(
     case 'FPX':
       // Idk?
       return 'fpx'
+    case 'Google Pay':
+      return 'googlepay'
     case 'Giropay':
       return 'giropay'
     case 'Neteller':
