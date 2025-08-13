@@ -257,46 +257,45 @@ export function processMoonpaySellTx(rawTx: unknown): StandardTx {
   return standardTx
 }
 
+const paymentMethodMap = {
+  ach_bank_transfer: 'ach',
+  apple_pay: 'applepay',
+  credit_debit_card: 'credit',
+  gbp_open_banking_payment: 'fasterpayments',
+  google_pay: 'googlepay',
+  moonpay_balance: 'moonpaybalance',
+  paypal: 'paypal',
+  pix_instant_payment: 'pix',
+  revolut_pay: 'revolut',
+  sepa_bank_transfer: 'sepa',
+  venmo: 'venmo',
+  yellow_card_bank_transfer: 'yellowcard'
+}
+
 function getFiatPaymentType(
   tx: MoonpayTx | MoonpaySellTx
 ): FiatPaymentType | null {
+  let paymentMethod: FiatPaymentType | null = null
   switch (tx.paymentMethod) {
     case undefined:
       return null
-    case 'ach_bank_transfer':
-      return 'ach'
-    case 'apple_pay':
-      return 'applepay'
-    case 'credit_debit_card':
-      return 'credit'
-    case 'gbp_open_banking_payment':
-      return 'fasterpayments'
-    case 'google_pay':
-      return 'googlepay'
     case 'mobile_wallet':
       // Older versions of Moonpay data had a separate cardType field.
-      return 'cardType' in tx
-        ? tx.cardType === 'apple_pay'
-          ? 'applepay'
-          : tx.cardType === 'google_pay'
-          ? 'googlepay'
+      paymentMethod =
+        'cardType' in tx
+          ? tx.cardType === 'apple_pay'
+            ? 'applepay'
+            : tx.cardType === 'google_pay'
+            ? 'googlepay'
+            : null
           : null
-        : null
-    case 'moonpay_balance':
-      return 'moonpaybalance'
-    case 'paypal':
-      return 'paypal'
-    case 'pix_instant_payment':
-      return 'pix'
-    case 'sepa_bank_transfer':
-      return 'sepa'
-    case 'venmo':
-      return 'venmo'
-    case 'yellow_card_bank_transfer':
-      return 'yellowcard'
+      break
     default:
-      throw new Error(
-        `Unknown payment method: ${tx.paymentMethod} for ${tx.id}`
-      )
+      paymentMethod = paymentMethodMap[tx.paymentMethod]
+      break
   }
+  if (paymentMethod == null) {
+    throw new Error(`Unknown payment method: ${tx.paymentMethod} for ${tx.id}`)
+  }
+  return paymentMethod
 }
