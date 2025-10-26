@@ -10,6 +10,7 @@ import {
   DbTx
 } from './types'
 import { datelog, safeParseFloat, standardizeNames } from './util'
+import { isFiatCurrency } from './util/fiatCurrency'
 
 const nanoDb = nano(config.couchDbFullpath)
 const QUERY_FREQ_MS = 3000
@@ -217,9 +218,17 @@ async function getExchangeRate(
   retry: number = 0
 ): Promise<number> {
   const hourDate = dateRoundDownHour(date)
-  const currencyA = standardizeNames(ca)
-  const currencyB = standardizeNames(cb)
-  const url = `https://rates2.edge.app/v1/exchangeRate?currency_pair=${currencyA}_${currencyB}&date=${hourDate}`
+  let currencyA = standardizeNames(ca)
+  let currencyB = standardizeNames(cb)
+
+  if (currencyA === currencyB) {
+    return 1
+  }
+
+  currencyA = isFiatCurrency(currencyA) ? `iso:${currencyA}` : currencyA
+  currencyB = isFiatCurrency(currencyB) ? `iso:${currencyB}` : currencyB
+
+  const url = `https://rates2.edge.app/v2/exchangeRate?currency_pair=${currencyA}_${currencyB}&date=${hourDate}`
   try {
     const result = await fetch(url, { method: 'GET' })
     if (!result.ok) {
