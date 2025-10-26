@@ -39,6 +39,7 @@ function fieldsToDesignDocs(
 
 const transactionIndexes: DesignDocumentMap = {
   ...fieldsToDesignDocs(['isoDate']),
+  ...fieldsToDesignDocs(['orderId']),
   ...fieldsToDesignDocs(['status']),
   ...fieldsToDesignDocs(['status', 'depositCurrency', 'isoDate']),
   ...fieldsToDesignDocs([
