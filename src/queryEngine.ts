@@ -32,6 +32,7 @@ import { maya, thorchain } from './partners/thorchain'
 import { transak } from './partners/transak'
 import { wyre } from './partners/wyre'
 import { xanpool } from './partners/xanpool'
+import { xgram } from './partners/xgram'
 import { asApp, asApps, asProgressSettings, DbTx, StandardTx } from './types'
 import { datelog, promiseTimeout, standardizeNames } from './util'
 
@@ -68,7 +69,8 @@ const plugins = [
   thorchain,
   transak,
   wyre,
-  xanpool
+  xanpool,
+  xgram
 ]
 const QUERY_FREQ_MS = 60 * 1000
 const MAX_CONCURRENT_QUERIES = 3
@@ -257,7 +259,7 @@ async function runPlugin(
         console.log(e)
       }
     })
-
+      
     // initialize progress settings if unrecognized format
     let progressSettings: ReturnType<typeof asProgressSettings>
     try {
