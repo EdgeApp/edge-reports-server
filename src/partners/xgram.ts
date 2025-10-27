@@ -30,7 +30,7 @@ const asXgramTx = asObject({
   amountFrom: asMaybe(asNumber, null),
   amountTo: asMaybe(asNumber, null),
   depositAddress: asString,
-  depositHash:  asMaybe(asString, undefined),
+  depositHash: asMaybe(asString, undefined),
   depositTag: asMaybe(asString, null),
   destinationAddress: asString,
   destinationTag: asMaybe(asString, null),
@@ -133,10 +133,10 @@ export const xgram: PartnerPlugin = {
 
 export function processXgramTx(rawTx: unknown): StandardTx {
   const tx: XgramTxTx = asXgramTx(rawTx)
-  const [date, time] = tx.date.split(" ");
-const [day, month, year] = date.split(".");
-const dateN = new Date(`${year}-${month}-${day}T${time}`)
-const isoString = dateN.toISOString();
+  const [date, time] = tx.date.split(' ')
+  const [day, month, year] = date.split('.')
+  const dateN = new Date(`${year}-${month}-${day}T${time}`)
+  const isoString = dateN.toISOString()
   const timestamp = dateN.getTime() / 1000
   const standardTx: StandardTx = {
     status: statusMap[tx.status],

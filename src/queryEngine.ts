@@ -259,7 +259,7 @@ async function runPlugin(
         console.log(e)
       }
     })
-      
+
     // initialize progress settings if unrecognized format
     let progressSettings: ReturnType<typeof asProgressSettings>
     try {
