@@ -56,7 +56,9 @@ async function main(partitionName: string): Promise<void> {
     datelog(`Successfully Deleted: progress cache ${progress._id}`)
   } catch (e) {
     datelog(e)
+    process.exit(1)
   }
+  process.exit(0)
 }
 
 main(process.argv[2]).catch(e => datelog(e))
