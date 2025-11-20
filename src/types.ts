@@ -1,5 +1,6 @@
 import {
   asArray,
+  asDate,
   asEither,
   asMap,
   asNull,
@@ -210,6 +211,28 @@ export const asAnalyticsResult = asObject({
   end: asNumber
 })
 
+// v3/rates response cleaner (matches GUI's shape)
+const asV3CryptoAsset = asObject({
+  pluginId: asString,
+  tokenId: asOptional(asEither(asString, asNull))
+})
+const asV3CryptoRate = asObject({
+  isoDate: asOptional(asDate),
+  asset: asV3CryptoAsset,
+  rate: asOptional(asNumber)
+})
+const asV3FiatRate = asObject({
+  isoDate: asOptional(asDate),
+  fiatCode: asString,
+  rate: asOptional(asNumber)
+})
+export const asV3RatesParams = asObject({
+  targetFiat: asString,
+  crypto: asArray(asV3CryptoRate),
+  fiat: asArray(asV3FiatRate)
+})
+
+export type V3RatesParams = ReturnType<typeof asV3RatesParams>
 export type Bucket = ReturnType<typeof asBucket>
 export type AnalyticsResult = ReturnType<typeof asAnalyticsResult>
 
