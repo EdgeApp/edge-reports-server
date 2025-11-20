@@ -6,8 +6,10 @@ import { config } from './config'
 import {
   asDbCurrencyCodeMappings,
   asDbTx,
+  asV3RatesParams,
   CurrencyCodeMappings,
-  DbTx
+  DbTx,
+  V3RatesParams
 } from './types'
 import { datelog, safeParseFloat, standardizeNames } from './util'
 import { isFiatCurrency } from './util/fiatCurrency'
@@ -108,10 +110,157 @@ export async function ratesEngine(): Promise<void> {
   }
 }
 
-export async function updateTxValues(
+async function updateTxValuesV3(transaction: DbTx): Promise<void> {
+  const {
+    isoDate,
+    depositCurrency,
+    depositChainPluginId,
+    depositTokenId,
+    depositAmount,
+    payoutChainPluginId,
+    payoutTokenId,
+    payoutCurrency,
+    payoutAmount
+  } = transaction
+
+  let depositIsFiat = false
+  let payoutIsFiat = false
+  const ratesRequest: V3RatesParams = {
+    targetFiat: 'USD',
+    crypto: [],
+    fiat: []
+  }
+  if (depositChainPluginId != null && depositTokenId !== undefined) {
+    ratesRequest.crypto.push({
+      isoDate: new Date(isoDate),
+      asset: {
+        pluginId: depositChainPluginId,
+        tokenId: depositTokenId
+      },
+      rate: undefined
+    })
+  } else if (isFiatCurrency(depositCurrency) && depositCurrency !== 'USD') {
+    depositIsFiat = true
+    ratesRequest.fiat.push({
+      isoDate: new Date(isoDate),
+      fiatCode: depositCurrency,
+      rate: undefined
+    })
+  } else {
+    console.error(
+      `Deposit asset is not a crypto asset or fiat currency ${depositCurrency} ${depositChainPluginId} ${depositTokenId}`
+    )
+    return
+  }
+
+  if (payoutChainPluginId != null && payoutTokenId !== undefined) {
+    ratesRequest.crypto.push({
+      isoDate: new Date(isoDate),
+      asset: {
+        pluginId: payoutChainPluginId,
+        tokenId: payoutTokenId
+      },
+      rate: undefined
+    })
+  } else if (isFiatCurrency(payoutCurrency) && payoutCurrency !== 'USD') {
+    payoutIsFiat = true
+    ratesRequest.fiat.push({
+      isoDate: new Date(isoDate),
+      fiatCode: payoutCurrency,
+      rate: undefined
+    })
+  } else {
+    console.error(
+      `Payout asset is not a crypto asset or fiat currency ${payoutCurrency} ${payoutChainPluginId} ${payoutTokenId}`
+    )
+    return
+  }
+
+  const ratesResponse = await fetch('https://rates3.edge.app/v3/rates', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(ratesRequest)
+  })
+  const ratesResponseJson = await ratesResponse.json()
+  const rates = asV3RatesParams(ratesResponseJson)
+  const depositRateObf = depositIsFiat
+    ? rates.fiat.find(rate => rate.fiatCode === depositCurrency)
+    : rates.crypto.find(
+        rate =>
+          rate.asset.pluginId === depositChainPluginId &&
+          (rate.asset.tokenId ?? null) === depositTokenId
+      )
+  const payoutRateObf = payoutIsFiat
+    ? rates.fiat.find(rate => rate.fiatCode === payoutCurrency)
+    : rates.crypto.find(
+        rate =>
+          rate.asset.pluginId === payoutChainPluginId &&
+          (rate.asset.tokenId ?? null) === payoutTokenId
+      )
+
+  const depositRate = depositRateObf?.rate
+  const payoutRate = payoutRateObf?.rate
+
+  // Calculate and fill out payoutAmount if it is zero
+  if (payoutAmount === 0) {
+    if (depositRate == null) {
+      console.error(
+        `No rate found for deposit ${depositCurrency} ${depositChainPluginId} ${depositTokenId}`
+      )
+    }
+
+    if (payoutRate == null) {
+      console.error(
+        `No rate found for payout ${payoutCurrency} ${payoutChainPluginId} ${payoutTokenId}`
+      )
+    }
+    if (depositRate != null && payoutRate != null) {
+      transaction.payoutAmount = (depositAmount * depositRate) / payoutRate
+    }
+  }
+
+  // Calculate the usdValue first trying to use the deposit amount. If that's not available
+  // then try to use the payout amount.
+  if (transaction.usdValue == null || transaction.usdValue <= 0) {
+    if (depositRate != null) {
+      transaction.usdValue = depositAmount * depositRate
+    } else if (payoutRate != null) {
+      transaction.usdValue = transaction.payoutAmount * payoutRate
+    }
+  }
+}
+
+async function updateTxValues(
   transaction: DbTx,
   mappings: CurrencyCodeMappings
 ): Promise<void> {
+  if (
+    transaction.depositChainPluginId != null &&
+    transaction.depositTokenId !== undefined &&
+    transaction.payoutChainPluginId != null &&
+    transaction.payoutTokenId !== undefined
+  ) {
+    return await updateTxValuesV3(transaction)
+  }
+
+  if (
+    transaction.depositChainPluginId != null &&
+    transaction.depositTokenId !== undefined &&
+    isFiatCurrency(transaction.payoutCurrency)
+  ) {
+    return await updateTxValuesV3(transaction)
+  }
+
+  if (
+    isFiatCurrency(transaction.depositCurrency) &&
+    transaction.payoutChainPluginId != null &&
+    transaction.payoutTokenId !== undefined
+  ) {
+    return await updateTxValuesV3(transaction)
+  }
+
   let success = false
   const date: string = transaction.isoDate
   if (mappings[transaction.depositCurrency] != null) {
