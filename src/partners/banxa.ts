@@ -338,6 +338,8 @@ function getFiatPaymentType(tx: BanxaTx): FiatPaymentType {
       return 'googlepay'
     case 'iDEAL Transfer':
       return 'ideal'
+    case 'ZeroHash ACH Sell':
+      return 'ach'
     default:
       throw new Error(`Unknown payment method: ${tx.payment_type} for ${tx.id}`)
   }
