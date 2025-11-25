@@ -19,7 +19,7 @@ import {
 import { datelog, retryFetch, snooze } from '../util'
 
 const asXgramStatus = asMaybe(
-  asValue('finished', 'waiting', 'time_expired'),
+  asValue('success', 'deposit_waiting', 'time_expired'),
   'other'
 )
 
@@ -53,8 +53,8 @@ const LIMIT = 5
 const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 
 const statusMap: { [key in XgramStatus]: Status } = {
-  finished: 'complete',
-  waiting: 'pending',
+  success: 'complete',
+  deposit_waiting: 'pending',
   time_expired: 'expired',
   other: 'other'
 }
