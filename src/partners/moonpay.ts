@@ -17,7 +17,8 @@ import {
   PartnerPlugin,
   PluginParams,
   PluginResult,
-  StandardTx
+  StandardTx,
+  Status
 } from '../types'
 import { datelog } from '../util'
 
@@ -39,6 +40,7 @@ const asMoonpayTx = asObject({
   country: asString,
   createdAt: asDate,
   id: asString,
+  status: asString,
   // Common amount field (used by both buy and sell)
   quoteCurrencyAmount: asOptional(asNumber),
   // Buy-specific fields
@@ -53,10 +55,14 @@ const asMoonpayTx = asObject({
 })
 
 type MoonpayTx = ReturnType<typeof asMoonpayTx>
+type MoonpayStatus = MoonpayTx['status']
 
-const asPreMoonpayTx = asObject({
-  status: asString
-})
+// Map Moonpay status to Edge status
+// Only 'completed' and 'pending' were found in 3 years of API data
+const statusMap: Record<string, Status> = {
+  completed: 'complete',
+  pending: 'pending'
+}
 
 const asMoonpayResult = asArray(asUnknown)
 
@@ -109,10 +115,8 @@ export async function queryMoonpay(
         const txs = asMoonpayResult(await result.json())
 
         for (const rawTx of txs) {
-          if (asPreMoonpayTx(rawTx).status === 'completed') {
-            const standardTx = processTx(rawTx)
-            standardTxs.push(standardTx)
-          }
+          const standardTx = processTx(rawTx)
+          standardTxs.push(standardTx)
         }
 
         if (txs.length > 0) {
@@ -142,10 +146,8 @@ export async function queryMoonpay(
         // in bulk update it throws an error for document update conflict because of this.
 
         for (const rawTx of txs) {
-          if (asPreMoonpayTx(rawTx).status === 'completed') {
-            const standardTx = processTx(rawTx)
-            standardTxs.push(standardTx)
-          }
+          const standardTx = processTx(rawTx)
+          standardTxs.push(standardTx)
         }
         if (txs.length > 0) {
           console.log(
@@ -197,6 +199,9 @@ export function processTx(rawTx: unknown): StandardTx {
   const isoDate = tx.createdAt.toISOString()
   const timestamp = tx.createdAt.getTime()
 
+  // Map Moonpay status to Edge status
+  const status: Status = statusMap[tx.status] ?? 'other'
+
   // Determine direction based on paymentMethod vs payoutMethod
   // Buy transactions have paymentMethod, sell transactions have payoutMethod
   const direction = tx.paymentMethod != null ? 'buy' : 'sell'
@@ -208,7 +213,7 @@ export function processTx(rawTx: unknown): StandardTx {
   }
 
   const standardTx: StandardTx = {
-    status: 'complete',
+    status,
     orderId: tx.id,
 
     countryCode: tx.country,
