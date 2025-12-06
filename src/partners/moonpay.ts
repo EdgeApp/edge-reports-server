@@ -17,7 +17,8 @@ import {
   PartnerPlugin,
   PluginParams,
   PluginResult,
-  StandardTx
+  StandardTx,
+  Status
 } from '../types'
 import { datelog } from '../util'
 
@@ -37,6 +38,7 @@ const asMoonpayTxBase = asObject({
   country: asString,
   createdAt: asDate,
   id: asString,
+  status: asString,
   quoteCurrencyAmount: asOptional(asNumber),
   paymentMethod: asOptional(asString),
   cryptoTransactionId: asOptional(asString),
@@ -60,9 +62,12 @@ const asMoonpaySellFields = asObject({
 
 type MoonpayTxBase = ReturnType<typeof asMoonpayTxBase>
 
-const asPreMoonpayTx = asObject({
-  status: asString
-})
+// Map Moonpay status to Edge status
+// Only 'completed' and 'pending' were found in 3 years of API data
+const statusMap: Record<string, Status> = {
+  completed: 'complete',
+  pending: 'pending'
+}
 
 const asMoonpayResult = asArray(asUnknown)
 
@@ -208,7 +213,7 @@ export function processMoonpayTx(rawTx: unknown): StandardTx {
   if (direction === 'buy') {
     const buyFields = asMoonpayBuyFields(rawTx)
     const standardTx: StandardTx = {
-      status: 'complete',
+      status,
       orderId: tx.id,
       countryCode: tx.country,
       depositTxid: undefined,
@@ -237,7 +242,7 @@ export function processMoonpayTx(rawTx: unknown): StandardTx {
   } else {
     const sellFields = asMoonpaySellFields(rawTx)
     const standardTx: StandardTx = {
-      status: 'complete',
+      status,
       orderId: tx.id,
       countryCode: tx.country,
       depositTxid: tx.depositHash,
