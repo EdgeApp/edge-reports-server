@@ -28,37 +28,37 @@ const asMoonpayCurrency = asObject({
   code: asString
 })
 
-const asMoonpayTx = asObject({
+// Base cleaner with fields common to both buy and sell transactions
+const asMoonpayTxBase = asObject({
   baseCurrency: asMoonpayCurrency,
   baseCurrencyAmount: asNumber,
   baseCurrencyId: asString,
   cardType: asOptional(asValue('apple_pay', 'google_pay', 'card')),
   country: asString,
   createdAt: asDate,
-  cryptoTransactionId: asString,
-  currencyId: asString,
-  currency: asMoonpayCurrency,
   id: asString,
+  quoteCurrencyAmount: asOptional(asNumber),
   paymentMethod: asOptional(asString),
-  quoteCurrencyAmount: asNumber,
-  walletAddress: asString
+  cryptoTransactionId: asOptional(asString),
+  currency: asOptional(asMoonpayCurrency),
+  walletAddress: asOptional(asString),
+  depositHash: asOptional(asString),
+  quoteCurrency: asOptional(asMoonpayCurrency),
+  payoutMethod: asOptional(asString)
 })
 
-const asMoonpaySellTx = asObject({
-  baseCurrency: asMoonpayCurrency,
-  baseCurrencyAmount: asNumber,
-  baseCurrencyId: asString,
-  country: asString,
-  createdAt: asDate,
-  depositHash: asString,
-  id: asString,
-  paymentMethod: asOptional(asString),
+const asMoonpayBuyFields = asObject({
+  currency: asMoonpayCurrency,
+  walletAddress: asString,
+  quoteCurrencyAmount: asNumber
+})
+
+const asMoonpaySellFields = asObject({
   quoteCurrency: asMoonpayCurrency,
   quoteCurrencyAmount: asNumber
 })
 
-type MoonpayTx = ReturnType<typeof asMoonpayTx>
-type MoonpaySellTx = ReturnType<typeof asMoonpaySellTx>
+type MoonpayTxBase = ReturnType<typeof asMoonpayTxBase>
 
 const asPreMoonpayTx = asObject({
   status: asString
@@ -115,10 +115,8 @@ export async function queryMoonpay(
         const txs = asMoonpayResult(await result.json())
 
         for (const rawTx of txs) {
-          if (asPreMoonpayTx(rawTx).status === 'completed') {
-            const standardTx = processMoonpaySellTx(rawTx)
-            standardTxs.push(standardTx)
-          }
+          const standardTx = processMoonpayTx(rawTx)
+          standardTxs.push(standardTx)
         }
 
         if (txs.length > 0) {
@@ -148,10 +146,8 @@ export async function queryMoonpay(
         // in bulk update it throws an error for document update conflict because of this.
 
         for (const rawTx of txs) {
-          if (asPreMoonpayTx(rawTx).status === 'completed') {
-            const standardTx = processMoonpayTx(rawTx)
-            standardTxs.push(standardTx)
-          }
+          const standardTx = processMoonpayTx(rawTx)
+          standardTxs.push(standardTx)
         }
         if (txs.length > 0) {
           console.log(
@@ -199,80 +195,82 @@ export const moonpay: PartnerPlugin = {
 }
 
 export function processMoonpayTx(rawTx: unknown): StandardTx {
-  const tx: MoonpayTx = asMoonpayTx(rawTx)
+  const tx: MoonpayTxBase = asMoonpayTxBase(rawTx)
   const isoDate = tx.createdAt.toISOString()
   const timestamp = tx.createdAt.getTime()
 
-  const direction = tx.baseCurrency.type === 'fiat' ? 'buy' : 'sell'
+  // Map Moonpay status to Edge status
+  const status: Status = statusMap[tx.status] ?? 'other'
 
-  const standardTx: StandardTx = {
-    status: 'complete',
-    orderId: tx.id,
+  // Buy transactions have paymentMethod, sell transactions have payoutMethod
+  const direction: 'buy' | 'sell' = tx.paymentMethod != null ? 'buy' : 'sell'
 
-    countryCode: tx.country,
-    depositTxid: direction === 'sell' ? tx.cryptoTransactionId : undefined,
-    depositAddress: undefined,
-    depositCurrency: tx.baseCurrency.code.toUpperCase(),
-    depositChainPluginId: undefined,
-    depositEvmChainId: undefined,
-    depositTokenId: undefined,
-    depositAmount: tx.baseCurrencyAmount,
-    direction,
-    exchangeType: 'fiat',
-    paymentType: getFiatPaymentType(tx),
-    payoutTxid: direction === 'buy' ? tx.cryptoTransactionId : undefined,
-    payoutAddress: tx.walletAddress,
-    payoutCurrency: tx.currency.code.toUpperCase(),
-    payoutChainPluginId: undefined,
-    payoutEvmChainId: undefined,
-    payoutTokenId: undefined,
-    payoutAmount: tx.quoteCurrencyAmount,
-    timestamp: timestamp / 1000,
-    isoDate,
-    usdValue: -1,
-    rawTx
+  if (direction === 'buy') {
+    const buyFields = asMoonpayBuyFields(rawTx)
+    const standardTx: StandardTx = {
+      status: 'complete',
+      orderId: tx.id,
+      countryCode: tx.country,
+      depositTxid: undefined,
+      depositAddress: undefined,
+      depositCurrency: tx.baseCurrency.code.toUpperCase(),
+      depositChainPluginId: undefined,
+      depositEvmChainId: undefined,
+      depositTokenId: undefined,
+      depositAmount: tx.baseCurrencyAmount,
+      direction,
+      exchangeType: 'fiat',
+      paymentType: getFiatPaymentType(tx),
+      payoutTxid: tx.cryptoTransactionId,
+      payoutAddress: buyFields.walletAddress,
+      payoutCurrency: buyFields.currency.code.toUpperCase(),
+      payoutChainPluginId: undefined,
+      payoutEvmChainId: undefined,
+      payoutTokenId: undefined,
+      payoutAmount: buyFields.quoteCurrencyAmount,
+      timestamp: timestamp / 1000,
+      isoDate,
+      usdValue: -1,
+      rawTx
+    }
+    return standardTx
+  } else {
+    const sellFields = asMoonpaySellFields(rawTx)
+    const standardTx: StandardTx = {
+      status: 'complete',
+      orderId: tx.id,
+      countryCode: tx.country,
+      depositTxid: tx.depositHash,
+      depositAddress: undefined,
+      depositCurrency: tx.baseCurrency.code.toUpperCase(),
+      depositChainPluginId: undefined,
+      depositEvmChainId: undefined,
+      depositTokenId: undefined,
+      depositAmount: tx.baseCurrencyAmount,
+      direction,
+      exchangeType: 'fiat',
+      paymentType: getFiatPaymentType(tx),
+      payoutTxid: undefined,
+      payoutAddress: undefined,
+      payoutCurrency: sellFields.quoteCurrency.code.toUpperCase(),
+      payoutChainPluginId: undefined,
+      payoutEvmChainId: undefined,
+      payoutTokenId: undefined,
+      payoutAmount: sellFields.quoteCurrencyAmount,
+      timestamp: timestamp / 1000,
+      isoDate,
+      usdValue: -1,
+      rawTx
+    }
+    return standardTx
   }
-  return standardTx
 }
 
-export function processMoonpaySellTx(rawTx: unknown): StandardTx {
-  const tx: MoonpaySellTx = asMoonpaySellTx(rawTx)
-  const isoDate = tx.createdAt.toISOString()
-  const timestamp = tx.createdAt.getTime()
-  const standardTx: StandardTx = {
-    status: 'complete',
-    orderId: tx.id,
-
-    countryCode: tx.country,
-    depositTxid: tx.depositHash,
-    depositAddress: undefined,
-    depositCurrency: tx.baseCurrency.code.toUpperCase(),
-    depositChainPluginId: undefined,
-    depositEvmChainId: undefined,
-    depositTokenId: undefined,
-    depositAmount: tx.baseCurrencyAmount,
-    direction: 'sell',
-    exchangeType: 'fiat',
-    paymentType: getFiatPaymentType(tx),
-    payoutTxid: undefined,
-    payoutAddress: undefined,
-    payoutCurrency: tx.quoteCurrency.code.toUpperCase(),
-    payoutChainPluginId: undefined,
-    payoutEvmChainId: undefined,
-    payoutTokenId: undefined,
-    payoutAmount: tx.quoteCurrencyAmount,
-    timestamp: timestamp / 1000,
-    isoDate,
-    usdValue: -1,
-    rawTx: rawTx
-  }
-  return standardTx
-}
-
-const paymentMethodMap = {
+const paymentMethodMap: Record<string, FiatPaymentType> = {
   ach_bank_transfer: 'ach',
   apple_pay: 'applepay',
   credit_debit_card: 'credit',
+  gbp_bank_transfer: 'fasterpayments',
   gbp_open_banking_payment: 'fasterpayments',
   google_pay: 'googlepay',
   moonpay_balance: 'moonpaybalance',
@@ -284,9 +282,7 @@ const paymentMethodMap = {
   yellow_card_bank_transfer: 'yellowcard'
 }
 
-function getFiatPaymentType(
-  tx: MoonpayTx | MoonpaySellTx
-): FiatPaymentType | null {
+function getFiatPaymentType(tx: MoonpayTxBase): FiatPaymentType | null {
   let paymentMethod: FiatPaymentType | null = null
   switch (tx.paymentMethod) {
     case undefined:
