@@ -81,6 +81,13 @@ export const tokenTypes: Record<string, TokenType> = {
   zksync: 'evm'
 }
 
+export type CurrencyCodeToAssetMapping = Record<
+  string,
+  { pluginId: string; tokenId: EdgeTokenId }
+>
+
+export type ChainNameToPluginIdMapping = Record<string, string>
+
 export const createTokenId = (
   pluginType: TokenType,
   currencyCode: string,
