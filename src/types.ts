@@ -86,6 +86,7 @@ const asFiatPaymentType = asValue(
   'moonpaybalance',
   'neft',
   'neteller',
+  'ozow',
   'payid',
   'paynow',
   'paypal',
