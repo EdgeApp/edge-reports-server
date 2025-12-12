@@ -142,6 +142,23 @@ export async function queryEngine(): Promise<void> {
   }
 }
 
+const checkUpdateTx = (oldTx: StandardTx, newTx: StandardTx): string[] => {
+  const fields = [
+    'status',
+    'depositChainPluginId',
+    'depositEvmChainId',
+    'depositTokenId',
+    'payoutChainPluginId',
+    'payoutEvmChainId',
+    'payoutTokenId'
+  ] as const
+  const changedFields: string[] = []
+  for (const field of fields) {
+    if (oldTx[field] !== newTx[field]) changedFields.push(field)
+  }
+  return changedFields
+}
+
 const filterAddNewTxs = async (
   pluginId: string,
   dbTransactions: nano.DocumentScope<StandardTx>,
@@ -165,7 +182,11 @@ const filterAddNewTxs = async (
       throw new Error(`Cant find tx from docId ${docId}`)
     }
 
-    if (queryResult == null) {
+    if (
+      queryResult == null ||
+      !('doc' in queryResult) ||
+      queryResult.doc == null
+    ) {
       // Get the full transaction
       const newObj = { _id: docId, _rev: undefined, ...tx }
 
@@ -176,14 +197,17 @@ const filterAddNewTxs = async (
       datelog(`new doc id: ${newObj._id}`)
       newDocs.push(newObj)
     } else {
-      if ('doc' in queryResult) {
-        if (tx.status !== queryResult.doc?.status) {
-          const oldStatus = queryResult.doc?.status
-          const newStatus = tx.status
-          const newObj = { _id: docId, _rev: queryResult.doc?._rev, ...tx }
-          newDocs.push(newObj)
-          datelog(`updated doc id: ${newObj._id} ${oldStatus} -> ${newStatus}`)
-        }
+      const changedFields = checkUpdateTx(queryResult.doc, tx)
+      if (changedFields.length > 0) {
+        const oldStatus = queryResult.doc?.status
+        const newStatus = tx.status
+        const newObj = { _id: docId, _rev: queryResult.doc?._rev, ...tx }
+        newDocs.push(newObj)
+        datelog(
+          `updated doc id: ${
+            newObj._id
+          } ${oldStatus} -> ${newStatus} [${changedFields.join(', ')}]`
+        )
       }
     }
   }
