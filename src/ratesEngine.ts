@@ -241,11 +241,26 @@ async function updateTxValuesV3(transaction: DbTx): Promise<void> {
 
   // Calculate the usdValue first trying to use the deposit amount. If that's not available
   // then try to use the payout amount.
+  const t = transaction
   if (transaction.usdValue == null || transaction.usdValue <= 0) {
     if (depositRate != null && depositRate > 0) {
       transaction.usdValue = depositAmount * depositRate
+      datelog(
+        `V3 SUCCESS id:${t._id} ${t.isoDate.slice(0, 10)} deposit:${
+          t.depositCurrency
+        }-${t.depositChainPluginId}-${
+          t.depositTokenId
+        } rate:${depositRate} usdValue:${t.usdValue}`
+      )
     } else if (payoutRate != null && payoutRate > 0) {
       transaction.usdValue = transaction.payoutAmount * payoutRate
+      datelog(
+        `V3 SUCCESS id:${t._id} ${t.isoDate.slice(0, 10)} payout:${
+          t.payoutCurrency
+        }-${t.payoutChainPluginId}-${
+          t.payoutTokenId
+        } rate:${payoutRate} usdValue:${t.usdValue}`
+      )
     }
   }
 }
