@@ -21,6 +21,13 @@ import {
   safeParseFloat,
   smartIsoDateFromTimestamp
 } from '../util'
+import {
+  ChainNameToPluginIdMapping,
+  createTokenId,
+  EdgeTokenId,
+  tokenTypes
+} from '../util/asEdgeTokenId'
+import { EVM_CHAIN_IDS } from '../util/chainIds'
 
 const asGodexPluginParams = asObject({
   settings: asObject({
@@ -30,6 +37,198 @@ const asGodexPluginParams = asObject({
     apiKey: asOptional(asString)
   })
 })
+
+// Godex started providing network_from_code/network_to_code fields on this date
+// Transactions before this date are not required to have network codes
+const GODEX_NETWORK_CODE_START_DATE = '2024-04-03T12:00:00.000Z'
+
+// Godex network codes to Edge pluginIds
+const GODEX_NETWORK_TO_PLUGINID: ChainNameToPluginIdMapping = {
+  ADA: 'cardano',
+  ALGO: 'algorand',
+  ARBITRUM: 'arbitrum',
+  ATOM: 'cosmoshub',
+  AVAXC: 'avalanche',
+  BASE: 'base',
+  BCH: 'bitcoincash',
+  BNB: 'binancesmartchain',
+  BSC: 'binancesmartchain',
+  BTC: 'bitcoin',
+  BTG: 'bitcoingold',
+  CELO: 'celo',
+  DASH: 'dash',
+  DGB: 'digibyte',
+  DOGE: 'dogecoin',
+  DOT: 'polkadot',
+  EOS: 'eos',
+  ETC: 'ethereumclassic',
+  ETH: 'ethereum',
+  ETHW: 'ethereumpow',
+  FIL: 'filecoin',
+  FIO: 'fio',
+  FIRO: 'zcoin',
+  FTM: 'fantom',
+  HBAR: 'hedera',
+  LTC: 'litecoin',
+  MATIC: 'polygon',
+  OP: 'optimism',
+  OPTIMISM: 'optimism',
+  OSMO: 'osmosis',
+  PIVX: 'pivx',
+  QTUM: 'qtum',
+  RSK: 'rsk',
+  RUNE: 'thorchainrune',
+  RVN: 'ravencoin',
+  SOL: 'solana',
+  SUI: 'sui',
+  TON: 'ton',
+  TRX: 'tron',
+  XEC: 'ecash',
+  XLM: 'stellar',
+  XMR: 'monero',
+  XRP: 'ripple',
+  XTZ: 'tezos',
+  ZEC: 'zcash',
+  ZKSYNC: 'zksync'
+}
+
+// Fallback for tokens that were delisted from Godex API but have historical transactions
+const DELISTED_TOKENS: Record<string, GodexAssetInfo> = {
+  'TNSR:SOL': { contractAddress: 'TNSRxcUxoT9xBG3de7PiJyTDYu7kskLqcpddxnEJAS6' }
+}
+
+// Cleaner for Godex coins API response
+const asGodexCoinNetwork = asObject({
+  code: asString,
+  contract_address: asOptional(asString),
+  chain_id: asOptional(asString)
+})
+
+const asGodexCoin = asObject({
+  code: asString,
+  networks: asArray(asGodexCoinNetwork)
+})
+
+const asGodexCoinsResponse = asArray(asGodexCoin)
+
+// Cache for Godex coins data
+interface GodexAssetInfo {
+  contractAddress?: string
+  chainId?: number
+}
+
+let godexCoinsCache: Map<string, GodexAssetInfo> | null = null
+
+async function getGodexCoinsCache(): Promise<Map<string, GodexAssetInfo>> {
+  if (godexCoinsCache != null) {
+    return godexCoinsCache
+  }
+
+  const cache = new Map<string, GodexAssetInfo>()
+
+  // Add delisted tokens first (can be overwritten by API if re-listed)
+  for (const [key, value] of Object.entries(DELISTED_TOKENS)) {
+    cache.set(key, value)
+  }
+
+  try {
+    const url = 'https://api.godex.io/api/v1/coins'
+    const result = await retryFetch(url, { method: 'GET' })
+    const json = await result.json()
+    const coins = asGodexCoinsResponse(json)
+
+    for (const coin of coins) {
+      for (const network of coin.networks) {
+        // Key format: "COIN_CODE:NETWORK_CODE" e.g. "USDT:TRX"
+        const key = `${coin.code}:${network.code}`
+        cache.set(key, {
+          contractAddress: network.contract_address ?? undefined,
+          chainId:
+            network.chain_id != null
+              ? parseInt(network.chain_id, 10)
+              : undefined
+        })
+      }
+    }
+    datelog(`Godex coins cache loaded: ${cache.size} entries`)
+  } catch (e) {
+    datelog('Error loading Godex coins cache:', e)
+  }
+  godexCoinsCache = cache
+  return cache
+}
+
+interface GodexEdgeAssetInfo {
+  pluginId: string | undefined
+  evmChainId: number | undefined
+  tokenId: EdgeTokenId | undefined
+}
+
+async function getGodexEdgeAssetInfo(
+  currencyCode: string,
+  networkCode: string | undefined,
+  isoDate: string
+): Promise<GodexEdgeAssetInfo> {
+  const result: GodexEdgeAssetInfo = {
+    pluginId: undefined,
+    evmChainId: undefined,
+    tokenId: undefined
+  }
+
+  if (networkCode == null) {
+    // Only throw for transactions on or after the date when Godex started providing network codes
+    if (isoDate >= GODEX_NETWORK_CODE_START_DATE) {
+      throw new Error(`Godex: Missing network code for ${currencyCode}`)
+    }
+    // Older transactions without network codes cannot be backfilled
+    return result
+  }
+
+  // Get pluginId from network code
+  const pluginId = GODEX_NETWORK_TO_PLUGINID[networkCode]
+  if (pluginId == null) {
+    throw new Error(
+      `Godex: Unknown network code '${networkCode}' for ${currencyCode}`
+    )
+  }
+  result.pluginId = pluginId
+
+  // Get evmChainId if applicable
+  result.evmChainId = EVM_CHAIN_IDS[pluginId]
+
+  // Get contract address from cache
+  const cache = await getGodexCoinsCache()
+  const key = `${currencyCode}:${networkCode}`
+  const assetInfo = cache.get(key)
+
+  if (assetInfo == null) {
+    // Some native coins (like SOL) aren't in Godex's coins API
+    // If currencyCode matches networkCode, assume it's a native coin
+    if (currencyCode === networkCode) {
+      result.tokenId = null
+      return result
+    }
+    throw new Error(
+      `Godex: Unknown currency code '${currencyCode}' for ${networkCode}`
+    )
+  }
+
+  // Determine tokenId
+  const tokenType = tokenTypes[pluginId]
+  const contractAddress = assetInfo.contractAddress
+
+  // For native assets (no contract address), tokenId is null
+  // For tokens, use createTokenId
+  if (contractAddress != null && contractAddress !== '') {
+    // createTokenId will throw if token not supported on this chain
+    result.tokenId = createTokenId(tokenType, currencyCode, contractAddress)
+  } else {
+    // Native asset, tokenId is null
+    result.tokenId = null
+  }
+
+  return result
+}
 
 const asGodexStatus = asMaybe(
   asValue(
@@ -54,7 +253,9 @@ const asGodexTx = asObject({
   withdrawal: asString,
   coin_to: asString,
   withdrawal_amount: asString,
-  created_at: asString
+  created_at: asString,
+  network_from_code: asOptional(asString),
+  network_to_code: asOptional(asString)
 })
 
 const asGodexResult = asArray(asUnknown)
@@ -107,7 +308,7 @@ export async function queryGodex(
       const txs = asGodexResult(resultJSON)
 
       for (const rawTx of txs) {
-        const standardTx = processGodexTx(rawTx)
+        const standardTx = await processGodexTx(rawTx)
         standardTxs.push(standardTx)
         if (standardTx.isoDate > latestIsoDate) {
           latestIsoDate = standardTx.isoDate
@@ -148,30 +349,51 @@ export const godex: PartnerPlugin = {
   pluginId: 'godex'
 }
 
-export function processGodexTx(rawTx: unknown): StandardTx {
+export async function processGodexTx(rawTx: unknown): Promise<StandardTx> {
   const tx: GodexTx = asGodexTx(rawTx)
   const ts = parseInt(tx.created_at)
   const { isoDate, timestamp } = smartIsoDateFromTimestamp(ts)
+
+  // Extract network codes from tx
+  const networkFromCode = tx.network_from_code
+  const networkToCode = tx.network_to_code
+
+  // Get deposit asset info
+  const depositCurrency = tx.coin_from.toUpperCase()
+  const depositAssetInfo = await getGodexEdgeAssetInfo(
+    depositCurrency,
+    networkFromCode,
+    isoDate
+  )
+
+  // Get payout asset info
+  const payoutCurrency = tx.coin_to.toUpperCase()
+  const payoutAssetInfo = await getGodexEdgeAssetInfo(
+    payoutCurrency,
+    networkToCode,
+    isoDate
+  )
+
   const standardTx: StandardTx = {
     status: statusMap[tx.status],
     orderId: tx.transaction_id,
     countryCode: null,
     depositTxid: tx.hash_in,
     depositAddress: tx.deposit,
-    depositCurrency: tx.coin_from.toUpperCase(),
-    depositChainPluginId: undefined,
-    depositEvmChainId: undefined,
-    depositTokenId: undefined,
+    depositCurrency,
+    depositChainPluginId: depositAssetInfo.pluginId,
+    depositEvmChainId: depositAssetInfo.evmChainId,
+    depositTokenId: depositAssetInfo.tokenId,
     depositAmount: safeParseFloat(tx.deposit_amount),
     direction: null,
     exchangeType: 'swap',
     paymentType: null,
     payoutTxid: undefined,
     payoutAddress: tx.withdrawal,
-    payoutCurrency: tx.coin_to.toUpperCase(),
-    payoutChainPluginId: undefined,
-    payoutEvmChainId: undefined,
-    payoutTokenId: undefined,
+    payoutCurrency,
+    payoutChainPluginId: payoutAssetInfo.pluginId,
+    payoutEvmChainId: payoutAssetInfo.evmChainId,
+    payoutTokenId: payoutAssetInfo.tokenId,
     payoutAmount: safeParseFloat(tx.withdrawal_amount),
     timestamp,
     isoDate,
