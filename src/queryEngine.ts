@@ -142,6 +142,29 @@ export async function queryEngine(): Promise<void> {
   }
 }
 
+const checkUpdateTx = (
+  oldTx: StandardTx,
+  newTx: StandardTx
+): string[] | undefined => {
+  const changedFields: string[] = []
+
+  if (oldTx.status !== newTx.status) changedFields.push('status')
+  if (oldTx.depositChainPluginId !== newTx.depositChainPluginId)
+    changedFields.push('depositChainPluginId')
+  if (oldTx.depositEvmChainId !== newTx.depositEvmChainId)
+    changedFields.push('depositEvmChainId')
+  if (oldTx.depositTokenId !== newTx.depositTokenId)
+    changedFields.push('depositTokenId')
+  if (oldTx.payoutChainPluginId !== newTx.payoutChainPluginId)
+    changedFields.push('payoutChainPluginId')
+  if (oldTx.payoutEvmChainId !== newTx.payoutEvmChainId)
+    changedFields.push('payoutEvmChainId')
+  if (oldTx.payoutTokenId !== newTx.payoutTokenId)
+    changedFields.push('payoutTokenId')
+
+  return changedFields.length > 0 ? changedFields : undefined
+}
+
 const filterAddNewTxs = async (
   pluginId: string,
   dbTransactions: nano.DocumentScope<StandardTx>,
@@ -165,7 +188,11 @@ const filterAddNewTxs = async (
       throw new Error(`Cant find tx from docId ${docId}`)
     }
 
-    if (queryResult == null) {
+    if (
+      queryResult == null ||
+      !('doc' in queryResult) ||
+      queryResult.doc == null
+    ) {
       // Get the full transaction
       const newObj = { _id: docId, _rev: undefined, ...tx }
 
@@ -176,14 +203,17 @@ const filterAddNewTxs = async (
       datelog(`new doc id: ${newObj._id}`)
       newDocs.push(newObj)
     } else {
-      if ('doc' in queryResult) {
-        if (tx.status !== queryResult.doc?.status) {
-          const oldStatus = queryResult.doc?.status
-          const newStatus = tx.status
-          const newObj = { _id: docId, _rev: queryResult.doc?._rev, ...tx }
-          newDocs.push(newObj)
-          datelog(`updated doc id: ${newObj._id} ${oldStatus} -> ${newStatus}`)
-        }
+      const changedFields = checkUpdateTx(queryResult.doc, tx)
+      if (changedFields != null) {
+        const oldStatus = queryResult.doc?.status
+        const newStatus = tx.status
+        const newObj = { _id: docId, _rev: queryResult.doc?._rev, ...tx }
+        newDocs.push(newObj)
+        datelog(
+          `updated doc id: ${
+            newObj._id
+          } ${oldStatus} -> ${newStatus} [${changedFields.join(', ')}]`
+        )
       }
     }
   }
