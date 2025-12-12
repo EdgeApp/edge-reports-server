@@ -150,7 +150,7 @@ async function updateTxValuesV3(transaction: DbTx): Promise<void> {
       fiatCode: depositCurrency,
       rate: undefined
     })
-  } else {
+  } else if (depositCurrency !== 'USD') {
     console.error(
       `Deposit asset is not a crypto asset or fiat currency ${depositCurrency} ${depositChainPluginId} ${depositTokenId}`
     )
@@ -175,7 +175,7 @@ async function updateTxValuesV3(transaction: DbTx): Promise<void> {
       fiatCode: payoutCurrency,
       rate: undefined
     })
-  } else {
+  } else if (payoutCurrency !== 'USD') {
     console.error(
       `Payout asset is not a crypto asset or fiat currency ${payoutCurrency} ${payoutChainPluginId} ${payoutTokenId}`
     )
