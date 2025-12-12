@@ -35,11 +35,15 @@ export interface PartnerPlugin {
 
 const asStatus = asValue(
   'complete',
+  'confirming',
+  'withdrawing',
   'processing',
   'pending',
   'expired',
   'blocked',
   'refunded',
+  'cancelled',
+  'failed',
   'other'
 )
 
