@@ -55,6 +55,10 @@ const transactionIndexes: DesignDocumentMap = {
   ...fieldsToDesignDocs(['status', 'usdValue', 'timestamp']),
   ...fieldsToDesignDocs(['usdValue']),
   ...fieldsToDesignDocs(['timestamp']),
+  ...fieldsToDesignDocs(['status', 'depositChainPluginId']),
+  ...fieldsToDesignDocs(['status', 'payoutChainPluginId']),
+  ...fieldsToDesignDocs(['status', 'depositChainPluginId', 'depositTokenId']),
+  ...fieldsToDesignDocs(['status', 'payoutChainPluginId', 'payoutTokenId']),
   ...fieldsToDesignDocs(['depositAddress'], { noPartitionVariant: true }),
   ...fieldsToDesignDocs(['payoutAddress'], { noPartitionVariant: true }),
   ...fieldsToDesignDocs(['payoutAddress', 'isoDate'], {
