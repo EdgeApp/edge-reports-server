@@ -91,7 +91,7 @@ export type ChainNameToPluginIdMapping = Record<string, string>
 export const createTokenId = (
   pluginType: TokenType,
   currencyCode: string,
-  contractAddress?: string
+  contractAddress?: string | null
 ): EdgeTokenId => {
   if (contractAddress == null) {
     return null
