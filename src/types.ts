@@ -1,8 +1,10 @@
 import {
   asArray,
+  asBoolean,
   asDate,
   asEither,
   asMap,
+  asMaybe,
   asNull,
   asNumber,
   asObject,
@@ -237,7 +239,16 @@ export const asRatesV3Params = asObject({
   fiat: asArray(asRatesV3FiatRate)
 })
 
+export const asDisablePartnerQuery = asMaybe(
+  asObject({
+    plugins: asObject(asBoolean),
+    appPartners: asObject(asBoolean)
+  }),
+  { plugins: {}, appPartners: {} }
+)
+
 export type RatesV3Params = ReturnType<typeof asRatesV3Params>
+export type DisablePartnerQuery = ReturnType<typeof asDisablePartnerQuery>
 export type Bucket = ReturnType<typeof asBucket>
 export type AnalyticsResult = ReturnType<typeof asAnalyticsResult>
 

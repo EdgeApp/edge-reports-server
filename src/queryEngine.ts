@@ -32,7 +32,15 @@ import { maya, thorchain } from './partners/thorchain'
 import { transak } from './partners/transak'
 import { wyre } from './partners/wyre'
 import { xanpool } from './partners/xanpool'
-import { asApp, asApps, asProgressSettings, DbTx, StandardTx } from './types'
+import {
+  asApp,
+  asApps,
+  asDisablePartnerQuery,
+  asProgressSettings,
+  DbTx,
+  DisablePartnerQuery,
+  StandardTx
+} from './types'
 import { datelog, promiseTimeout, standardizeNames } from './util'
 
 const nanoDb = nano(config.couchDbFullpath)
@@ -79,9 +87,24 @@ const snooze: Function = async (ms: number) =>
 export async function queryEngine(): Promise<void> {
   const dbProgress = nanoDb.db.use('reports_progresscache')
   const dbApps = nanoDb.db.use('reports_apps')
+  const dbSettings: nano.DocumentScope<unknown> = nanoDb.db.use(
+    'reports_settings'
+  )
 
   while (true) {
     datelog('Starting query loop...')
+    let disablePartnerQuery: DisablePartnerQuery = {
+      plugins: {},
+      appPartners: {}
+    }
+    try {
+      const disablePartnerQueryDoc = await dbSettings.get('disablePartnerQuery')
+      if (disablePartnerQueryDoc != null) {
+        disablePartnerQuery = asDisablePartnerQuery(disablePartnerQueryDoc)
+      }
+    } catch (e) {
+      datelog('Error getting disablePartnerQuery', e)
+    }
     // get the contents of all reports_apps docs
     const query = {
       selector: {
@@ -103,7 +126,13 @@ export async function queryEngine(): Promise<void> {
       remainingPartners = Object.keys(app.partnerIds)
       for (const partnerId in app.partnerIds) {
         const pluginId = app.partnerIds[partnerId].pluginId ?? partnerId
-
+        if (disablePartnerQuery.plugins[pluginId] ?? false) {
+          continue
+        }
+        const appPartnerId = `${app.appId}_${partnerId}`
+        if (disablePartnerQuery.appPartners[appPartnerId] ?? false) {
+          continue
+        }
         if (
           config.soloPartnerIds != null &&
           !config.soloPartnerIds.includes(partnerId)
