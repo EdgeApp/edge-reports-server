@@ -1,12 +1,12 @@
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog } from '../util'
 import { queryDummy } from './dummy'
 
 export async function queryGebo(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   const ssFormatTxs: StandardTx[] = []
-  await datelog('Running Gebo')
+  log('Running')
   return {
     settings: {},
     transactions: ssFormatTxs

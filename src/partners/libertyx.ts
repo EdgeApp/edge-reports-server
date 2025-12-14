@@ -9,7 +9,6 @@ import {
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog } from '../util'
 
 const asLibertyxTx = asObject({
   all_transactions_usd_sum: asNumber,
@@ -26,6 +25,7 @@ const INCOMPLETE_DAY_RANGE = 3
 export async function queryLibertyx(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   const standardTxs: StandardTx[] = []
   let apiKey
   let result
@@ -41,7 +41,7 @@ export async function queryLibertyx(
       })
       result = asLibertyxResult(await response.json())
     } catch (e) {
-      datelog(e)
+      log.error(String(e))
       throw e
     }
   } else {

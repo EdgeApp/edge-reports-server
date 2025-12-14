@@ -18,7 +18,7 @@ import {
   StandardTx,
   Status
 } from '../types'
-import { datelog, retryFetch, smartIsoDateFromTimestamp } from '../util'
+import { retryFetch, smartIsoDateFromTimestamp } from '../util'
 import { createTokenId, EdgeTokenId, tokenTypes } from '../util/asEdgeTokenId'
 import { EVM_CHAIN_IDS } from '../util/chainIds'
 
@@ -228,6 +228,7 @@ type Response = ReturnType<typeof fetch>
 export async function queryExolix(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   const { settings, apiKeys } = asExolixPluginParams(pluginParams)
   const { apiKey } = apiKeys
   let { latestIsoDate } = settings
@@ -273,7 +274,7 @@ export async function queryExolix(
         }
       }
       page++
-      datelog(`Exolix latestIsoDate ${latestIsoDate}`)
+      log(`latestIsoDate ${latestIsoDate}`)
 
       // reached end of database
       if (txs.length < PAGE_LIMIT) {
@@ -281,7 +282,7 @@ export async function queryExolix(
       }
     }
   } catch (e) {
-    datelog(e)
+    log.error(String(e))
     // Do not throw as we can just exit and save our progress since the API allows querying
     // from oldest to newest.
   }
