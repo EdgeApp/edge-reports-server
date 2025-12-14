@@ -17,7 +17,6 @@ import {
   PluginResult,
   StandardTx
 } from '../types'
-import { datelog } from '../util'
 
 const PAGE_LIMIT = 100
 const OFFSET_ROLLBACK = 500
@@ -49,6 +48,7 @@ const asTransakResult = asObject({
 export async function queryTransak(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   const standardTxs: StandardTx[] = []
   let apiKey: string
 
@@ -71,7 +71,7 @@ export async function queryTransak(
       const result = await fetch(url)
       resultJSON = asTransakResult(await result.json())
     } catch (e) {
-      datelog(e)
+      log.error(String(e))
       break
     }
     const txs = resultJSON.response

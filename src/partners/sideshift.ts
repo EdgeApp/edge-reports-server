@@ -16,7 +16,7 @@ import {
   StandardTx,
   Status
 } from '../types'
-import { datelog, retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
+import { retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
 import {
   ChainNameToPluginIdMapping,
   createTokenId,
@@ -205,6 +205,7 @@ function affiliateSignature(
 export async function querySideshift(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   const { settings, apiKeys } = asSideshiftPluginParams(pluginParams)
   const { sideshiftAffiliateId, sideshiftAffiliateSecret } = apiKeys
   let { latestIsoDate } = settings
@@ -239,24 +240,24 @@ export async function querySideshift(
         break
       }
       for (const rawTx of orders) {
-        const standardTx = await processSideshiftTx(rawTx)
+        const standardTx = await processSideshiftTx(rawTx, pluginParams)
         standardTxs.push(standardTx)
         if (standardTx.isoDate > latestIsoDate) {
           latestIsoDate = standardTx.isoDate
         }
       }
       startTime = new Date(latestIsoDate).getTime()
-      datelog(`Sideshift latestIsoDate ${latestIsoDate}`)
+      log(`latestIsoDate ${latestIsoDate}`)
       if (endTime > now) {
         break
       }
       retry = 0
     } catch (e) {
-      datelog(e)
+      log.error(String(e))
       // Retry a few times with time delay to prevent throttling
       retry++
       if (retry <= MAX_RETRIES) {
-        datelog(`Snoozing ${5 * retry}s`)
+        log.warn(`Snoozing ${5 * retry}s`)
         await snooze(5000 * retry)
       } else {
         // We can safely save our progress since we go from oldest to newest.
@@ -338,7 +339,10 @@ async function getAssetInfo(
   return { chainPluginId, evmChainId, tokenId }
 }
 
-export async function processSideshiftTx(rawTx: unknown): Promise<StandardTx> {
+export async function processSideshiftTx(
+  rawTx: unknown,
+  pluginParams: PluginParams
+): Promise<StandardTx> {
   const tx: SideshiftTx = asSideshiftTx(rawTx)
   const depositAddress =
     tx.depositAddress?.address ?? tx.prevDepositAddresses?.address

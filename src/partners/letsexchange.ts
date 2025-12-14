@@ -15,10 +15,11 @@ import {
   PartnerPlugin,
   PluginParams,
   PluginResult,
+  ScopedLog,
   StandardTx,
   Status
 } from '../types'
-import { datelog, retryFetch, safeParseFloat, snooze } from '../util'
+import { retryFetch, safeParseFloat, snooze } from '../util'
 import { createTokenId, EdgeTokenId, tokenTypes } from '../util/asEdgeTokenId'
 import { EVM_CHAIN_IDS } from '../util/chainIds'
 
@@ -216,12 +217,12 @@ interface CoinInfo {
 let coinCache: Map<string, CoinInfo> | null = null
 let coinCacheApiKey: string | null = null
 
-async function fetchCoinCache(apiKey: string): Promise<void> {
+async function fetchCoinCache(apiKey: string, log: ScopedLog): Promise<void> {
   if (coinCache != null && coinCacheApiKey === apiKey) {
     return // Already cached
   }
 
-  datelog('Fetching coins for cache...')
+  log('Fetching coins for cache...')
 
   const response = await retryFetch(
     'https://api.letsexchange.io/api/v1/coins',
@@ -257,7 +258,7 @@ async function fetchCoinCache(apiKey: string): Promise<void> {
   }
 
   coinCacheApiKey = apiKey
-  datelog(`Cached ${coinCache.size} coins`)
+  log(`Cached ${coinCache.size} coins`)
 }
 
 interface AssetInfo {
@@ -269,13 +270,14 @@ interface AssetInfo {
 function getAssetInfo(
   initialNetwork: string | null,
   currencyCode: string,
-  contractAddress: string | null
+  contractAddress: string | null,
+  log: ScopedLog
 ): AssetInfo | undefined {
   let network = initialNetwork
   if (network == null) {
     // Try using the currencyCode as the network
     network = currencyCode
-    datelog(`Using currencyCode as network: ${network}`)
+    log(`Using currencyCode as network: ${network}`)
   }
 
   const networkUpper = network.toUpperCase()
@@ -330,6 +332,7 @@ function getAssetInfo(
 export async function queryLetsExchange(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   const { settings, apiKeys } = asLetsExchangePluginParams(pluginParams)
   const { affiliateId, apiKey } = apiKeys
   let { latestIsoDate } = settings
@@ -356,7 +359,7 @@ export async function queryLetsExchange(
 
     const windowStartIso = new Date(windowStart).toISOString()
     const windowEndIso = new Date(windowEnd).toISOString()
-    datelog(`LetsExchange: Querying ${windowStartIso} to ${windowEndIso}`)
+    log(`Querying ${windowStartIso} to ${windowEndIso}`)
 
     let page = 1
     let retry = 0
@@ -369,7 +372,7 @@ export async function queryLetsExchange(
         const result = await retryFetch(url, { headers, method: 'GET' })
         if (!result.ok) {
           const text = await result.text()
-          datelog(`LetsExchange error at page ${page}: ${text}`)
+          log.error(`error at page ${page}: ${text}`)
           throw new Error(text)
         }
         const resultJSON = await result.json()
@@ -386,9 +389,7 @@ export async function queryLetsExchange(
           }
         }
 
-        datelog(
-          `LetsExchange page ${page}/${lastPage} latestIsoDate ${latestIsoDate}`
-        )
+        log(`page ${page}/${lastPage} latestIsoDate ${latestIsoDate}`)
 
         // Check if we've reached the last page for this window
         if (currentPage >= lastPage || txs.length === 0) {
@@ -398,19 +399,17 @@ export async function queryLetsExchange(
         page++
         retry = 0
       } catch (e) {
-        datelog(e)
+        log.error(String(e))
         // Retry a few times with time delay to prevent throttling
         retry++
         if (retry <= MAX_RETRIES) {
-          datelog(`LetsExchange: Snoozing ${5 * retry}s`)
+          log.warn(`Snoozing ${5 * retry}s`)
           await snooze(5000 * retry)
         } else {
           // We can safely save our progress since we go from oldest to newest.
           latestIsoDate = windowStartIso
           done = true
-          datelog(
-            `LetsExchange: Max retries reached, saving progress at ${latestIsoDate}`
-          )
+          log.error(`Max retries reached, saving progress at ${latestIsoDate}`)
         }
       }
     }
@@ -439,10 +438,11 @@ export async function processLetsExchangeTx(
   pluginParams: PluginParams
 ): Promise<StandardTx> {
   const { apiKeys } = asLetsExchangePluginParams(pluginParams)
-
   const { apiKey } = apiKeys
+  const { log } = pluginParams
 
-  await fetchCoinCache(apiKey)
+  await fetchCoinCache(apiKey, log)
+
   const tx = asLetsExchangeTx(rawTx)
 
   // created_at is in format "2025-12-13 07:22:50" (UTC assumed) or UNIX timestamp (10 digits)
@@ -459,13 +459,15 @@ export async function processLetsExchangeTx(
   const depositAsset = getAssetInfo(
     tx.coin_from_network ?? tx.network_from_code,
     tx.coin_from,
-    tx.coin_from_contract_address
+    tx.coin_from_contract_address,
+    log
   )
   // Get payout asset info using contract address from API response
   const payoutAsset = getAssetInfo(
     tx.coin_to_network ?? tx.network_to_code,
     tx.coin_to,
-    tx.coin_to_contract_address
+    tx.coin_to_contract_address,
+    log
   )
 
   const status = statusMap[tx.status]

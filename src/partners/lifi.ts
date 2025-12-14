@@ -18,7 +18,7 @@ import {
   StandardTx,
   Status
 } from '../types'
-import { datelog, retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
+import { retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
 import { createTokenId, tokenTypes } from '../util/asEdgeTokenId'
 import { EVM_CHAIN_IDS, REVERSE_EVM_CHAIN_IDS } from '../util/chainIds'
 
@@ -87,6 +87,7 @@ const statusMap: { [key in PartnerStatuses]: Status } = {
 export async function queryLifi(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   const { settings, apiKeys } = asStandardPluginParams(pluginParams)
   const { apiKey } = apiKeys
   let { latestIsoDate } = settings
@@ -119,7 +120,7 @@ export async function queryLifi(
       const jsonObj = await response.json()
       const transferResults = asTransfersResult(jsonObj)
       for (const rawTx of transferResults.transfers) {
-        const standardTx = processLifiTx(rawTx)
+        const standardTx = processLifiTx(rawTx, pluginParams)
         standardTxs.push(standardTx)
         if (standardTx.isoDate > latestIsoDate) {
           latestIsoDate = standardTx.isoDate
@@ -127,19 +128,17 @@ export async function queryLifi(
       }
       const endDate = new Date(endTime)
       startTime = endTime
-      datelog(
-        `Lifi endDate:${endDate.toISOString()} latestIsoDate:${latestIsoDate}`
-      )
+      log(`endDate:${endDate.toISOString()} latestIsoDate:${latestIsoDate}`)
       if (endTime > now) {
         break
       }
       retry = 0
     } catch (e) {
-      datelog(e)
+      log.error(String(e))
       // Retry a few times with time delay to prevent throttling
       retry++
       if (retry <= MAX_RETRIES) {
-        datelog(`Snoozing ${60 * retry}s`)
+        log.warn(`Snoozing ${60 * retry}s`)
         await snooze(60000 * retry)
       } else {
         // We can safely save our progress since we go from oldest to newest.
@@ -162,12 +161,16 @@ export const lifi: PartnerPlugin = {
   pluginId: 'lifi'
 }
 
-export function processLifiTx(rawTx: unknown): StandardTx {
+export function processLifiTx(
+  rawTx: unknown,
+  pluginParams: PluginParams
+): StandardTx {
+  const { log } = pluginParams
   let tx: Transfer
   try {
     tx = asTransfer(rawTx)
   } catch (e) {
-    datelog(e)
+    log.error(String(e))
     throw e
   }
   const txTimestamp = tx.receiving.timestamp ?? tx.sending.timestamp ?? 0
@@ -322,7 +325,7 @@ export function processLifiTx(rawTx: unknown): StandardTx {
     }
     return standardTx
   } catch (e) {
-    datelog(e)
+    log.error(String(e))
     throw e
   }
 }
