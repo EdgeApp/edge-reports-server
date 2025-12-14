@@ -13,10 +13,11 @@ import {
   PartnerPlugin,
   PluginParams,
   PluginResult,
+  ScopedLog,
   StandardTx,
   Status
 } from '../types'
-import { datelog, retryFetch, snooze } from '../util'
+import { retryFetch, snooze } from '../util'
 import {
   ChainNameToPluginIdMapping,
   createTokenId,
@@ -126,7 +127,10 @@ const currencyCache: CurrencyCache = {
 /**
  * Fetch all currencies from ChangeNow API and populate the cache
  */
-async function loadCurrencyCache(apiKey?: string): Promise<void> {
+async function loadCurrencyCache(
+  log: ScopedLog,
+  apiKey?: string
+): Promise<void> {
   if (currencyCache.loaded) {
     return
   }
@@ -161,9 +165,9 @@ async function loadCurrencyCache(apiKey?: string): Promise<void> {
     }
 
     currencyCache.loaded = true
-    datelog(`ChangeNow currency cache loaded with ${currencies.length} entries`)
+    log(`Currency cache loaded with ${currencies.length} entries`)
   } catch (e) {
-    datelog(`Error loading ChangeNow currency cache: ${e}`)
+    log.error(`Error loading currency cache: ${e}`)
     throw e
   }
 }
@@ -241,6 +245,7 @@ const statusMap: { [key in ChangeNowStatus]: Status } = {
 export const queryChangeNow = async (
   pluginParams: PluginParams
 ): Promise<PluginResult> => {
+  const { log } = pluginParams
   const cleanParams = asChangeNowPluginParams(pluginParams)
   const { apiKey } = cleanParams.apiKeys
   let { latestIsoDate } = cleanParams.settings
@@ -269,7 +274,7 @@ export const queryChangeNow = async (
       })
       if (!response.ok) {
         const text = await response.text()
-        datelog(`Error in offset:${offset}`)
+        log.error(`Error in offset:${offset}`)
         throw new Error(text)
       }
       const result = await response.json()
@@ -279,21 +284,21 @@ export const queryChangeNow = async (
         break
       }
       for (const rawTx of txs) {
-        const standardTx = await processChangeNowTx(rawTx, cleanParams)
+        const standardTx = await processChangeNowTx(rawTx, pluginParams)
         standardTxs.push(standardTx)
         if (standardTx.isoDate > latestIsoDate) {
           latestIsoDate = standardTx.isoDate
         }
       }
-      datelog(`ChangeNow offset ${offset} latestIsoDate ${latestIsoDate}`)
+      log(`offset ${offset} latestIsoDate ${latestIsoDate}`)
       offset += txs.length
       retry = 0
     } catch (e) {
-      datelog(e)
+      log.error(String(e))
       // Retry a few times with time delay to prevent throttling
       retry++
       if (retry <= MAX_RETRIES) {
-        datelog(`Snoozing ${5 * retry}s`)
+        log.warn(`Snoozing ${5 * retry}s`)
         await snooze(5000 * retry)
       } else {
         // We can safely save our progress since we go from oldest to newest.
@@ -371,10 +376,7 @@ function getAssetInfo(network: string, currencyCode: string): EdgeAssetInfo {
       tokenId
     }
   } catch (e) {
-    // If tokenId creation fails, treat as native
-    datelog(
-      `Warning: Failed to create tokenId for ${currencyCode} on ${network}: ${e}`
-    )
+    // If tokenId creation fails, treat as native (no log available in this sync function)
     return {
       chainPluginId,
       evmChainId,
@@ -385,10 +387,11 @@ function getAssetInfo(network: string, currencyCode: string): EdgeAssetInfo {
 
 export async function processChangeNowTx(
   rawTx: unknown,
-  pluginParams?: PluginParams
+  pluginParams: PluginParams
 ): Promise<StandardTx> {
+  const { log } = pluginParams
   // Load currency cache before processing transactions
-  await loadCurrencyCache()
+  await loadCurrencyCache(log)
 
   const tx: ChangeNowTx = asChangeNowTx(rawTx)
   const date = new Date(

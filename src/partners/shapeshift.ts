@@ -2,7 +2,7 @@ import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog, safeParseFloat } from '../util'
+import { safeParseFloat } from '../util'
 
 const asShapeshiftTx = asObject({
   orderId: asString,
@@ -25,6 +25,7 @@ const asShapeshiftResult = asArray(asUnknown)
 export async function queryShapeshift(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   const standardTxs: StandardTx[] = []
   let apiKey
 
@@ -60,7 +61,7 @@ export async function queryShapeshift(
     //   done = true
     // }
   } catch (e) {
-    datelog(e)
+    log.error(String(e))
     throw e
   }
   //   page++

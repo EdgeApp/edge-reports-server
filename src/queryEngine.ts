@@ -39,9 +39,16 @@ import {
   asProgressSettings,
   DbTx,
   DisablePartnerQuery,
+  ScopedLog,
   StandardTx
 } from './types'
-import { datelog, promiseTimeout, standardizeNames } from './util'
+import { createScopedLog, promiseTimeout, standardizeNames } from './util'
+
+/** Local datelog for engine-level logs not associated with a specific app/partner */
+const datelog = (...args: unknown[]): void => {
+  const date = new Date().toISOString()
+  console.log(date, ...args)
+}
 
 const nanoDb = nano(config.couchDbFullpath)
 
@@ -198,7 +205,8 @@ const filterAddNewTxs = async (
   pluginId: string,
   dbTransactions: nano.DocumentScope<StandardTx>,
   docIds: string[],
-  transactions: StandardTx[]
+  transactions: StandardTx[],
+  log: ScopedLog
 ): Promise<void> => {
   if (docIds.length < 1 || transactions.length < 1) return
   const queryResults = await dbTransactions.fetch(
@@ -229,7 +237,7 @@ const filterAddNewTxs = async (
       newObj.depositCurrency = standardizeNames(newObj.depositCurrency)
       newObj.payoutCurrency = standardizeNames(newObj.payoutCurrency)
 
-      datelog(`new doc id: ${newObj._id}`)
+      log(`[filterAddNewTxs] new doc id: ${newObj._id}`)
       newDocs.push(newObj)
     } else {
       const changedFields = checkUpdateTx(queryResult.doc, tx)
@@ -238,8 +246,8 @@ const filterAddNewTxs = async (
         const newStatus = tx.status
         const newObj = { _id: docId, _rev: queryResult.doc?._rev, ...tx }
         newDocs.push(newObj)
-        datelog(
-          `updated doc id: ${
+        log(
+          `[filterAddNewTxs] updated doc id: ${
             newObj._id
           } ${oldStatus} -> ${newStatus} [${changedFields.join(', ')}]`
         )
@@ -248,16 +256,21 @@ const filterAddNewTxs = async (
   }
 
   try {
-    await promiseTimeout('pagination', pagination(newDocs, dbTransactions))
+    await promiseTimeout(
+      'pagination',
+      pagination(newDocs, dbTransactions, log),
+      log
+    )
   } catch (e) {
-    datelog('Error doing bulk transaction insert', e)
+    log.error('[filterAddNewTxs] Error doing bulk transaction insert', e)
     throw e
   }
 }
 
 async function insertTransactions(
   transactions: StandardTx[],
-  pluginId: string
+  pluginId: string,
+  log: ScopedLog
 ): Promise<any> {
   const dbTransactions: nano.DocumentScope<StandardTx> = nanoDb.db.use(
     'reports_transactions'
@@ -273,14 +286,12 @@ async function insertTransactions(
     // Collect a batch of docIds
     if (docIds.length < BULK_FETCH_SIZE) continue
 
-    datelog(
-      `insertTransactions ${startIndex} to ${i} of ${transactions.length}`
-    )
-    await filterAddNewTxs(pluginId, dbTransactions, docIds, transactions)
+    log(`[insertTransactions] ${startIndex} to ${i} of ${transactions.length}`)
+    await filterAddNewTxs(pluginId, dbTransactions, docIds, transactions, log)
     docIds = []
     startIndex = i + 1
   }
-  await filterAddNewTxs(pluginId, dbTransactions, docIds, transactions)
+  await filterAddNewTxs(pluginId, dbTransactions, docIds, transactions, log)
 }
 
 async function runPlugin(
@@ -290,30 +301,27 @@ async function runPlugin(
   dbProgress: nano.DocumentScope<unknown>
 ): Promise<string> {
   const start = Date.now()
+  const log = createScopedLog(app.appId, partnerId)
   let errorText = ''
   try {
     // obtains function that corresponds to current pluginId
     const plugin = plugins.find(plugin => plugin.pluginId === pluginId)
     // if current plugin is not within the list of partners skip to next
     if (plugin === undefined) {
-      errorText = `Missing or disabled plugin ${app.appId.toLowerCase()}_${partnerId}`
-      datelog(errorText)
+      errorText = `[runPlugin] Missing or disabled plugin`
+      log(errorText)
       return errorText
     }
 
     // get progress cache to see where previous query ended
-    datelog(
-      `Starting with partner:${partnerId} plugin:${pluginId}, app: ${app.appId}`
-    )
+    log(`[runPlugin] Starting with plugin:${pluginId}`)
     const progressCacheFileName = `${app.appId.toLowerCase()}:${partnerId}`
     const out = await dbProgress.get(progressCacheFileName).catch(e => {
       if (e.error != null && e.error === 'not_found') {
-        datelog(
-          `Previous Progress Record Not Found ${app.appId.toLowerCase()}_${partnerId}`
-        )
+        log(`[runPlugin] Previous Progress Record Not Found`)
         return {}
       } else {
-        console.log(e)
+        log.error('[runPlugin] Error fetching progress', e)
       }
     })
 
@@ -332,35 +340,39 @@ async function runPlugin(
     // set apiKeys and settings for use in partner's function
     const { apiKeys } = app.partnerIds[partnerId]
     const settings = progressSettings.progressCache
-    datelog(`Querying ${app.appId.toLowerCase()}_${partnerId}`)
+    log(`[runPlugin] Querying`)
     // run the plugin function
     const result = await promiseTimeout(
       'queryFunc',
       plugin.queryFunc({
         apiKeys,
-        settings
-      })
+        settings,
+        log
+      }),
+      log
     )
-    datelog(`Successful query: ${app.appId.toLowerCase()}_${partnerId}`)
+    log(`[runPlugin] Successful query`)
 
     await promiseTimeout(
       'insertTransactions',
-      insertTransactions(result.transactions, `${app.appId}_${partnerId}`)
+      insertTransactions(result.transactions, `${app.appId}_${partnerId}`, log),
+      log
     )
     progressSettings.progressCache = result.settings
     progressSettings._id = progressCacheFileName
     await promiseTimeout(
       'dbProgress.insert',
-      dbProgress.insert(progressSettings)
+      dbProgress.insert(progressSettings),
+      log
     )
     // Returning a successful completion message
     const completionTime = (Date.now() - start) / 1000
-    const successfulCompletionMessage = `Successful update: ${app.appId.toLowerCase()}_${partnerId} in ${completionTime} seconds.`
-    datelog(successfulCompletionMessage)
+    const successfulCompletionMessage = `Successful update in ${completionTime} seconds.`
+    log(`[runPlugin] ${successfulCompletionMessage}`)
     return successfulCompletionMessage
   } catch (e) {
-    errorText = `Error: ${app.appId.toLowerCase()}_${partnerId}. Error message: ${e}`
-    datelog(errorText)
+    errorText = `[runPlugin] Error: ${e}`
+    log.error(errorText)
     return errorText
   }
 }

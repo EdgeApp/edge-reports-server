@@ -12,15 +12,11 @@ import {
   PartnerPlugin,
   PluginParams,
   PluginResult,
+  ScopedLog,
   StandardTx,
   Status
 } from '../types'
-import {
-  datelog,
-  retryFetch,
-  safeParseFloat,
-  smartIsoDateFromTimestamp
-} from '../util'
+import { retryFetch, safeParseFloat, smartIsoDateFromTimestamp } from '../util'
 import {
   ChainNameToPluginIdMapping,
   createTokenId,
@@ -119,7 +115,9 @@ interface GodexAssetInfo {
 
 let godexCoinsCache: Map<string, GodexAssetInfo> | null = null
 
-async function getGodexCoinsCache(): Promise<Map<string, GodexAssetInfo>> {
+async function getGodexCoinsCache(
+  log: ScopedLog
+): Promise<Map<string, GodexAssetInfo>> {
   if (godexCoinsCache != null) {
     return godexCoinsCache
   }
@@ -150,9 +148,9 @@ async function getGodexCoinsCache(): Promise<Map<string, GodexAssetInfo>> {
         })
       }
     }
-    datelog(`Godex coins cache loaded: ${cache.size} entries`)
+    log(`Coins cache loaded: ${cache.size} entries`)
   } catch (e) {
-    datelog('Error loading Godex coins cache:', e)
+    log.error('Error loading coins cache:', e)
   }
   godexCoinsCache = cache
   return cache
@@ -167,7 +165,8 @@ interface GodexEdgeAssetInfo {
 async function getGodexEdgeAssetInfo(
   currencyCode: string,
   networkCode: string | undefined,
-  isoDate: string
+  isoDate: string,
+  log: ScopedLog
 ): Promise<GodexEdgeAssetInfo> {
   const result: GodexEdgeAssetInfo = {
     pluginId: undefined,
@@ -197,7 +196,7 @@ async function getGodexEdgeAssetInfo(
   result.evmChainId = EVM_CHAIN_IDS[pluginId]
 
   // Get contract address from cache
-  const cache = await getGodexCoinsCache()
+  const cache = await getGodexCoinsCache(log)
   const key = `${currencyCode}:${networkCode}`
   const assetInfo = cache.get(key)
 
@@ -278,6 +277,7 @@ const statusMap: { [key in GodexStatus]: Status } = {
 export async function queryGodex(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   const { settings, apiKeys } = asGodexPluginParams(pluginParams)
   const { apiKey } = apiKeys
   let { latestIsoDate } = settings
@@ -308,7 +308,7 @@ export async function queryGodex(
       const txs = asGodexResult(resultJSON)
 
       for (const rawTx of txs) {
-        const standardTx = await processGodexTx(rawTx)
+        const standardTx = await processGodexTx(rawTx, pluginParams)
         standardTxs.push(standardTx)
         if (standardTx.isoDate > latestIsoDate) {
           latestIsoDate = standardTx.isoDate
@@ -317,13 +317,11 @@ export async function queryGodex(
           oldestIsoDate = standardTx.isoDate
         }
         if (standardTx.isoDate < previousLatestIsoDate && !done) {
-          datelog(
-            `Godex done: date ${standardTx.isoDate} < ${previousLatestIsoDate}`
-          )
+          log(`done: date ${standardTx.isoDate} < ${previousLatestIsoDate}`)
           done = true
         }
       }
-      datelog(`godex oldestIsoDate ${oldestIsoDate}`)
+      log(`oldestIsoDate ${oldestIsoDate}`)
 
       offset += LIMIT
       // this is if the end of the database is reached
@@ -332,7 +330,7 @@ export async function queryGodex(
       }
     }
   } catch (e) {
-    datelog(e)
+    log.error(String(e))
     throw e
   }
   const out: PluginResult = {
@@ -349,7 +347,11 @@ export const godex: PartnerPlugin = {
   pluginId: 'godex'
 }
 
-export async function processGodexTx(rawTx: unknown): Promise<StandardTx> {
+export async function processGodexTx(
+  rawTx: unknown,
+  pluginParams: PluginParams
+): Promise<StandardTx> {
+  const { log } = pluginParams
   const tx: GodexTx = asGodexTx(rawTx)
   const ts = parseInt(tx.created_at)
   const { isoDate, timestamp } = smartIsoDateFromTimestamp(ts)
@@ -363,7 +365,8 @@ export async function processGodexTx(rawTx: unknown): Promise<StandardTx> {
   const depositAssetInfo = await getGodexEdgeAssetInfo(
     depositCurrency,
     networkFromCode,
-    isoDate
+    isoDate,
+    log
   )
 
   // Get payout asset info
@@ -371,7 +374,8 @@ export async function processGodexTx(rawTx: unknown): Promise<StandardTx> {
   const payoutAssetInfo = await getGodexEdgeAssetInfo(
     payoutCurrency,
     networkToCode,
-    isoDate
+    isoDate,
+    log
   )
 
   const standardTx: StandardTx = {

@@ -15,7 +15,7 @@ import {
   StandardTx,
   Status
 } from '../types'
-import { datelog, retryFetch, smartIsoDateFromTimestamp } from '../util'
+import { retryFetch, smartIsoDateFromTimestamp } from '../util'
 
 const asSwapuzLogin = asObject({
   result: asObject({
@@ -61,6 +61,7 @@ const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 export const querySwapuz = async (
   pluginParams: PluginParams
 ): Promise<PluginResult> => {
+  const { log } = pluginParams
   const standardTxs: StandardTx[] = []
 
   const { settings, apiKeys } = asSwapuzPluginParams(pluginParams)
@@ -126,20 +127,18 @@ export const querySwapuz = async (
           oldestIsoDate = standardTx.isoDate
         }
         if (standardTx.isoDate < previousLatestIsoDate && !done) {
-          datelog(
-            `Swapuz done: date ${standardTx.isoDate} < ${previousLatestIsoDate}`
-          )
+          log(`Done: date ${standardTx.isoDate} < ${previousLatestIsoDate}`)
           done = true
         }
       }
-      datelog(`Swapuz page=${page}/${maxPage} oldestIsoDate: ${oldestIsoDate}`)
+      log(`page=${page}/${maxPage} oldestIsoDate: ${oldestIsoDate}`)
 
       if (currentPage >= maxPage) {
         break
       }
     } catch (e) {
       const err: any = e
-      datelog(err.message)
+      log.error(err.message)
       throw e
     }
   }

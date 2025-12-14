@@ -1,6 +1,7 @@
 import fetch, { RequestInfo, RequestInit, Response } from 'node-fetch'
 
 import { config } from './config'
+import { ScopedLog } from './types'
 
 export const SIX_DAYS = 6
 
@@ -48,11 +49,12 @@ export const standardizeNames = (field: string): string => {
 
 export const promiseTimeout = async <T>(
   msg: string,
-  p: Promise<T>
+  p: Promise<T>,
+  log: ScopedLog
 ): Promise<T> => {
   const timeoutMins = config.timeoutOverrideMins ?? 5
   return await new Promise((resolve, reject) => {
-    datelog('STARTING', msg)
+    log(`STARTING ${msg}`)
     const timeoutId = setTimeout(
       () => reject(new Error(`Timeout: ${msg}`)),
       60000 * timeoutMins
@@ -88,9 +90,37 @@ export const smartIsoDateFromTimestamp = (
   }
 }
 
+/** Datelog for non-partner files. Partners should use the scoped log passed via PluginParams. */
 export const datelog = function(...args: any): void {
   const date = new Date().toISOString()
   console.log(date, ...args)
+}
+
+/**
+ * Creates a scoped logger that prefixes all messages with ISO date and app_partnerId
+ */
+export const createScopedLog = (
+  appId: string,
+  partnerId: string
+): ScopedLog => {
+  const prefix = `${appId.toLowerCase()}_${partnerId}`
+
+  const log = (message: string, ...args: unknown[]): void => {
+    const date = new Date().toISOString()
+    console.log(date, prefix, message, ...args)
+  }
+
+  log.warn = (message: string, ...args: unknown[]): void => {
+    const date = new Date().toISOString()
+    console.warn(date, prefix, message, ...args)
+  }
+
+  log.error = (message: string, ...args: unknown[]): void => {
+    const date = new Date().toISOString()
+    console.error(date, prefix, message, ...args)
+  }
+
+  return log
 }
 
 export const snoozeReject = async (ms: number): Promise<void> =>
