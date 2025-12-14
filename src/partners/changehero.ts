@@ -15,15 +15,11 @@ import {
   PartnerPlugin,
   PluginParams,
   PluginResult,
+  ScopedLog,
   StandardTx,
   Status
 } from '../types'
-import {
-  datelog,
-  retryFetch,
-  safeParseFloat,
-  smartIsoDateFromTimestamp
-} from '../util'
+import { retryFetch, safeParseFloat, smartIsoDateFromTimestamp } from '../util'
 import { createTokenId, EdgeTokenId, tokenTypes } from '../util/asEdgeTokenId'
 import { EVM_CHAIN_IDS } from '../util/chainIds'
 
@@ -180,7 +176,10 @@ const MISSING_CURRENCIES: Record<string, CurrencyInfo> = {
   XMR_monero: { contractAddress: null }
 }
 
-async function fetchCurrencyCache(apiKey: string): Promise<void> {
+async function fetchCurrencyCache(
+  apiKey: string,
+  log: ScopedLog
+): Promise<void> {
   if (currencyCache != null) return
 
   try {
@@ -215,9 +214,9 @@ async function fetchCurrencyCache(apiKey: string): Promise<void> {
       }
     }
 
-    datelog(`Changehero: Cached ${currencyCache.size} currency entries`)
+    log(`Cached ${currencyCache.size} currency entries`)
   } catch (e) {
-    datelog(`Changehero: Failed to fetch currency cache: ${e}`)
+    log.error(`Failed to fetch currency cache: ${e}`)
     throw e
   }
 }
@@ -285,6 +284,7 @@ function getAssetInfo(
 export async function queryChangeHero(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   const { settings, apiKeys } = asChangeHeroPluginParams(pluginParams)
   const { apiKey } = apiKeys
   let offset = 0
@@ -295,7 +295,7 @@ export async function queryChangeHero(
   }
 
   // Fetch currency cache for contract address lookups
-  await fetchCurrencyCache(apiKey)
+  await fetchCurrencyCache(apiKey, log)
 
   const standardTxs: StandardTx[] = []
   let previousTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
@@ -306,7 +306,7 @@ export async function queryChangeHero(
     let done = false
     while (!done) {
       let oldestIsoDate = '999999999999999999999999999999999999'
-      datelog(`Query changeHero offset: ${offset}`)
+      log(`Query offset: ${offset}`)
 
       const params = {
         id: '',
@@ -327,7 +327,7 @@ export async function queryChangeHero(
 
       if (!response.ok) {
         const text = await response.text()
-        datelog(text)
+        log.error(text)
         throw new Error(text)
       }
 
@@ -335,7 +335,7 @@ export async function queryChangeHero(
 
       const txs = asChangeHeroResult(result).result
       if (txs.length === 0) {
-        datelog(`ChangeHero done at offset ${offset}`)
+        log(`Done at offset ${offset}`)
         break
       }
       for (const rawTx of txs) {
@@ -349,17 +349,15 @@ export async function queryChangeHero(
           oldestIsoDate = standardTx.isoDate
         }
         if (standardTx.isoDate < previousLatestIsoDate && !done) {
-          datelog(
-            `ChangeHero done: date ${standardTx.isoDate} < ${previousLatestIsoDate}`
-          )
+          log(`Done: date ${standardTx.isoDate} < ${previousLatestIsoDate}`)
           done = true
         }
       }
-      datelog(`Changehero oldestIsoDate ${oldestIsoDate}`)
+      log(`oldestIsoDate ${oldestIsoDate}`)
       offset += LIMIT
     }
   } catch (e) {
-    datelog(e)
+    log.error(String(e))
   }
   const out = {
     settings: {
@@ -380,15 +378,16 @@ export const changehero: PartnerPlugin = {
 
 export async function processChangeHeroTx(
   rawTx: unknown,
-  pluginParams?: PluginParams
+  pluginParams: PluginParams
 ): Promise<StandardTx> {
   const tx: ChangeHeroTx = asChangeHeroTx(rawTx)
+  const { log } = pluginParams
 
   // Ensure currency cache is populated (for backfill script usage)
-  if (currencyCache == null && pluginParams != null) {
+  if (currencyCache == null) {
     const { apiKeys } = asChangeHeroPluginParams(pluginParams)
     if (apiKeys.apiKey != null) {
-      await fetchCurrencyCache(apiKeys.apiKey)
+      await fetchCurrencyCache(apiKeys.apiKey, log)
     }
   }
 
