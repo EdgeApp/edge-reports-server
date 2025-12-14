@@ -2,7 +2,6 @@ import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog } from '../util'
 
 const asPaytrieTx = asObject({
   inputTXID: asString,
@@ -20,6 +19,7 @@ const asPaytrieTxs = asArray(asUnknown)
 export async function queryPaytrie(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   const standardTxs: StandardTx[] = []
   let startDate = '2020-01-01'
   const endDate = new Date().toISOString().slice(0, 10)
@@ -51,7 +51,7 @@ export async function queryPaytrie(
       method: 'post'
     }
   ).catch(err => {
-    datelog(err)
+    log.error(String(err))
     throw err
   })
 

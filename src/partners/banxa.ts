@@ -17,10 +17,11 @@ import {
   PartnerPlugin,
   PluginParams,
   PluginResult,
+  ScopedLog,
   StandardTx,
   Status
 } from '../types'
-import { datelog, retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
+import { retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
 import {
   ChainNameToPluginIdMapping,
   createTokenId,
@@ -122,7 +123,8 @@ const BANXA_HISTORICAL_COINS: Record<string, CachedAssetInfo> = {
  */
 async function fetchBanxaCoins(
   partnerId: string,
-  apiKeyV2: string
+  apiKeyV2: string,
+  log: ScopedLog
 ): Promise<Map<string, CachedAssetInfo>> {
   const existing = banxaCoinsCacheByPartner.get(partnerId)
   if (existing != null && Date.now() - existing.timestamp < CACHE_TTL_MS) {
@@ -198,7 +200,7 @@ async function fetchBanxaCoins(
     }
   }
 
-  banxaCoinsCacheByPartner.set(partnerId, { cache, timestamp: Date.now() })
+  banxaCoinsCache = cache
   log(`Loaded ${cache.size} coin/blockchain combinations from API`)
   return cache
 }
@@ -324,6 +326,7 @@ const statusMap: { [key in BanxaStatus]: Status } = {
 export async function queryBanxa(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   const ssFormatTxs: StandardTx[] = []
   const { settings, apiKeys } = asBanxaParams(pluginParams)
   const { apiKey, partnerId, partnerUrl, secret } = apiKeys
@@ -349,8 +352,8 @@ export async function queryBanxa(
     let attempt = 0
     try {
       while (true) {
-        datelog(
-          `BANXA: Querying ${startDate}->${endDate}, limit=${PAGE_LIMIT} page=${page} attempt=${attempt}`
+        log(
+          `Querying ${startDate}->${endDate}, limit=${PAGE_LIMIT} page=${page} attempt=${attempt}`
         )
         const response = await fetchBanxaAPI(
           partnerUrl,
@@ -366,13 +369,13 @@ export async function queryBanxa(
         if (!response.ok) {
           attempt++
           const delay = 2000 * attempt
-          datelog(
-            `BANXA: Response code ${response.status}. Retrying after ${delay /
+          log.warn(
+            `Response code ${response.status}. Retrying after ${delay /
               1000} second snooze...`
           )
           await snooze(delay)
           if (attempt === MAX_ATTEMPTS) {
-            datelog(`BANXA: Retry Limit reached for date ${startDate}.`)
+            log.error(`Retry Limit reached for date ${startDate}.`)
 
             const text = await response.text()
             throw new Error(text)
@@ -383,7 +386,7 @@ export async function queryBanxa(
         const reply = await response.json()
         const jsonObj = asBanxaResult(reply)
         const txs = jsonObj.data.orders
-        await processBanxaOrders(txs, ssFormatTxs, pluginParams)
+        await processBanxaOrders(txs, ssFormatTxs, pluginParams, log)
         if (txs.length < PAGE_LIMIT) {
           break
         }
@@ -392,7 +395,7 @@ export async function queryBanxa(
       const newStartTs = new Date(endDate).getTime()
       startDate = new Date(newStartTs).toISOString()
     } catch (e) {
-      datelog(String(e))
+      log.error(String(e))
       endDate = startDate
 
       // We can safely save our progress since we go from oldest to newest.
@@ -446,7 +449,8 @@ async function fetchBanxaAPI(
 async function processBanxaOrders(
   rawtxs: unknown[],
   ssFormatTxs: StandardTx[],
-  pluginParams: PluginParams
+  pluginParams: PluginParams,
+  log: ScopedLog
 ): Promise<void> {
   let numComplete = 0
   let newestIsoDate = new Date(0).toISOString()
@@ -456,7 +460,7 @@ async function processBanxaOrders(
     try {
       standardTx = await processBanxaTx(rawTx, pluginParams)
     } catch (e) {
-      datelog(String(e))
+      log.error(String(e))
       throw e
     }
 
@@ -473,8 +477,8 @@ async function processBanxaOrders(
     }
   }
   if (rawtxs.length > 1) {
-    datelog(
-      `BANXA: Processed ${
+    log(
+      `Processed ${
         rawtxs.length
       }, #complete=${numComplete} oldest=${oldestIsoDate.slice(
         0,
@@ -482,7 +486,7 @@ async function processBanxaOrders(
       )} newest=${newestIsoDate.slice(0, 16)}`
     )
   } else {
-    datelog(`BANXA: Processed ${rawtxs.length}`)
+    log(`Processed ${rawtxs.length}`)
   }
 }
 
@@ -490,6 +494,7 @@ export async function processBanxaTx(
   rawTx: unknown,
   pluginParams: PluginParams
 ): Promise<StandardTx> {
+  const { log } = pluginParams
   const banxaTx: BanxaTx = asBanxaTx(rawTx)
   const { isoDate, timestamp } = smartIsoDateFromTimestamp(banxaTx.created_at)
   const { apiKeys } = asBanxaParams(pluginParams)
@@ -526,7 +531,7 @@ export async function processBanxaTx(
   const blockchainCode = banxaTx.blockchain.code
   const coinCode = banxaTx.coin_code
 
-  const coinsCache = await fetchBanxaCoins(partnerId, apiKeyV2, log)
+  await fetchBanxaCoins(partnerId, apiKeyV2, log)
 
   const cryptoAssetInfo = getAssetInfo(coinsCache, blockchainCode, coinCode)
 

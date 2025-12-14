@@ -1,10 +1,9 @@
 import { asArray, asNumber, asObject, asString } from 'cleaners'
 import nano from 'nano'
 
-import { getAnalytics } from './apiAnalytics'
 import { config } from './config'
-import { AnalyticsResult, asCacheQuery } from './types'
-import { datelog, promiseTimeout } from './util'
+import { AnalyticsResult, asCacheQuery, ScopedLog } from './types'
+import { promiseTimeout } from './util'
 
 const BATCH_ADVANCE = 100
 const SIX_DAYS_IN_SECONDS = 6 * 24 * 60 * 60
@@ -25,7 +24,8 @@ export type DbReq = ReturnType<typeof asDbReq>
 
 export const pagination = async <T>(
   txArray: any[],
-  partition: nano.DocumentScope<T>
+  partition: nano.DocumentScope<T>,
+  log: ScopedLog
 ): Promise<void> => {
   let numErrors = 0
   for (let offset = 0; offset < txArray.length; offset += BATCH_ADVANCE) {
@@ -37,19 +37,20 @@ export const pagination = async <T>(
       'partition.bulk',
       partition.bulk({
         docs: txArray.slice(offset, offset + advance)
-      })
+      }),
+      log
     )
-    datelog(`Processed ${offset + advance} txArray.`)
+    log(`[pagination] Processed ${offset + advance} txArray.`)
     for (const doc of docs) {
       if (doc.error != null) {
-        datelog(
-          `There was an error in the batch ${doc.error}.  id: ${doc.id}. revision: ${doc.rev}`
+        log.error(
+          `[pagination] There was an error in the batch ${doc.error}.  id: ${doc.id}. revision: ${doc.rev}`
         )
         numErrors++
       }
     }
   }
-  datelog(`total errors: ${numErrors}`)
+  log(`[pagination] total errors: ${numErrors}`)
 }
 
 export const cacheAnalytic = async (

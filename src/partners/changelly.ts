@@ -1,8 +1,14 @@
 import Changelly from 'api-changelly/lib.js'
 import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 
-import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog, safeParseFloat } from '../util'
+import {
+  PartnerPlugin,
+  PluginParams,
+  PluginResult,
+  ScopedLog,
+  StandardTx
+} from '../types'
+import { safeParseFloat } from '../util'
 
 const asChangellyTx = asObject({
   id: asString,
@@ -36,7 +42,8 @@ async function getTransactionsPromised(
   offset: number,
   currencyFrom: string | undefined,
   address: string | undefined,
-  extraId: string | undefined
+  extraId: string | undefined,
+  log: ScopedLog
 ): Promise<ReturnType<typeof asChangellyResult>> {
   let promise
   let attempt = 1
@@ -64,7 +71,7 @@ async function getTransactionsPromised(
 
     promise = await Promise.race([changellyFetch, timeoutTest])
     if (promise === 'ETIMEDOUT' && attempt <= MAX_ATTEMPTS) {
-      datelog(`Changelly request timed out.  Retry attempt: ${attempt}`)
+      log.warn(`Request timed out. Retry attempt: ${attempt}`)
       attempt++
       continue
     }
@@ -76,6 +83,7 @@ async function getTransactionsPromised(
 export async function queryChangelly(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   let changellySDK
   let latestTimeStamp = 0
   let offset = 0
@@ -114,18 +122,19 @@ export async function queryChangelly(
   let done = false
   try {
     while (!done) {
-      datelog(`Query changelly offset: ${offset}`)
+      log(`Query offset: ${offset}`)
       const result = await getTransactionsPromised(
         changellySDK,
         LIMIT,
         offset,
         undefined,
         undefined,
-        undefined
+        undefined,
+        log
       )
       const txs = asChangellyResult(result).result
       if (txs.length === 0) {
-        datelog(`Changelly done at offset ${offset}`)
+        log(`Done at offset ${offset}`)
         firstAttempt = false
         break
       }
@@ -141,10 +150,9 @@ export async function queryChangelly(
             !done &&
             !firstAttempt
           ) {
-            datelog(
-              `Changelly done: date ${
-                standardTx.timestamp
-              } < ${latestTimeStamp - QUERY_LOOKBACK}`
+            log(
+              `Done: date ${standardTx.timestamp} < ${latestTimeStamp -
+                QUERY_LOOKBACK}`
             )
             done = true
           }
@@ -153,7 +161,7 @@ export async function queryChangelly(
       offset += LIMIT
     }
   } catch (e) {
-    datelog(e)
+    log.error(String(e))
   }
   const out = {
     settings: { latestTimeStamp: newLatestTimeStamp, firstAttempt, offset },
