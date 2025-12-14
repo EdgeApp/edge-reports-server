@@ -3,7 +3,7 @@ import js from 'jsonfile'
 import nano from 'nano'
 
 import { pagination } from '../dbutils'
-import { datelog } from '../util'
+import { createScopedLog, datelog } from '../util'
 
 const config = js.readFileSync('./config.json')
 const nanoDb = nano(config.couchDbFullpath)
@@ -43,10 +43,11 @@ async function main(partitionName: string): Promise<void> {
     return
   }
 
+  const log = createScopedLog('destroy', partitionName)
   try {
-    await pagination(transactions, reportsTransactions)
-    datelog(`Successfully Deleted: ${transactions.length} docs`)
-    datelog(`Successfully Deleted: partition ${partitionName}`)
+    await pagination(transactions, reportsTransactions, log)
+    log(`Successfully Deleted: ${transactions.length} docs`)
+    log(`Successfully Deleted: partition ${partitionName}`)
 
     // Delete progress Cache
     const split = partitionName.split('_')

@@ -22,6 +22,13 @@ export const asPluginParams = asObject({
   settings: asMap((raw: any): any => raw),
   apiKeys: asMap((raw: any): any => raw)
 })
+
+/** Scoped logging interface passed to plugins */
+export interface ScopedLog {
+  (message: string, ...args: unknown[]): void
+  warn: (message: string, ...args: unknown[]) => void
+  error: (message: string, ...args: unknown[]) => void
+}
 export interface PluginResult {
   // copy the type from standardtx from reports
   transactions: StandardTx[]
@@ -261,5 +268,7 @@ export type CurrencyCodeMappings = ReturnType<typeof asCurrencyCodeMappings>
 export type DbCurrencyCodeMappings = ReturnType<typeof asDbCurrencyCodeMappings>
 export type DbTx = ReturnType<typeof asDbTx>
 export type StandardTx = ReturnType<typeof asStandardTx>
-export type PluginParams = ReturnType<typeof asPluginParams>
+export type PluginParams = ReturnType<typeof asPluginParams> & {
+  log: ScopedLog
+}
 export type Status = ReturnType<typeof asStatus>
