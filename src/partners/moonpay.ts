@@ -20,7 +20,6 @@ import {
   StandardTx,
   Status
 } from '../types'
-import { datelog } from '../util'
 import {
   ChainNameToPluginIdMapping,
   createTokenId,
@@ -187,6 +186,7 @@ const PER_REQUEST_LIMIT = 50
 export async function queryMoonpay(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   const standardTxs: StandardTx[] = []
 
   let headers
@@ -217,7 +217,7 @@ export async function queryMoonpay(
 
   try {
     do {
-      console.log(`Querying Moonpay from ${queryIsoDate} to ${latestIsoDate}`)
+      log(`Querying from ${queryIsoDate} to ${latestIsoDate}`)
       let offset = 0
 
       while (true) {
@@ -234,10 +234,11 @@ export async function queryMoonpay(
         }
 
         if (txs.length > 0) {
-          console.log(
-            `Moonpay sell txs ${txs.length}: ${JSON.stringify(
-              txs.slice(-1)
-            ).slice(0, 100)}`
+          log(
+            `sell txs ${txs.length}: ${JSON.stringify(txs.slice(-1)).slice(
+              0,
+              100
+            )}`
           )
         }
 
@@ -264,10 +265,11 @@ export async function queryMoonpay(
           standardTxs.push(standardTx)
         }
         if (txs.length > 0) {
-          console.log(
-            `Moonpay buy txs ${txs.length}: ${JSON.stringify(
-              txs.slice(-1)
-            ).slice(0, 100)}`
+          log(
+            `buy txs ${txs.length}: ${JSON.stringify(txs.slice(-1)).slice(
+              0,
+              100
+            )}`
           )
         }
 
@@ -284,9 +286,8 @@ export async function queryMoonpay(
     } while (isoNow > latestIsoDate)
     latestIsoDate = isoNow
   } catch (e) {
-    datelog(e)
-    console.log(`Moonpay error: ${e}`)
-    console.log(`Saving progress up until ${queryIsoDate}`)
+    log.error(`Error: ${e}`)
+    log(`Saving progress up until ${queryIsoDate}`)
 
     // Set the latestIsoDate to the queryIsoDate so that the next query will
     // query the same time range again since we had a failure in that time range

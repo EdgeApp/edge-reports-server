@@ -11,7 +11,7 @@ import {
 import { HeadersInit } from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog, retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
+import { retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
 import {
   ChainNameToPluginIdMapping,
   createTokenId,
@@ -163,6 +163,7 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
   const queryThorchain = async (
     pluginParams: PluginParams
   ): Promise<PluginResult> => {
+    const { log } = pluginParams
     const standardTxs: StandardTx[] = []
 
     const pluginParamsClean = asThorchainPluginParams(pluginParams)
@@ -204,13 +205,13 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
         const resultJson = await result.json()
         jsonObj = asThorchainResult(resultJson)
       } catch (e) {
-        datelog(e)
+        log.error(String(e))
         throw e
       }
       const txs = jsonObj.actions
       for (const rawTx of txs) {
         try {
-          const standardTx = processTx(rawTx, pluginParamsClean)
+          const standardTx = processTx(rawTx, pluginParams)
 
           // Handle null case as a continue
           if (standardTx == null) {
@@ -234,10 +235,10 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
             const previousRawTxs: unknown[] = Array.isArray(previousTx.rawTx)
               ? previousTx.rawTx
               : [previousTx.rawTx]
-            const updatedStandardTx = processTx([
-              ...previousRawTxs,
-              standardTx.rawTx
-            ])
+            const updatedStandardTx = processTx(
+              [...previousRawTxs, standardTx.rawTx],
+              pluginParams
+            )
             if (updatedStandardTx != null) {
               standardTxs.splice(previousTxIndex, 1, updatedStandardTx)
             }
@@ -249,13 +250,13 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
             oldestIsoDate = standardTx.isoDate
           }
           if (standardTx.isoDate < previousLatestIsoDate && !done) {
-            datelog(
-              `Thorchain done: date ${standardTx.isoDate} < ${previousLatestIsoDate}`
-            )
+            log(`done: date ${standardTx.isoDate} < ${previousLatestIsoDate}`)
             done = true
           }
         } catch (e) {
-          datelog(`Error processing tx ${JSON.stringify(rawTx, null, 2)}: ${e}`)
+          log.error(
+            `Error processing tx ${JSON.stringify(rawTx, null, 2)}: ${e}`
+          )
           throw e
         }
       }

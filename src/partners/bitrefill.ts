@@ -11,7 +11,7 @@ import {
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog, safeParseFloat } from '../util'
+import { safeParseFloat } from '../util'
 
 const asBitrefillTx = asObject({
   paymentReceived: asBoolean,
@@ -52,6 +52,7 @@ const multipliers: { [key: string]: string } = {
 export async function queryBitrefill(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   const MAX_ITERATIONS = 20
   let username = ''
   let password = ''
@@ -84,7 +85,7 @@ export async function queryBitrefill(
       })
       jsonObj = asBitrefillResult(await result.json())
     } catch (e) {
-      datelog(e)
+      log.error(String(e))
       break
     }
     const txs = jsonObj.orders

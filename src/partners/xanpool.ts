@@ -11,7 +11,7 @@ import {
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog, smartIsoDateFromTimestamp } from '../util'
+import { smartIsoDateFromTimestamp } from '../util'
 
 const asXanpoolTx = asObject({
   id: asString,
@@ -51,6 +51,7 @@ const LIMIT = 100
 const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 
 async function queryXanpool(pluginParams: PluginParams): Promise<PluginResult> {
+  const { log } = pluginParams
   const { settings, apiKeys } = asXanpoolPluginParams(pluginParams)
   const { apiKey, apiSecret } = apiKeys
   let offset = 0
@@ -69,7 +70,7 @@ async function queryXanpool(pluginParams: PluginParams): Promise<PluginResult> {
     let done = false
     while (!done) {
       let oldestIsoDate = '999999999999999999999999999999999999'
-      datelog(`Query Xanpool offset: ${offset}`)
+      log(`Query offset: ${offset}`)
 
       const response = await fetch(
         `https://${apiKey}:${apiSecret}@xanpool.com/api/v2/transactions?pageSize=${LIMIT}&page=${offset}`
@@ -78,7 +79,7 @@ async function queryXanpool(pluginParams: PluginParams): Promise<PluginResult> {
 
       const txs = asXanpoolResult(result).data
       if (txs.length === 0) {
-        datelog(`ChangeHero done at offset ${offset}`)
+        log(`Done at offset ${offset}`)
         break
       }
       for (const rawTx of txs) {
@@ -91,17 +92,15 @@ async function queryXanpool(pluginParams: PluginParams): Promise<PluginResult> {
           oldestIsoDate = standardTx.isoDate
         }
         if (standardTx.isoDate < previousLatestIsoDate && !done) {
-          datelog(
-            `Xanpool done: date ${standardTx.isoDate} < ${previousLatestIsoDate}`
-          )
+          log(`Done: date ${standardTx.isoDate} < ${previousLatestIsoDate}`)
           done = true
         }
       }
-      datelog(`oldestIsoDate ${oldestIsoDate}`)
+      log(`oldestIsoDate ${oldestIsoDate}`)
       offset += LIMIT
     }
   } catch (e) {
-    datelog(e)
+    log.error(String(e))
   }
   const out = {
     settings: {
