@@ -5,6 +5,7 @@ import path from 'path'
 
 import { queryChangeNow } from '../../partners/changenow'
 import { PluginParams, StandardTx } from '../../types'
+import { createScopedLog } from '../../util'
 import { defaultSettings } from './fioInfo'
 
 let addressList: string[] = []
@@ -48,12 +49,14 @@ export async function getFioTransactions(
   dateFrom: Date,
   dateTo: Date
 ): Promise<StandardTx[]> {
+  const log = createScopedLog('fio', 'changenow')
   // Get public keys from offset
   const pluginConfig: PluginParams = {
     settings: { dateFrom, dateTo, to: currencyCode },
     apiKeys: {
       changenowApiKey: config.changenowApiKey
-    }
+    },
+    log
   }
 
   const txnList = await queryChangeNow(pluginConfig)

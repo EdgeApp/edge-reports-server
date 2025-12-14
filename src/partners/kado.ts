@@ -18,7 +18,7 @@ import {
   PluginResult,
   StandardTx
 } from '../types'
-import { datelog, retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
+import { retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
 import { queryDummy } from './dummy'
 
 // Define cleaner for individual transactions in onRamps and offRamps
@@ -66,6 +66,7 @@ const MAX_RETRIES = 5
 export async function queryKado(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   const { settings, apiKeys } = asStandardPluginParams(pluginParams)
   const { apiKey } = apiKeys
   let { latestIsoDate } = settings
@@ -97,14 +98,14 @@ export async function queryKado(
       const standardTx: StandardTx = processKadoTx(rawTx)
       standardTxs.push(standardTx)
     }
-    datelog(`Kado latestIsoDate:${latestIsoDate}`)
+    log(`latestIsoDate:${latestIsoDate}`)
     retry = 0
   } catch (e) {
-    datelog(e)
+    log.error(String(e))
     // Retry a few times with time delay to prevent throttling
     retry++
     if (retry <= MAX_RETRIES) {
-      datelog(`Snoozing ${60 * retry}s`)
+      log(`Snoozing ${60 * retry}s`)
       await snooze(61000 * retry)
     } else {
       // We can safely save our progress since we go from oldest to newest.
