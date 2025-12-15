@@ -15,10 +15,20 @@ import { datelog, safeParseFloat, standardizeNames } from './util'
 import { isFiatCurrency } from './util/fiatCurrency'
 
 const nanoDb = nano(config.couchDbFullpath)
-const QUERY_FREQ_MS = 3000
-const QUERY_LIMIT = 10
+const QUERY_FREQ_MS = 2000
+const QUERY_LIMIT = 20
+const RATES_SERVERS = [
+  'https://rates1.edge.app',
+  'https://rates2.edge.app',
+  'https://rates3.edge.app',
+  'https://rates4.edge.app'
+]
+
 const snooze: Function = async (ms: number) =>
   await new Promise((resolve: Function) => setTimeout(resolve, ms))
+
+const pickRandomRatesServer = (): string =>
+  RATES_SERVERS[Math.floor(Math.random() * RATES_SERVERS.length)]
 
 const asDbQueryResult = asObject({ docs: asArray(asUnknown) })
 
@@ -143,16 +153,18 @@ async function updateTxValuesV3(transaction: DbTx): Promise<void> {
       },
       rate: undefined
     })
-  } else if (depositCurrency === 'USD') {
-    depositIsUsd = true
   } else if (isFiatCurrency(depositCurrency)) {
-    depositIsFiat = true
-    ratesRequest.fiat.push({
-      isoDate: new Date(isoDate),
-      fiatCode: depositCurrency,
-      rate: undefined
-    })
-  } else if (depositCurrency !== 'USD') {
+    if (depositCurrency === 'USD') {
+      depositIsUsd = true
+    } else {
+      depositIsFiat = true
+      ratesRequest.fiat.push({
+        isoDate: new Date(isoDate),
+        fiatCode: depositCurrency,
+        rate: undefined
+      })
+    }
+  } else {
     console.error(
       `Deposit asset is not a crypto asset or fiat currency ${depositCurrency} ${depositChainPluginId} ${depositTokenId}`
     )
@@ -168,23 +180,27 @@ async function updateTxValuesV3(transaction: DbTx): Promise<void> {
       },
       rate: undefined
     })
-  } else if (payoutCurrency === 'USD') {
-    payoutIsUsd = true
   } else if (isFiatCurrency(payoutCurrency)) {
-    payoutIsFiat = true
-    ratesRequest.fiat.push({
-      isoDate: new Date(isoDate),
-      fiatCode: payoutCurrency,
-      rate: undefined
-    })
-  } else if (payoutCurrency !== 'USD') {
+    if (payoutCurrency === 'USD') {
+      payoutIsUsd = true
+    } else {
+      payoutIsFiat = true
+      ratesRequest.fiat.push({
+        isoDate: new Date(isoDate),
+        fiatCode: payoutCurrency,
+        rate: undefined
+      })
+    }
+  } else {
     console.error(
       `Payout asset is not a crypto asset or fiat currency ${payoutCurrency} ${payoutChainPluginId} ${payoutTokenId}`
     )
     return
   }
 
-  const ratesResponse = await fetch('https://rates3.edge.app/v3/rates', {
+  const server = pickRandomRatesServer()
+  datelog(`Getting v3 rates from ${server}`)
+  const ratesResponse = await fetch(`${server}/v3/rates`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -218,6 +234,7 @@ async function updateTxValuesV3(transaction: DbTx): Promise<void> {
   const depositRate = depositIsUsd ? 1 : depositRateObf?.rate
   const payoutRate = payoutIsUsd ? 1 : payoutRateObf?.rate
 
+  let changed = false
   // Calculate and fill out payoutAmount if it is zero
   if (payoutAmount === 0) {
     if (depositRate == null) {
@@ -238,6 +255,7 @@ async function updateTxValuesV3(transaction: DbTx): Promise<void> {
       payoutRate > 0
     ) {
       transaction.payoutAmount = (depositAmount * depositRate) / payoutRate
+      changed = true
     }
   }
 
@@ -247,6 +265,7 @@ async function updateTxValuesV3(transaction: DbTx): Promise<void> {
   if (transaction.usdValue == null || transaction.usdValue <= 0) {
     if (depositRate != null && depositRate > 0) {
       transaction.usdValue = depositAmount * depositRate
+      changed = true
       datelog(
         `V3 SUCCESS id:${t._id} ${t.isoDate.slice(0, 10)} deposit:${
           t.depositCurrency
@@ -256,6 +275,7 @@ async function updateTxValuesV3(transaction: DbTx): Promise<void> {
       )
     } else if (payoutRate != null && payoutRate > 0) {
       transaction.usdValue = transaction.payoutAmount * payoutRate
+      changed = true
       datelog(
         `V3 SUCCESS id:${t._id} ${t.isoDate.slice(0, 10)} payout:${
           t.payoutCurrency
@@ -264,6 +284,14 @@ async function updateTxValuesV3(transaction: DbTx): Promise<void> {
         } rate:${payoutRate} usdValue:${t.usdValue}`
       )
     }
+  }
+  if (!changed) {
+    datelog(
+      `V3 NO CHANGE id:${t._id} ${t.isoDate.slice(0, 10)} ${
+        t.depositCurrency
+      } ${t.payoutCurrency}`
+    )
+    transaction._id = undefined
   }
 }
 
@@ -418,7 +446,9 @@ async function getExchangeRate(
   currencyA = isFiatCurrency(currencyA) ? `iso:${currencyA}` : currencyA
   currencyB = isFiatCurrency(currencyB) ? `iso:${currencyB}` : currencyB
 
-  const url = `https://rates2.edge.app/v2/exchangeRate?currency_pair=${currencyA}_${currencyB}&date=${hourDate}`
+  const server = pickRandomRatesServer()
+  const url = `${server}/v2/exchangeRate?currency_pair=${currencyA}_${currencyB}&date=${hourDate}`
+  datelog(`Getting v2 exchange rate from ${server}`)
   try {
     const result = await fetch(url, { method: 'GET' })
     if (!result.ok) {
