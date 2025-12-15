@@ -48,7 +48,7 @@ export async function ratesEngine(): Promise<void> {
       limit: QUERY_LIMIT
     }
   ]
-  let bookmark
+  const bookmarks: Array<string | undefined> = []
   let count = 1
   while (true) {
     count++
@@ -56,17 +56,19 @@ export async function ratesEngine(): Promise<void> {
     const result2 = await dbSettings.get('currencyCodeMappings')
     const { mappings } = asDbCurrencyCodeMappings(result2)
 
-    const query = queries[count % 2]
-    query.bookmark = bookmark
+    const index = count % 2
+
+    const query = queries[index]
+    query.bookmark = bookmarks[index]
 
     const result = await dbTransactions.find(query)
     if (
       typeof result.bookmark === 'string' &&
       result.docs.length === QUERY_LIMIT
     ) {
-      bookmark = result.bookmark
+      bookmarks[index] = result.bookmark
     } else {
-      bookmark = undefined
+      bookmarks[index] = undefined
     }
     try {
       asDbQueryResult(result)
@@ -101,11 +103,11 @@ export async function ratesEngine(): Promise<void> {
     } catch (e) {
       datelog('Error doing bulk usdValue insert', e)
     }
-    if (bookmark == null) {
+    if (bookmarks[index] == null) {
       datelog(`Snoozing for ${QUERY_FREQ_MS} milliseconds`)
       await snooze(QUERY_FREQ_MS)
     } else {
-      datelog(`Fetching bookmark ${bookmark}`)
+      datelog(`Fetching bookmark ${bookmarks[index]}`)
     }
   }
 }
