@@ -132,18 +132,20 @@ export async function queryEngine(): Promise<void> {
       remainingPartners = Object.keys(app.partnerIds)
       for (const partnerId in app.partnerIds) {
         const pluginId = app.partnerIds[partnerId].pluginId ?? partnerId
-        if (disablePartnerQuery.plugins[pluginId] ?? false) {
-          continue
-        }
-        const appPartnerId = `${app.appId}_${partnerId}`
-        if (disablePartnerQuery.appPartners[appPartnerId] ?? false) {
-          continue
-        }
-        if (
-          config.soloPartnerIds != null &&
-          !config.soloPartnerIds.includes(partnerId)
-        ) {
-          continue
+        if (config.soloPartnerIds?.includes(partnerId) !== true) {
+          if (disablePartnerQuery.plugins[pluginId]) {
+            continue
+          }
+          const appPartnerId = `${app.appId}_${partnerId}`
+          if (disablePartnerQuery.appPartners[appPartnerId]) {
+            continue
+          }
+          if (
+            config.soloPartnerIds != null &&
+            !config.soloPartnerIds.includes(partnerId)
+          ) {
+            continue
+          }
         }
         remainingPartners.push(partnerId)
         promiseArray.push(
