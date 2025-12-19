@@ -12,7 +12,6 @@ import {
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { safeParseFloat } from '../util'
-import { isFiatCurrency } from '../util/fiatCurrency'
 
 const asSimplexTx = asObject({
   amount_usd: asString,
@@ -150,6 +149,9 @@ export function processSimplexTx(rawTx: unknown): StandardTx {
     depositTxid: undefined,
     depositAddress: undefined,
     depositCurrency: tx.currency,
+    depositChainPluginId: undefined,
+    depositEvmChainId: undefined,
+    depositTokenId: undefined,
     depositAmount: safeParseFloat(tx.fiat_total_amount),
     direction: 'buy',
     exchangeType: 'fiat',
@@ -157,6 +159,9 @@ export function processSimplexTx(rawTx: unknown): StandardTx {
     payoutTxid: undefined,
     payoutAddress: undefined,
     payoutCurrency: tx.crypto_currency,
+    payoutChainPluginId: undefined,
+    payoutEvmChainId: undefined,
+    payoutTokenId: undefined,
     payoutAmount: safeParseFloat(tx.amount_crypto),
     timestamp: tx.created_at,
     isoDate: new Date(tx.created_at * 1000).toISOString(),

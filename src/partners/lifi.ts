@@ -19,16 +19,18 @@ import {
   Status
 } from '../types'
 import { datelog, retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
+import { createTokenId, tokenTypes } from '../util/asEdgeTokenId'
+import { EVM_CHAIN_IDS, REVERSE_EVM_CHAIN_IDS } from '../util/chainIds'
 
 const PLUGIN_START_DATE = '2023-01-01T00:00:00.000Z'
 const asStatuses = asMaybe(asValue('DONE'), 'other')
 const asToken = asObject({
-  // address: asString,
-  // chainId: asNumber,
+  address: asOptional(asString),
+  chainId: asOptional(asNumber),
   symbol: asString,
-  decimals: asNumber
+  decimals: asNumber,
   // name: asString,
-  // coinKey: asString,
+  coinKey: asOptional(asString)
   // logoURI: asString,
   // priceUSD: asString
 })
@@ -36,7 +38,7 @@ const asToken = asObject({
 const asTransaction = asObject({
   txHash: asString,
   // txLink: asString,
-  // amount: asString,
+  amount: asString,
   token: asOptional(asToken),
   // chainId: asNumber,
   // gasPrice: asString,
@@ -45,7 +47,7 @@ const asTransaction = asObject({
   // gasAmount: asString,
   // gasAmountUSD: asString,
   amountUSD: asOptional(asString),
-  value: asString,
+  // value: asString,
   timestamp: asOptional(asNumber)
 })
 
@@ -70,6 +72,7 @@ const asTransfersResult = asObject({
   transfers: asArray(asUnknown)
 })
 
+type Transfer = ReturnType<typeof asTransfer>
 type PartnerStatuses = ReturnType<typeof asStatuses>
 
 const MAX_RETRIES = 5
@@ -160,7 +163,13 @@ export const lifi: PartnerPlugin = {
 }
 
 export function processLifiTx(rawTx: unknown): StandardTx {
-  const tx = asTransfer(rawTx)
+  let tx: Transfer
+  try {
+    tx = asTransfer(rawTx)
+  } catch (e) {
+    datelog(e)
+    throw e
+  }
   const txTimestamp = tx.receiving.timestamp ?? tx.sending.timestamp ?? 0
   if (txTimestamp === 0) {
     throw new Error('No timestamp')
@@ -172,29 +181,171 @@ export function processLifiTx(rawTx: unknown): StandardTx {
   if (depositToken == null || payoutToken == null) {
     throw new Error('Missing token details')
   }
-  const depositAmount = Number(tx.sending.value) / 10 ** depositToken.decimals
+  const depositAmount = Number(tx.sending.amount) / 10 ** depositToken.decimals
+  const payoutAmount = Number(tx.receiving.amount) / 10 ** payoutToken.decimals
 
-  const payoutAmount = Number(tx.receiving.value) / 10 ** payoutToken.decimals
+  // Get the currencCode of the gasToken as we'll use this to determine if this is
+  // a token swap. If there's not gasToken object, use the token object.
+  const depositChainCodeUnmapped =
+    tx.sending.gasToken?.coinKey ??
+    tx.sending.gasToken?.symbol ??
+    depositToken?.coinKey ??
+    depositToken?.symbol
+  const payoutChainCodeUnmappped =
+    tx.receiving.gasToken?.coinKey ??
+    tx.receiving.gasToken?.symbol ??
+    payoutToken?.coinKey ??
+    payoutToken?.symbol
 
-  const standardTx: StandardTx = {
-    status: statusMap[tx.status],
-    orderId: tx.sending.txHash,
-    countryCode: null,
-    depositTxid: tx.sending.txHash,
-    depositAddress: undefined,
-    depositCurrency: depositToken.symbol,
-    depositAmount,
-    direction: null,
-    exchangeType: 'swap',
-    paymentType: null,
-    payoutTxid: undefined,
-    payoutAddress: tx.toAddress,
-    payoutCurrency: payoutToken.symbol,
-    payoutAmount,
-    timestamp,
-    isoDate,
-    usdValue: Number(tx.receiving.amountUSD ?? tx.sending.amountUSD ?? '-1'),
-    rawTx
+  // For some reason, some gasToken like Solana are given as "wSOL", so map them to SOL
+  const depositChainCode =
+    TOKEN_CODE_MAPPINGS[depositChainCodeUnmapped ?? ''] ??
+    depositChainCodeUnmapped
+  const payoutChainCode =
+    TOKEN_CODE_MAPPINGS[payoutChainCodeUnmappped ?? ''] ??
+    payoutChainCodeUnmappped
+
+  const depositTokenCode =
+    tx.sending.token?.coinKey ??
+    tx.sending.token?.symbol ??
+    tx.sending.gasToken?.coinKey ??
+    tx.sending.gasToken?.symbol
+  const payoutTokenCode =
+    tx.receiving.token?.coinKey ??
+    tx.receiving.token?.symbol ??
+    tx.receiving.gasToken?.coinKey ??
+    tx.receiving.gasToken?.symbol
+
+  // If the token code and chain code match, this is a gas token so
+  // tokenId = null
+  const depositTokenAddress =
+    depositTokenCode !== depositChainCode ? depositToken?.address : null
+  const payoutTokenAddress =
+    payoutTokenCode !== payoutChainCode ? payoutToken?.address : null
+
+  // Try to determine the EVM chain id from the token chain id. Lifi
+  // has chainIds for non-EVM chains like Solana so we have to filter them out.
+  let depositEvmChainId =
+    REVERSE_EVM_CHAIN_IDS[depositToken.chainId ?? 0] != null
+      ? depositToken.chainId
+      : undefined
+  let payoutEvmChainId =
+    REVERSE_EVM_CHAIN_IDS[payoutToken.chainId ?? 0] != null
+      ? payoutToken.chainId
+      : undefined
+
+  // Determine the chain plugin id and token id.
+  // Try using the gas token code first, then chain id if we have one.
+  const depositChainPluginId =
+    REVERSE_EVM_CHAIN_IDS[depositEvmChainId ?? 0] ??
+    MAINNET_CODE_TRANSCRIPTION[
+      tx.sending.gasToken?.coinKey ?? tx.sending.gasToken?.symbol ?? ''
+    ]
+  const payoutChainPluginId =
+    REVERSE_EVM_CHAIN_IDS[payoutEvmChainId ?? 0] ??
+    MAINNET_CODE_TRANSCRIPTION[
+      tx.receiving.gasToken?.coinKey ?? tx.receiving.gasToken?.symbol ?? ''
+    ]
+
+  if (depositChainPluginId == null || payoutChainPluginId == null) {
+    throw new Error('Missing chain plugin id')
   }
-  return standardTx
+
+  // If we weren't able to determine an EVM chain id, try to get it from the
+  // chain plugin id.
+  depositEvmChainId =
+    depositEvmChainId == null
+      ? EVM_CHAIN_IDS[depositChainPluginId ?? '']
+      : depositEvmChainId
+  payoutEvmChainId =
+    payoutEvmChainId == null
+      ? EVM_CHAIN_IDS[payoutChainPluginId ?? '']
+      : payoutEvmChainId
+
+  const depositTokenType = tokenTypes[depositChainPluginId ?? '']
+  const payoutTokenType = tokenTypes[payoutChainPluginId ?? '']
+
+  if (depositTokenType == null || payoutTokenType == null) {
+    throw new Error('Missing token type')
+  }
+
+  try {
+    const depositTokenId = createTokenId(
+      depositTokenType,
+      depositToken.symbol,
+      depositTokenAddress ?? undefined
+    )
+    const payoutTokenId = createTokenId(
+      payoutTokenType,
+      payoutToken.symbol,
+      payoutTokenAddress ?? undefined
+    )
+
+    const standardTx: StandardTx = {
+      status: statusMap[tx.status],
+      orderId: tx.sending.txHash,
+      countryCode: null,
+      depositTxid: tx.sending.txHash,
+      depositAddress: undefined,
+      depositCurrency: depositToken.symbol,
+      depositChainPluginId,
+      depositEvmChainId,
+      depositTokenId,
+      depositAmount,
+      direction: null,
+      exchangeType: 'swap',
+      paymentType: null,
+      payoutTxid: tx.receiving.txHash,
+      payoutAddress: tx.toAddress,
+      payoutCurrency: payoutToken.symbol,
+      payoutChainPluginId,
+      payoutEvmChainId,
+      payoutTokenId,
+      payoutAmount,
+      timestamp,
+      isoDate,
+      usdValue: Number(tx.sending.amountUSD ?? tx.receiving.amountUSD ?? '-1'),
+      rawTx
+    }
+    if (statusMap[tx.status] === 'complete') {
+      const { orderId, depositCurrency, payoutCurrency } = standardTx
+      console.log(
+        `${orderId} ${depositCurrency} ${depositChainPluginId} ${depositEvmChainId} ${depositTokenId?.slice(
+          0,
+          6
+        ) ??
+          ''} ${depositAmount} -> ${payoutCurrency} ${payoutChainPluginId} ${payoutEvmChainId} ${payoutTokenId?.slice(
+          0,
+          6
+        ) ?? ''} ${payoutAmount}`
+      )
+    }
+    return standardTx
+  } catch (e) {
+    datelog(e)
+    throw e
+  }
+}
+
+const MAINNET_CODE_TRANSCRIPTION: Record<string, string> = {
+  ARBITRUM: 'arbitrum',
+  AVAX: 'avalanche',
+  BNB: 'binancesmartchain',
+  CELO: 'celo',
+  ETH: 'ethereum',
+  FTM: 'fantom',
+  HYPE: 'hyperevm',
+  OP: 'optimism',
+  POL: 'polygon',
+  PLS: 'pulsechain',
+  RBTC: 'rsk',
+  SOL: 'solana',
+  wSOL: 'solana',
+  SUI: 'sui',
+  SONIC: 'sonic',
+  ZKSYNC: 'zksync'
+}
+
+const TOKEN_CODE_MAPPINGS: Record<string, string> = {
+  wSOL: 'SOL'
 }
