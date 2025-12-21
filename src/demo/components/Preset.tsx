@@ -88,7 +88,7 @@ class Preset extends Component<PresetProps, PresetState> {
   async componentDidMount(): Promise<void> {
     const { appId, redirect } = await getAppId(this.props.apiKey)
     this.setState({ appId, redirect })
-    const { partnerIds } = await getPartnerIds(this.state.appId)
+    const { partnerIds } = await getPartnerIds(this.props.apiKey)
     this.setState({ partnerIds })
     await this.getGraphData()
   }
@@ -108,7 +108,7 @@ class Preset extends Component<PresetProps, PresetState> {
           const startDate = timeRanges[0]
           const endDate = timeRanges[1]
           const newData = await getCustomData(
-            this.state.appId,
+            this.props.apiKey,
             this.state.partnerIds,
             startDate,
             endDate,

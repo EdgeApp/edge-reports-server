@@ -82,7 +82,7 @@ export const getPresetDates = function(): PresetDates {
 }
 
 export const getCustomData = async (
-  appId: string,
+  apiKey: string,
   pluginIds: string[],
   start: string,
   end: string,
@@ -97,7 +97,7 @@ export const getCustomData = async (
   ) {
     trueTimePeriod = 'daymonth'
   }
-  const query = { start, end, appId, pluginIds, timePeriod: trueTimePeriod }
+  const query = { start, end, apiKey, pluginIds, timePeriod: trueTimePeriod }
   const response = await fetch(endPoint, {
     headers: {
       'Content-Type': 'application/json'
@@ -184,10 +184,10 @@ export const getAppId = async (apiKey: string): Promise<AppIdResponse> => {
 }
 
 export const getPartnerIds = async (
-  appId: string
+  apiKey: string
 ): Promise<PartnerIdsResponse> => {
   const partners = Object.keys(Partners)
-  const url = `${apiHost}/v1/getPluginIds?appId=${appId}`
+  const url = `${apiHost}/v1/getPluginIds?apiKey=${apiKey}`
   const response = await fetch(url)
   const json = await response.json()
   const ids = asGetPartnerIds(json)
