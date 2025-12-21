@@ -79,7 +79,7 @@ class Custom extends Component<CustomProps, CustomState> {
   async componentDidMount(): Promise<void> {
     const { appId, redirect } = await getAppId(this.props.apiKey)
     this.setState({ appId, redirect })
-    const { partnerIds } = await getPartnerIds(this.state.appId)
+    const { partnerIds } = await getPartnerIds(this.props.apiKey)
     this.setState({ partnerIds })
     if (
       typeof this.props.match.params.start === 'string' &&
@@ -98,7 +98,7 @@ class Custom extends Component<CustomProps, CustomState> {
     console.time('getData')
     this.setState({ loading: true })
     const data = await getCustomData(
-      this.state.appId,
+      this.props.apiKey,
       this.state.partnerIds,
       start,
       end
