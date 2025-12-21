@@ -96,7 +96,7 @@ class App extends Component<
 
   async getPluginIds(): Promise<void> {
     const partners = Object.keys(Partners)
-    const url = `${apiHost}/v1/getPluginIds?appId=${this.state.appId}`
+    const url = `${apiHost}/v1/getPluginIds?apiKey=${this.state.apiKey}`
     const response = await fetch(url)
     const json = await response.json()
     const existingPartners = json.filter(pluginId =>

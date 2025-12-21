@@ -2,9 +2,10 @@ import { asObject, asOptional, asString } from 'cleaners'
 import Router from 'express-promise-router'
 
 import { reportsApps } from '../../indexApi'
+import { validateApiKey } from '../../util/validateApiKey'
 
 const asPluginIdsReq = asObject({
-  appId: asString
+  apiKey: asString
 })
 const asPartnerIdsDbReq = asObject({
   partnerIds: asObject(
@@ -25,9 +26,19 @@ getPluginIdsRouter.get('/', async function(req, res) {
     res.status(400).send(`Missing Request fields.`)
     return
   }
+
+  // Validate API key and get appId
+  let appId: string
+  try {
+    appId = await validateApiKey(queryResult.apiKey)
+  } catch {
+    res.status(401).send(`Invalid API Key`)
+    return
+  }
+
   const query = {
     selector: {
-      appId: { $eq: queryResult.appId.toLowerCase() }
+      appId: { $eq: appId.toLowerCase() }
     },
     fields: ['partnerIds'],
     limit: 1
