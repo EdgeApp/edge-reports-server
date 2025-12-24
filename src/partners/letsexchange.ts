@@ -27,6 +27,13 @@ const MAX_RETRIES = 5
 const QUERY_INTERVAL_MS = 1000 * 60 * 60 * 24 * 30 // 30 days in milliseconds
 const LETSEXCHANGE_START_DATE = '2022-02-01T00:00:00.000Z'
 
+/**
+ * Max number of new transactions to save. This is to prevent overloading the db
+ * write and potentially causing a timeout or failure. The query will be retried
+ * starting from where it left off.
+ */
+const MAX_NEW_TRANSACTIONS = 20000
+
 export const asLetsExchangePluginParams = asObject({
   settings: asObject({
     latestIsoDate: asOptional(asString, LETSEXCHANGE_START_DATE)
@@ -350,6 +357,7 @@ export async function queryLetsExchange(
   let windowStart = new Date(latestIsoDate).getTime() - QUERY_INTERVAL_MS
   const now = Date.now()
   let done = false
+  let newTxStart: number = 0
 
   // Outer loop: iterate over 30-day windows
   while (windowStart < now && !done) {
@@ -385,6 +393,9 @@ export async function queryLetsExchange(
           const standardTx = await processLetsExchangeTx(rawTx, pluginParams)
           standardTxs.push(standardTx)
           if (standardTx.isoDate > latestIsoDate) {
+            if (newTxStart === 0) {
+              newTxStart = standardTxs.length
+            }
             latestIsoDate = standardTx.isoDate
           }
         }
@@ -398,6 +409,14 @@ export async function queryLetsExchange(
 
         page++
         retry = 0
+        if (standardTxs.length - newTxStart >= MAX_NEW_TRANSACTIONS) {
+          latestIsoDate = windowStartIso
+          log.warn(
+            `Max new transactions reached, saving progress at ${latestIsoDate}`
+          )
+          done = true
+          break
+        }
       } catch (e) {
         log.error(String(e))
         // Retry a few times with time delay to prevent throttling
