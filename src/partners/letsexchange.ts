@@ -27,6 +27,13 @@ const MAX_RETRIES = 5
 const QUERY_INTERVAL_MS = 1000 * 60 * 60 * 24 * 30 // 30 days in milliseconds
 const LETSEXCHANGE_START_DATE = '2022-02-01T00:00:00.000Z'
 
+/**
+ * Max number of new transactions to save. This is to prevent overloading the db
+ * write and potentially causing a timeout or failure. The query will be retried
+ * starting from where it left off.
+ */
+const MAX_NEW_TRANSACTIONS = 100000
+
 export const asLetsExchangePluginParams = asObject({
   settings: asObject({
     latestIsoDate: asOptional(asString, LETSEXCHANGE_START_DATE)
@@ -345,6 +352,10 @@ export async function queryLetsExchange(
   let windowStart = new Date(latestIsoDate).getTime() - QUERY_INTERVAL_MS
   const now = Date.now()
   let done = false
+  // Index of the first tx newer than the saved progress. -1 until we see one.
+  // Using -1 (not 0) prevents the MAX_NEW_TRANSACTIONS counter from counting
+  // old rollback-window txs before any new tx is encountered.
+  let newTxStart: number = -1
 
   // Outer loop: iterate over 30-day windows
   while (windowStart < now && !done) {
@@ -380,11 +391,17 @@ export async function queryLetsExchange(
           const standardTx = await processLetsExchangeTx(rawTx, pluginParams)
           standardTxs.push(standardTx)
           if (standardTx.isoDate > latestIsoDate) {
+            if (newTxStart === -1) {
+              newTxStart = standardTxs.length - 1
+            }
             latestIsoDate = standardTx.isoDate
           }
         }
 
-        log(`page ${page}/${lastPage} latestIsoDate ${latestIsoDate}`)
+        const newTxs = newTxStart === -1 ? 0 : standardTxs.length - newTxStart
+        log(
+          `page ${page}/${lastPage} latestIsoDate ${latestIsoDate} newTxs: ${newTxs}/${MAX_NEW_TRANSACTIONS}`
+        )
 
         // Check if we've reached the last page for this window
         if (currentPage >= lastPage || txs.length === 0) {
@@ -393,6 +410,14 @@ export async function queryLetsExchange(
 
         page++
         retry = 0
+        if (newTxs >= MAX_NEW_TRANSACTIONS) {
+          latestIsoDate = windowStartIso
+          log.warn(
+            `Max new transactions reached, saving progress at ${latestIsoDate}`
+          )
+          done = true
+          break
+        }
       } catch (e) {
         log.error(String(e))
         // Retry a few times with time delay to prevent throttling
