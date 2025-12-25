@@ -1,3 +1,4 @@
+import { Semaphore } from 'async-mutex'
 import nano from 'nano'
 
 import { config } from './config'
@@ -91,13 +92,13 @@ const BULK_FETCH_SIZE = 50
 const snooze: Function = async (ms: number) =>
   await new Promise((resolve: Function) => setTimeout(resolve, ms))
 
-export async function queryEngine(): Promise<void> {
-  const dbProgress = nanoDb.db.use('reports_progresscache')
-  const dbApps = nanoDb.db.use('reports_apps')
-  const dbSettings: nano.DocumentScope<unknown> = nanoDb.db.use(
-    'reports_settings'
-  )
+const dbProgress = nanoDb.db.use('reports_progresscache')
+const dbApps = nanoDb.db.use('reports_apps')
+const dbSettings: nano.DocumentScope<unknown> = nanoDb.db.use(
+  'reports_settings'
+)
 
+export async function queryEngine(): Promise<void> {
   while (true) {
     datelog('Starting query loop...')
     let disablePartnerQuery: DisablePartnerQuery = {
@@ -121,16 +122,16 @@ export async function queryEngine(): Promise<void> {
     }
     const rawApps = await dbApps.find(query)
     const apps = asApps(rawApps.docs)
-    let promiseArray: Array<Promise<string>> = []
-    let remainingPartners: String[] = []
     // loop over every app
     for (const app of apps) {
+      const semaphore = new Semaphore(MAX_CONCURRENT_QUERIES)
       if (config.soloAppIds != null && !config.soloAppIds.includes(app.appId)) {
         continue
       }
       let partnerStatus: string[] = []
+      const runPlugins: RunPluginParams[] = []
+      let remainingPlugins: RunPluginParams[] = []
       // loop over every pluginId that app uses
-      remainingPartners = Object.keys(app.partnerIds)
       for (const partnerId in app.partnerIds) {
         const pluginId = app.partnerIds[partnerId].pluginId ?? partnerId
         if (config.soloPartnerIds?.includes(partnerId) !== true) {
@@ -148,33 +149,35 @@ export async function queryEngine(): Promise<void> {
             continue
           }
         }
-        remainingPartners.push(partnerId)
-        promiseArray.push(
-          runPlugin(app, partnerId, pluginId, dbProgress).finally(() => {
-            remainingPartners = remainingPartners.filter(
-              string => string !== partnerId
+        const runPluginParams: RunPluginParams = { app, partnerId, pluginId }
+        runPlugins.push(runPluginParams)
+        remainingPlugins.push(runPluginParams)
+      }
+      const promises: Array<Promise<void>> = []
+      for (const runPluginParams of runPlugins) {
+        await semaphore.acquire()
+        const promise = runPlugin(runPluginParams)
+          .then(status => {
+            partnerStatus = [...partnerStatus, status]
+          })
+          .finally(() => {
+            semaphore.release()
+            // remove the plugin from the remaining plugins
+            remainingPlugins = remainingPlugins.filter(
+              plugin => plugin !== runPluginParams
             )
-            if (remainingPartners.length > 0) {
+            if (remainingPlugins.length > 0) {
               datelog(
                 `REMAINING PLUGINS for ${app.appId}:`,
-                remainingPartners.join(', ')
+                remainingPlugins.map(plugin => plugin.partnerId).join(', ')
               )
             }
           })
-        )
-        if (promiseArray.length >= MAX_CONCURRENT_QUERIES) {
-          const status = await Promise.all(promiseArray)
-          // log how long every app + plugin took to run
-          datelog(status)
-          partnerStatus = [...partnerStatus, ...status]
-          promiseArray = []
-        }
+        promises.push(promise)
       }
-      datelog(partnerStatus)
+      await Promise.all(promises)
+      datelog(partnerStatus.join('\n'))
     }
-    const partnerStatus = await Promise.all(promiseArray)
-    // log how long every app + plugin took to run
-    datelog(partnerStatus)
     datelog(`Snoozing for ${QUERY_FREQ_MS} milliseconds`)
     await snooze(QUERY_FREQ_MS)
   }
@@ -296,12 +299,14 @@ async function insertTransactions(
   await filterAddNewTxs(pluginId, dbTransactions, docIds, transactions, log)
 }
 
-async function runPlugin(
-  app: ReturnType<typeof asApp>,
-  partnerId: string,
-  pluginId: string,
-  dbProgress: nano.DocumentScope<unknown>
-): Promise<string> {
+interface RunPluginParams {
+  app: ReturnType<typeof asApp>
+  partnerId: string
+  pluginId: string
+}
+
+async function runPlugin(params: RunPluginParams): Promise<string> {
+  const { app, partnerId, pluginId } = params
   const start = Date.now()
   const log = createScopedLog(app.appId, partnerId)
   let errorText = ''
@@ -310,7 +315,7 @@ async function runPlugin(
     const plugin = plugins.find(plugin => plugin.pluginId === pluginId)
     // if current plugin is not within the list of partners skip to next
     if (plugin === undefined) {
-      errorText = `[runPlugin] Missing or disabled plugin`
+      errorText = `[runPlugin] ${partnerId} Missing or disabled plugin`
       log(errorText)
       return errorText
     }
@@ -359,21 +364,25 @@ async function runPlugin(
       'insertTransactions',
       insertTransactions(result.transactions, `${app.appId}_${partnerId}`, log),
       log
-    )
+    ).catch(e => {
+      throw new Error(`Error inserting transactions: ${String(e)}`)
+    })
     progressSettings.progressCache = result.settings
     progressSettings._id = progressCacheFileName
     await promiseTimeout(
       'dbProgress.insert',
       dbProgress.insert(progressSettings),
       log
-    )
+    ).catch(e => {
+      throw new Error(`Error inserting progress: ${String(e)}`)
+    })
     // Returning a successful completion message
     const completionTime = (Date.now() - start) / 1000
-    const successfulCompletionMessage = `Successful update in ${completionTime} seconds.`
-    log(`[runPlugin] ${successfulCompletionMessage}`)
+    const successfulCompletionMessage = `[runPlugin] ${partnerId} Successful update in ${completionTime} seconds.`
+    log(successfulCompletionMessage)
     return successfulCompletionMessage
   } catch (e) {
-    errorText = `[runPlugin] Error: ${e}`
+    errorText = `[runPlugin] ${partnerId} Error: ${String(e)}`
     log.error(errorText)
     return errorText
   }
