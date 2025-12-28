@@ -105,6 +105,10 @@ export default {
     type: 'fiat',
     color: '#99A5DE'
   },
+  rango: {
+    type: 'swap',
+    color: '#5891EE'
+  },
   safello: {
     type: 'fiat',
     color: deprecated
