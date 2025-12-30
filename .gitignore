@@ -1,6 +1,7 @@
 # Build output:
 /.parcel-cache/
 /cache/
+/data/
 /dist/
 /lib/
 /clientConfig.json
