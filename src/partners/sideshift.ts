@@ -5,7 +5,8 @@ import {
   asOptional,
   asString,
   asUnknown,
-  asValue
+  asValue,
+  asNumber
 } from 'cleaners'
 import crypto from 'crypto'
 
@@ -40,6 +41,9 @@ const asSideshiftTx = asObject({
   depositAddress: asMaybe(asObject({ address: asMaybe(asString) })),
   prevDepositAddresses: asMaybe(asObject({ address: asMaybe(asString) })),
   depositAsset: asString,
+  depositHash: asOptional(asString),
+  depositContractAddress: asOptional(asString),
+  depositEvmChainId: asOptional(asNumber),
   // depositMethodId: asString,
   invoiceAmount: asString,
   settleAddress: asObject({
@@ -48,7 +52,11 @@ const asSideshiftTx = asObject({
   // settleMethodId: asString,
   settleAmount: asString,
   settleAsset: asString,
-  createdAt: asString
+  settleHash: asOptional(asString),
+  settleContractAddress: asOptional(asString),
+  settleEvmChainId: asOptional(asNumber),
+  createdAt: asString,
+  settledAt: asOptional(asString),
 })
 
 const asSideshiftPluginParams = asObject({
@@ -180,14 +188,14 @@ export function processSideshiftTx(rawTx: unknown): StandardTx {
     status: statusMap[tx.status],
     orderId: tx.id,
     countryCode: null,
-    depositTxid: undefined,
+    depositTxid: tx.depositHash,
     depositAddress,
     depositCurrency: tx.depositAsset,
     depositAmount: Number(tx.invoiceAmount),
     direction: null,
     exchangeType: 'swap',
     paymentType: null,
-    payoutTxid: undefined,
+    payoutTxid: tx.settleHash,
     payoutAddress: tx.settleAddress.address,
     payoutCurrency: tx.settleAsset,
     payoutAmount: Number(tx.settleAmount),
