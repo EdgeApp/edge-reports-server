@@ -86,6 +86,7 @@ export type CurrencyCodeToAssetMapping = Record<
   { pluginId: string; tokenId: EdgeTokenId }
 >
 
+// TODO: Remove this once we've migrated to using moonpayNetworkToPluginId functions instead
 export type ChainNameToPluginIdMapping = Record<string, string>
 
 export const createTokenId = (

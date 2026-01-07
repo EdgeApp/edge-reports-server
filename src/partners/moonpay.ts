@@ -20,40 +20,12 @@ import {
   StandardTx,
   Status
 } from '../types'
+import { createTokenId, EdgeTokenId, tokenTypes } from '../util/asEdgeTokenId'
 import {
-  ChainNameToPluginIdMapping,
-  createTokenId,
-  EdgeTokenId,
-  tokenTypes
-} from '../util/asEdgeTokenId'
-import { EVM_CHAIN_IDS, REVERSE_EVM_CHAIN_IDS } from '../util/chainIds'
-
-// Map Moonpay's networkCode to Edge pluginId
-const MOONPAY_NETWORK_TO_PLUGIN_ID: ChainNameToPluginIdMapping = {
-  algorand: 'algorand',
-  arbitrum: 'arbitrum',
-  avalanche_c_chain: 'avalanche',
-  base: 'base',
-  binance_smart_chain: 'binancesmartchain',
-  bitcoin: 'bitcoin',
-  bitcoin_cash: 'bitcoincash',
-  cardano: 'cardano',
-  cosmos: 'cosmoshub',
-  dogecoin: 'dogecoin',
-  ethereum: 'ethereum',
-  ethereum_classic: 'ethereumclassic',
-  hedera: 'hedera',
-  litecoin: 'litecoin',
-  optimism: 'optimism',
-  polygon: 'polygon',
-  ripple: 'ripple',
-  solana: 'solana',
-  stellar: 'stellar',
-  sui: 'sui',
-  ton: 'ton',
-  tron: 'tron',
-  zksync: 'zksync'
-}
+  EVM_CHAIN_IDS,
+  REVERSE_EVM_CHAIN_IDS,
+  reverseEvmChainId
+} from '../util/chainIds'
 
 interface EdgeAssetInfo {
   chainPluginId: string | undefined
@@ -80,10 +52,7 @@ function processMetadata(
 
   // Determine chainPluginId from networkCode or chainId
   const chainPluginId =
-    (networkCode != null
-      ? MOONPAY_NETWORK_TO_PLUGIN_ID[networkCode]
-      : undefined) ??
-    (chainIdNum != null ? REVERSE_EVM_CHAIN_IDS[chainIdNum] : undefined)
+    moonpayNetworkToPluginId(networkCode) ?? reverseEvmChainId(chainIdNum)
 
   // Determine evmChainId
   let evmChainId: number | undefined
@@ -404,4 +373,41 @@ function getFiatPaymentType(tx: MoonpayTx): FiatPaymentType | null {
     throw new Error(`Unknown payment method: ${tx.paymentMethod} for ${tx.id}`)
   }
   return paymentMethod
+}
+
+// COMMENT: The reason for using a function over a object map is to encode
+// the the `undefined` type which is possible since there is no type safety on
+// the input value (key for the mapping) and to also allow for undefined keys
+// to always return undefined.
+
+// Map Moonpay's networkCode to Edge pluginId
+const moonpayNetworkToPluginId = (
+  moonpayNetwork?: string
+): string | undefined => {
+  if (moonpayNetwork == null) return undefined
+  return {
+    algorand: 'algorand',
+    arbitrum: 'arbitrum',
+    avalanche_c_chain: 'avalanche',
+    base: 'base',
+    binance_smart_chain: 'binancesmartchain',
+    bitcoin: 'bitcoin',
+    bitcoin_cash: 'bitcoincash',
+    cardano: 'cardano',
+    cosmos: 'cosmoshub',
+    dogecoin: 'dogecoin',
+    ethereum: 'ethereum',
+    ethereum_classic: 'ethereumclassic',
+    hedera: 'hedera',
+    litecoin: 'litecoin',
+    optimism: 'optimism',
+    polygon: 'polygon',
+    ripple: 'ripple',
+    solana: 'solana',
+    stellar: 'stellar',
+    sui: 'sui',
+    ton: 'ton',
+    tron: 'tron',
+    zksync: 'zksync'
+  }[moonpayNetwork]
 }

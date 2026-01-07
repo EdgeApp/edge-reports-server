@@ -27,3 +27,6 @@ export const REVERSE_EVM_CHAIN_IDS: Record<number, string> = Object.entries(
   acc[value] = key
   return acc
 }, {})
+
+export const reverseEvmChainId = (evmChainId?: number): string | undefined =>
+  evmChainId != null ? REVERSE_EVM_CHAIN_IDS[evmChainId] : undefined
