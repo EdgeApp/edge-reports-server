@@ -63,6 +63,7 @@ const BANXA_BLOCKCHAIN_TO_PLUGIN_ID: ChainNameToPluginIdMapping = {
   XLM: 'stellar',
   XRP: 'ripple',
   XTZ: 'tezos',
+  ZEC: 'zcash',
   ZKSYNC: 'zksync',
   ZKSYNC2: 'zksync'
 }
