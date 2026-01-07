@@ -5,6 +5,7 @@ export const asEdgeTokenId = asEither(asString, asNull)
 
 export type TokenType =
   | 'simple'
+  | 'binance'
   | 'evm'
   | 'cosmos'
   | 'xrpl'
@@ -19,7 +20,7 @@ export const tokenTypes: Record<string, TokenType> = {
   avalanche: 'evm',
   axelar: 'cosmos',
   base: 'evm',
-  binance: null,
+  binance: 'binance',
   binancesmartchain: 'evm',
   bitcoin: null,
   bitcoincash: null,
@@ -105,6 +106,14 @@ export const createTokenId = (
     // EVM token support:
     case 'evm': {
       return contractAddress.toLowerCase().replace(/^0x/, '')
+    }
+
+    case 'binance': {
+      const regex = /^[A-Z0-9]{3,8}-[0-9A-F]{3}$/
+      if (!regex.test(contractAddress)) {
+        throw new Error('Invalid binance contract address')
+      }
+      return contractAddress
     }
 
     // Cosmos token support:
