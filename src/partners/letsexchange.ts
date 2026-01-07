@@ -25,6 +25,7 @@ import { EVM_CHAIN_IDS } from '../util/chainIds'
 
 const MAX_RETRIES = 5
 const QUERY_INTERVAL_MS = 1000 * 60 * 60 * 24 * 30 // 30 days in milliseconds
+const QUERY_ROLLBACK_MS = 1000 * 60 * 60 * 24 * 7 // 7 days in milliseconds
 const LETSEXCHANGE_START_DATE = '2022-02-01T00:00:00.000Z'
 
 /**
@@ -214,6 +215,16 @@ const NATIVE_TOKEN_ADDRESSES = new Set([
   'xmr1'
 ])
 
+// Mapping of chain plugin IDs and currency code to contract address.
+const LETSEXCHANGE_NETWORK_CURRENCY_CODE_TO_CONTRACT_ADDRESS: Record<
+  string,
+  Record<string, string>
+> = {
+  binance: {
+    COTI: 'COTI-CBB'
+  }
+}
+
 // In-memory cache for currency contract addresses
 // Key format: `${code}_${network_code}` (both lowercase)
 interface CoinInfo {
@@ -302,6 +313,13 @@ function getAssetInfo(
 
   // Determine tokenId from the contract address in the response
   let tokenId: EdgeTokenId = null
+  const overrideContractAddress =
+    LETSEXCHANGE_NETWORK_CURRENCY_CODE_TO_CONTRACT_ADDRESS[chainPluginId]?.[
+      currencyCode
+    ]
+  if (overrideContractAddress != null) {
+    contractAddress = overrideContractAddress
+  }
 
   if (contractAddress == null) {
     // Try to lookup contract address from cache
@@ -354,7 +372,7 @@ export async function queryLetsExchange(
   }
 
   // Query from the saved date forward in 30-day chunks (oldest to newest)
-  let windowStart = new Date(latestIsoDate).getTime() - QUERY_INTERVAL_MS
+  let windowStart = new Date(latestIsoDate).getTime() - QUERY_ROLLBACK_MS
   const now = Date.now()
   let done = false
   let newTxStart: number = 0
