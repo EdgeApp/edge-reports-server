@@ -90,7 +90,7 @@ const plugins = [
 ]
 const QUERY_FREQ_MS = 60 * 1000
 const MAX_CONCURRENT_QUERIES = 3
-const BULK_FETCH_SIZE = 50
+const BULK_FETCH_SIZE = 500
 const snooze: Function = async (ms: number) =>
   await new Promise((resolve: Function) => setTimeout(resolve, ms))
 
@@ -371,13 +371,31 @@ async function runPlugin(params: RunPluginParams): Promise<string> {
     })
     progressSettings.progressCache = result.settings
     progressSettings._id = progressCacheFileName
-    await promiseTimeout(
-      'dbProgress.insert',
-      dbProgress.insert(progressSettings),
-      log
-    ).catch(e => {
-      throw new Error(`Error inserting progress: ${String(e)}`)
-    })
+
+    // Attempt to insert progress with retry on conflict
+    const maxAttempts = 2
+    let attempt = 0
+    while (attempt < maxAttempts) {
+      attempt++
+      try {
+        await promiseTimeout(
+          `dbProgress.insert (attempt ${attempt})`,
+          dbProgress.insert(progressSettings),
+          log
+        )
+        break
+      } catch (e) {
+        const err: any = e
+        const isConflict = err.statusCode === 409 || err.error === 'conflict'
+        if (isConflict && attempt < maxAttempts) {
+          log(`[runPlugin] Document conflict detected, re-reading and retrying`)
+          const updatedDoc = await dbProgress.get(progressCacheFileName)
+          progressSettings._rev = updatedDoc._rev
+          continue
+        }
+        throw new Error(`Error inserting progress: ${String(e)}`)
+      }
+    }
     // Returning a successful completion message
     const completionTime = (Date.now() - start) / 1000
     const successfulCompletionMessage = `[runPlugin] ${partnerId} Successful update in ${completionTime} seconds.`
