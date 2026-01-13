@@ -1,4 +1,5 @@
 const fs = require('fs')
+const path = require('path')
 
 const rawTestData = {
   inputOne: [
@@ -2900,10 +2901,13 @@ const rawTestData = {
   }
 }
 
-// cd into test directory
-// $ node makeTestData.js
+// Can be run from anywhere: $ node test/makeTestData.js
 console.log('Writing file')
-fs.writeFile('./testData.json', JSON.stringify(rawTestData, null, 2), err => {
-  if (err) throw err
-  console.log('File written successfully.')
-})
+fs.writeFile(
+  path.join(__dirname, 'testData.json'),
+  JSON.stringify(rawTestData, null, 2),
+  err => {
+    if (err) throw err
+    console.log('File written successfully.')
+  }
+)

@@ -11,7 +11,6 @@ import crypto from 'crypto'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog } from '../util'
 import { queryDummy } from './dummy'
 
 const asBitaccessTx = asObject({
@@ -42,6 +41,7 @@ const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
 export async function queryBitaccess(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   let lastTimestamp = 0
   if (typeof pluginParams.settings.lastTimestamp === 'number') {
     lastTimestamp = pluginParams.settings.lastTimestamp
@@ -104,7 +104,7 @@ export async function queryBitaccess(
       }
       page++
     } catch (e) {
-      datelog(e)
+      log.error(String(e))
       throw e
     }
   }
@@ -145,6 +145,9 @@ export function processBitaccessTx(rawTx: unknown): StandardTx {
     depositTxid,
     depositAddress: tx.deposit_address,
     depositCurrency: tx.deposit_currency.toUpperCase(),
+    depositChainPluginId: undefined,
+    depositEvmChainId: undefined,
+    depositTokenId: undefined,
     depositAmount: tx.deposit_amount,
     direction: tx.trade_type,
     exchangeType: 'fiat',
@@ -152,6 +155,9 @@ export function processBitaccessTx(rawTx: unknown): StandardTx {
     payoutTxid,
     payoutAddress: tx.withdrawal_address,
     payoutCurrency: tx.withdrawal_currency.toUpperCase(),
+    payoutChainPluginId: undefined,
+    payoutEvmChainId: undefined,
+    payoutTokenId: undefined,
     payoutAmount: tx.withdrawal_amount,
     timestamp,
     isoDate: tx.updated_at,

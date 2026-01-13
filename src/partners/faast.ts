@@ -3,7 +3,6 @@ import crypto from 'crypto'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog } from '../util'
 import { queryDummy } from './dummy'
 
 const asFaastTx = asObject({
@@ -33,6 +32,7 @@ const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
 export async function queryFaast(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   let page = 1
   const standardTxs: StandardTx[] = []
   let signature = ''
@@ -70,7 +70,7 @@ export async function queryFaast(
       resultJSON = await result.json()
       jsonObj = asFaastResult(resultJSON)
     } catch (e) {
-      datelog(e)
+      log.error(String(e))
       throw e
     }
     const txs = jsonObj.orders
@@ -117,6 +117,9 @@ export function processFaastTx(rawTx: unknown): StandardTx {
     depositTxid: undefined,
     depositAddress: tx.deposit_address,
     depositCurrency: tx.deposit_currency.toUpperCase(),
+    depositChainPluginId: undefined,
+    depositEvmChainId: undefined,
+    depositTokenId: undefined,
     depositAmount: tx.amount_deposited,
     direction: null,
     exchangeType: 'swap',
@@ -124,6 +127,9 @@ export function processFaastTx(rawTx: unknown): StandardTx {
     payoutTxid: tx.transaction_id,
     payoutAddress: tx.withdrawal_address,
     payoutCurrency: tx.withdrawal_currency.toUpperCase(),
+    payoutChainPluginId: undefined,
+    payoutEvmChainId: undefined,
+    payoutTokenId: undefined,
     payoutAmount: tx.amount_withdrawn,
     timestamp,
     isoDate: tx.created_at,

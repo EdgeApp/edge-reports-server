@@ -2,7 +2,7 @@ import { asArray, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog, safeParseFloat } from '../util'
+import { safeParseFloat } from '../util'
 import { queryDummy } from './dummy'
 
 const asSwitchainTx = asObject({
@@ -32,6 +32,7 @@ const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 4 // 4 days ago
 export async function querySwitchain(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   const standardTxs: StandardTx[] = []
   let apiKey
   let latestTimestamp = 0
@@ -66,7 +67,7 @@ export async function querySwitchain(
         result = asSwitchainResult(await response.json())
       }
     } catch (e) {
-      datelog(e)
+      log.error(String(e))
       throw e
     }
 
@@ -120,6 +121,9 @@ export function processSwitchainTx(rawTx: unknown): StandardTx {
     depositTxid: tx.depositTxId,
     depositAddress: tx.depositAddress,
     depositCurrency: pair[0].toUpperCase(),
+    depositChainPluginId: undefined,
+    depositEvmChainId: undefined,
+    depositTokenId: undefined,
     depositAmount: safeParseFloat(tx.amountFrom),
     direction: null,
     exchangeType: 'swap',
@@ -127,6 +131,9 @@ export function processSwitchainTx(rawTx: unknown): StandardTx {
     payoutTxid: tx.withdrawTxId,
     payoutAddress: tx.withdrawAddress,
     payoutCurrency: pair[1].toUpperCase(),
+    payoutChainPluginId: undefined,
+    payoutEvmChainId: undefined,
+    payoutTokenId: undefined,
     payoutAmount: safeParseFloat(tx.rate),
     timestamp: timestamp / 1000,
     isoDate: tx.createdAt,

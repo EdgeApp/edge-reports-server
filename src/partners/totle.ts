@@ -4,7 +4,7 @@ import fetch from 'node-fetch'
 import Web3 from 'web3'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog, safeParseFloat } from '../util'
+import { safeParseFloat } from '../util'
 import { queryDummy } from './dummy'
 
 const asCurrentBlockResult = asNumber
@@ -299,6 +299,7 @@ const PRIMARY_ABI: any = [
 export async function queryTotle(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   const nodeEndpoint = pluginParams.apiKeys.nodeEndpoint // Grab node endpoint from 'reports_apps' database
   const web3 = new Web3(nodeEndpoint) // Create new Web3 instance using node endpoint
   const ssFormatTxs: StandardTx[] = []
@@ -395,6 +396,9 @@ export async function queryTotle(
             depositTxid: receipt.transactionHash,
             depositAddress: receipt.from,
             depositCurrency: sourceToken.symbol,
+            depositChainPluginId: undefined,
+            depositEvmChainId: undefined,
+            depositTokenId: undefined,
             depositAmount: safeParseFloat(
               div(
                 sourceAmount.toString(),
@@ -409,6 +413,9 @@ export async function queryTotle(
             payoutTxid: receipt.transactionHash,
             payoutAddress: receipt.to,
             payoutCurrency: destinationToken.symbol,
+            payoutChainPluginId: undefined,
+            payoutEvmChainId: undefined,
+            payoutTokenId: undefined,
             payoutAmount: safeParseFloat(
               div(
                 destinationAmount.toString(),
@@ -423,12 +430,12 @@ export async function queryTotle(
             rawTx: rawSwapEvent
           }
           ssFormatTxs.push(ssTx)
-          datelog(`TOTLE: Currently saved ${ssFormatTxs.length} transactions.`)
+          log(`Currently saved ${ssFormatTxs.length} transactions.`)
         }
       }
     }
   } catch (err) {
-    datelog(err)
+    log.error(String(err))
   }
 
   const out: PluginResult = {

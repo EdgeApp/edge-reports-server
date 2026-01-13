@@ -10,7 +10,6 @@ import {
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog } from '../util'
 import { queryDummy } from './dummy'
 
 const asCoinSwitchTx = asObject({
@@ -38,6 +37,7 @@ const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 export async function queryCoinSwitch(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   const standardTxs: StandardTx[] = []
   let start = 0
   let apiKey = ''
@@ -68,7 +68,7 @@ export async function queryCoinSwitch(
       const result = await fetch(url, { method: 'GET', headers: headers })
       jsonObj = asCoinSwitchResult(await result.json())
     } catch (e) {
-      datelog(e)
+      log.error(String(e))
       break
     }
     const txs = jsonObj.data.items
@@ -117,6 +117,9 @@ export function processCoinSwitchTx(rawTx: unknown): StandardTx {
     depositTxid,
     depositAddress: tx.exchangeAddress.address,
     depositCurrency: tx.depositCoin.toUpperCase(),
+    depositChainPluginId: undefined,
+    depositEvmChainId: undefined,
+    depositTokenId: undefined,
     depositAmount: tx.depositCoinAmount,
     direction: null,
     exchangeType: 'swap',
@@ -124,6 +127,9 @@ export function processCoinSwitchTx(rawTx: unknown): StandardTx {
     payoutTxid,
     payoutAddress: tx.destinationAddress.address,
     payoutCurrency: tx.destinationCoin.toUpperCase(),
+    payoutChainPluginId: undefined,
+    payoutEvmChainId: undefined,
+    payoutTokenId: undefined,
     payoutAmount: tx.destinationCoinAmount,
     timestamp: tx.createdAt / 1000,
     isoDate: new Date(tx.createdAt).toISOString(),

@@ -16,7 +16,7 @@ import {
   StandardTx,
   Status
 } from '../types'
-import { datelog, retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
+import { retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
 import { queryDummy } from './dummy'
 
 const asIoniaStatus = asMaybe(asValue('complete'), 'other')
@@ -53,6 +53,7 @@ const statusMap: { [key in IoniaStatus]: Status } = {
 export const queryIoniaGiftCards = async (
   pluginParams: PluginParams
 ): Promise<PluginResult> => {
+  const { log } = pluginParams
   const { settings, apiKeys } = asStandardPluginParams(pluginParams)
   const { apiKey } = apiKeys
   let { latestIsoDate } = settings
@@ -86,7 +87,7 @@ export const queryIoniaGiftCards = async (
       })
       if (!response.ok) {
         const text = await response.text()
-        datelog(`Error in page:${page}`)
+        log.error(`Error in page:${page}`)
         throw new Error(text)
       }
       const result = await response.json()
@@ -102,18 +103,18 @@ export const queryIoniaGiftCards = async (
           latestIsoDate = standardTx.isoDate
         }
       }
-      datelog(`IoniaGiftCards latestIsoDate ${latestIsoDate}`)
+      log(`latestIsoDate ${latestIsoDate}`)
       page++
       if (txs.length < LIMIT) {
         break
       }
       retry = 0
     } catch (e) {
-      datelog(e)
+      log.error(String(e))
       // Retry a few times with time delay to prevent throttling
       retry++
       if (retry <= MAX_RETRIES) {
-        datelog(`Snoozing ${5 * retry}s`)
+        log.warn(`Snoozing ${5 * retry}s`)
         await snooze(5000 * retry)
       } else {
         // We can safely save our progress since we go from oldest to newest.
@@ -146,6 +147,9 @@ export function processIoniaGiftCardsTx(rawTx: unknown): StandardTx {
     depositTxid: undefined,
     depositAddress: undefined,
     depositCurrency: 'USD',
+    depositChainPluginId: undefined,
+    depositEvmChainId: undefined,
+    depositTokenId: undefined,
     depositAmount: tx.USDPaidByCustomer,
     direction: 'sell',
     exchangeType: 'fiat',
@@ -153,6 +157,9 @@ export function processIoniaGiftCardsTx(rawTx: unknown): StandardTx {
     payoutTxid: undefined,
     payoutAddress: undefined,
     payoutCurrency: 'USD',
+    payoutChainPluginId: undefined,
+    payoutEvmChainId: undefined,
+    payoutTokenId: undefined,
     payoutAmount: tx.GiftCardFaceValue,
     timestamp,
     isoDate,

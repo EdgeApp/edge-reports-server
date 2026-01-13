@@ -22,7 +22,7 @@ import {
   StandardTx,
   Status
 } from '../types'
-import { datelog, retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
+import { retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
 
 const PLUGIN_START_DATE = '2023-09-01T00:00:00.000Z'
 const asStatuses = asMaybe(
@@ -155,6 +155,7 @@ const statusMap: { [key in PartnerStatuses]: Status } = {
 export async function queryPaybis(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   const { settings, apiKeys } = asStandardPluginParams(pluginParams)
   const { apiKey } = apiKeys
   const nowDate = new Date()
@@ -193,7 +194,7 @@ export async function queryPaybis(
           to: new Date(endTime).toISOString(),
           limit: QUERY_LIMIT_TXS
         }
-        datelog(`Querying from:${queryParams.from} to:${queryParams.to}`)
+        log(`Querying from:${queryParams.from} to:${queryParams.to}`)
         if (cursor != null) queryParams.cursor = cursor
 
         urlObj.set('query', queryParams)
@@ -221,25 +222,23 @@ export async function queryPaybis(
         if (cursor == null) {
           break
         } else {
-          datelog(`Get nextCursor: ${cursor}`)
+          log(`Get nextCursor: ${cursor}`)
         }
       }
 
       const endDate = new Date(endTime)
       startTime = endTime
-      datelog(
-        `Paybis endDate:${endDate.toISOString()} latestIsoDate:${latestIsoDate}`
-      )
+      log(`endDate:${endDate.toISOString()} latestIsoDate:${latestIsoDate}`)
       if (endTime > now) {
         break
       }
       retry = 0
     } catch (e) {
-      datelog(e)
+      log.error(String(e))
       // Retry a few times with time delay to prevent throttling
       retry++
       if (retry <= MAX_RETRIES) {
-        datelog(`Snoozing ${60 * retry}s`)
+        log.warn(`Snoozing ${60 * retry}s`)
         await snooze(60000 * retry)
       } else {
         // We can safely save our progress since we go from oldest to newest.
@@ -282,6 +281,9 @@ export function processPaybisTx(rawTx: unknown): StandardTx {
     depositTxid,
     depositAddress: undefined,
     depositCurrency: spentOriginal.currency,
+    depositChainPluginId: undefined,
+    depositEvmChainId: undefined,
+    depositTokenId: undefined,
     depositAmount,
     direction,
     exchangeType: 'fiat',
@@ -289,6 +291,9 @@ export function processPaybisTx(rawTx: unknown): StandardTx {
     payoutTxid,
     payoutAddress: tx.to.address,
     payoutCurrency: receivedOriginal.currency,
+    payoutChainPluginId: undefined,
+    payoutEvmChainId: undefined,
+    payoutTokenId: undefined,
     payoutAmount,
     timestamp,
     isoDate,

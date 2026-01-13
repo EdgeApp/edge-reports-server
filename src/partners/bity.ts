@@ -2,7 +2,7 @@ import { asArray, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog, safeParseFloat } from '../util'
+import { safeParseFloat } from '../util'
 
 const asBityTx = asObject({
   id: asString,
@@ -25,6 +25,7 @@ const PAGE_SIZE = 100
 export async function queryBity(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   const standardTxs: StandardTx[] = []
   let tokenParams
   let credentials
@@ -111,7 +112,7 @@ export async function queryBity(
           break
         }
       } catch (e) {
-        datelog(e)
+        log.error(String(e))
         throw e
       }
 
@@ -177,6 +178,9 @@ export function processBityTx(rawTx: unknown): StandardTx {
     depositTxid: undefined,
     depositAddress: undefined,
     depositCurrency: tx.input.currency.toUpperCase(),
+    depositChainPluginId: undefined,
+    depositEvmChainId: undefined,
+    depositTokenId: undefined,
     depositAmount: safeParseFloat(tx.input.amount),
     direction,
     exchangeType: 'fiat',
@@ -184,6 +188,9 @@ export function processBityTx(rawTx: unknown): StandardTx {
     payoutTxid: undefined,
     payoutAddress: undefined,
     payoutCurrency: tx.output.currency.toUpperCase(),
+    payoutChainPluginId: undefined,
+    payoutEvmChainId: undefined,
+    payoutTokenId: undefined,
     payoutAmount: safeParseFloat(tx.output.amount),
     timestamp: Date.parse(tx.timestamp_created.concat('Z')) / 1000,
     isoDate: new Date(tx.timestamp_created.concat('Z')).toISOString(),

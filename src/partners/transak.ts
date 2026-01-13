@@ -17,7 +17,6 @@ import {
   PluginResult,
   StandardTx
 } from '../types'
-import { datelog } from '../util'
 
 const PAGE_LIMIT = 100
 const OFFSET_ROLLBACK = 500
@@ -49,6 +48,7 @@ const asTransakResult = asObject({
 export async function queryTransak(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   const standardTxs: StandardTx[] = []
   let apiKey: string
 
@@ -71,7 +71,7 @@ export async function queryTransak(
       const result = await fetch(url)
       resultJSON = asTransakResult(await result.json())
     } catch (e) {
-      datelog(e)
+      log.error(String(e))
       break
     }
     const txs = resultJSON.response
@@ -129,6 +129,9 @@ export function processTransakTx(rawTx: unknown): StandardTx {
     depositTxid: undefined,
     depositAddress,
     depositCurrency: tx.fiatCurrency,
+    depositChainPluginId: undefined,
+    depositEvmChainId: undefined,
+    depositTokenId: undefined,
     depositAmount: tx.fiatAmount,
     direction,
     exchangeType: 'fiat',
@@ -136,6 +139,9 @@ export function processTransakTx(rawTx: unknown): StandardTx {
     payoutTxid: undefined,
     payoutAddress: tx.walletAddress,
     payoutCurrency: tx.cryptoCurrency,
+    payoutChainPluginId: undefined,
+    payoutEvmChainId: undefined,
+    payoutTokenId: undefined,
     payoutAmount: tx.cryptoAmount,
     timestamp: date.getTime() / 1000,
     isoDate: date.toISOString(),

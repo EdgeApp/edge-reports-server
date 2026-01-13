@@ -11,7 +11,79 @@ import {
 import { HeadersInit } from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog, retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
+import { retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
+import {
+  ChainNameToPluginIdMapping,
+  createTokenId,
+  EdgeTokenId,
+  tokenTypes
+} from '../util/asEdgeTokenId'
+import { EVM_CHAIN_IDS } from '../util/chainIds'
+
+// Thorchain chain names to Edge pluginIds
+const THORCHAIN_CHAIN_TO_PLUGINID: ChainNameToPluginIdMapping = {
+  ARB: 'arbitrum',
+  BASE: 'base',
+  BTC: 'bitcoin',
+  DASH: 'dash',
+  ETH: 'ethereum',
+  LTC: 'litecoin',
+  DOGE: 'dogecoin',
+  XRP: 'ripple',
+  BCH: 'bitcoincash',
+  BSC: 'binancesmartchain',
+  BNB: 'binancesmartchain',
+  AVAX: 'avalanche',
+  TRON: 'tron',
+  THOR: 'thorchainrune',
+  GAIA: 'cosmoshub',
+  KUJI: 'kujira',
+  MAYA: 'mayachain',
+  ZEC: 'zcash'
+}
+
+interface ParsedThorchainAsset {
+  chain: string
+  asset: string
+  contractAddress?: string
+}
+
+/**
+ * Parse Thorchain asset string format: "CHAIN.ASSET" or "CHAIN.ASSET-CONTRACT"
+ * Examples:
+ *   "BTC.BTC" -> { chain: "BTC", asset: "BTC" }
+ *   "ETH.USDT-0XDAC17F958D2EE523A2206206994597C13D831EC7" -> { chain: "ETH", asset: "USDT", contractAddress: "0XDAC..." }
+ */
+function parseThorchainAsset(assetString: string): ParsedThorchainAsset {
+  const [chainAssetPart, contractAddress] = assetString.split('-')
+  const [chain, asset] = chainAssetPart.split('.')
+  return { chain, asset, contractAddress }
+}
+
+/**
+ * Get Edge asset info (pluginId, evmChainId, tokenId) from Thorchain asset string
+ */
+function getEdgeAssetInfo(
+  assetString: string
+): {
+  asset: string
+  pluginId: string
+  evmChainId: number | undefined
+  tokenId: EdgeTokenId
+} {
+  const { chain, asset, contractAddress } = parseThorchainAsset(assetString)
+
+  const pluginId = THORCHAIN_CHAIN_TO_PLUGINID[chain]
+  if (pluginId == null) {
+    throw new Error(`Unknown Thorchain chain: ${chain}`)
+  }
+
+  const evmChainId = EVM_CHAIN_IDS[pluginId]
+  const tokenType = tokenTypes[pluginId]
+  const tokenId = createTokenId(tokenType, asset, contractAddress)
+
+  return { asset, pluginId, evmChainId, tokenId }
+}
 
 const asThorchainTx = asObject({
   date: asString,
@@ -91,12 +163,15 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
   const queryThorchain = async (
     pluginParams: PluginParams
   ): Promise<PluginResult> => {
+    const { log } = pluginParams
     const standardTxs: StandardTx[] = []
 
     const pluginParamsClean = asThorchainPluginParams(pluginParams)
     const { settings, apiKeys } = pluginParamsClean
     const { affiliateAddress, thorchainAddress, xClientId } = apiKeys
     let { latestIsoDate } = settings
+
+    const processTx = makeThorchainProcessTx(info)
 
     let previousTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
     if (previousTimestamp < 0) previousTimestamp = 0
@@ -130,55 +205,59 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
         const resultJson = await result.json()
         jsonObj = asThorchainResult(resultJson)
       } catch (e) {
-        datelog(e)
+        log.error(String(e))
         throw e
       }
       const txs = jsonObj.actions
       for (const rawTx of txs) {
-        const standardTx = processThorchainTx(rawTx, info, pluginParamsClean)
+        try {
+          const standardTx = processTx(rawTx, pluginParams)
 
-        // Handle null case as a continue
-        if (standardTx == null) {
-          continue
-        }
-
-        // See if the transaction exists already
-        const previousTxIndex = standardTxs.findIndex(
-          tx =>
-            tx.orderId === standardTx.orderId &&
-            tx.timestamp === standardTx.timestamp &&
-            tx.depositCurrency === standardTx.depositCurrency &&
-            tx.payoutCurrency === standardTx.payoutCurrency &&
-            tx.payoutAmount === standardTx.payoutAmount &&
-            tx.depositAmount !== standardTx.depositAmount
-        )
-        if (previousTxIndex === -1) {
-          standardTxs.push(standardTx)
-        } else {
-          const previousTx = standardTxs[previousTxIndex]
-          const previousRawTxs: unknown[] = Array.isArray(previousTx.rawTx)
-            ? previousTx.rawTx
-            : [previousTx.rawTx]
-          const updatedStandardTx = processThorchainTx(
-            [...previousRawTxs, standardTx.rawTx],
-            info,
-            pluginParamsClean
-          )
-          if (updatedStandardTx != null) {
-            standardTxs.splice(previousTxIndex, 1, updatedStandardTx)
+          // Handle null case as a continue
+          if (standardTx == null) {
+            continue
           }
-        }
-        if (standardTx.isoDate > latestIsoDate) {
-          latestIsoDate = standardTx.isoDate
-        }
-        if (standardTx.isoDate < oldestIsoDate) {
-          oldestIsoDate = standardTx.isoDate
-        }
-        if (standardTx.isoDate < previousLatestIsoDate && !done) {
-          datelog(
-            `Thorchain done: date ${standardTx.isoDate} < ${previousLatestIsoDate}`
+
+          // See if the transaction exists already
+          const previousTxIndex = standardTxs.findIndex(
+            tx =>
+              tx.orderId === standardTx.orderId &&
+              tx.timestamp === standardTx.timestamp &&
+              tx.depositCurrency === standardTx.depositCurrency &&
+              tx.payoutCurrency === standardTx.payoutCurrency &&
+              tx.payoutAmount === standardTx.payoutAmount &&
+              tx.depositAmount !== standardTx.depositAmount
           )
-          done = true
+          if (previousTxIndex === -1) {
+            standardTxs.push(standardTx)
+          } else {
+            const previousTx = standardTxs[previousTxIndex]
+            const previousRawTxs: unknown[] = Array.isArray(previousTx.rawTx)
+              ? previousTx.rawTx
+              : [previousTx.rawTx]
+            const updatedStandardTx = processTx(
+              [...previousRawTxs, standardTx.rawTx],
+              pluginParams
+            )
+            if (updatedStandardTx != null) {
+              standardTxs.splice(previousTxIndex, 1, updatedStandardTx)
+            }
+          }
+          if (standardTx.isoDate > latestIsoDate) {
+            latestIsoDate = standardTx.isoDate
+          }
+          if (standardTx.isoDate < oldestIsoDate) {
+            oldestIsoDate = standardTx.isoDate
+          }
+          if (standardTx.isoDate < previousLatestIsoDate && !done) {
+            log(`done: date ${standardTx.isoDate} < ${previousLatestIsoDate}`)
+            done = true
+          }
+        } catch (e) {
+          log.error(
+            `Error processing tx ${JSON.stringify(rawTx, null, 2)}: ${e}`
+          )
+          throw e
         }
       }
 
@@ -201,137 +280,160 @@ const makeThorchainPlugin = (info: ThorchainInfo): PartnerPlugin => {
   }
 }
 
-export const thorchain = makeThorchainPlugin({
+export const THORCHAIN_INFO: ThorchainInfo = {
   pluginName: 'Thorchain',
   pluginId: 'thorchain',
   midgardUrl: 'midgard.ninerealms.com'
-})
+}
 
-export const maya = makeThorchainPlugin({
+export const MAYA_INFO: ThorchainInfo = {
   pluginName: 'Maya',
   pluginId: 'maya',
   midgardUrl: 'midgard.mayachain.info'
-})
-
-export function processThorchainTx(
-  rawTx: unknown,
-  info: ThorchainInfo,
-  pluginParams: ThorchainPluginParams
-): StandardTx | null {
-  const { pluginId } = info
-  const { affiliateAddress, thorchainAddress } = pluginParams.apiKeys
-
-  const rawTxs: unknown[] = Array.isArray(rawTx) ? rawTx : [rawTx]
-  const txs = asArray(asThorchainTx)(rawTxs)
-  const tx = txs[0]
-
-  if (tx == null) {
-    throw new Error(`${pluginId}: Missing rawTx`)
-  }
-
-  const { swap } = tx.metadata
-  if (swap?.affiliateAddress !== affiliateAddress) {
-    return null
-  }
-
-  if (tx.status !== 'success') {
-    return null
-  }
-
-  // There must be an affiliate output
-  const affiliateOut = tx.out.some(
-    o => o.affiliate === true || o.address === thorchainAddress
-  )
-  if (!affiliateOut) {
-    return null
-  }
-
-  // Find the source asset
-  if (tx.in.length !== 1) {
-    throw new Error(`${pluginId}: Unexpected ${tx.in.length} txIns. Expected 1`)
-  }
-  const txIn = tx.in[0]
-  if (txIn.coins.length !== 1) {
-    throw new Error(
-      `${pluginId}: Unexpected ${txIn.coins.length} txIn.coins. Expected 1`
-    )
-  }
-  const depositAmount = txs.reduce((sum, txInternal) => {
-    const amount =
-      Number(txInternal.in[0].coins[0].amount) / THORCHAIN_MULTIPLIER
-    return sum + amount
-  }, 0)
-
-  const srcDestMatch = tx.out.some(o => {
-    const match = o.coins.some(
-      c => c.asset === txIn.coins[0].asset && o.affiliate !== true
-    )
-    return match
-  })
-
-  // If there is a match between source and dest asset that means a refund was made
-  // and the transaction failed
-  if (srcDestMatch) {
-    return null
-  }
-
-  const timestampMs = div(tx.date, '1000000', 16)
-  const { timestamp, isoDate } = smartIsoDateFromTimestamp(Number(timestampMs))
-
-  const [chainAsset] = txIn.coins[0].asset.split('-')
-  const [, asset] = chainAsset.split('.')
-
-  // Find the first output that does not match the affiliate address
-  // as this is assumed to be the true destination asset/address
-  // If we can't find one, then just match the affiliate address as
-  // this means the affiliate address is the actual destination.
-  const hasAffiliateFlag = tx.out.some(o => o.affiliate === true)
-  let txOut = tx.out.find(out => {
-    if (hasAffiliateFlag) {
-      return out.affiliate !== true
-    } else {
-      return out.address !== thorchainAddress
-    }
-  })
-
-  if (txOut == null) {
-    // If there are two pools but only one output, there's a problem and we should skip
-    // this transaction. Midgard sometimes doesn't return the correct output until the transaction
-    // has completed for awhile.
-    if (tx.pools.length === 2 && tx.out.length === 1) {
-      return null
-    } else if (tx.pools.length === 1 && tx.out.length === 1) {
-      // The output is a native currency output (maya/rune)
-      txOut = tx.out[0]
-    } else {
-      throw new Error(`${pluginId}: Cannot find output`)
-    }
-  }
-
-  const [destChainAsset] = txOut.coins[0].asset.split('-')
-  const [, destAsset] = destChainAsset.split('.')
-  const payoutCurrency = destAsset
-  const payoutAmount = Number(txOut.coins[0].amount) / THORCHAIN_MULTIPLIER
-
-  const standardTx: StandardTx = {
-    status: 'complete',
-    orderId: tx.in[0].txID,
-    countryCode: null,
-    depositTxid: tx.in[0].txID,
-    depositAddress: undefined,
-    depositCurrency: asset.toUpperCase(),
-    depositAmount,
-    direction: null,
-    exchangeType: 'swap',
-    paymentType: null,
-    payoutTxid: txOut.txID,
-    payoutAddress: txOut.address,
-    payoutCurrency,
-    payoutAmount,
-    timestamp,
-    isoDate,
-    usdValue: -1,
-    rawTx
-  }
-  return standardTx
 }
+
+export function makeThorchainProcessTx(
+  info: ThorchainInfo
+): (rawTx: unknown, pluginParams?: PluginParams) => StandardTx | null {
+  const { pluginId } = info
+
+  return (rawTx: unknown, pluginParams?: PluginParams): StandardTx | null => {
+    if (pluginParams == null) {
+      throw new Error(`${pluginId}: Missing pluginParams`)
+    }
+    const { affiliateAddress, thorchainAddress } = asThorchainPluginParams(
+      pluginParams
+    ).apiKeys
+    const rawTxs: unknown[] = Array.isArray(rawTx) ? rawTx : [rawTx]
+    const txs = asArray(asThorchainTx)(rawTxs)
+    const tx = txs[0]
+
+    if (tx == null) {
+      throw new Error(`${pluginId}: Missing rawTx`)
+    }
+
+    const { swap } = tx.metadata
+    if (swap?.affiliateAddress !== affiliateAddress) {
+      return null
+    }
+
+    if (tx.status !== 'success') {
+      return null
+    }
+
+    // There must be an affiliate output
+    const affiliateOut = tx.out.some(
+      o => o.affiliate === true || o.address === thorchainAddress
+    )
+    if (!affiliateOut) {
+      return null
+    }
+
+    // Find the source asset
+    if (tx.in.length !== 1) {
+      throw new Error(
+        `${pluginId}: Unexpected ${tx.in.length} txIns. Expected 1`
+      )
+    }
+    const txIn = tx.in[0]
+    if (txIn.coins.length !== 1) {
+      throw new Error(
+        `${pluginId}: Unexpected ${txIn.coins.length} txIn.coins. Expected 1`
+      )
+    }
+    const depositAmount = txs.reduce((sum, txInternal) => {
+      const amount =
+        Number(txInternal.in[0].coins[0].amount) / THORCHAIN_MULTIPLIER
+      return sum + amount
+    }, 0)
+
+    const srcDestMatch = tx.out.some(o => {
+      const match = o.coins.some(
+        c => c.asset === txIn.coins[0].asset && o.affiliate !== true
+      )
+      return match
+    })
+
+    // If there is a match between source and dest asset that means a refund was made
+    // and the transaction failed
+    if (srcDestMatch) {
+      return null
+    }
+
+    const timestampMs = div(tx.date, '1000000', 16)
+    const { timestamp, isoDate } = smartIsoDateFromTimestamp(
+      Number(timestampMs)
+    )
+
+    // Parse deposit asset info
+    const depositAssetString = txIn.coins[0].asset
+    const depositAssetInfo = getEdgeAssetInfo(depositAssetString)
+
+    // Find the first output that does not match the affiliate address
+    // as this is assumed to be the true destination asset/address
+    // If we can't find one, then just match the affiliate address as
+    // this means the affiliate address is the actual destination.
+    const hasAffiliateFlag = tx.out.some(o => o.affiliate === true)
+    let txOut = tx.out.find(out => {
+      if (hasAffiliateFlag) {
+        return out.affiliate !== true
+      } else {
+        return out.address !== thorchainAddress
+      }
+    })
+
+    if (txOut == null) {
+      // If there are two pools but only one output, there's a problem and we should skip
+      // this transaction. Midgard sometimes doesn't return the correct output until the transaction
+      // has completed for awhile.
+      if (tx.pools.length === 2 && tx.out.length === 1) {
+        return null
+      } else if (tx.pools.length === 1 && tx.out.length === 1) {
+        // The output is a native currency output (maya/rune)
+        txOut = tx.out[0]
+      } else {
+        throw new Error(`${pluginId}: Cannot find output`)
+      }
+    }
+
+    // Parse payout asset info
+    const payoutAssetString = txOut.coins[0].asset
+    const payoutAssetInfo = getEdgeAssetInfo(payoutAssetString)
+
+    const payoutCurrency = payoutAssetInfo.asset
+    const payoutAmount = Number(txOut.coins[0].amount) / THORCHAIN_MULTIPLIER
+
+    const standardTx: StandardTx = {
+      status: 'complete',
+      orderId: tx.in[0].txID,
+      countryCode: null,
+      depositTxid: tx.in[0].txID,
+      depositAddress: undefined,
+      depositCurrency: depositAssetInfo.asset.toUpperCase(),
+      depositChainPluginId: depositAssetInfo.pluginId,
+      depositEvmChainId: depositAssetInfo.evmChainId,
+      depositTokenId: depositAssetInfo.tokenId,
+      depositAmount,
+      direction: null,
+      exchangeType: 'swap',
+      paymentType: null,
+      payoutTxid: txOut.txID,
+      payoutAddress: txOut.address,
+      payoutCurrency,
+      payoutChainPluginId: payoutAssetInfo.pluginId,
+      payoutEvmChainId: payoutAssetInfo.evmChainId,
+      payoutTokenId: payoutAssetInfo.tokenId,
+      payoutAmount,
+      timestamp,
+      isoDate,
+      usdValue: -1,
+      rawTx
+    }
+    return standardTx
+  }
+}
+
+export const thorchain = makeThorchainPlugin(THORCHAIN_INFO)
+export const maya = makeThorchainPlugin(MAYA_INFO)
+export const processThorchainTx = makeThorchainProcessTx(THORCHAIN_INFO)
+export const processMayaTx = makeThorchainProcessTx(MAYA_INFO)

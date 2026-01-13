@@ -10,7 +10,6 @@ import {
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog } from '../util'
 
 const asBogTx = asObject({
   attributes: asObject({
@@ -34,6 +33,7 @@ const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 export async function queryBitsOfGold(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   const ssFormatTxs: StandardTx[] = []
   let apiKey = ''
   let previousDate = '2019-01-01T00:00:00.000Z'
@@ -69,7 +69,7 @@ export async function queryBitsOfGold(
     const response = await fetch(url, { method: 'GET', headers: headers })
     result = asBogResult(await response.json())
   } catch (e) {
-    datelog(e)
+    log.error(String(e))
     throw e
   }
   const txs = result.data
@@ -127,6 +127,9 @@ export function processBitsOfGoldTx(rawTx: unknown): StandardTx {
     depositTxid: undefined,
     depositAddress: undefined,
     depositCurrency,
+    depositChainPluginId: undefined,
+    depositEvmChainId: undefined,
+    depositTokenId: undefined,
     depositAmount,
     direction,
     exchangeType: 'fiat',
@@ -134,6 +137,9 @@ export function processBitsOfGoldTx(rawTx: unknown): StandardTx {
     payoutTxid: undefined,
     payoutAddress: undefined,
     payoutCurrency,
+    payoutChainPluginId: undefined,
+    payoutEvmChainId: undefined,
+    payoutTokenId: undefined,
     payoutAmount,
     timestamp: timestamp / 1000,
     isoDate: date.toISOString(),

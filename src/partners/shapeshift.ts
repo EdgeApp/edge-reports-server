@@ -2,7 +2,7 @@ import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog, safeParseFloat } from '../util'
+import { safeParseFloat } from '../util'
 
 const asShapeshiftTx = asObject({
   orderId: asString,
@@ -25,6 +25,7 @@ const asShapeshiftResult = asArray(asUnknown)
 export async function queryShapeshift(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   const standardTxs: StandardTx[] = []
   let apiKey
 
@@ -60,7 +61,7 @@ export async function queryShapeshift(
     //   done = true
     // }
   } catch (e) {
-    datelog(e)
+    log.error(String(e))
     throw e
   }
   //   page++
@@ -92,6 +93,9 @@ export function processShapeshiftTx(rawTx: unknown): StandardTx {
     depositTxid: tx.inputTXID,
     depositAddress: tx.inputAddress,
     depositCurrency: tx.inputCurrency,
+    depositChainPluginId: undefined,
+    depositEvmChainId: undefined,
+    depositTokenId: undefined,
     depositAmount: tx.inputAmount,
     direction: null,
     exchangeType: 'swap',
@@ -99,6 +103,9 @@ export function processShapeshiftTx(rawTx: unknown): StandardTx {
     payoutTxid: tx.outputTXID,
     payoutAddress: tx.outputAddress,
     payoutCurrency: tx.outputCurrency,
+    payoutChainPluginId: undefined,
+    payoutEvmChainId: undefined,
+    payoutTokenId: undefined,
     payoutAmount: safeParseFloat(tx.outputAmount),
     timestamp: tx.timestamp,
     isoDate: new Date(tx.timestamp * 1000).toISOString(),

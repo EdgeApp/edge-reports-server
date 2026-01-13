@@ -18,7 +18,7 @@ import {
   PluginResult,
   StandardTx
 } from '../types'
-import { datelog, retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
+import { retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
 import { queryDummy } from './dummy'
 
 // Define cleaner for individual transactions in onRamps and offRamps
@@ -66,6 +66,7 @@ const MAX_RETRIES = 5
 export async function queryKado(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   const { settings, apiKeys } = asStandardPluginParams(pluginParams)
   const { apiKey } = apiKeys
   let { latestIsoDate } = settings
@@ -97,14 +98,14 @@ export async function queryKado(
       const standardTx: StandardTx = processKadoTx(rawTx)
       standardTxs.push(standardTx)
     }
-    datelog(`Kado latestIsoDate:${latestIsoDate}`)
+    log(`latestIsoDate:${latestIsoDate}`)
     retry = 0
   } catch (e) {
-    datelog(e)
+    log.error(String(e))
     // Retry a few times with time delay to prevent throttling
     retry++
     if (retry <= MAX_RETRIES) {
-      datelog(`Snoozing ${60 * retry}s`)
+      log(`Snoozing ${60 * retry}s`)
       await snooze(61000 * retry)
     } else {
       // We can safely save our progress since we go from oldest to newest.
@@ -138,6 +139,9 @@ export function processKadoTx(rawTx: unknown): StandardTx {
       depositTxid: undefined,
       depositAddress: undefined,
       depositCurrency: 'USD',
+      depositChainPluginId: undefined,
+      depositEvmChainId: undefined,
+      depositTokenId: undefined,
       depositAmount: tx.paidAmountUsd,
       direction: tx.type,
       exchangeType: 'fiat',
@@ -145,6 +149,9 @@ export function processKadoTx(rawTx: unknown): StandardTx {
       payoutTxid: undefined,
       payoutAddress: tx.walletAddress,
       payoutCurrency: tx.cryptoCurrency,
+      payoutChainPluginId: undefined,
+      payoutEvmChainId: undefined,
+      payoutTokenId: undefined,
       payoutAmount: tx.receiveUnitCount,
       timestamp,
       isoDate,
@@ -159,6 +166,9 @@ export function processKadoTx(rawTx: unknown): StandardTx {
       depositTxid: undefined,
       depositAddress: undefined,
       depositCurrency: tx.cryptoCurrency,
+      depositChainPluginId: undefined,
+      depositEvmChainId: undefined,
+      depositTokenId: undefined,
       depositAmount: tx.depositUnitCount,
       direction: tx.type,
       exchangeType: 'fiat',
@@ -166,6 +176,9 @@ export function processKadoTx(rawTx: unknown): StandardTx {
       payoutTxid: undefined,
       payoutAddress: undefined,
       payoutCurrency: 'USD',
+      payoutChainPluginId: undefined,
+      payoutEvmChainId: undefined,
+      payoutTokenId: undefined,
       payoutAmount: tx.receiveUsd,
       timestamp,
       isoDate,

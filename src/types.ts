@@ -1,7 +1,10 @@
 import {
   asArray,
+  asBoolean,
+  asDate,
   asEither,
   asMap,
+  asMaybe,
   asNull,
   asNumber,
   asObject,
@@ -19,6 +22,13 @@ export const asPluginParams = asObject({
   settings: asMap((raw: any): any => raw),
   apiKeys: asMap((raw: any): any => raw)
 })
+
+/** Scoped logging interface passed to plugins */
+export interface ScopedLog {
+  (message: string, ...args: unknown[]): void
+  warn: (message: string, ...args: unknown[]) => void
+  error: (message: string, ...args: unknown[]) => void
+}
 export interface PluginResult {
   // copy the type from standardtx from reports
   transactions: StandardTx[]
@@ -34,11 +44,15 @@ export interface PartnerPlugin {
 
 const asStatus = asValue(
   'complete',
+  'confirming',
+  'withdrawing',
   'processing',
   'pending',
   'expired',
   'blocked',
   'refunded',
+  'cancelled',
+  'failed',
   'other'
 )
 
@@ -85,6 +99,7 @@ const asFiatPaymentType = asValue(
   'moonpaybalance',
   'neft',
   'neteller',
+  'ozow',
   'payid',
   'paynow',
   'paypal',
@@ -115,6 +130,9 @@ export const asStandardTx = asObject({
   depositTxid: asOptional(asString),
   depositAddress: asOptional(asString),
   depositCurrency: asString,
+  depositChainPluginId: asOptional(asString),
+  depositEvmChainId: asOptional(asNumber),
+  depositTokenId: asOptional(asEither(asString, asNull)),
   depositAmount: asSafeNumber,
   direction: asOptional(asDirection),
   exchangeType: asOptional(asExchangeType),
@@ -122,6 +140,9 @@ export const asStandardTx = asObject({
   payoutTxid: asOptional(asString),
   payoutAddress: asOptional(asString),
   payoutCurrency: asString,
+  payoutChainPluginId: asOptional(asString),
+  payoutEvmChainId: asOptional(asNumber),
+  payoutTokenId: asOptional(asEither(asString, asNull)),
   payoutAmount: asSafeNumber,
   status: asStatus,
   isoDate: asString,
@@ -204,6 +225,37 @@ export const asAnalyticsResult = asObject({
   end: asNumber
 })
 
+// v3/rates response cleaner (matches GUI's shape)
+const asV3CryptoAsset = asObject({
+  pluginId: asString,
+  tokenId: asOptional(asEither(asString, asNull))
+})
+const asV3CryptoRate = asObject({
+  isoDate: asOptional(asDate),
+  asset: asV3CryptoAsset,
+  rate: asOptional(asNumber)
+})
+const asV3FiatRate = asObject({
+  isoDate: asOptional(asDate),
+  fiatCode: asString,
+  rate: asOptional(asNumber)
+})
+export const asV3RatesParams = asObject({
+  targetFiat: asString,
+  crypto: asArray(asV3CryptoRate),
+  fiat: asArray(asV3FiatRate)
+})
+
+export const asDisablePartnerQuery = asMaybe(
+  asObject({
+    plugins: asObject(asBoolean),
+    appPartners: asObject(asBoolean)
+  }),
+  { plugins: {}, appPartners: {} }
+)
+
+export type DisablePartnerQuery = ReturnType<typeof asDisablePartnerQuery>
+export type V3RatesParams = ReturnType<typeof asV3RatesParams>
 export type Bucket = ReturnType<typeof asBucket>
 export type AnalyticsResult = ReturnType<typeof asAnalyticsResult>
 
@@ -211,5 +263,7 @@ export type CurrencyCodeMappings = ReturnType<typeof asCurrencyCodeMappings>
 export type DbCurrencyCodeMappings = ReturnType<typeof asDbCurrencyCodeMappings>
 export type DbTx = ReturnType<typeof asDbTx>
 export type StandardTx = ReturnType<typeof asStandardTx>
-export type PluginParams = ReturnType<typeof asPluginParams>
+export type PluginParams = ReturnType<typeof asPluginParams> & {
+  log: ScopedLog
+}
 export type Status = ReturnType<typeof asStatus>
