@@ -17,6 +17,7 @@ import {
   PluginResult,
   StandardTx
 } from '../types'
+import { hashAddress } from '../util/addressHash'
 
 const PAGE_LIMIT = 100
 const OFFSET_ROLLBACK = 500
@@ -128,6 +129,7 @@ export function processTransakTx(rawTx: unknown): StandardTx {
     countryCode: null,
     depositTxid: undefined,
     depositAddress,
+    depositAddressHash: hashAddress(depositAddress),
     depositCurrency: tx.fiatCurrency,
     depositChainPluginId: undefined,
     depositEvmChainId: undefined,
@@ -138,6 +140,7 @@ export function processTransakTx(rawTx: unknown): StandardTx {
     paymentType: getFiatPaymentType(tx),
     payoutTxid: undefined,
     payoutAddress: tx.walletAddress,
+    payoutAddressHash: hashAddress(tx.walletAddress),
     payoutCurrency: tx.cryptoCurrency,
     payoutChainPluginId: undefined,
     payoutEvmChainId: undefined,

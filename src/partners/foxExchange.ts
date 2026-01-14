@@ -2,6 +2,7 @@ import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import { hashAddress } from '../util/addressHash'
 import { queryDummy } from './dummy'
 
 const asFoxExchangeTx = asObject({
@@ -126,6 +127,7 @@ export function processFoxExchangeTx(rawTx: unknown): StandardTx {
     countryCode: null,
     depositTxid: undefined,
     depositAddress: tx.exchangeAddress.address,
+    depositAddressHash: hashAddress(tx.exchangeAddress.address),
     depositCurrency: tx.depositCoin.toUpperCase(),
     depositChainPluginId: undefined,
     depositEvmChainId: undefined,
@@ -136,6 +138,7 @@ export function processFoxExchangeTx(rawTx: unknown): StandardTx {
     paymentType: null,
     payoutTxid: undefined,
     payoutAddress: tx.destinationAddress.address,
+    payoutAddressHash: hashAddress(tx.destinationAddress.address),
     payoutCurrency: tx.destinationCoin.toUpperCase(),
     payoutChainPluginId: undefined,
     payoutEvmChainId: undefined,

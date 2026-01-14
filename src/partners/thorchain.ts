@@ -12,6 +12,7 @@ import { HeadersInit } from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
+import { hashAddress } from '../util/addressHash'
 import {
   ChainNameToPluginIdMapping,
   createTokenId,
@@ -409,6 +410,7 @@ export function makeThorchainProcessTx(
       countryCode: null,
       depositTxid: tx.in[0].txID,
       depositAddress: undefined,
+      depositAddressHash: undefined,
       depositCurrency: depositAssetInfo.asset.toUpperCase(),
       depositChainPluginId: depositAssetInfo.pluginId,
       depositEvmChainId: depositAssetInfo.evmChainId,
@@ -419,6 +421,7 @@ export function makeThorchainProcessTx(
       paymentType: null,
       payoutTxid: txOut.txID,
       payoutAddress: txOut.address,
+      payoutAddressHash: hashAddress(txOut.address),
       payoutCurrency,
       payoutChainPluginId: payoutAssetInfo.pluginId,
       payoutEvmChainId: payoutAssetInfo.evmChainId,

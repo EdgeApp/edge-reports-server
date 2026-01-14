@@ -17,6 +17,7 @@ import {
   Status
 } from '../types'
 import { retryFetch, safeParseFloat, smartIsoDateFromTimestamp } from '../util'
+import { hashAddress } from '../util/addressHash'
 import {
   ChainNameToPluginIdMapping,
   createTokenId,
@@ -384,6 +385,7 @@ export async function processGodexTx(
     countryCode: null,
     depositTxid: tx.hash_in,
     depositAddress: tx.deposit,
+    depositAddressHash: hashAddress(tx.deposit),
     depositCurrency,
     depositChainPluginId: depositAssetInfo.pluginId,
     depositEvmChainId: depositAssetInfo.evmChainId,
@@ -394,6 +396,7 @@ export async function processGodexTx(
     paymentType: null,
     payoutTxid: undefined,
     payoutAddress: tx.withdrawal,
+    payoutAddressHash: hashAddress(tx.withdrawal),
     payoutCurrency,
     payoutChainPluginId: payoutAssetInfo.pluginId,
     payoutEvmChainId: payoutAssetInfo.evmChainId,

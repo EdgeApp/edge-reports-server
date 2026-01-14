@@ -16,6 +16,7 @@ import {
   Status
 } from '../types'
 import { retryFetch, smartIsoDateFromTimestamp } from '../util'
+import { hashAddress } from '../util/addressHash'
 
 const asSwapuzLogin = asObject({
   result: asObject({
@@ -175,6 +176,7 @@ export function processSwapuzTx(rawTx: unknown): StandardTx {
     depositTxid: tx.dTxId ?? tx.depositTransactionID,
     depositCurrency: tx.from.toUpperCase(),
     depositAddress: tx.depositAddress,
+    depositAddressHash: hashAddress(tx.depositAddress),
     depositChainPluginId: undefined,
     depositEvmChainId: undefined,
     depositTokenId: undefined,
@@ -185,6 +187,7 @@ export function processSwapuzTx(rawTx: unknown): StandardTx {
     payoutTxid: tx.wTxId ?? tx.withdrawalTransactionID,
     payoutCurrency: tx.to.toUpperCase(),
     payoutAddress: undefined,
+    payoutAddressHash: undefined,
     payoutChainPluginId: undefined,
     payoutEvmChainId: undefined,
     payoutTokenId: undefined,

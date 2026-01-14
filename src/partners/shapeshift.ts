@@ -3,6 +3,7 @@ import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { safeParseFloat } from '../util'
+import { hashAddress } from '../util/addressHash'
 
 const asShapeshiftTx = asObject({
   orderId: asString,
@@ -92,6 +93,7 @@ export function processShapeshiftTx(rawTx: unknown): StandardTx {
     countryCode: null,
     depositTxid: tx.inputTXID,
     depositAddress: tx.inputAddress,
+    depositAddressHash: hashAddress(tx.inputAddress),
     depositCurrency: tx.inputCurrency,
     depositChainPluginId: undefined,
     depositEvmChainId: undefined,
@@ -102,6 +104,7 @@ export function processShapeshiftTx(rawTx: unknown): StandardTx {
     paymentType: null,
     payoutTxid: tx.outputTXID,
     payoutAddress: tx.outputAddress,
+    payoutAddressHash: hashAddress(tx.outputAddress),
     payoutCurrency: tx.outputCurrency,
     payoutChainPluginId: undefined,
     payoutEvmChainId: undefined,

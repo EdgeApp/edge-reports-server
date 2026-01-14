@@ -11,6 +11,7 @@ import crypto from 'crypto'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import { hashAddress } from '../util/addressHash'
 import { queryDummy } from './dummy'
 
 const asBitaccessTx = asObject({
@@ -144,6 +145,7 @@ export function processBitaccessTx(rawTx: unknown): StandardTx {
     countryCode,
     depositTxid,
     depositAddress: tx.deposit_address,
+    depositAddressHash: hashAddress(tx.deposit_address),
     depositCurrency: tx.deposit_currency.toUpperCase(),
     depositChainPluginId: undefined,
     depositEvmChainId: undefined,
@@ -154,6 +156,7 @@ export function processBitaccessTx(rawTx: unknown): StandardTx {
     paymentType: 'cash',
     payoutTxid,
     payoutAddress: tx.withdrawal_address,
+    payoutAddressHash: hashAddress(tx.withdrawal_address),
     payoutCurrency: tx.withdrawal_currency.toUpperCase(),
     payoutChainPluginId: undefined,
     payoutEvmChainId: undefined,

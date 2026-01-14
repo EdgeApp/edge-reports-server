@@ -12,6 +12,7 @@ import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { smartIsoDateFromTimestamp } from '../util'
+import { hashAddress } from '../util/addressHash'
 
 const asXanpoolTx = asObject({
   id: asString,
@@ -128,6 +129,7 @@ export function processXanpoolTx(rawTx: unknown): StandardTx {
       countryCode: tx.userCountry,
       depositTxid: undefined,
       depositAddress: undefined,
+      depositAddressHash: undefined,
       depositCurrency: tx.currency,
       depositChainPluginId: undefined,
       depositEvmChainId: undefined,
@@ -138,6 +140,7 @@ export function processXanpoolTx(rawTx: unknown): StandardTx {
       paymentType: null, // Or whatever tx.method === 'paynow' means?
       payoutTxid: tx.blockchainTxId,
       payoutAddress: tx.wallet,
+      payoutAddressHash: hashAddress(tx.wallet),
       payoutCurrency: tx.cryptoCurrency,
       payoutChainPluginId: undefined,
       payoutEvmChainId: undefined,
@@ -150,12 +153,14 @@ export function processXanpoolTx(rawTx: unknown): StandardTx {
       rawTx
     }
   } else if (tx.type === 'sell') {
+    const depositAddress = Object.values(tx.depositWallets ?? {})[0]
     return {
       status: tx.status === 'completed' ? 'complete' : 'expired',
       orderId: tx.id,
       countryCode: tx.userCountry,
       depositTxid: tx.blockchainTxId,
-      depositAddress: Object.values(tx.depositWallets ?? {})[0],
+      depositAddress,
+      depositAddressHash: hashAddress(depositAddress),
       depositCurrency: tx.cryptoCurrency,
       depositChainPluginId: undefined,
       depositEvmChainId: undefined,
@@ -166,6 +171,7 @@ export function processXanpoolTx(rawTx: unknown): StandardTx {
       paymentType: 'paynow', // Or whatever tx.method === 'paynow' means?
       payoutTxid: undefined,
       payoutAddress: undefined,
+      payoutAddressHash: undefined,
       payoutCurrency: tx.currency,
       payoutChainPluginId: undefined,
       payoutEvmChainId: undefined,

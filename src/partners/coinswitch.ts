@@ -10,6 +10,7 @@ import {
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import { hashAddress } from '../util/addressHash'
 import { queryDummy } from './dummy'
 
 const asCoinSwitchTx = asObject({
@@ -116,6 +117,7 @@ export function processCoinSwitchTx(rawTx: unknown): StandardTx {
     countryCode: null,
     depositTxid,
     depositAddress: tx.exchangeAddress.address,
+    depositAddressHash: hashAddress(tx.exchangeAddress.address),
     depositCurrency: tx.depositCoin.toUpperCase(),
     depositChainPluginId: undefined,
     depositEvmChainId: undefined,
@@ -126,6 +128,7 @@ export function processCoinSwitchTx(rawTx: unknown): StandardTx {
     paymentType: null,
     payoutTxid,
     payoutAddress: tx.destinationAddress.address,
+    payoutAddressHash: hashAddress(tx.destinationAddress.address),
     payoutCurrency: tx.destinationCoin.toUpperCase(),
     payoutChainPluginId: undefined,
     payoutEvmChainId: undefined,

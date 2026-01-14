@@ -3,6 +3,7 @@ import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { safeParseFloat } from '../util'
+import { hashAddress } from '../util/addressHash'
 import { queryDummy } from './dummy'
 
 const asSwitchainTx = asObject({
@@ -120,6 +121,7 @@ export function processSwitchainTx(rawTx: unknown): StandardTx {
     countryCode: null,
     depositTxid: tx.depositTxId,
     depositAddress: tx.depositAddress,
+    depositAddressHash: hashAddress(tx.depositAddress),
     depositCurrency: pair[0].toUpperCase(),
     depositChainPluginId: undefined,
     depositEvmChainId: undefined,
@@ -130,6 +132,7 @@ export function processSwitchainTx(rawTx: unknown): StandardTx {
     paymentType: null,
     payoutTxid: tx.withdrawTxId,
     payoutAddress: tx.withdrawAddress,
+    payoutAddressHash: hashAddress(tx.withdrawAddress),
     payoutCurrency: pair[1].toUpperCase(),
     payoutChainPluginId: undefined,
     payoutEvmChainId: undefined,

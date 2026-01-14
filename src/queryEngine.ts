@@ -45,6 +45,7 @@ import {
   StandardTx
 } from './types'
 import { createScopedLog, promiseTimeout, standardizeNames } from './util'
+import { hashAddress } from './util/addressHash'
 
 /** Local datelog for engine-level logs not associated with a specific app/partner */
 const datelog = (...args: unknown[]): void => {
@@ -244,6 +245,10 @@ const filterAddNewTxs = async (
       newObj.depositCurrency = standardizeNames(newObj.depositCurrency)
       newObj.payoutCurrency = standardizeNames(newObj.payoutCurrency)
 
+      // Compute address hashes for indexing
+      newObj.depositAddressHash = hashAddress(newObj.depositAddress)
+      newObj.payoutAddressHash = hashAddress(newObj.payoutAddress)
+
       log(`[filterAddNewTxs] new doc id: ${newObj._id}`)
       newDocs.push(newObj)
     } else {
@@ -252,6 +257,11 @@ const filterAddNewTxs = async (
         const oldStatus = queryResult.doc?.status
         const newStatus = tx.status
         const newObj = { _id: docId, _rev: queryResult.doc?._rev, ...tx }
+
+        // Compute address hashes for indexing (in case they were missing)
+        newObj.depositAddressHash = hashAddress(newObj.depositAddress)
+        newObj.payoutAddressHash = hashAddress(newObj.payoutAddress)
+
         newDocs.push(newObj)
         log(
           `[filterAddNewTxs] updated doc id: ${

@@ -2,6 +2,7 @@ import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import { hashAddress } from '../util/addressHash'
 
 const asPaytrieTx = asObject({
   inputTXID: asString,
@@ -85,6 +86,7 @@ export function processPaytrieTx(rawTx: unknown): StandardTx {
     countryCode: null, // No records of paytrie in the DB to determine
     depositTxid: undefined,
     depositAddress: order.inputAddress,
+    depositAddressHash: hashAddress(order.inputAddress),
     depositCurrency: order.inputCurrency,
     depositChainPluginId: undefined,
     depositEvmChainId: undefined,
@@ -95,6 +97,7 @@ export function processPaytrieTx(rawTx: unknown): StandardTx {
     paymentType: null,
     payoutTxid: undefined,
     payoutAddress: order.outputAddress,
+    payoutAddressHash: hashAddress(order.outputAddress),
     payoutCurrency: order.outputCurrency,
     payoutChainPluginId: undefined,
     payoutEvmChainId: undefined,

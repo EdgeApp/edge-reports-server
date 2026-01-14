@@ -20,6 +20,7 @@ import {
   Status
 } from '../types'
 import { retryFetch, safeParseFloat, snooze } from '../util'
+import { hashAddress } from '../util/addressHash'
 import { createTokenId, EdgeTokenId, tokenTypes } from '../util/asEdgeTokenId'
 import { EVM_CHAIN_IDS } from '../util/chainIds'
 
@@ -500,6 +501,7 @@ export async function processLetsExchangeTx(
     countryCode: null,
     depositTxid: tx.hash_in,
     depositAddress: tx.deposit,
+    depositAddressHash: hashAddress(tx.deposit),
     depositCurrency: tx.coin_from.toUpperCase(),
     depositChainPluginId: depositAsset?.chainPluginId,
     depositEvmChainId: depositAsset?.evmChainId,
@@ -510,6 +512,7 @@ export async function processLetsExchangeTx(
     paymentType: null,
     payoutTxid: undefined,
     payoutAddress: tx.withdrawal,
+    payoutAddressHash: hashAddress(tx.withdrawal),
     payoutCurrency: tx.coin_to.toUpperCase(),
     payoutChainPluginId: payoutAsset?.chainPluginId,
     payoutEvmChainId: payoutAsset?.evmChainId,

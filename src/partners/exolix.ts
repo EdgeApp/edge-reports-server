@@ -19,6 +19,7 @@ import {
   Status
 } from '../types'
 import { retryFetch, smartIsoDateFromTimestamp } from '../util'
+import { hashAddress } from '../util/addressHash'
 import { createTokenId, EdgeTokenId, tokenTypes } from '../util/asEdgeTokenId'
 import { EVM_CHAIN_IDS } from '../util/chainIds'
 
@@ -326,6 +327,7 @@ export function processExolixTx(rawTx: unknown): StandardTx {
     countryCode: null,
     depositTxid: tx.hashIn?.hash ?? '',
     depositAddress: tx.depositAddress,
+    depositAddressHash: hashAddress(tx.depositAddress),
     depositCurrency: tx.coinFrom.coinCode,
     depositChainPluginId: depositAsset.chainPluginId,
     depositEvmChainId: depositAsset.evmChainId,
@@ -336,6 +338,7 @@ export function processExolixTx(rawTx: unknown): StandardTx {
     paymentType: null,
     payoutTxid: tx.hashOut?.hash ?? '',
     payoutAddress: tx.withdrawalAddress,
+    payoutAddressHash: hashAddress(tx.withdrawalAddress),
     payoutCurrency: tx.coinTo.coinCode,
     payoutChainPluginId: payoutAsset.chainPluginId,
     payoutEvmChainId: payoutAsset.evmChainId,

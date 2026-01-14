@@ -23,6 +23,7 @@ import {
   Status
 } from '../types'
 import { retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
+import { hashAddress } from '../util/addressHash'
 
 const PLUGIN_START_DATE = '2023-09-01T00:00:00.000Z'
 const asStatuses = asMaybe(
@@ -280,6 +281,7 @@ export function processPaybisTx(rawTx: unknown): StandardTx {
     countryCode: tx.user.country?.code ?? null,
     depositTxid,
     depositAddress: undefined,
+    depositAddressHash: undefined,
     depositCurrency: spentOriginal.currency,
     depositChainPluginId: undefined,
     depositEvmChainId: undefined,
@@ -290,6 +292,7 @@ export function processPaybisTx(rawTx: unknown): StandardTx {
     paymentType: getFiatPaymentType(tx, direction),
     payoutTxid,
     payoutAddress: tx.to.address,
+    payoutAddressHash: hashAddress(tx.to.address),
     payoutCurrency: receivedOriginal.currency,
     payoutChainPluginId: undefined,
     payoutEvmChainId: undefined,

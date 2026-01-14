@@ -63,6 +63,13 @@ const transactionIndexes: DesignDocumentMap = {
   ...fieldsToDesignDocs(['payoutAddress'], { noPartitionVariant: true }),
   ...fieldsToDesignDocs(['payoutAddress', 'isoDate'], {
     noPartitionVariant: true
+  }),
+  // Address hash indexes for privacy-preserving range queries
+  ...fieldsToDesignDocs(['depositAddressHash', 'isoDate'], {
+    noPartitionVariant: true
+  }),
+  ...fieldsToDesignDocs(['payoutAddressHash', 'isoDate'], {
+    noPartitionVariant: true
   })
 }
 

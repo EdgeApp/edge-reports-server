@@ -19,6 +19,7 @@ import {
   Status
 } from '../types'
 import { retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
+import { hashAddress } from '../util/addressHash'
 import { createTokenId, tokenTypes } from '../util/asEdgeTokenId'
 import { EVM_CHAIN_IDS, REVERSE_EVM_CHAIN_IDS } from '../util/chainIds'
 
@@ -290,6 +291,7 @@ export function processLifiTx(
       countryCode: null,
       depositTxid: tx.sending.txHash,
       depositAddress: undefined,
+      depositAddressHash: undefined,
       depositCurrency: depositToken.symbol,
       depositChainPluginId,
       depositEvmChainId,
@@ -300,6 +302,7 @@ export function processLifiTx(
       paymentType: null,
       payoutTxid: tx.receiving.txHash,
       payoutAddress: tx.toAddress,
+      payoutAddressHash: hashAddress(tx.toAddress),
       payoutCurrency: payoutToken.symbol,
       payoutChainPluginId,
       payoutEvmChainId,

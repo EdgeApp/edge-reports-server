@@ -20,6 +20,7 @@ import {
   StandardTx,
   Status
 } from '../types'
+import { hashAddress } from '../util/addressHash'
 import { createTokenId, EdgeTokenId, tokenTypes } from '../util/asEdgeTokenId'
 import {
   EVM_CHAIN_IDS,
@@ -303,6 +304,7 @@ export function processTx(rawTx: unknown): StandardTx {
       ? processMetadata(payoutCurrency.metadata, payoutCurrency.code)
       : { chainPluginId: undefined, evmChainId: undefined, tokenId: undefined }
 
+  const payoutAddress = direction === 'buy' ? tx.walletAddress : undefined
   const standardTx: StandardTx = {
     status,
     orderId: tx.id,
@@ -310,6 +312,7 @@ export function processTx(rawTx: unknown): StandardTx {
     countryCode: tx.country,
     depositTxid: direction === 'sell' ? tx.depositHash : undefined,
     depositAddress: undefined,
+    depositAddressHash: undefined,
     depositCurrency: tx.baseCurrency.code.toUpperCase(),
     depositChainPluginId: depositAsset.chainPluginId,
     depositEvmChainId: depositAsset.evmChainId,
@@ -319,7 +322,8 @@ export function processTx(rawTx: unknown): StandardTx {
     exchangeType: 'fiat',
     paymentType: getFiatPaymentType(tx),
     payoutTxid: direction === 'buy' ? tx.cryptoTransactionId : undefined,
-    payoutAddress: direction === 'buy' ? tx.walletAddress : undefined,
+    payoutAddress,
+    payoutAddressHash: hashAddress(payoutAddress),
     payoutCurrency: payoutCurrency.code.toUpperCase(),
     payoutChainPluginId: payoutAsset.chainPluginId,
     payoutEvmChainId: payoutAsset.evmChainId,

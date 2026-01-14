@@ -19,6 +19,7 @@ import {
   Status
 } from '../types'
 import { retryFetch } from '../util'
+import { hashAddress } from '../util/addressHash'
 import { EVM_CHAIN_IDS } from '../util/chainIds'
 
 // Start date for Rango transactions (first Edge transaction was 2024-06-23)
@@ -286,6 +287,7 @@ export function processRangoTx(
     countryCode: null,
     depositTxid: undefined,
     depositAddress: firstStep.sender,
+    depositAddressHash: hashAddress(firstStep.sender),
     depositCurrency: firstStep.fromToken.symbol,
     depositChainPluginId,
     depositEvmChainId,
@@ -296,6 +298,7 @@ export function processRangoTx(
     paymentType: null,
     payoutTxid: undefined,
     payoutAddress: lastStep.recipient,
+    payoutAddressHash: hashAddress(lastStep.recipient),
     payoutCurrency: lastStep.toToken.symbol,
     payoutChainPluginId,
     payoutEvmChainId,

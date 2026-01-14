@@ -5,6 +5,7 @@ import Web3 from 'web3'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
 import { safeParseFloat } from '../util'
+import { hashAddress } from '../util/addressHash'
 import { queryDummy } from './dummy'
 
 const asCurrentBlockResult = asNumber
@@ -395,6 +396,7 @@ export async function queryTotle(
             countryCode: null,
             depositTxid: receipt.transactionHash,
             depositAddress: receipt.from,
+            depositAddressHash: hashAddress(receipt.from),
             depositCurrency: sourceToken.symbol,
             depositChainPluginId: undefined,
             depositEvmChainId: undefined,
@@ -412,6 +414,7 @@ export async function queryTotle(
             paymentType: null,
             payoutTxid: receipt.transactionHash,
             payoutAddress: receipt.to,
+            payoutAddressHash: hashAddress(receipt.to),
             payoutCurrency: destinationToken.symbol,
             payoutChainPluginId: undefined,
             payoutEvmChainId: undefined,

@@ -22,6 +22,7 @@ import {
   Status
 } from '../types'
 import { retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
+import { hashAddress } from '../util/addressHash'
 import {
   ChainNameToPluginIdMapping,
   createTokenId,
@@ -541,6 +542,7 @@ export async function processBanxaTx(
     countryCode: banxaTx.country,
     depositTxid: undefined,
     depositAddress: undefined,
+    depositAddressHash: undefined,
     depositCurrency: inputCurrency,
     depositChainPluginId: depositAsset.chainPluginId,
     depositEvmChainId: depositAsset.evmChainId,
@@ -551,6 +553,7 @@ export async function processBanxaTx(
     paymentType,
     payoutTxid: undefined,
     payoutAddress,
+    payoutAddressHash: hashAddress(payoutAddress),
     payoutCurrency: outputCurrency,
     payoutChainPluginId: payoutAsset.chainPluginId,
     payoutEvmChainId: payoutAsset.evmChainId,

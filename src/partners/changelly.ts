@@ -9,6 +9,7 @@ import {
   StandardTx
 } from '../types'
 import { safeParseFloat } from '../util'
+import { hashAddress } from '../util/addressHash'
 
 const asChangellyTx = asObject({
   id: asString,
@@ -187,6 +188,7 @@ export function processChangellyTx(rawTx: unknown): StandardTx {
     countryCode: null,
     depositTxid: tx.payinHash,
     depositAddress: tx.payinAddress,
+    depositAddressHash: hashAddress(tx.payinAddress),
     depositCurrency: tx.currencyFrom.toUpperCase(),
     depositChainPluginId: undefined,
     depositEvmChainId: undefined,
@@ -197,6 +199,7 @@ export function processChangellyTx(rawTx: unknown): StandardTx {
     paymentType: null,
     payoutTxid: tx.payoutHash,
     payoutAddress: tx.payoutAddress,
+    payoutAddressHash: hashAddress(tx.payoutAddress),
     payoutCurrency: tx.currencyTo.toUpperCase(),
     payoutChainPluginId: undefined,
     payoutEvmChainId: undefined,

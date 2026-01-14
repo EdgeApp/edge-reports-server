@@ -18,6 +18,7 @@ import {
   Status
 } from '../types'
 import { retryFetch, snooze } from '../util'
+import { hashAddress } from '../util/addressHash'
 import {
   ChainNameToPluginIdMapping,
   createTokenId,
@@ -411,6 +412,7 @@ export async function processChangeNowTx(
     countryCode: null,
     depositTxid: tx.payin.hash,
     depositAddress: tx.payin.address,
+    depositAddressHash: hashAddress(tx.payin.address),
     depositCurrency: tx.payin.currency.toUpperCase(),
     depositChainPluginId: depositAsset.chainPluginId,
     depositEvmChainId: depositAsset.evmChainId,
@@ -421,6 +423,7 @@ export async function processChangeNowTx(
     paymentType: null,
     payoutTxid: tx.payout.hash,
     payoutAddress: tx.payout.address,
+    payoutAddressHash: hashAddress(tx.payout.address),
     payoutCurrency: tx.payout.currency.toUpperCase(),
     payoutChainPluginId: payoutAsset.chainPluginId,
     payoutEvmChainId: payoutAsset.evmChainId,

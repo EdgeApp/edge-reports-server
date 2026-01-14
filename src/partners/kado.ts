@@ -19,6 +19,7 @@ import {
   StandardTx
 } from '../types'
 import { retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
+import { hashAddress } from '../util/addressHash'
 import { queryDummy } from './dummy'
 
 // Define cleaner for individual transactions in onRamps and offRamps
@@ -138,6 +139,7 @@ export function processKadoTx(rawTx: unknown): StandardTx {
       countryCode: null,
       depositTxid: undefined,
       depositAddress: undefined,
+      depositAddressHash: undefined,
       depositCurrency: 'USD',
       depositChainPluginId: undefined,
       depositEvmChainId: undefined,
@@ -148,6 +150,7 @@ export function processKadoTx(rawTx: unknown): StandardTx {
       paymentType: getFiatPaymentType(tx),
       payoutTxid: undefined,
       payoutAddress: tx.walletAddress,
+      payoutAddressHash: hashAddress(tx.walletAddress),
       payoutCurrency: tx.cryptoCurrency,
       payoutChainPluginId: undefined,
       payoutEvmChainId: undefined,
@@ -165,6 +168,7 @@ export function processKadoTx(rawTx: unknown): StandardTx {
       countryCode: null,
       depositTxid: undefined,
       depositAddress: undefined,
+      depositAddressHash: undefined,
       depositCurrency: tx.cryptoCurrency,
       depositChainPluginId: undefined,
       depositEvmChainId: undefined,
@@ -175,6 +179,7 @@ export function processKadoTx(rawTx: unknown): StandardTx {
       paymentType: getFiatPaymentType(tx),
       payoutTxid: undefined,
       payoutAddress: undefined,
+      payoutAddressHash: undefined,
       payoutCurrency: 'USD',
       payoutChainPluginId: undefined,
       payoutEvmChainId: undefined,

@@ -17,6 +17,7 @@ import {
   Status
 } from '../types'
 import { retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
+import { hashAddress } from '../util/addressHash'
 import {
   ChainNameToPluginIdMapping,
   createTokenId,
@@ -358,6 +359,7 @@ export async function processSideshiftTx(
     countryCode: null,
     depositTxid: undefined,
     depositAddress,
+    depositAddressHash: hashAddress(depositAddress),
     depositCurrency: tx.depositAsset,
     depositChainPluginId: depositAsset.chainPluginId,
     depositEvmChainId: depositAsset.evmChainId,
@@ -368,6 +370,7 @@ export async function processSideshiftTx(
     paymentType: null,
     payoutTxid: undefined,
     payoutAddress: tx.settleAddress.address,
+    payoutAddressHash: hashAddress(tx.settleAddress.address),
     payoutCurrency: tx.settleAsset,
     payoutChainPluginId: payoutAsset.chainPluginId,
     payoutEvmChainId: payoutAsset.evmChainId,

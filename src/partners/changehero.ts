@@ -20,6 +20,7 @@ import {
   Status
 } from '../types'
 import { retryFetch, safeParseFloat, smartIsoDateFromTimestamp } from '../util'
+import { hashAddress } from '../util/addressHash'
 import { createTokenId, EdgeTokenId, tokenTypes } from '../util/asEdgeTokenId'
 import { EVM_CHAIN_IDS } from '../util/chainIds'
 
@@ -405,6 +406,7 @@ export async function processChangeHeroTx(
     countryCode: null,
     depositTxid: tx.payinHash,
     depositAddress: tx.payinAddress,
+    depositAddressHash: hashAddress(tx.payinAddress),
     depositCurrency: tx.currencyFrom.toUpperCase(),
     depositChainPluginId: depositAsset.chainPluginId,
     depositEvmChainId: depositAsset.evmChainId,
@@ -415,6 +417,7 @@ export async function processChangeHeroTx(
     paymentType: null,
     payoutTxid: tx.payoutHash,
     payoutAddress: tx.payoutAddress,
+    payoutAddressHash: hashAddress(tx.payoutAddress),
     payoutCurrency: tx.currencyTo.toUpperCase(),
     payoutChainPluginId: payoutAsset.chainPluginId,
     payoutEvmChainId: payoutAsset.evmChainId,
