@@ -1,28 +1,30 @@
-import { asMaybe, asObject, asString } from 'cleaners'
+import { asDate, asMaybe, asObject } from 'cleaners'
 import Router from 'express-promise-router'
 
 import { reportsTransactions } from '../../indexApi'
 import { asDbTx, DbTx, Status } from '../../types'
+import { prefixToRange } from '../../util/addressHash'
 import { EdgeTokenId } from '../../util/asEdgeTokenId'
+import { asHex } from '../../util/asHex'
 import { HttpError } from '../../util/httpErrors'
 import { trial } from '../../util/trail'
 
 const asGetTxInfoReq = asObject({
   /**
-   * Prefix of the destination address.
-   * Minimum 3 character; Maximum 5 characters.
+   * Hex prefix of the SHA256 hash of the payout address.
+   * Length must match the server's required prefix length.
    */
-  addressPrefix: asString,
+  addressHashPrefix: asHex,
 
   /**
    * ISO date string to start searching for transactions.
    */
-  startIsoDate: asString,
+  startIsoDate: asDate,
 
   /**
    * ISO date string to end searching for transactions.
    */
-  endIsoDate: asString
+  endIsoDate: asDate
 })
 
 interface TxInfo {
@@ -50,37 +52,48 @@ getTxInfoRouter.get('/', async function(req, res) {
     }
   )
 
-  if (query.addressPrefix.length < 3) {
-    res.status(400).send('addressPrefix must be at least 3 characters')
+  const { addressHashPrefix, startIsoDate, endIsoDate } = query
+
+  const startIsoString = startIsoDate.toISOString()
+  const endIsoString = endIsoDate.toISOString()
+
+  // Validate prefix length matches required length
+  const requiredPrefixLength = await getRequiredPrefixLength(
+    startIsoString,
+    endIsoString
+  )
+  if (addressHashPrefix.length !== requiredPrefixLength) {
+    res.status(400).send({
+      error: `addressHashPrefix must be exactly ${requiredPrefixLength} characters for this date range`
+    })
     return
   }
 
-  const startDate = new Date(query.startIsoDate)
-  const endDate = new Date(query.endIsoDate)
+  // Convert prefix to exact hash range boundaries
+  const { startHash, endHash } = prefixToRange(addressHashPrefix.toLowerCase())
 
-  const addressKey = query.addressPrefix.slice(
-    0,
-    Math.min(query.addressPrefix.length, 5)
-  )
-
-  const results = await reportsTransactions.find({
+  // Mango query with range on hash prefix AND date
+  const mangoQuery = {
     selector: {
-      payoutAddress: {
-        $gte: addressKey,
-        $lte: addressKey + '\uffff'
+      payoutAddressHash: {
+        $gte: startHash,
+        $lte: endHash
       },
       isoDate: {
-        $gte: startDate.toISOString(),
-        $lte: endDate.toISOString()
+        $gte: startIsoString,
+        $lte: endIsoString
       }
-    }
-  })
+    },
+    use_index: 'payoutaddresshash-isodate',
+    limit: 1000
+  }
 
+  const results: any = await reportsTransactions.find(mangoQuery)
   const rows = results.docs
-    .map(doc => asMaybe(asDbTx)(doc))
-    .filter((item): item is DbTx => item != null)
+    .map((doc: any) => asMaybe(asDbTx)(doc))
+    .filter((item: DbTx | undefined): item is DbTx => item != null)
 
-  const txs: TxInfo[] = rows.map(row => ({
+  const txs: TxInfo[] = rows.map((row: DbTx) => ({
     providerId: getProviderId(row),
     orderId: row.orderId,
     isoDate: row.isoDate,
@@ -108,4 +121,17 @@ For example: edge_switchain:<orderId> -> switchain
 */
 function getProviderId(row: DbTx): string {
   return row._id?.split(':')[0].split('_')[1] ?? ''
+}
+
+/**
+ * Calculate the required prefix length based on date range.
+ * This is a placeholder - implement your heuristic here.
+ */
+async function getRequiredPrefixLength(
+  startIsoDate: string,
+  endIsoDate: string
+): Promise<number> {
+  // TODO: Implement actual heuristic based on avg tx/minute
+  // For now, return a fixed value
+  return 8
 }

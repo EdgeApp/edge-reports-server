@@ -9,6 +9,7 @@ import { checkTxsRouter } from './routes/v1/checkTxs'
 import { getAppIdRouter } from './routes/v1/getAppId'
 import { getPluginIdsRouter } from './routes/v1/getPluginIds'
 import { getTxInfoRouter } from './routes/v1/getTxInfo'
+import { hashPrefixLengthRouter } from './routes/v1/hashPrefixLength'
 import { HttpError } from './util/httpErrors'
 
 export const nanoDb = nano(config.couchDbFullpath)
@@ -29,6 +30,7 @@ async function main(): Promise<void> {
   app.use('/v1/getAppId/', getAppIdRouter)
   app.use('/v1/getPluginIds/', getPluginIdsRouter)
   app.use('/v1/getTxInfo/', getTxInfoRouter)
+  app.use('/v1/hashPrefixLength/', hashPrefixLengthRouter)
 
   // Error router
   app.use(function(err, _req, res, _next) {
