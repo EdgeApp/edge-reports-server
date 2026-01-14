@@ -27,7 +27,8 @@
     "stats": "node -r sucrase/register src/bin/partitionStats.ts",
     "test": "mocha -r sucrase/register 'test/**/*.test.ts'",
     "demo": "parcel serve src/demo/index.html",
-    "lint": "eslint --ext .js,.jsx,.ts,.tsx ."
+    "lint": "eslint --ext .js,.jsx,.ts,.tsx .",
+    "addAddressHashes": "node -r sucrase/register src/bin/addAddressHashes.ts"
   },
   "husky": {
     "hooks": {
