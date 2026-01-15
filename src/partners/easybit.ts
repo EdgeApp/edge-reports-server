@@ -62,7 +62,7 @@ const statusMap: { [key in EasyBitStatus]: Status } = {
   'Confirming Deposit': 'processing',
   'Exchanging': 'processing',
   'Sending': 'processing',
-  'Request Overdue': 'expired',
+  'Request Overdue': 'refunded',
   'Refund': 'refunded',
   'Failed': 'expired',
   'Volatility Protection': 'expired',
