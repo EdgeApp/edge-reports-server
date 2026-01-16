@@ -205,7 +205,7 @@ export function processEasyBitTx(rawTx: unknown): StandardTx {
 
   const standardTx: StandardTx = {
     status: statusMap[tx.status],
-    orderId: tx.id.toLowerCase(),
+    orderId: tx.id,
     countryCode: null,
     depositTxid,
     depositAddress: tx.sendAddress,
