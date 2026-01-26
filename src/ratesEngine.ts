@@ -124,7 +124,9 @@ async function updateTxValuesV3(transaction: DbTx): Promise<void> {
   } = transaction
 
   let depositIsFiat = false
+  let depositIsUsd = false
   let payoutIsFiat = false
+  let payoutIsUsd = false
   const ratesRequest: RatesV3Params = {
     targetFiat: 'USD',
     crypto: [],
@@ -139,7 +141,9 @@ async function updateTxValuesV3(transaction: DbTx): Promise<void> {
       },
       rate: undefined
     })
-  } else if (isFiatCurrency(depositCurrency) && depositCurrency !== 'USD') {
+  } else if (depositCurrency === 'USD') {
+    depositIsUsd = true
+  } else if (isFiatCurrency(depositCurrency)) {
     depositIsFiat = true
     ratesRequest.fiat.push({
       isoDate: new Date(isoDate),
@@ -162,7 +166,9 @@ async function updateTxValuesV3(transaction: DbTx): Promise<void> {
       },
       rate: undefined
     })
-  } else if (isFiatCurrency(payoutCurrency) && payoutCurrency !== 'USD') {
+  } else if (payoutCurrency === 'USD') {
+    payoutIsUsd = true
+  } else if (isFiatCurrency(payoutCurrency)) {
     payoutIsFiat = true
     ratesRequest.fiat.push({
       isoDate: new Date(isoDate),
@@ -200,8 +206,9 @@ async function updateTxValuesV3(transaction: DbTx): Promise<void> {
           (rate.asset.tokenId ?? null) === payoutTokenId
       )
 
-  const depositRate = depositRateObf?.rate
-  const payoutRate = payoutRateObf?.rate
+  // USD is the target fiat, so it has an implicit rate of 1.0
+  const depositRate = depositIsUsd ? 1 : depositRateObf?.rate
+  const payoutRate = payoutIsUsd ? 1 : payoutRateObf?.rate
 
   // Calculate and fill out payoutAmount if it is zero
   if (payoutAmount === 0) {
