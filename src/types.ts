@@ -212,27 +212,27 @@ export const asAnalyticsResult = asObject({
 })
 
 // v3/rates response cleaner (matches GUI's shape)
-const asV3CryptoAsset = asObject({
+const asRatesV3CryptoAsset = asObject({
   pluginId: asString,
   tokenId: asOptional(asEither(asString, asNull))
 })
-const asV3CryptoRate = asObject({
+const asRatesV3CryptoRate = asObject({
   isoDate: asOptional(asDate),
-  asset: asV3CryptoAsset,
+  asset: asRatesV3CryptoAsset,
   rate: asOptional(asNumber)
 })
-const asV3FiatRate = asObject({
+const asRatesV3FiatRate = asObject({
   isoDate: asOptional(asDate),
   fiatCode: asString,
   rate: asOptional(asNumber)
 })
-export const asV3RatesParams = asObject({
+export const asRatesV3Params = asObject({
   targetFiat: asString,
-  crypto: asArray(asV3CryptoRate),
-  fiat: asArray(asV3FiatRate)
+  crypto: asArray(asRatesV3CryptoRate),
+  fiat: asArray(asRatesV3FiatRate)
 })
 
-export type V3RatesParams = ReturnType<typeof asV3RatesParams>
+export type RatesV3Params = ReturnType<typeof asRatesV3Params>
 export type Bucket = ReturnType<typeof asBucket>
 export type AnalyticsResult = ReturnType<typeof asAnalyticsResult>
 
