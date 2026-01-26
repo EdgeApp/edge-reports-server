@@ -163,13 +163,7 @@ export const lifi: PartnerPlugin = {
 }
 
 export function processLifiTx(rawTx: unknown): StandardTx {
-  let tx: Transfer
-  try {
-    tx = asTransfer(rawTx)
-  } catch (e) {
-    datelog(e)
-    throw e
-  }
+  const tx = asTransfer(rawTx)
   const txTimestamp = tx.receiving.timestamp ?? tx.sending.timestamp ?? 0
   if (txTimestamp === 0) {
     throw new Error('No timestamp')
@@ -269,62 +263,57 @@ export function processLifiTx(rawTx: unknown): StandardTx {
     throw new Error('Missing token type')
   }
 
-  try {
-    const depositTokenId = createTokenId(
-      depositTokenType,
-      depositToken.symbol,
-      depositTokenAddress ?? undefined
-    )
-    const payoutTokenId = createTokenId(
-      payoutTokenType,
-      payoutToken.symbol,
-      payoutTokenAddress ?? undefined
-    )
+  const depositTokenId = createTokenId(
+    depositTokenType,
+    depositToken.symbol,
+    depositTokenAddress ?? undefined
+  )
+  const payoutTokenId = createTokenId(
+    payoutTokenType,
+    payoutToken.symbol,
+    payoutTokenAddress ?? undefined
+  )
 
-    const standardTx: StandardTx = {
-      status: statusMap[tx.status],
-      orderId: tx.sending.txHash,
-      countryCode: null,
-      depositTxid: tx.sending.txHash,
-      depositAddress: undefined,
-      depositCurrency: depositToken.symbol,
-      depositChainPluginId,
-      depositEvmChainId,
-      depositTokenId,
-      depositAmount,
-      direction: null,
-      exchangeType: 'swap',
-      paymentType: null,
-      payoutTxid: tx.receiving.txHash,
-      payoutAddress: tx.toAddress,
-      payoutCurrency: payoutToken.symbol,
-      payoutChainPluginId,
-      payoutEvmChainId,
-      payoutTokenId,
-      payoutAmount,
-      timestamp,
-      isoDate,
-      usdValue: Number(tx.sending.amountUSD ?? tx.receiving.amountUSD ?? '-1'),
-      rawTx
-    }
-    if (statusMap[tx.status] === 'complete') {
-      const { orderId, depositCurrency, payoutCurrency } = standardTx
-      console.log(
-        `${orderId} ${depositCurrency} ${depositChainPluginId} ${depositEvmChainId} ${depositTokenId?.slice(
-          0,
-          6
-        ) ??
-          ''} ${depositAmount} -> ${payoutCurrency} ${payoutChainPluginId} ${payoutEvmChainId} ${payoutTokenId?.slice(
-          0,
-          6
-        ) ?? ''} ${payoutAmount}`
-      )
-    }
-    return standardTx
-  } catch (e) {
-    datelog(e)
-    throw e
+  const standardTx: StandardTx = {
+    status: statusMap[tx.status],
+    orderId: tx.sending.txHash,
+    countryCode: null,
+    depositTxid: tx.sending.txHash,
+    depositAddress: undefined,
+    depositCurrency: depositToken.symbol,
+    depositChainPluginId,
+    depositEvmChainId,
+    depositTokenId,
+    depositAmount,
+    direction: null,
+    exchangeType: 'swap',
+    paymentType: null,
+    payoutTxid: tx.receiving.txHash,
+    payoutAddress: tx.toAddress,
+    payoutCurrency: payoutToken.symbol,
+    payoutChainPluginId,
+    payoutEvmChainId,
+    payoutTokenId,
+    payoutAmount,
+    timestamp,
+    isoDate,
+    usdValue: Number(tx.sending.amountUSD ?? tx.receiving.amountUSD ?? '-1'),
+    rawTx
   }
+  if (statusMap[tx.status] === 'complete') {
+    const { orderId, depositCurrency, payoutCurrency } = standardTx
+    console.log(
+      `${orderId} ${depositCurrency} ${depositChainPluginId} ${depositEvmChainId} ${depositTokenId?.slice(
+        0,
+        6
+      ) ??
+        ''} ${depositAmount} -> ${payoutCurrency} ${payoutChainPluginId} ${payoutEvmChainId} ${payoutTokenId?.slice(
+        0,
+        6
+      ) ?? ''} ${payoutAmount}`
+    )
+  }
+  return standardTx
 }
 
 const MAINNET_CODE_TRANSCRIPTION: Record<string, string> = {
