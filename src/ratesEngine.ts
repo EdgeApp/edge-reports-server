@@ -6,10 +6,10 @@ import { config } from './config'
 import {
   asDbCurrencyCodeMappings,
   asDbTx,
-  asV3RatesParams,
+  asRatesV3Params,
   CurrencyCodeMappings,
   DbTx,
-  V3RatesParams
+  RatesV3Params
 } from './types'
 import { datelog, safeParseFloat, standardizeNames } from './util'
 import { isFiatCurrency } from './util/fiatCurrency'
@@ -125,7 +125,7 @@ async function updateTxValuesV3(transaction: DbTx): Promise<void> {
 
   let depositIsFiat = false
   let payoutIsFiat = false
-  const ratesRequest: V3RatesParams = {
+  const ratesRequest: RatesV3Params = {
     targetFiat: 'USD',
     crypto: [],
     fiat: []
@@ -184,7 +184,7 @@ async function updateTxValuesV3(transaction: DbTx): Promise<void> {
     body: JSON.stringify(ratesRequest)
   })
   const ratesResponseJson = await ratesResponse.json()
-  const rates = asV3RatesParams(ratesResponseJson)
+  const rates = asRatesV3Params(ratesResponseJson)
   const depositRateObf = depositIsFiat
     ? rates.fiat.find(rate => rate.fiatCode === depositCurrency)
     : rates.crypto.find(
@@ -236,27 +236,17 @@ async function updateTxValues(
   transaction: DbTx,
   mappings: CurrencyCodeMappings
 ): Promise<void> {
-  if (
+  const hasDepositPluginInfo =
     transaction.depositChainPluginId != null &&
-    transaction.depositTokenId !== undefined &&
+    transaction.depositTokenId !== undefined
+  const hasPayoutPluginInfo =
     transaction.payoutChainPluginId != null &&
     transaction.payoutTokenId !== undefined
-  ) {
-    return await updateTxValuesV3(transaction)
-  }
 
   if (
-    transaction.depositChainPluginId != null &&
-    transaction.depositTokenId !== undefined &&
-    isFiatCurrency(transaction.payoutCurrency)
-  ) {
-    return await updateTxValuesV3(transaction)
-  }
-
-  if (
-    isFiatCurrency(transaction.depositCurrency) &&
-    transaction.payoutChainPluginId != null &&
-    transaction.payoutTokenId !== undefined
+    (hasDepositPluginInfo && hasPayoutPluginInfo) ||
+    (hasDepositPluginInfo && isFiatCurrency(transaction.payoutCurrency)) ||
+    (isFiatCurrency(transaction.depositCurrency) && hasPayoutPluginInfo)
   ) {
     return await updateTxValuesV3(transaction)
   }
