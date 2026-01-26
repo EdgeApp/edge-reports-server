@@ -300,19 +300,6 @@ export function processLifiTx(rawTx: unknown): StandardTx {
     usdValue: Number(tx.sending.amountUSD ?? tx.receiving.amountUSD ?? '-1'),
     rawTx
   }
-  if (statusMap[tx.status] === 'complete') {
-    const { orderId, depositCurrency, payoutCurrency } = standardTx
-    console.log(
-      `${orderId} ${depositCurrency} ${depositChainPluginId} ${depositEvmChainId} ${depositTokenId?.slice(
-        0,
-        6
-      ) ??
-        ''} ${depositAmount} -> ${payoutCurrency} ${payoutChainPluginId} ${payoutEvmChainId} ${payoutTokenId?.slice(
-        0,
-        6
-      ) ?? ''} ${payoutAmount}`
-    )
-  }
   return standardTx
 }
 
