@@ -18,7 +18,9 @@ export const asConfig = asObject({
   timeoutOverrideMins: asOptional(asNumber, 1200),
   cacheLookbackMonths: asOptional(asNumber, 24),
   couchMainCluster: asOptional(asString, 'wusa'),
-  couchUris: asOptional(asCouchCredentials)
+  couchUris: asOptional(asCouchCredentials, {
+    wusa: 'http://username:password@localhost:5984'
+  })
 })
 
 export const config = makeConfig(asConfig, 'config.json')
