@@ -1,21 +1,23 @@
-const deprecated = '#444444'
+import { amountQuoteFiatPlugin } from '../../plugins/gui/amountQuotePlugin'
+import type { GuiPlugin, GuiPluginRow } from '../../types/GuiPluginTypes'
 
-export default {
+export const guiPlugins: Record<string, GuiPlugin> = {
+  ach: {
+    pluginId: 'amountquote',
+    storeId: '',
+    baseUri: '',
+    lockUriPath: true,
+    nativePlugin: amountQuoteFiatPlugin,
+    forceFiatCurrencyCode: 'iso:USD',
+    displayName: 'ACH Bank Transfer'
+  },
   banxa: {
-    type: 'fiat',
-    color: '#58BFB9'
-  },
-  banxa2: {
-    type: 'fiat',
-    color: '#58BFB9'
-  },
-  banxa3: {
-    type: 'fiat',
-    color: '#58BFB9'
-  },
-  bitaccess: {
-    type: 'fiat',
-    color: '#CF7135'
+    pluginId: 'banxa',
+    storeId: 'com.libertyx',
+    baseUri: 'https://libertyx.com/a',
+    displayName: 'LibertyX',
+    originWhitelist: ['https://libertyx.com'],
+    permissions: ['location']
   },
   bitsofgold: {
     type: 'fiat',
@@ -30,40 +32,16 @@ export default {
     color: '#EA332E'
   },
   changehero: {
-    type: 'swap',
+    type: 'fiat',
     color: '#4D90EF'
   },
-  changelly: {
-    type: 'swap',
-    color: deprecated
-  },
-  changenow: {
-    type: 'swap',
-    color: '#00ff00'
-  },
-  coinswitch: {
-    type: 'swap',
-    color: deprecated
-  },
   exolix: {
-    type: 'swap',
+    type: 'fiat',
     color: '#8BEDC2'
   },
-  faast: {
-    type: 'swap',
-    color: deprecated
-  },
-  foxExchange: {
-    type: 'swap',
-    color: deprecated
-  },
-  gebo: {
-    type: 'fiat',
-    color: deprecated
-  },
   godex: {
-    type: 'swap',
-    color: '#F8F852'
+    type: 'fiat',
+    color: '#8F852'
   },
   ioniagiftcards: {
     type: 'fiat',
@@ -79,7 +57,7 @@ export default {
   },
   letsexchange: {
     type: 'swap',
-    color: '#1A1438'
+    color: '#00FF00'
   },
   libertyx: {
     type: 'fiat',
@@ -94,8 +72,14 @@ export default {
     color: '#000055'
   },
   moonpay: {
-    type: 'fiat',
-    color: '#7214F5'
+    pluginId: 'moonpay',
+    storeId: 'io.moonpay',
+    baseUri: 'https://api.moonpay.io',
+    baseQuery: {
+      apiKey: 'pk_live_Y1vQHUgfppB4oMEZksB8DYNQAdA4sauy'
+    },
+    displayName: 'MoonPay',
+    permissions: ['camera']
   },
   paybis: {
     type: 'fiat',
@@ -105,9 +89,27 @@ export default {
     type: 'fiat',
     color: '#99A5DE'
   },
+  paypal: {
+    type: 'fiat',
+    color: '#00457C'
+  },
+  pix: {
+    type: 'fiat',
+    color: '#32BCAD'
+  },
   revolut: {
     type: 'fiat',
-    color: '#191C33'
+    pluginId: 'revolut',
+    // API endpoint: /v1/revolut/
+    // Plugin implementation: src/partners/revolut.ts
+    // Uses same structure as moonpay with:
+    //   - Transaction querying with pagination (50 items per page, lookback ~1.5 years)
+    //   - Rate limiting (429) with 5s retry
+    //   - Standard transaction format transformation to StandardTx
+    //   - Supports buy/sell/neutral/transfer operations
+    //   - Detects card payments, transfers, top-ups, exchanges, refunds
+    // API placeholder key: TODO_CONFIGURE_API_KEY (set via app config or env var)
+    // For production use, configure revolutApiKey in reports_apps DB
   },
   safello: {
     type: 'fiat',
@@ -121,13 +123,13 @@ export default {
     type: 'swap',
     color: '#E35852'
   },
+  simplex: {
+    type: 'fiat',
+    color: '#D12D4A'
+  },
   swapuz: {
     type: 'swap',
     color: '#56BD7C'
-  },
-  switchain: {
-    type: 'swap',
-    color: deprecated
   },
   thorchain: {
     type: 'swap',
@@ -141,10 +143,6 @@ export default {
     type: 'fiat',
     color: '#356AD8'
   },
-  simplex: {
-    type: 'fiat',
-    color: '#D12D4A'
-  },
   wyre: {
     type: 'fiat',
     color: deprecated
@@ -153,4 +151,15 @@ export default {
     type: 'fiat',
     color: '#46228B'
   }
-} as const
+} as const customPluginRow: GuiPluginRow = {
+  pluginId: 'custom',
+  deepPath: '',
+  deepQuery: {},
+
+  title: 'Custom Dev',
+  description: '',
+  partnerIconPath: undefined,
+  paymentTypeLogoKey: 'paynow',
+  paymentTypes: [],
+  cryptoCodes: []
+}
