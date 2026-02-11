@@ -64,6 +64,7 @@ const CHANGENOW_NETWORK_TO_PLUGIN_ID: ChainNameToPluginIdMapping = {
   pls: 'pulsechain',
   zksync: 'zksync',
   op: 'optimism',
+  opbnb: 'opbnb',
   optimism: 'optimism',
   coreum: 'coreum',
   xec: 'ecash',
