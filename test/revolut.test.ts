@@ -1,0 +1,89 @@
+import { expect } from 'chai'
+import { describe, it } from 'mocha'
+
+import { processRevolutTx } from '../src/partners/revolut'
+
+const baseRawTx = {
+  id: 'revolut-order',
+  type: 'buy',
+  created_at: '2026-07-24T12:34:56.000Z',
+  fiat_amount: 125.5,
+  fiat_currency: 'usd',
+  crypto_amount: 0.01,
+  crypto_currency: 'btc',
+  wallet_address: 'bc1qwallet',
+  tx_hash: 'revolut-txid',
+  country_code: 'US',
+  payment_method: 'card',
+  state: 'completed'
+}
+
+describe('Revolut transaction mapping', function() {
+  it('maps buy orders as fiat deposits and crypto payouts', function() {
+    const standardTx = processRevolutTx(baseRawTx)
+
+    expect(standardTx).to.include({
+      orderId: 'revolut-order',
+      countryCode: 'US',
+      depositCurrency: 'USD',
+      depositAmount: 125.5,
+      direction: 'buy',
+      exchangeType: 'fiat',
+      paymentType: 'credit',
+      payoutTxid: 'revolut-txid',
+      payoutAddress: 'bc1qwallet',
+      payoutCurrency: 'BTC',
+      payoutAmount: 0.01,
+      status: 'complete',
+      isoDate: '2026-07-24T12:34:56.000Z',
+      timestamp: 1784896496,
+      usdValue: -1
+    })
+    expect(standardTx.depositTxid).equals(undefined)
+  })
+
+  it('maps sell orders as crypto deposits and fiat payouts', function() {
+    const standardTx = processRevolutTx({
+      ...baseRawTx,
+      type: 'sell',
+      fiat_amount: 250,
+      fiat_currency: 'eur',
+      crypto_amount: 1.5,
+      crypto_currency: 'eth',
+      payment_method: 'bank_transfer'
+    })
+
+    expect(standardTx).to.include({
+      depositTxid: 'revolut-txid',
+      depositCurrency: 'ETH',
+      depositAmount: 1.5,
+      direction: 'sell',
+      paymentType: 'banktransfer',
+      payoutCurrency: 'EUR',
+      payoutAmount: 250
+    })
+    expect(standardTx.payoutTxid).equals(undefined)
+  })
+
+  for (const testCase of [
+    { revolutMethod: undefined, paymentType: null },
+    { revolutMethod: 'revolut', paymentType: 'revolut' },
+    { revolutMethod: 'card', paymentType: 'credit' },
+    { revolutMethod: 'bank_transfer', paymentType: 'banktransfer' },
+    { revolutMethod: 'apple_pay', paymentType: 'applepay' },
+    { revolutMethod: 'google_pay', paymentType: 'googlepay' }
+  ]) {
+    it(`maps ${testCase.revolutMethod ?? 'missing'} payment method`, function() {
+      const rawTx: any = { ...baseRawTx }
+      if (testCase.revolutMethod == null) {
+        delete rawTx.payment_method
+      } else {
+        rawTx.payment_method = testCase.revolutMethod
+      }
+
+      const standardTx = processRevolutTx(rawTx)
+
+      expect(standardTx.paymentType).equals(testCase.paymentType)
+    })
+  }
+})
