@@ -1,6 +1,8 @@
 import {
   asArray,
+  asEither,
   asMaybe,
+  asNull,
   asNumber,
   asObject,
   asOptional,
@@ -277,7 +279,7 @@ const asBanxaTx = asObject({
   id: asString,
   status: asBanxaStatus,
   created_at: asString,
-  country: asString,
+  country: asEither(asString, asNull),
   fiat_amount: asNumber,
   fiat_code: asString,
   coin_amount: asNumber,
