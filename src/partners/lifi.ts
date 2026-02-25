@@ -323,6 +323,7 @@ const MAINNET_CODE_TRANSCRIPTION: Record<string, string> = {
   ETH: 'ethereum',
   FTM: 'fantom',
   HYPE: 'hyperevm',
+  MON: 'monad',
   OP: 'optimism',
   POL: 'polygon',
   PLS: 'pulsechain',
