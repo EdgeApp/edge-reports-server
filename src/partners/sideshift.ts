@@ -41,6 +41,7 @@ const SIDESHIFT_NETWORK_TO_PLUGIN_ID: ChainNameToPluginIdMapping = {
   ethereum: 'ethereum',
   fantom: 'fantom',
   litecoin: 'litecoin',
+  monad: 'monad',
   monero: 'monero',
   optimism: 'optimism',
   polkadot: 'polkadot',
