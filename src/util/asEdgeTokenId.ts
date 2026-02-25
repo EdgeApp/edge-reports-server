@@ -51,6 +51,7 @@ export const tokenTypes: Record<string, TokenType> = {
   hyperevm: 'evm',
   liberland: 'simple',
   litecoin: null,
+  monad: 'evm',
   monero: null,
   optimism: 'evm',
   osmosis: 'cosmos',
