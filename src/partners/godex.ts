@@ -114,11 +114,16 @@ interface GodexAssetInfo {
 }
 
 let godexCoinsCache: Map<string, GodexAssetInfo> | null = null
+let godexCoinsCacheTimestamp = 0
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 async function getGodexCoinsCache(
   log: ScopedLog
 ): Promise<Map<string, GodexAssetInfo>> {
-  if (godexCoinsCache != null) {
+  if (
+    godexCoinsCache != null &&
+    Date.now() - godexCoinsCacheTimestamp < CACHE_TTL_MS
+  ) {
     return godexCoinsCache
   }
 
@@ -132,6 +137,10 @@ async function getGodexCoinsCache(
   try {
     const url = 'https://api.godex.io/api/v1/coins'
     const result = await retryFetch(url, { method: 'GET' })
+    if (!result.ok) {
+      const text = await result.text()
+      throw new Error(`Failed to fetch Godex coins: ${text}`)
+    }
     const json = await result.json()
     const coins = asGodexCoinsResponse(json)
 
@@ -149,11 +158,13 @@ async function getGodexCoinsCache(
       }
     }
     log(`Coins cache loaded: ${cache.size} entries`)
+    godexCoinsCache = cache
+    godexCoinsCacheTimestamp = Date.now()
+    return cache
   } catch (e) {
-    log.error('Error loading coins cache:', e)
+    log.error(`Error loading coins cache: ${String(e)}`)
+    throw e
   }
-  godexCoinsCache = cache
-  return cache
 }
 
 interface GodexEdgeAssetInfo {

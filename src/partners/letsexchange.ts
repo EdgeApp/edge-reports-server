@@ -45,22 +45,23 @@ export const asLetsExchangePluginParams = asObject({
   })
 })
 
-const asLetsExchangeStatus = asValue(
-  'wait',
-  'confirmation',
-  'confirmed',
-  'exchanging',
-  'overdue',
-  'refund',
-  'sending',
-  'transferring',
-  'sending_confirmation',
-  'success',
-  'aml_check_failed',
-  'overdue',
-  'error',
-  'canceled',
-  'refund'
+const asLetsExchangeStatus = asMaybe(
+  asValue(
+    'wait',
+    'confirmation',
+    'confirmed',
+    'exchanging',
+    'overdue',
+    'refund',
+    'sending',
+    'transferring',
+    'sending_confirmation',
+    'success',
+    'aml_check_failed',
+    'error',
+    'canceled'
+  ),
+  'other'
 )
 
 // Cleaner for the new v2 API response
@@ -127,7 +128,8 @@ const statusMap: { [key in LetsExchangeStatus]: Status } = {
   success: 'complete',
   aml_check_failed: 'blocked',
   canceled: 'cancelled',
-  error: 'failed'
+  error: 'failed',
+  other: 'other'
 }
 
 // Map LetsExchange network codes to Edge pluginIds
@@ -233,9 +235,15 @@ interface CoinInfo {
 
 let coinCache: Map<string, CoinInfo> | null = null
 let coinCacheApiKey: string | null = null
+let coinCacheTimestamp = 0
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 async function fetchCoinCache(apiKey: string, log: ScopedLog): Promise<void> {
-  if (coinCache != null && coinCacheApiKey === apiKey) {
+  if (
+    coinCache != null &&
+    coinCacheApiKey === apiKey &&
+    Date.now() - coinCacheTimestamp < CACHE_TTL_MS
+  ) {
     return // Already cached
   }
 
@@ -275,6 +283,7 @@ async function fetchCoinCache(apiKey: string, log: ScopedLog): Promise<void> {
   }
 
   coinCacheApiKey = apiKey
+  coinCacheTimestamp = Date.now()
   log(`Cached ${coinCache.size} coins`)
 }
 
@@ -288,14 +297,15 @@ function getAssetInfo(
   initialNetwork: string | null,
   currencyCode: string,
   contractAddress: string | null,
-  log: ScopedLog
+  isoDate: string
 ): AssetInfo | undefined {
-  let network = initialNetwork
-  if (network == null) {
-    // Try using the currencyCode as the network
-    network = currencyCode
-    log(`Using currencyCode as network: ${network}`)
+  if (initialNetwork == null) {
+    if (isoDate < NETWORK_FIELDS_AVAILABLE_DATE) {
+      return undefined
+    }
+    throw new Error(`Missing network for currency ${currencyCode}`)
   }
+  const network = initialNetwork
 
   const networkUpper = network.toUpperCase()
   const chainPluginId = LETSEXCHANGE_NETWORK_TO_PLUGIN_ID[networkUpper]
@@ -498,14 +508,14 @@ export async function processLetsExchangeTx(
     tx.coin_from_network ?? tx.network_from_code,
     tx.coin_from,
     tx.coin_from_contract_address,
-    log
+    isoDate
   )
   // Get payout asset info using contract address from API response
   const payoutAsset = getAssetInfo(
     tx.coin_to_network ?? tx.network_to_code,
     tx.coin_to,
     tx.coin_to_contract_address,
-    log
+    isoDate
   )
 
   const status = statusMap[tx.status]
