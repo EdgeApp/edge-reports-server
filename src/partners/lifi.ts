@@ -297,7 +297,7 @@ export function processLifiTx(
     }
     if (statusMap[tx.status] === 'complete') {
       const { orderId, depositCurrency, payoutCurrency } = standardTx
-      console.log(
+      log(
         `${orderId} ${depositCurrency} ${depositChainPluginId} ${depositEvmChainId} ${depositTokenId?.slice(
           0,
           6
