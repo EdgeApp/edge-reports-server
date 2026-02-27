@@ -344,13 +344,16 @@ function getAssetInfo(network: string, currencyCode: string): EdgeAssetInfo {
   // Look up contract address from cache
   const contractAddress = getContractFromCache(currencyCode, network)
 
-  // If not in cache or no contract address, it's a native token
-  if (contractAddress == null) {
+  // null means native token, undefined means cache miss
+  if (contractAddress === null) {
     return {
       chainPluginId,
       evmChainId,
       tokenId: null
     }
+  }
+  if (contractAddress === undefined) {
+    throw new Error(`Currency info not found for ${currencyCode} on ${network}`)
   }
 
   // Create tokenId from contract address
