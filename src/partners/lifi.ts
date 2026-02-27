@@ -232,14 +232,10 @@ export function processLifiTx(rawTx: unknown): StandardTx {
   // Try using the gas token code first, then chain id if we have one.
   const depositChainPluginId =
     REVERSE_EVM_CHAIN_IDS[depositEvmChainId ?? 0] ??
-    MAINNET_CODE_TRANSCRIPTION[
-      tx.sending.gasToken?.coinKey ?? tx.sending.gasToken?.symbol ?? ''
-    ]
+    MAINNET_CODE_TRANSCRIPTION[depositChainCode ?? '']
   const payoutChainPluginId =
     REVERSE_EVM_CHAIN_IDS[payoutEvmChainId ?? 0] ??
-    MAINNET_CODE_TRANSCRIPTION[
-      tx.receiving.gasToken?.coinKey ?? tx.receiving.gasToken?.symbol ?? ''
-    ]
+    MAINNET_CODE_TRANSCRIPTION[payoutChainCode ?? '']
 
   if (depositChainPluginId == null || payoutChainPluginId == null) {
     throw new Error('Missing chain plugin id')

@@ -111,6 +111,11 @@ export async function ratesEngine(): Promise<void> {
 }
 
 async function updateTxValuesV3(transaction: DbTx): Promise<void> {
+  let updated = false
+  const fail = (): void => {
+    transaction._id = undefined
+  }
+
   const {
     isoDate,
     depositCurrency,
@@ -154,6 +159,7 @@ async function updateTxValuesV3(transaction: DbTx): Promise<void> {
     console.error(
       `Deposit asset is not a crypto asset or fiat currency ${depositCurrency} ${depositChainPluginId} ${depositTokenId}`
     )
+    fail()
     return
   }
 
@@ -179,18 +185,26 @@ async function updateTxValuesV3(transaction: DbTx): Promise<void> {
     console.error(
       `Payout asset is not a crypto asset or fiat currency ${payoutCurrency} ${payoutChainPluginId} ${payoutTokenId}`
     )
+    fail()
     return
   }
 
-  const ratesResponse = await fetch('https://rates3.edge.app/v3/rates', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(ratesRequest)
-  })
-  const ratesResponseJson = await ratesResponse.json()
-  const rates = asRatesV3Params(ratesResponseJson)
+  let rates: RatesV3Params
+  try {
+    const ratesResponse = await fetch('https://rates3.edge.app/v3/rates', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(ratesRequest)
+    })
+    const ratesResponseJson = await ratesResponse.json()
+    rates = asRatesV3Params(ratesResponseJson)
+  } catch (e) {
+    console.error('Error fetching V3 rates', e)
+    fail()
+    return
+  }
   const depositRateObf = depositIsFiat
     ? rates.fiat.find(rate => rate.fiatCode === depositCurrency)
     : rates.crypto.find(
@@ -225,6 +239,7 @@ async function updateTxValuesV3(transaction: DbTx): Promise<void> {
     }
     if (depositRate != null && payoutRate != null) {
       transaction.payoutAmount = (depositAmount * depositRate) / payoutRate
+      updated = true
     }
   }
 
@@ -233,9 +248,15 @@ async function updateTxValuesV3(transaction: DbTx): Promise<void> {
   if (transaction.usdValue == null || transaction.usdValue <= 0) {
     if (depositRate != null) {
       transaction.usdValue = depositAmount * depositRate
+      updated = true
     } else if (payoutRate != null) {
       transaction.usdValue = transaction.payoutAmount * payoutRate
+      updated = true
     }
+  }
+
+  if (!updated) {
+    fail()
   }
 }
 
