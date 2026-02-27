@@ -86,6 +86,9 @@ export function processPaytrieTx(rawTx: unknown): StandardTx {
     depositTxid: undefined,
     depositAddress: order.inputAddress,
     depositCurrency: order.inputCurrency,
+    depositChainPluginId: undefined,
+    depositEvmChainId: undefined,
+    depositTokenId: undefined,
     depositAmount: order.inputAmount,
     direction: null, // No records of paytrie in the DB to determine
     exchangeType: 'fiat', // IDK what paytrie is, but I assume it's a fiat exchange
@@ -93,6 +96,9 @@ export function processPaytrieTx(rawTx: unknown): StandardTx {
     payoutTxid: undefined,
     payoutAddress: order.outputAddress,
     payoutCurrency: order.outputCurrency,
+    payoutChainPluginId: undefined,
+    payoutEvmChainId: undefined,
+    payoutTokenId: undefined,
     payoutAmount: order.outputAmount,
     timestamp: new Date(order.timestamp).getTime() / 1000,
     isoDate: order.timestamp,

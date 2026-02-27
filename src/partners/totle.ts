@@ -395,6 +395,9 @@ export async function queryTotle(
             depositTxid: receipt.transactionHash,
             depositAddress: receipt.from,
             depositCurrency: sourceToken.symbol,
+            depositChainPluginId: undefined,
+            depositEvmChainId: undefined,
+            depositTokenId: undefined,
             depositAmount: safeParseFloat(
               div(
                 sourceAmount.toString(),
@@ -409,6 +412,9 @@ export async function queryTotle(
             payoutTxid: receipt.transactionHash,
             payoutAddress: receipt.to,
             payoutCurrency: destinationToken.symbol,
+            payoutChainPluginId: undefined,
+            payoutEvmChainId: undefined,
+            payoutTokenId: undefined,
             payoutAmount: safeParseFloat(
               div(
                 destinationAmount.toString(),

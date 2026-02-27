@@ -276,6 +276,9 @@ export function processBanxaTx(rawTx: unknown): StandardTx {
     depositTxid: undefined,
     depositAddress: undefined,
     depositCurrency: inputCurrency,
+    depositChainPluginId: undefined,
+    depositEvmChainId: undefined,
+    depositTokenId: undefined,
     depositAmount: inputAmount,
     direction,
     exchangeType: 'fiat',
@@ -283,6 +286,9 @@ export function processBanxaTx(rawTx: unknown): StandardTx {
     payoutTxid: undefined,
     payoutAddress,
     payoutCurrency: outputCurrency,
+    payoutChainPluginId: undefined,
+    payoutEvmChainId: undefined,
+    payoutTokenId: undefined,
     payoutAmount: outputAmount,
     timestamp,
     isoDate,
@@ -332,6 +338,8 @@ function getFiatPaymentType(tx: BanxaTx): FiatPaymentType {
       return 'googlepay'
     case 'iDEAL Transfer':
       return 'ideal'
+    case 'ZeroHash ACH Sell':
+      return 'ach'
     default:
       throw new Error(`Unknown payment method: ${tx.payment_type} for ${tx.id}`)
   }
