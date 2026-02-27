@@ -192,11 +192,9 @@ export function processLifiTx(rawTx: unknown): StandardTx {
 
   // For some reason, some gasToken like Solana are given as "wSOL", so map them to SOL
   const depositChainCode =
-    TOKEN_CODE_MAPPINGS[depositChainCodeUnmapped] ??
-    depositChainCodeUnmapped
+    TOKEN_CODE_MAPPINGS[depositChainCodeUnmapped] ?? depositChainCodeUnmapped
   const payoutChainCode =
-    TOKEN_CODE_MAPPINGS[payoutChainCodeUnmapped] ??
-    payoutChainCodeUnmapped
+    TOKEN_CODE_MAPPINGS[payoutChainCodeUnmapped] ?? payoutChainCodeUnmapped
 
   const depositTokenCode = depositToken.coinKey ?? depositToken.symbol
   const payoutTokenCode = payoutToken.coinKey ?? payoutToken.symbol
