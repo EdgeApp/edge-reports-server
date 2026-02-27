@@ -19,6 +19,7 @@ import {
   Status
 } from '../types'
 import { retryFetch } from '../util'
+import { createTokenId, tokenTypes } from '../util/asEdgeTokenId'
 import { EVM_CHAIN_IDS } from '../util/chainIds'
 
 // Start date for Rango transactions (first Edge transaction was 2024-06-23)
@@ -268,9 +269,17 @@ export function processRangoTx(
 
   const dateStr = isoDate.split('T')[0]
   const depositCurrency = firstStep.fromToken.symbol
-  const depositTokenId = firstStep.fromToken.address ?? null
+  const depositTokenId = createTokenId(
+    tokenTypes[depositChainPluginId],
+    depositCurrency,
+    firstStep.fromToken.address ?? undefined
+  )
   const payoutCurrency = lastStep.toToken.symbol
-  const payoutTokenId = lastStep.toToken.address ?? null
+  const payoutTokenId = createTokenId(
+    tokenTypes[payoutChainPluginId],
+    payoutCurrency,
+    lastStep.toToken.address ?? undefined
+  )
 
   log(
     `${dateStr} ${depositCurrency} ${depositAmount} ${depositChainPluginId}${
@@ -299,7 +308,7 @@ export function processRangoTx(
     payoutCurrency: lastStep.toToken.symbol,
     payoutChainPluginId,
     payoutEvmChainId,
-    payoutTokenId: lastStep.toToken.address ?? null,
+    payoutTokenId,
     payoutAmount,
     timestamp,
     isoDate,
