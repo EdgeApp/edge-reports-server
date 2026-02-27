@@ -72,7 +72,6 @@ const asTransfersResult = asObject({
   transfers: asArray(asUnknown)
 })
 
-type Transfer = ReturnType<typeof asTransfer>
 type PartnerStatuses = ReturnType<typeof asStatuses>
 
 const MAX_RETRIES = 5
@@ -183,39 +182,31 @@ export function processLifiTx(rawTx: unknown): StandardTx {
   const depositChainCodeUnmapped =
     tx.sending.gasToken?.coinKey ??
     tx.sending.gasToken?.symbol ??
-    depositToken?.coinKey ??
-    depositToken?.symbol
-  const payoutChainCodeUnmappped =
+    depositToken.coinKey ??
+    depositToken.symbol
+  const payoutChainCodeUnmapped =
     tx.receiving.gasToken?.coinKey ??
     tx.receiving.gasToken?.symbol ??
-    payoutToken?.coinKey ??
-    payoutToken?.symbol
+    payoutToken.coinKey ??
+    payoutToken.symbol
 
   // For some reason, some gasToken like Solana are given as "wSOL", so map them to SOL
   const depositChainCode =
-    TOKEN_CODE_MAPPINGS[depositChainCodeUnmapped ?? ''] ??
+    TOKEN_CODE_MAPPINGS[depositChainCodeUnmapped] ??
     depositChainCodeUnmapped
   const payoutChainCode =
-    TOKEN_CODE_MAPPINGS[payoutChainCodeUnmappped ?? ''] ??
-    payoutChainCodeUnmappped
+    TOKEN_CODE_MAPPINGS[payoutChainCodeUnmapped] ??
+    payoutChainCodeUnmapped
 
-  const depositTokenCode =
-    tx.sending.token?.coinKey ??
-    tx.sending.token?.symbol ??
-    tx.sending.gasToken?.coinKey ??
-    tx.sending.gasToken?.symbol
-  const payoutTokenCode =
-    tx.receiving.token?.coinKey ??
-    tx.receiving.token?.symbol ??
-    tx.receiving.gasToken?.coinKey ??
-    tx.receiving.gasToken?.symbol
+  const depositTokenCode = depositToken.coinKey ?? depositToken.symbol
+  const payoutTokenCode = payoutToken.coinKey ?? payoutToken.symbol
 
   // If the token code and chain code match, this is a gas token so
   // tokenId = null
   const depositTokenAddress =
-    depositTokenCode !== depositChainCode ? depositToken?.address : null
+    depositTokenCode !== depositChainCode ? depositToken.address : null
   const payoutTokenAddress =
-    payoutTokenCode !== payoutChainCode ? payoutToken?.address : null
+    payoutTokenCode !== payoutChainCode ? payoutToken.address : null
 
   // Try to determine the EVM chain id from the token chain id. Lifi
   // has chainIds for non-EVM chains like Solana so we have to filter them out.
@@ -232,14 +223,10 @@ export function processLifiTx(rawTx: unknown): StandardTx {
   // Try using the gas token code first, then chain id if we have one.
   const depositChainPluginId =
     REVERSE_EVM_CHAIN_IDS[depositEvmChainId ?? 0] ??
-    MAINNET_CODE_TRANSCRIPTION[
-      tx.sending.gasToken?.coinKey ?? tx.sending.gasToken?.symbol ?? ''
-    ]
+    MAINNET_CODE_TRANSCRIPTION[depositChainCode]
   const payoutChainPluginId =
     REVERSE_EVM_CHAIN_IDS[payoutEvmChainId ?? 0] ??
-    MAINNET_CODE_TRANSCRIPTION[
-      tx.receiving.gasToken?.coinKey ?? tx.receiving.gasToken?.symbol ?? ''
-    ]
+    MAINNET_CODE_TRANSCRIPTION[payoutChainCode]
 
   if (depositChainPluginId == null || payoutChainPluginId == null) {
     throw new Error('Missing chain plugin id')
@@ -249,15 +236,15 @@ export function processLifiTx(rawTx: unknown): StandardTx {
   // chain plugin id.
   depositEvmChainId =
     depositEvmChainId == null
-      ? EVM_CHAIN_IDS[depositChainPluginId ?? '']
+      ? EVM_CHAIN_IDS[depositChainPluginId]
       : depositEvmChainId
   payoutEvmChainId =
     payoutEvmChainId == null
-      ? EVM_CHAIN_IDS[payoutChainPluginId ?? '']
+      ? EVM_CHAIN_IDS[payoutChainPluginId]
       : payoutEvmChainId
 
-  const depositTokenType = tokenTypes[depositChainPluginId ?? '']
-  const payoutTokenType = tokenTypes[payoutChainPluginId ?? '']
+  const depositTokenType = tokenTypes[depositChainPluginId]
+  const payoutTokenType = tokenTypes[payoutChainPluginId]
 
   if (depositTokenType == null || payoutTokenType == null) {
     throw new Error('Missing token type')
