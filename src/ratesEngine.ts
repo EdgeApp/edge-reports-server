@@ -189,6 +189,12 @@ async function updateTxValuesV3(transaction: DbTx): Promise<void> {
     },
     body: JSON.stringify(ratesRequest)
   })
+  if (!ratesResponse.ok) {
+    const errorText = await ratesResponse.text()
+    throw new Error(
+      `Rates v3 error (${ratesResponse.status} ${ratesResponse.statusText}): ${errorText}`
+    )
+  }
   const ratesResponseJson = await ratesResponse.json()
   const rates = asRatesV3Params(ratesResponseJson)
   const depositRateObf = depositIsFiat
