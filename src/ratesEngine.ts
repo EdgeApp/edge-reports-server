@@ -229,7 +229,12 @@ async function updateTxValuesV3(transaction: DbTx): Promise<void> {
         `No rate found for payout ${payoutCurrency} ${payoutChainPluginId} ${payoutTokenId}`
       )
     }
-    if (depositRate != null && payoutRate != null) {
+    if (
+      depositRate != null &&
+      depositRate > 0 &&
+      payoutRate != null &&
+      payoutRate > 0
+    ) {
       transaction.payoutAmount = (depositAmount * depositRate) / payoutRate
     }
   }
@@ -237,9 +242,9 @@ async function updateTxValuesV3(transaction: DbTx): Promise<void> {
   // Calculate the usdValue first trying to use the deposit amount. If that's not available
   // then try to use the payout amount.
   if (transaction.usdValue == null || transaction.usdValue <= 0) {
-    if (depositRate != null) {
+    if (depositRate != null && depositRate > 0) {
       transaction.usdValue = depositAmount * depositRate
-    } else if (payoutRate != null) {
+    } else if (payoutRate != null && payoutRate > 0) {
       transaction.usdValue = transaction.payoutAmount * payoutRate
     }
   }
