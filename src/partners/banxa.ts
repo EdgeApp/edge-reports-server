@@ -92,13 +92,8 @@ interface CachedAssetInfo {
   contractAddress: string | null
   pluginId: string | undefined
 }
-interface BanxaCacheEntry {
-  cache: Map<string, CachedAssetInfo>
-  timestamp: number
-}
-// Keyed by partnerId so multiple Banxa partners with distinct credentials
-// don't share cache entries from each other's API responses.
-const banxaCoinsCacheByPartner: Map<string, BanxaCacheEntry> = new Map()
+let banxaCoinsCache: Map<string, CachedAssetInfo> | null = null
+let banxaCoinsCacheTimestamp = 0
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 // Static fallback for historical coins no longer in the v2 API
@@ -129,9 +124,11 @@ async function fetchBanxaCoins(
   apiKeyV2: string,
   log: ScopedLog
 ): Promise<Map<string, CachedAssetInfo>> {
-  const existing = banxaCoinsCacheByPartner.get(partnerId)
-  if (existing != null && Date.now() - existing.timestamp < CACHE_TTL_MS) {
-    return existing.cache
+  if (
+    banxaCoinsCache != null &&
+    Date.now() - banxaCoinsCacheTimestamp < CACHE_TTL_MS
+  ) {
+    return banxaCoinsCache
   }
 
   const cache = new Map<string, CachedAssetInfo>()
@@ -204,6 +201,7 @@ async function fetchBanxaCoins(
   }
 
   banxaCoinsCache = cache
+  banxaCoinsCacheTimestamp = Date.now()
   log(`Loaded ${cache.size} coin/blockchain combinations from API`)
   return cache
 }
