@@ -312,9 +312,14 @@ export function processTx(rawTx: unknown): StandardTx {
   // Map Moonpay status to Edge status
   const status: Status = statusMap[tx.status] ?? 'other'
 
-  // Determine direction based on paymentMethod vs payoutMethod
-  // Buy transactions have paymentMethod, sell transactions have payoutMethod
-  const direction = tx.paymentMethod != null ? 'buy' : 'sell'
+  // Determine direction based on sell-specific fields.
+  // Sell transactions can also include paymentMethod, so that field alone is insufficient.
+  const direction =
+    tx.quoteCurrency != null ||
+    tx.payoutMethod != null ||
+    tx.depositHash != null
+      ? 'sell'
+      : 'buy'
 
   // Get the payout currency - different field names for buy vs sell
   const payoutCurrency = direction === 'buy' ? tx.currency : tx.quoteCurrency

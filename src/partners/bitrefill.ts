@@ -279,10 +279,9 @@ export function processBitrefillTx(
   const timestamp = tx.invoiceTime / 1000
 
   const { paymentMethod } = tx
-  let depositAmountStr: string | undefined
-  if (paymentMethod === 'bitcoin') {
-    depositAmountStr = tx.btcPrice
-  } else if (tx.altcoinPrice != null) {
+  // Fallback to btcPrice when altcoinPrice is unexpectedly missing.
+  let depositAmountStr: string | undefined = tx.btcPrice
+  if (paymentMethod !== 'bitcoin' && tx.altcoinPrice != null) {
     depositAmountStr = tx.altcoinPrice
   }
   if (depositAmountStr == null) {

@@ -40,8 +40,8 @@ export const asLetsExchangePluginParams = asObject({
     latestIsoDate: asOptional(asString, LETSEXCHANGE_START_DATE)
   }),
   apiKeys: asObject({
-    affiliateId: asString,
-    apiKey: asString
+    affiliateId: asOptional(asString),
+    apiKey: asOptional(asString)
   })
 })
 
@@ -483,6 +483,10 @@ export async function processLetsExchangeTx(
   const { apiKeys } = asLetsExchangePluginParams(pluginParams)
   const { apiKey } = apiKeys
   const { log } = pluginParams
+
+  if (apiKey == null) {
+    throw new Error('Missing LetsExchange apiKey')
+  }
 
   await fetchCoinCache(apiKey, log)
 
