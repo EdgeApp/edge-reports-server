@@ -39,6 +39,7 @@ function fieldsToDesignDocs(
 
 const transactionIndexes: DesignDocumentMap = {
   ...fieldsToDesignDocs(['isoDate']),
+  ...fieldsToDesignDocs(['orderId']),
   ...fieldsToDesignDocs(['status']),
   ...fieldsToDesignDocs(['status', 'depositCurrency', 'isoDate']),
   ...fieldsToDesignDocs([
@@ -125,20 +126,14 @@ const options: SetupDatabaseOptions = {
 }
 
 export async function initDbs(): Promise<void> {
-  if (config.couchUris != null) {
-    const pool = connectCouch(config.couchMainCluster, config.couchUris)
-    await setupDatabase(pool, couchSettingsSetup, options)
-    await Promise.all(
-      databases.map(async setup => await setupDatabase(pool, setup, options))
-    )
-  } else {
-    await Promise.all(
-      databases.map(
-        async setup =>
-          await setupDatabase(config.couchDbFullpath, setup, options)
-      )
-    )
+  if (config.couchUris == null) {
+    throw new Error('couchUris is not set')
   }
+  const pool = connectCouch(config.couchMainCluster, config.couchUris)
+  await setupDatabase(pool, couchSettingsSetup, options)
+  await Promise.all(
+    databases.map(async setup => await setupDatabase(pool, setup, options))
+  )
   console.log('Done')
   process.exit(0)
 }

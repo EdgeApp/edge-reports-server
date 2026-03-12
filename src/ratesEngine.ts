@@ -6,10 +6,13 @@ import { config } from './config'
 import {
   asDbCurrencyCodeMappings,
   asDbTx,
+  asRatesV3Params,
   CurrencyCodeMappings,
-  DbTx
+  DbTx,
+  RatesV3Params
 } from './types'
 import { datelog, safeParseFloat, standardizeNames } from './util'
+import { isFiatCurrency } from './util/fiatCurrency'
 
 const nanoDb = nano(config.couchDbFullpath)
 const QUERY_FREQ_MS = 3000
@@ -107,85 +110,256 @@ export async function ratesEngine(): Promise<void> {
   }
 }
 
-export async function updateTxValues(
+async function updateTxValuesV3(transaction: DbTx): Promise<void> {
+  const {
+    isoDate,
+    depositCurrency,
+    depositChainPluginId,
+    depositTokenId,
+    depositAmount,
+    payoutChainPluginId,
+    payoutTokenId,
+    payoutCurrency,
+    payoutAmount
+  } = transaction
+
+  let depositIsFiat = false
+  let depositIsUsd = false
+  let payoutIsFiat = false
+  let payoutIsUsd = false
+  const ratesRequest: RatesV3Params = {
+    targetFiat: 'USD',
+    crypto: [],
+    fiat: []
+  }
+  if (depositChainPluginId != null && depositTokenId !== undefined) {
+    ratesRequest.crypto.push({
+      isoDate: new Date(isoDate),
+      asset: {
+        pluginId: depositChainPluginId,
+        tokenId: depositTokenId
+      },
+      rate: undefined
+    })
+  } else if (depositCurrency === 'USD') {
+    depositIsUsd = true
+  } else if (isFiatCurrency(depositCurrency)) {
+    depositIsFiat = true
+    ratesRequest.fiat.push({
+      isoDate: new Date(isoDate),
+      fiatCode: depositCurrency,
+      rate: undefined
+    })
+  } else {
+    console.error(
+      `Deposit asset is not a crypto asset or fiat currency ${depositCurrency} ${depositChainPluginId} ${depositTokenId}`
+    )
+    return
+  }
+
+  if (payoutChainPluginId != null && payoutTokenId !== undefined) {
+    ratesRequest.crypto.push({
+      isoDate: new Date(isoDate),
+      asset: {
+        pluginId: payoutChainPluginId,
+        tokenId: payoutTokenId
+      },
+      rate: undefined
+    })
+  } else if (payoutCurrency === 'USD') {
+    payoutIsUsd = true
+  } else if (isFiatCurrency(payoutCurrency)) {
+    payoutIsFiat = true
+    ratesRequest.fiat.push({
+      isoDate: new Date(isoDate),
+      fiatCode: payoutCurrency,
+      rate: undefined
+    })
+  } else {
+    console.error(
+      `Payout asset is not a crypto asset or fiat currency ${payoutCurrency} ${payoutChainPluginId} ${payoutTokenId}`
+    )
+    return
+  }
+
+  const ratesResponse = await fetch('https://rates3.edge.app/v3/rates', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(ratesRequest)
+  })
+  if (!ratesResponse.ok) {
+    const errorText = await ratesResponse.text()
+    throw new Error(
+      `Rates v3 error (${ratesResponse.status} ${ratesResponse.statusText}): ${errorText}`
+    )
+  }
+  const ratesResponseJson = await ratesResponse.json()
+  const rates = asRatesV3Params(ratesResponseJson)
+  const depositRateObf = depositIsFiat
+    ? rates.fiat.find(rate => rate.fiatCode === depositCurrency)
+    : rates.crypto.find(
+        rate =>
+          rate.asset.pluginId === depositChainPluginId &&
+          (rate.asset.tokenId ?? null) === depositTokenId
+      )
+  const payoutRateObf = payoutIsFiat
+    ? rates.fiat.find(rate => rate.fiatCode === payoutCurrency)
+    : rates.crypto.find(
+        rate =>
+          rate.asset.pluginId === payoutChainPluginId &&
+          (rate.asset.tokenId ?? null) === payoutTokenId
+      )
+
+  // USD is the target fiat, so it has an implicit rate of 1.0
+  const depositRate = depositIsUsd ? 1 : depositRateObf?.rate
+  const payoutRate = payoutIsUsd ? 1 : payoutRateObf?.rate
+
+  // Calculate and fill out payoutAmount if it is zero
+  if (payoutAmount === 0) {
+    if (depositRate == null) {
+      console.error(
+        `No rate found for deposit ${depositCurrency} ${depositChainPluginId} ${depositTokenId}`
+      )
+    }
+
+    if (payoutRate == null) {
+      console.error(
+        `No rate found for payout ${payoutCurrency} ${payoutChainPluginId} ${payoutTokenId}`
+      )
+    }
+    if (
+      depositRate != null &&
+      depositRate > 0 &&
+      payoutRate != null &&
+      payoutRate > 0
+    ) {
+      transaction.payoutAmount = (depositAmount * depositRate) / payoutRate
+    }
+  }
+
+  // Calculate the usdValue first trying to use the deposit amount. If that's not available
+  // then try to use the payout amount.
+  if (transaction.usdValue == null || transaction.usdValue <= 0) {
+    if (depositRate != null && depositRate > 0) {
+      transaction.usdValue = depositAmount * depositRate
+    } else if (payoutRate != null && payoutRate > 0) {
+      transaction.usdValue = transaction.payoutAmount * payoutRate
+    }
+  }
+}
+
+async function updateTxValues(
   transaction: DbTx,
   mappings: CurrencyCodeMappings
 ): Promise<void> {
+  const hasDepositPluginInfo =
+    transaction.depositChainPluginId != null &&
+    transaction.depositTokenId !== undefined
+  const hasPayoutPluginInfo =
+    transaction.payoutChainPluginId != null &&
+    transaction.payoutTokenId !== undefined
   let success = false
-  const date: string = transaction.isoDate
-  if (mappings[transaction.depositCurrency] != null) {
-    transaction.depositCurrency = mappings[transaction.depositCurrency]
-  }
-  if (mappings[transaction.payoutCurrency] != null) {
-    transaction.payoutCurrency = mappings[transaction.payoutCurrency]
-  }
+  const needsPayoutAmount = transaction.depositAmount > 0
 
-  if (transaction.payoutAmount === 0) {
-    const exchangeRate = await getExchangeRate(
-      transaction.depositCurrency,
-      transaction.payoutCurrency,
-      date
-    )
-    if (exchangeRate > 0) {
-      transaction.payoutAmount = transaction.depositAmount * exchangeRate
-      success = true
-    }
-  }
-  if (transaction.payoutAmount === 0) {
-    const exchangeRate = await getExchangeRate(
-      transaction.payoutCurrency,
-      transaction.depositCurrency,
-      date
-    )
-    if (exchangeRate > 0) {
-      transaction.payoutAmount = transaction.depositAmount * (1 / exchangeRate)
-      success = true
-    }
-  }
   if (
-    transaction.payoutAmount === 0 &&
-    transaction.usdValue !== undefined &&
-    transaction.usdValue > 0
+    (hasDepositPluginInfo && hasPayoutPluginInfo) ||
+    (hasDepositPluginInfo && isFiatCurrency(transaction.payoutCurrency)) ||
+    (isFiatCurrency(transaction.depositCurrency) && hasPayoutPluginInfo)
   ) {
-    const exchangeRate = await getExchangeRate(
-      'USD',
-      transaction.payoutCurrency,
-      date
-    )
-    if (exchangeRate > 0) {
-      transaction.payoutAmount = transaction.usdValue * exchangeRate
-      success = true
+    const hadUsdValue = transaction.usdValue != null && transaction.usdValue > 0
+    const hadPayoutAmount = transaction.payoutAmount !== 0 || !needsPayoutAmount
+
+    try {
+      await updateTxValuesV3(transaction)
+    } catch (e) {
+      datelog('updateTxValuesV3 failed', e)
+    }
+
+    const hasUsdValue = transaction.usdValue != null && transaction.usdValue > 0
+    const hasPayoutAmount = transaction.payoutAmount !== 0 || !needsPayoutAmount
+    const madeProgress =
+      (!hadUsdValue && hasUsdValue) || (!hadPayoutAmount && hasPayoutAmount)
+
+    success = madeProgress
+  } else {
+    const date: string = transaction.isoDate
+    if (mappings[transaction.depositCurrency] != null) {
+      transaction.depositCurrency = mappings[transaction.depositCurrency]
+    }
+    if (mappings[transaction.payoutCurrency] != null) {
+      transaction.payoutCurrency = mappings[transaction.payoutCurrency]
+    }
+
+    if (transaction.payoutAmount === 0) {
+      const exchangeRate = await getExchangeRate(
+        transaction.depositCurrency,
+        transaction.payoutCurrency,
+        date
+      )
+      if (exchangeRate > 0) {
+        transaction.payoutAmount = transaction.depositAmount * exchangeRate
+        success = true
+      }
     }
     if (transaction.payoutAmount === 0) {
       const exchangeRate = await getExchangeRate(
         transaction.payoutCurrency,
-        'USD',
+        transaction.depositCurrency,
         date
       )
       if (exchangeRate > 0) {
-        transaction.payoutAmount = transaction.usdValue * (1 / exchangeRate)
+        transaction.payoutAmount =
+          transaction.depositAmount * (1 / exchangeRate)
         success = true
       }
     }
-  }
-  if (transaction.usdValue == null || transaction.usdValue <= 0) {
-    const exchangeRate = await getExchangeRate(
-      transaction.depositCurrency,
-      'USD',
-      date
-    )
-    if (exchangeRate > 0) {
-      transaction.usdValue = transaction.depositAmount * exchangeRate
-      success = true
-    } else if (transaction.payoutAmount !== 0) {
+    if (
+      transaction.payoutAmount === 0 &&
+      transaction.usdValue !== undefined &&
+      transaction.usdValue > 0
+    ) {
       const exchangeRate = await getExchangeRate(
+        'USD',
         transaction.payoutCurrency,
+        date
+      )
+      if (exchangeRate > 0) {
+        transaction.payoutAmount = transaction.usdValue * exchangeRate
+        success = true
+      }
+      if (transaction.payoutAmount === 0) {
+        const exchangeRate = await getExchangeRate(
+          transaction.payoutCurrency,
+          'USD',
+          date
+        )
+        if (exchangeRate > 0) {
+          transaction.payoutAmount = transaction.usdValue * (1 / exchangeRate)
+          success = true
+        }
+      }
+    }
+    if (transaction.usdValue == null || transaction.usdValue <= 0) {
+      const exchangeRate = await getExchangeRate(
+        transaction.depositCurrency,
         'USD',
         date
       )
       if (exchangeRate > 0) {
-        transaction.usdValue = transaction.payoutAmount * exchangeRate
+        transaction.usdValue = transaction.depositAmount * exchangeRate
         success = true
+      } else if (transaction.payoutAmount !== 0) {
+        const exchangeRate = await getExchangeRate(
+          transaction.payoutCurrency,
+          'USD',
+          date
+        )
+        if (exchangeRate > 0) {
+          transaction.usdValue = transaction.payoutAmount * exchangeRate
+          success = true
+        }
       }
     }
   }
@@ -217,9 +391,17 @@ async function getExchangeRate(
   retry: number = 0
 ): Promise<number> {
   const hourDate = dateRoundDownHour(date)
-  const currencyA = standardizeNames(ca)
-  const currencyB = standardizeNames(cb)
-  const url = `https://rates2.edge.app/v1/exchangeRate?currency_pair=${currencyA}_${currencyB}&date=${hourDate}`
+  let currencyA = standardizeNames(ca)
+  let currencyB = standardizeNames(cb)
+
+  if (currencyA === currencyB) {
+    return 1
+  }
+
+  currencyA = isFiatCurrency(currencyA) ? `iso:${currencyA}` : currencyA
+  currencyB = isFiatCurrency(currencyB) ? `iso:${currencyB}` : currencyB
+
+  const url = `https://rates2.edge.app/v2/exchangeRate?currency_pair=${currencyA}_${currencyB}&date=${hourDate}`
   try {
     const result = await fetch(url, { method: 'GET' })
     if (!result.ok) {

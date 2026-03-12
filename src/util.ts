@@ -53,8 +53,17 @@ export const promiseTimeout = async <T>(
   const timeoutMins = config.timeoutOverrideMins ?? 5
   return await new Promise((resolve, reject) => {
     datelog('STARTING', msg)
-    setTimeout(() => reject(new Error(`Timeout: ${msg}`)), 60000 * timeoutMins)
-    p.then(v => resolve(v)).catch(e => reject(e))
+    const timeoutId = setTimeout(
+      () => reject(new Error(`Timeout: ${msg}`)),
+      60000 * timeoutMins
+    )
+    p.then(v => {
+      clearTimeout(timeoutId)
+      resolve(v)
+    }).catch(e => {
+      clearTimeout(timeoutId)
+      reject(e)
+    })
   })
 }
 
