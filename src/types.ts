@@ -1,8 +1,10 @@
 import {
   asArray,
+  asBoolean,
   asDate,
   asEither,
   asMap,
+  asMaybe,
   asNull,
   asNumber,
   asObject,
@@ -20,6 +22,13 @@ export const asPluginParams = asObject({
   settings: asMap((raw: any): any => raw),
   apiKeys: asMap((raw: any): any => raw)
 })
+
+/** Scoped logging interface passed to plugins */
+export interface ScopedLog {
+  (message: string, ...args: unknown[]): void
+  warn: (message: string, ...args: unknown[]) => void
+  error: (message: string, ...args: unknown[]) => void
+}
 export interface PluginResult {
   // copy the type from standardtx from reports
   transactions: StandardTx[]
@@ -35,11 +44,15 @@ export interface PartnerPlugin {
 
 const asStatus = asValue(
   'complete',
+  'confirming',
+  'withdrawing',
   'processing',
   'pending',
   'expired',
   'blocked',
   'refunded',
+  'cancelled',
+  'failed',
   'other'
 )
 
@@ -86,6 +99,7 @@ const asFiatPaymentType = asValue(
   'moonpaybalance',
   'neft',
   'neteller',
+  'ozow',
   'payid',
   'paynow',
   'paypal',
@@ -232,7 +246,16 @@ export const asRatesV3Params = asObject({
   fiat: asArray(asRatesV3FiatRate)
 })
 
+export const asDisablePartnerQuery = asMaybe(
+  asObject({
+    plugins: asObject(asBoolean),
+    appPartners: asObject(asBoolean)
+  }),
+  { plugins: {}, appPartners: {} }
+)
+
 export type RatesV3Params = ReturnType<typeof asRatesV3Params>
+export type DisablePartnerQuery = ReturnType<typeof asDisablePartnerQuery>
 export type Bucket = ReturnType<typeof asBucket>
 export type AnalyticsResult = ReturnType<typeof asAnalyticsResult>
 
@@ -240,5 +263,7 @@ export type CurrencyCodeMappings = ReturnType<typeof asCurrencyCodeMappings>
 export type DbCurrencyCodeMappings = ReturnType<typeof asDbCurrencyCodeMappings>
 export type DbTx = ReturnType<typeof asDbTx>
 export type StandardTx = ReturnType<typeof asStandardTx>
-export type PluginParams = ReturnType<typeof asPluginParams>
+export type PluginParams = ReturnType<typeof asPluginParams> & {
+  log: ScopedLog
+}
 export type Status = ReturnType<typeof asStatus>

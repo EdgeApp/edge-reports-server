@@ -2,7 +2,6 @@ import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
 import fetch from 'node-fetch'
 
 import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog } from '../util'
 import { queryDummy } from './dummy'
 
 const asFoxExchangeTx = asObject({
@@ -32,6 +31,7 @@ const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 3 // 3 days ago
 export async function queryFoxExchange(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   const standardTxs: StandardTx[] = []
   let apiKey
   let secretToken
@@ -77,7 +77,7 @@ export async function queryFoxExchange(
         txs = asFoxExchangeTxs(await res.json())
       }
     } catch (e) {
-      datelog(e)
+      log.error(String(e))
       throw e
     }
 
@@ -119,13 +119,7 @@ export const foxExchange: PartnerPlugin = {
 }
 
 export function processFoxExchangeTx(rawTx: unknown): StandardTx {
-  let tx
-  try {
-    tx = asFoxExchangeTx(rawTx)
-  } catch (e) {
-    datelog(e)
-    throw e
-  }
+  const tx = asFoxExchangeTx(rawTx)
   const standardTx: StandardTx = {
     status: 'complete',
     orderId: tx.orderId,
@@ -140,7 +134,7 @@ export function processFoxExchangeTx(rawTx: unknown): StandardTx {
     direction: null,
     exchangeType: 'swap',
     paymentType: null,
-    payoutTxid: tx.outputTransactionHash,
+    payoutTxid: undefined,
     payoutAddress: tx.destinationAddress.address,
     payoutCurrency: tx.destinationCoin.toUpperCase(),
     payoutChainPluginId: undefined,

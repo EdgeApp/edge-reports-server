@@ -2,11 +2,12 @@ import { asArray, asObject, asString } from 'cleaners'
 import Router from 'express-promise-router'
 
 import { cacheAnalytic } from '../../dbutils'
+import { validateApiKey } from '../../util/validateApiKey'
 
 const asAnalyticsReq = asObject({
   start: asString,
   end: asString,
-  appId: asString,
+  apiKey: asString,
   pluginIds: asArray(asString),
   timePeriod: asString
 })
@@ -21,7 +22,16 @@ analyticsRouter.post(`/`, async function(req, res) {
     res.status(400).send(`Missing Request Fields`)
     return
   }
-  const { start, end, appId, pluginIds } = analyticsQuery
+  const { start, end, apiKey, pluginIds } = analyticsQuery
+
+  // Validate API key and get appId
+  let appId: string
+  try {
+    appId = await validateApiKey(apiKey)
+  } catch {
+    res.status(401).send(`Invalid API Key`)
+    return
+  }
   const timePeriod = analyticsQuery.timePeriod.toLowerCase()
   const queryStart = new Date(start).getTime() / 1000
   const queryEnd = new Date(end).getTime() / 1000
