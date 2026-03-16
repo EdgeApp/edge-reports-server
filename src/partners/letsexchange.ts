@@ -94,7 +94,6 @@ const asLetsExchangeCoin = asObject({
 
 const asLetsExchangeCoinsResult = asArray(asUnknown)
 
-type LetsExchangeTxV2 = ReturnType<typeof asLetsExchangeTx>
 type LetsExchangeStatus = ReturnType<typeof asLetsExchangeStatus>
 
 const LIMIT = 1000
@@ -331,12 +330,8 @@ export async function queryLetsExchange(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
   const { settings, apiKeys } = asLetsExchangePluginParams(pluginParams)
-  const { affiliateId, apiKey } = apiKeys
+  const { apiKey } = apiKeys
   let { latestIsoDate } = settings
-
-  if (apiKey == null || affiliateId == null) {
-    return { settings: { latestIsoDate }, transactions: [] }
-  }
 
   const standardTxs: StandardTx[] = []
   const headers = {
