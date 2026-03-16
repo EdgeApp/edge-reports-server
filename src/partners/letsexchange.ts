@@ -236,9 +236,15 @@ interface CoinInfo {
 
 let coinCache: Map<string, CoinInfo> | null = null
 let coinCacheApiKey: string | null = null
+let coinCacheTimestamp = 0
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 async function fetchCoinCache(apiKey: string, log: ScopedLog): Promise<void> {
-  if (coinCache != null && coinCacheApiKey === apiKey) {
+  if (
+    coinCache != null &&
+    coinCacheApiKey === apiKey &&
+    Date.now() - coinCacheTimestamp < CACHE_TTL_MS
+  ) {
     return // Already cached
   }
 
@@ -278,6 +284,7 @@ async function fetchCoinCache(apiKey: string, log: ScopedLog): Promise<void> {
   }
 
   coinCacheApiKey = apiKey
+  coinCacheTimestamp = Date.now()
   log(`Cached ${coinCache.size} coins`)
 }
 

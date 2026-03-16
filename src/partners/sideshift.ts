@@ -99,9 +99,14 @@ const asSideshiftCoinsResponse = asArray(asSideshiftCoin)
 // Cache for Sideshift coins data
 // Key: `${coin}-${network}` -> contract address or null for mainnet coins
 let sideshiftCoinsCache: Map<string, string | null> | null = null
+let sideshiftCoinsCacheTimestamp = 0
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 async function fetchSideshiftCoins(): Promise<Map<string, string | null>> {
-  if (sideshiftCoinsCache != null) {
+  if (
+    sideshiftCoinsCache != null &&
+    Date.now() - sideshiftCoinsCacheTimestamp < CACHE_TTL_MS
+  ) {
     return sideshiftCoinsCache
   }
 
@@ -124,6 +129,7 @@ async function fetchSideshiftCoins(): Promise<Map<string, string | null>> {
   }
 
   sideshiftCoinsCache = cache
+  sideshiftCoinsCacheTimestamp = Date.now()
   return cache
 }
 
