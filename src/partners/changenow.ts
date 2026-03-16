@@ -124,6 +124,8 @@ const currencyCache: CurrencyCache = {
   currencies: new Map<string, string | null>(),
   loaded: false
 }
+let currencyCacheTimestamp = 0
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 /**
  * Fetch all currencies from ChangeNow API and populate the cache
@@ -132,7 +134,10 @@ async function loadCurrencyCache(
   log: ScopedLog,
   apiKey?: string
 ): Promise<void> {
-  if (currencyCache.loaded) {
+  if (
+    currencyCache.loaded &&
+    Date.now() - currencyCacheTimestamp < CACHE_TTL_MS
+  ) {
     return
   }
 
@@ -171,6 +176,7 @@ async function loadCurrencyCache(
 
     currencyCache.currencies = newMap
     currencyCache.loaded = true
+    currencyCacheTimestamp = Date.now()
     log(`Currency cache loaded with ${currencies.length} entries`)
   } catch (e) {
     log.error(`Error loading currency cache: ${e}`)

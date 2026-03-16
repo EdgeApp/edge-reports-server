@@ -114,11 +114,16 @@ interface GodexAssetInfo {
 }
 
 let godexCoinsCache: Map<string, GodexAssetInfo> | null = null
+let godexCoinsCacheTimestamp = 0
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 async function getGodexCoinsCache(
   log: ScopedLog
 ): Promise<Map<string, GodexAssetInfo>> {
-  if (godexCoinsCache != null) {
+  if (
+    godexCoinsCache != null &&
+    Date.now() - godexCoinsCacheTimestamp < CACHE_TTL_MS
+  ) {
     return godexCoinsCache
   }
 
@@ -154,6 +159,7 @@ async function getGodexCoinsCache(
     }
     log(`Coins cache loaded: ${cache.size} entries`)
     godexCoinsCache = cache
+    godexCoinsCacheTimestamp = Date.now()
     return cache
   } catch (e) {
     log.error(`Error loading coins cache: ${String(e)}`)
