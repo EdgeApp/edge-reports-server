@@ -239,6 +239,11 @@ export const asRatesV3Params = asObject({
   fiat: asArray(asRatesV3FiatRate)
 })
 
+/**
+ * Controls which plugins and app-partner combinations are disabled.
+ * Set a key to `true` to disable that plugin or app-partner.
+ * Example: `{ plugins: { moonpay: true }, appPartners: { "edge:moonpay": true } }`
+ */
 export const asDisablePartnerQuery = asMaybe(
   asObject({
     plugins: asObject(asBoolean),
