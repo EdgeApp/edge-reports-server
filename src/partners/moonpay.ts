@@ -143,7 +143,7 @@ const asMoonpayTxBase = asObject({
   baseCurrency: asMoonpayCurrency,
   baseCurrencyAmount: asNumber,
   baseCurrencyId: asString,
-  cardType: asOptional(asValue('apple_pay', 'google_pay', 'card')),
+  cardType: asOptional(asValue('apple_pay', 'google_pay')),
   country: asString,
   createdAt: asDate,
   id: asString,
@@ -417,8 +417,6 @@ function getFiatPaymentType(tx: MoonpayTxBase): FiatPaymentType | null {
         paymentMethod = 'applepay'
       } else if (tx.cardType === 'google_pay') {
         paymentMethod = 'googlepay'
-      } else if (tx.cardType === undefined) {
-        paymentMethod = 'applepay'
       }
       break
     default:
