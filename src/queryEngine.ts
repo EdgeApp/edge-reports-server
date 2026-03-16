@@ -142,27 +142,21 @@ export async function queryEngine(): Promise<void> {
   }
 }
 
-const checkUpdateTx = (
-  oldTx: StandardTx,
-  newTx: StandardTx
-): string[] | undefined => {
+const checkUpdateTx = (oldTx: StandardTx, newTx: StandardTx): string[] => {
+  const fields = [
+    'status',
+    'depositChainPluginId',
+    'depositEvmChainId',
+    'depositTokenId',
+    'payoutChainPluginId',
+    'payoutEvmChainId',
+    'payoutTokenId'
+  ] as const
   const changedFields: string[] = []
-
-  if (oldTx.status !== newTx.status) changedFields.push('status')
-  if (oldTx.depositChainPluginId !== newTx.depositChainPluginId)
-    changedFields.push('depositChainPluginId')
-  if (oldTx.depositEvmChainId !== newTx.depositEvmChainId)
-    changedFields.push('depositEvmChainId')
-  if (oldTx.depositTokenId !== newTx.depositTokenId)
-    changedFields.push('depositTokenId')
-  if (oldTx.payoutChainPluginId !== newTx.payoutChainPluginId)
-    changedFields.push('payoutChainPluginId')
-  if (oldTx.payoutEvmChainId !== newTx.payoutEvmChainId)
-    changedFields.push('payoutEvmChainId')
-  if (oldTx.payoutTokenId !== newTx.payoutTokenId)
-    changedFields.push('payoutTokenId')
-
-  return changedFields.length > 0 ? changedFields : undefined
+  for (const field of fields) {
+    if (oldTx[field] !== newTx[field]) changedFields.push(field)
+  }
+  return changedFields
 }
 
 const filterAddNewTxs = async (
@@ -204,7 +198,7 @@ const filterAddNewTxs = async (
       newDocs.push(newObj)
     } else {
       const changedFields = checkUpdateTx(queryResult.doc, tx)
-      if (changedFields != null) {
+      if (changedFields.length > 0) {
         const oldStatus = queryResult.doc?.status
         const newStatus = tx.status
         const newObj = { _id: docId, _rev: queryResult.doc?._rev, ...tx }
