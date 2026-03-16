@@ -145,7 +145,7 @@ export async function queryEngine(): Promise<void> {
 const checkUpdateTx = (
   oldTx: StandardTx,
   newTx: StandardTx
-): string[] | undefined => {
+): string[] => {
   const changedFields: string[] = []
 
   if (oldTx.status !== newTx.status) changedFields.push('status')
@@ -162,7 +162,7 @@ const checkUpdateTx = (
   if (oldTx.payoutTokenId !== newTx.payoutTokenId)
     changedFields.push('payoutTokenId')
 
-  return changedFields.length > 0 ? changedFields : undefined
+  return changedFields
 }
 
 const filterAddNewTxs = async (
@@ -204,7 +204,7 @@ const filterAddNewTxs = async (
       newDocs.push(newObj)
     } else {
       const changedFields = checkUpdateTx(queryResult.doc, tx)
-      if (changedFields != null) {
+      if (changedFields.length > 0) {
         const oldStatus = queryResult.doc?.status
         const newStatus = tx.status
         const newObj = { _id: docId, _rev: queryResult.doc?._rev, ...tx }
