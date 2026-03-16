@@ -27,6 +27,9 @@ const RATES_SERVERS = [
 const snooze: Function = async (ms: number) =>
   await new Promise((resolve: Function) => setTimeout(resolve, ms))
 
+const pickRandomRatesServer = (): string =>
+  RATES_SERVERS[Math.floor(Math.random() * RATES_SERVERS.length)]
+
 const asDbQueryResult = asObject({ docs: asArray(asUnknown) })
 
 export async function ratesEngine(): Promise<void> {
@@ -150,16 +153,18 @@ async function updateTxValuesV3(transaction: DbTx): Promise<void> {
       },
       rate: undefined
     })
-  } else if (depositCurrency === 'USD') {
-    depositIsUsd = true
   } else if (isFiatCurrency(depositCurrency)) {
-    depositIsFiat = true
-    ratesRequest.fiat.push({
-      isoDate: new Date(isoDate),
-      fiatCode: depositCurrency,
-      rate: undefined
-    })
-  } else if (depositCurrency !== 'USD') {
+    if (depositCurrency === 'USD') {
+      depositIsUsd = true
+    } else {
+      depositIsFiat = true
+      ratesRequest.fiat.push({
+        isoDate: new Date(isoDate),
+        fiatCode: depositCurrency,
+        rate: undefined
+      })
+    }
+  } else {
     console.error(
       `Deposit asset is not a crypto asset or fiat currency ${depositCurrency} ${depositChainPluginId} ${depositTokenId}`
     )
@@ -175,23 +180,25 @@ async function updateTxValuesV3(transaction: DbTx): Promise<void> {
       },
       rate: undefined
     })
-  } else if (payoutCurrency === 'USD') {
-    payoutIsUsd = true
   } else if (isFiatCurrency(payoutCurrency)) {
-    payoutIsFiat = true
-    ratesRequest.fiat.push({
-      isoDate: new Date(isoDate),
-      fiatCode: payoutCurrency,
-      rate: undefined
-    })
-  } else if (payoutCurrency !== 'USD') {
+    if (payoutCurrency === 'USD') {
+      payoutIsUsd = true
+    } else {
+      payoutIsFiat = true
+      ratesRequest.fiat.push({
+        isoDate: new Date(isoDate),
+        fiatCode: payoutCurrency,
+        rate: undefined
+      })
+    }
+  } else {
     console.error(
       `Payout asset is not a crypto asset or fiat currency ${payoutCurrency} ${payoutChainPluginId} ${payoutTokenId}`
     )
     return
   }
 
-  const server = RATES_SERVERS[Math.floor(Math.random() * RATES_SERVERS.length)]
+  const server = pickRandomRatesServer()
   datelog(`Getting v3 rates from ${server}`)
   const ratesResponse = await fetch(`${server}/v3/rates`, {
     method: 'POST',
@@ -439,7 +446,7 @@ async function getExchangeRate(
   currencyA = isFiatCurrency(currencyA) ? `iso:${currencyA}` : currencyA
   currencyB = isFiatCurrency(currencyB) ? `iso:${currencyB}` : currencyB
 
-  const server = RATES_SERVERS[Math.floor(Math.random() * RATES_SERVERS.length)]
+  const server = pickRandomRatesServer()
   const url = `${server}/v2/exchangeRate?currency_pair=${currencyA}_${currencyB}&date=${hourDate}`
   datelog(`Getting v2 exchange rate from ${server}`)
   try {
