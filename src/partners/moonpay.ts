@@ -86,6 +86,14 @@ function processMetadata(
       : undefined) ??
     (chainIdNum != null ? REVERSE_EVM_CHAIN_IDS[chainIdNum] : undefined)
 
+  if (chainPluginId == null) {
+    throw new Error(
+      `Unknown Moonpay chain for currency ${currencyCode} (networkCode=${networkCode ??
+        'null'}, chainId=${rawChainId ??
+        'null'}). Add mapping to MOONPAY_NETWORK_TO_PLUGIN_ID or REVERSE_EVM_CHAIN_IDS.`
+    )
+  }
+
   // Determine evmChainId
   let evmChainId: number | undefined
   if (chainIdNum != null && REVERSE_EVM_CHAIN_IDS[chainIdNum] != null) {
@@ -143,7 +151,7 @@ const asMoonpayTxBase = asObject({
   baseCurrency: asMoonpayCurrency,
   baseCurrencyAmount: asNumber,
   baseCurrencyId: asString,
-  cardType: asOptional(asValue('apple_pay', 'google_pay', 'card')),
+  cardType: asOptional(asValue('apple_pay', 'google_pay')),
   country: asString,
   createdAt: asDate,
   id: asString,
@@ -420,8 +428,6 @@ function getFiatPaymentType(tx: MoonpayTxBase): FiatPaymentType | null {
         paymentMethod = 'applepay'
       } else if (tx.cardType === 'google_pay') {
         paymentMethod = 'googlepay'
-      } else if (tx.cardType === undefined) {
-        paymentMethod = 'applepay'
       }
       break
     default:
