@@ -42,13 +42,12 @@ import {
   ScopedLog,
   StandardTx
 } from './types'
-import { createScopedLog, promiseTimeout, standardizeNames } from './util'
-
-/** Local datelog for engine-level logs not associated with a specific app/partner */
-const datelog = (...args: unknown[]): void => {
-  const date = new Date().toISOString()
-  console.log(date, ...args)
-}
+import {
+  createScopedLog,
+  datelog,
+  promiseTimeout,
+  standardizeNames
+} from './util'
 
 const nanoDb = nano(config.couchDbFullpath)
 
