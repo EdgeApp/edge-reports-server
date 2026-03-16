@@ -28,10 +28,8 @@ const asMoonpayCurrency = asObject({
   code: asString
 })
 
-// Unified cleaner that handles both buy and sell transactions
-// Buy transactions have: paymentMethod, cryptoTransactionId, currency, walletAddress
-// Sell transactions have: payoutMethod, depositHash, quoteCurrency
-const asMoonpayTx = asObject({
+// Base cleaner with fields common to both buy and sell transactions
+const asMoonpayTxBase = asObject({
   baseCurrency: asMoonpayCurrency,
   baseCurrencyAmount: asNumber,
   baseCurrencyId: asString,
@@ -39,20 +37,28 @@ const asMoonpayTx = asObject({
   country: asString,
   createdAt: asDate,
   id: asString,
-  // Common amount field (used by both buy and sell)
   quoteCurrencyAmount: asOptional(asNumber),
-  // Buy-specific fields
+  paymentMethod: asOptional(asString),
   cryptoTransactionId: asOptional(asString),
   currency: asOptional(asMoonpayCurrency),
   walletAddress: asOptional(asString),
-  paymentMethod: asOptional(asString),
-  // Sell-specific fields
   depositHash: asOptional(asString),
   quoteCurrency: asOptional(asMoonpayCurrency),
   payoutMethod: asOptional(asString)
 })
 
-type MoonpayTx = ReturnType<typeof asMoonpayTx>
+const asMoonpayBuyFields = asObject({
+  currency: asMoonpayCurrency,
+  walletAddress: asString,
+  quoteCurrencyAmount: asNumber
+})
+
+const asMoonpaySellFields = asObject({
+  quoteCurrency: asMoonpayCurrency,
+  quoteCurrencyAmount: asNumber
+})
+
+type MoonpayTxBase = ReturnType<typeof asMoonpayTxBase>
 
 const asPreMoonpayTx = asObject({
   status: asString
@@ -109,10 +115,8 @@ export async function queryMoonpay(
         const txs = asMoonpayResult(await result.json())
 
         for (const rawTx of txs) {
-          if (asPreMoonpayTx(rawTx).status === 'completed') {
-            const standardTx = processTx(rawTx)
-            standardTxs.push(standardTx)
-          }
+          const standardTx = processMoonpayTx(rawTx, 'sell')
+          standardTxs.push(standardTx)
         }
 
         if (txs.length > 0) {
@@ -142,10 +146,8 @@ export async function queryMoonpay(
         // in bulk update it throws an error for document update conflict because of this.
 
         for (const rawTx of txs) {
-          if (asPreMoonpayTx(rawTx).status === 'completed') {
-            const standardTx = processTx(rawTx)
-            standardTxs.push(standardTx)
-          }
+          const standardTx = processMoonpayTx(rawTx, 'buy')
+          standardTxs.push(standardTx)
         }
         if (txs.length > 0) {
           console.log(
@@ -192,49 +194,76 @@ export const moonpay: PartnerPlugin = {
   pluginId: 'moonpay'
 }
 
-export function processTx(rawTx: unknown): StandardTx {
-  const tx: MoonpayTx = asMoonpayTx(rawTx)
+export function processMoonpayTx(
+  rawTx: unknown,
+  direction: 'buy' | 'sell'
+): StandardTx {
+  const tx: MoonpayTxBase = asMoonpayTxBase(rawTx)
   const isoDate = tx.createdAt.toISOString()
   const timestamp = tx.createdAt.getTime()
 
-  // Determine direction based on paymentMethod vs payoutMethod
-  // Buy transactions have paymentMethod, sell transactions have payoutMethod
-  const direction = tx.paymentMethod != null ? 'buy' : 'sell'
+  // Map Moonpay status to Edge status
+  const status: Status = statusMap[tx.status] ?? 'other'
 
-  // Get the payout currency - different field names for buy vs sell
-  const payoutCurrency = direction === 'buy' ? tx.currency : tx.quoteCurrency
-  if (payoutCurrency == null) {
-    throw new Error(`Missing payout currency for tx ${tx.id}`)
+  if (direction === 'buy') {
+    const buyFields = asMoonpayBuyFields(rawTx)
+    const standardTx: StandardTx = {
+      status: 'complete',
+      orderId: tx.id,
+      countryCode: tx.country,
+      depositTxid: undefined,
+      depositAddress: undefined,
+      depositCurrency: tx.baseCurrency.code.toUpperCase(),
+      depositChainPluginId: undefined,
+      depositEvmChainId: undefined,
+      depositTokenId: undefined,
+      depositAmount: tx.baseCurrencyAmount,
+      direction,
+      exchangeType: 'fiat',
+      paymentType: getFiatPaymentType(tx),
+      payoutTxid: tx.cryptoTransactionId,
+      payoutAddress: buyFields.walletAddress,
+      payoutCurrency: buyFields.currency.code.toUpperCase(),
+      payoutChainPluginId: undefined,
+      payoutEvmChainId: undefined,
+      payoutTokenId: undefined,
+      payoutAmount: buyFields.quoteCurrencyAmount,
+      timestamp: timestamp / 1000,
+      isoDate,
+      usdValue: -1,
+      rawTx
+    }
+    return standardTx
+  } else {
+    const sellFields = asMoonpaySellFields(rawTx)
+    const standardTx: StandardTx = {
+      status: 'complete',
+      orderId: tx.id,
+      countryCode: tx.country,
+      depositTxid: tx.depositHash,
+      depositAddress: undefined,
+      depositCurrency: tx.baseCurrency.code.toUpperCase(),
+      depositChainPluginId: undefined,
+      depositEvmChainId: undefined,
+      depositTokenId: undefined,
+      depositAmount: tx.baseCurrencyAmount,
+      direction,
+      exchangeType: 'fiat',
+      paymentType: getFiatPaymentType(tx),
+      payoutTxid: undefined,
+      payoutAddress: undefined,
+      payoutCurrency: sellFields.quoteCurrency.code.toUpperCase(),
+      payoutChainPluginId: undefined,
+      payoutEvmChainId: undefined,
+      payoutTokenId: undefined,
+      payoutAmount: sellFields.quoteCurrencyAmount,
+      timestamp: timestamp / 1000,
+      isoDate,
+      usdValue: -1,
+      rawTx
+    }
+    return standardTx
   }
-
-  const standardTx: StandardTx = {
-    status: 'complete',
-    orderId: tx.id,
-
-    countryCode: tx.country,
-    depositTxid: direction === 'sell' ? tx.depositHash : undefined,
-    depositAddress: undefined,
-    depositCurrency: tx.baseCurrency.code.toUpperCase(),
-    depositChainPluginId: undefined,
-    depositEvmChainId: undefined,
-    depositTokenId: undefined,
-    depositAmount: tx.baseCurrencyAmount,
-    direction,
-    exchangeType: 'fiat',
-    paymentType: getFiatPaymentType(tx),
-    payoutTxid: direction === 'buy' ? tx.cryptoTransactionId : undefined,
-    payoutAddress: direction === 'buy' ? tx.walletAddress : undefined,
-    payoutCurrency: payoutCurrency.code.toUpperCase(),
-    payoutChainPluginId: undefined,
-    payoutEvmChainId: undefined,
-    payoutTokenId: undefined,
-    payoutAmount: tx.quoteCurrencyAmount ?? 0,
-    timestamp: timestamp / 1000,
-    isoDate,
-    usdValue: -1,
-    rawTx
-  }
-  return standardTx
 }
 
 const paymentMethodMap: Record<string, FiatPaymentType> = {
@@ -253,7 +282,7 @@ const paymentMethodMap: Record<string, FiatPaymentType> = {
   yellow_card_bank_transfer: 'yellowcard'
 }
 
-function getFiatPaymentType(tx: MoonpayTx): FiatPaymentType | null {
+function getFiatPaymentType(tx: MoonpayTxBase): FiatPaymentType | null {
   let paymentMethod: FiatPaymentType | null = null
   switch (tx.paymentMethod) {
     case undefined:
