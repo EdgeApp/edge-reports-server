@@ -530,7 +530,23 @@ export async function processBanxaTx(
 
   await fetchBanxaCoins(partnerId, apiKeyV2, log)
 
-  const cryptoAssetInfo = getAssetInfo(blockchainCode, coinCode)
+  let cryptoAssetInfo: EdgeAssetInfo = {
+    chainPluginId: undefined,
+    evmChainId: undefined,
+    tokenId: undefined
+  }
+  try {
+    cryptoAssetInfo = getAssetInfo(blockchainCode, coinCode)
+  } catch (e) {
+    if (banxaTx.status === 'complete') {
+      throw e
+    }
+    log.warn(
+      `Skipping crypto asset mapping for ${banxaTx.id} (${banxaTx.status}): ${String(
+        e
+      )}`
+    )
+  }
 
   // For buy transactions: deposit is fiat (no crypto info), payout is crypto
   // For sell transactions: deposit is crypto, payout is fiat (no crypto info)

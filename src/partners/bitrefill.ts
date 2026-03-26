@@ -213,8 +213,12 @@ export async function queryBitrefill(
     }
     const txs = jsonObj.orders
     for (const rawTx of txs) {
-      const standardTx = processBitrefillTx(rawTx, pluginParams)
-      standardTxs.push(standardTx)
+      try {
+        const standardTx = processBitrefillTx(rawTx, pluginParams)
+        standardTxs.push(standardTx)
+      } catch (e) {
+        log.error(String(e))
+      }
     }
 
     if (count > MAX_ITERATIONS) {

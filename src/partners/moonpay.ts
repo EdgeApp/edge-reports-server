@@ -418,6 +418,8 @@ function getFiatPaymentType(tx: MoonpayTxBase): FiatPaymentType | null {
         paymentMethod = 'applepay'
       } else if (tx.cardType === 'google_pay') {
         paymentMethod = 'googlepay'
+      } else {
+        return null
       }
       break
     default:
