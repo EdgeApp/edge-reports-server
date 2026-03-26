@@ -1,3 +1,4 @@
+import { Semaphore } from 'async-mutex'
 import nano from 'nano'
 
 import { config } from './config'
@@ -23,6 +24,7 @@ import { lifi } from './partners/lifi'
 import { moonpay } from './partners/moonpay'
 import { paybis } from './partners/paybis'
 import { paytrie } from './partners/paytrie'
+import { rango } from './partners/rango'
 import { safello } from './partners/safello'
 import { sideshift } from './partners/sideshift'
 import { simplex } from './partners/simplex'
@@ -32,8 +34,22 @@ import { maya, thorchain } from './partners/thorchain'
 import { transak } from './partners/transak'
 import { wyre } from './partners/wyre'
 import { xanpool } from './partners/xanpool'
-import { asApp, asApps, asProgressSettings, DbTx, StandardTx } from './types'
-import { datelog, promiseTimeout, standardizeNames } from './util'
+import {
+  asApp,
+  asApps,
+  asDisablePartnerQuery,
+  asProgressSettings,
+  DbTx,
+  DisablePartnerQuery,
+  ScopedLog,
+  StandardTx
+} from './types'
+import {
+  createScopedLog,
+  datelog,
+  promiseTimeout,
+  standardizeNames
+} from './util'
 
 const nanoDb = nano(config.couchDbFullpath)
 
@@ -60,6 +76,7 @@ const plugins = [
   moonpay,
   paybis,
   paytrie,
+  rango,
   safello,
   sideshift,
   simplex,
@@ -72,16 +89,31 @@ const plugins = [
 ]
 const QUERY_FREQ_MS = 60 * 1000
 const MAX_CONCURRENT_QUERIES = 3
-const BULK_FETCH_SIZE = 50
+const BULK_FETCH_SIZE = 500
 const snooze: Function = async (ms: number) =>
   await new Promise((resolve: Function) => setTimeout(resolve, ms))
 
-export async function queryEngine(): Promise<void> {
-  const dbProgress = nanoDb.db.use('reports_progresscache')
-  const dbApps = nanoDb.db.use('reports_apps')
+const dbProgress = nanoDb.db.use('reports_progresscache')
+const dbApps = nanoDb.db.use('reports_apps')
+const dbSettings: nano.DocumentScope<unknown> = nanoDb.db.use(
+  'reports_settings'
+)
 
+export async function queryEngine(): Promise<void> {
   while (true) {
     datelog('Starting query loop...')
+    let disablePartnerQuery: DisablePartnerQuery = {
+      plugins: {},
+      appPartners: {}
+    }
+    try {
+      const disablePartnerQueryDoc = await dbSettings.get('disablePartnerQuery')
+      if (disablePartnerQueryDoc != null) {
+        disablePartnerQuery = asDisablePartnerQuery(disablePartnerQueryDoc)
+      }
+    } catch (e) {
+      datelog('Error getting disablePartnerQuery', e)
+    }
     // get the contents of all reports_apps docs
     const query = {
       selector: {
@@ -91,62 +123,96 @@ export async function queryEngine(): Promise<void> {
     }
     const rawApps = await dbApps.find(query)
     const apps = asApps(rawApps.docs)
-    let promiseArray: Array<Promise<string>> = []
-    let remainingPartners: String[] = []
     // loop over every app
     for (const app of apps) {
+      const semaphore = new Semaphore(MAX_CONCURRENT_QUERIES)
       if (config.soloAppIds != null && !config.soloAppIds.includes(app.appId)) {
         continue
       }
       let partnerStatus: string[] = []
+      const runPlugins: RunPluginParams[] = []
+      let remainingPlugins: RunPluginParams[] = []
       // loop over every pluginId that app uses
-      remainingPartners = Object.keys(app.partnerIds)
       for (const partnerId in app.partnerIds) {
         const pluginId = app.partnerIds[partnerId].pluginId ?? partnerId
-
-        if (
-          config.soloPartnerIds != null &&
-          !config.soloPartnerIds.includes(partnerId)
-        ) {
-          continue
+        if (config.soloPartnerIds?.includes(partnerId) !== true) {
+          if (disablePartnerQuery.plugins[pluginId]) {
+            continue
+          }
+          const appPartnerId = `${app.appId}_${partnerId}`
+          if (disablePartnerQuery.appPartners[appPartnerId]) {
+            continue
+          }
+          if (
+            config.soloPartnerIds != null &&
+            !config.soloPartnerIds.includes(partnerId)
+          ) {
+            continue
+          }
         }
-        remainingPartners.push(partnerId)
-        promiseArray.push(
-          runPlugin(app, partnerId, pluginId, dbProgress).finally(() => {
-            remainingPartners = remainingPartners.filter(
-              string => string !== partnerId
+        const runPluginParams: RunPluginParams = { app, partnerId, pluginId }
+        runPlugins.push(runPluginParams)
+        remainingPlugins.push(runPluginParams)
+      }
+      const promises: Array<Promise<void>> = []
+      for (const runPluginParams of runPlugins) {
+        await semaphore.acquire()
+        const promise = runPlugin(runPluginParams)
+          .then(status => {
+            partnerStatus = [...partnerStatus, status]
+          })
+          .finally(() => {
+            semaphore.release()
+            // remove the plugin from the remaining plugins
+            remainingPlugins = remainingPlugins.filter(
+              plugin => plugin !== runPluginParams
             )
-            if (remainingPartners.length > 0) {
+            if (remainingPlugins.length > 0) {
               datelog(
                 `REMAINING PLUGINS for ${app.appId}:`,
-                remainingPartners.join(', ')
+                remainingPlugins.map(plugin => plugin.partnerId).join(', ')
               )
             }
           })
-        )
-        if (promiseArray.length >= MAX_CONCURRENT_QUERIES) {
-          const status = await Promise.all(promiseArray)
-          // log how long every app + plugin took to run
-          datelog(status)
-          partnerStatus = [...partnerStatus, ...status]
-          promiseArray = []
-        }
+        promises.push(promise)
       }
-      datelog(partnerStatus)
+      await Promise.all(promises)
+      datelog(partnerStatus.join('\n'))
     }
-    const partnerStatus = await Promise.all(promiseArray)
-    // log how long every app + plugin took to run
-    datelog(partnerStatus)
     datelog(`Snoozing for ${QUERY_FREQ_MS} milliseconds`)
     await snooze(QUERY_FREQ_MS)
   }
+}
+
+const checkUpdateTx = (
+  oldTx: StandardTx,
+  newTx: StandardTx
+): string[] => {
+  const changedFields: string[] = []
+
+  if (oldTx.status !== newTx.status) changedFields.push('status')
+  if (oldTx.depositChainPluginId !== newTx.depositChainPluginId)
+    changedFields.push('depositChainPluginId')
+  if (oldTx.depositEvmChainId !== newTx.depositEvmChainId)
+    changedFields.push('depositEvmChainId')
+  if (oldTx.depositTokenId !== newTx.depositTokenId)
+    changedFields.push('depositTokenId')
+  if (oldTx.payoutChainPluginId !== newTx.payoutChainPluginId)
+    changedFields.push('payoutChainPluginId')
+  if (oldTx.payoutEvmChainId !== newTx.payoutEvmChainId)
+    changedFields.push('payoutEvmChainId')
+  if (oldTx.payoutTokenId !== newTx.payoutTokenId)
+    changedFields.push('payoutTokenId')
+
+  return changedFields
 }
 
 const filterAddNewTxs = async (
   pluginId: string,
   dbTransactions: nano.DocumentScope<StandardTx>,
   docIds: string[],
-  transactions: StandardTx[]
+  transactions: StandardTx[],
+  log: ScopedLog
 ): Promise<void> => {
   if (docIds.length < 1 || transactions.length < 1) return
   const queryResults = await dbTransactions.fetch(
@@ -165,7 +231,11 @@ const filterAddNewTxs = async (
       throw new Error(`Cant find tx from docId ${docId}`)
     }
 
-    if (queryResult == null) {
+    if (
+      queryResult == null ||
+      !('doc' in queryResult) ||
+      queryResult.doc == null
+    ) {
       // Get the full transaction
       const newObj = { _id: docId, _rev: undefined, ...tx }
 
@@ -173,32 +243,40 @@ const filterAddNewTxs = async (
       newObj.depositCurrency = standardizeNames(newObj.depositCurrency)
       newObj.payoutCurrency = standardizeNames(newObj.payoutCurrency)
 
-      datelog(`new doc id: ${newObj._id}`)
+      log(`[filterAddNewTxs] new doc id: ${newObj._id}`)
       newDocs.push(newObj)
     } else {
-      if ('doc' in queryResult) {
-        if (tx.status !== queryResult.doc?.status) {
-          const oldStatus = queryResult.doc?.status
-          const newStatus = tx.status
-          const newObj = { _id: docId, _rev: queryResult.doc?._rev, ...tx }
-          newDocs.push(newObj)
-          datelog(`updated doc id: ${newObj._id} ${oldStatus} -> ${newStatus}`)
-        }
+      const changedFields = checkUpdateTx(queryResult.doc, tx)
+      if (changedFields.length > 0) {
+        const oldStatus = queryResult.doc?.status
+        const newStatus = tx.status
+        const newObj = { _id: docId, _rev: queryResult.doc?._rev, ...tx }
+        newDocs.push(newObj)
+        log(
+          `[filterAddNewTxs] updated doc id: ${
+            newObj._id
+          } ${oldStatus} -> ${newStatus} [${changedFields.join(', ')}]`
+        )
       }
     }
   }
 
   try {
-    await promiseTimeout('pagination', pagination(newDocs, dbTransactions))
+    await promiseTimeout(
+      'pagination',
+      pagination(newDocs, dbTransactions, log),
+      log
+    )
   } catch (e) {
-    datelog('Error doing bulk transaction insert', e)
+    log.error('[filterAddNewTxs] Error doing bulk transaction insert', e)
     throw e
   }
 }
 
 async function insertTransactions(
   transactions: StandardTx[],
-  pluginId: string
+  pluginId: string,
+  log: ScopedLog
 ): Promise<any> {
   const dbTransactions: nano.DocumentScope<StandardTx> = nanoDb.db.use(
     'reports_transactions'
@@ -214,47 +292,44 @@ async function insertTransactions(
     // Collect a batch of docIds
     if (docIds.length < BULK_FETCH_SIZE) continue
 
-    datelog(
-      `insertTransactions ${startIndex} to ${i} of ${transactions.length}`
-    )
-    await filterAddNewTxs(pluginId, dbTransactions, docIds, transactions)
+    log(`[insertTransactions] ${startIndex} to ${i} of ${transactions.length}`)
+    await filterAddNewTxs(pluginId, dbTransactions, docIds, transactions, log)
     docIds = []
     startIndex = i + 1
   }
-  await filterAddNewTxs(pluginId, dbTransactions, docIds, transactions)
+  await filterAddNewTxs(pluginId, dbTransactions, docIds, transactions, log)
 }
 
-async function runPlugin(
-  app: ReturnType<typeof asApp>,
-  partnerId: string,
-  pluginId: string,
-  dbProgress: nano.DocumentScope<unknown>
-): Promise<string> {
+interface RunPluginParams {
+  app: ReturnType<typeof asApp>
+  partnerId: string
+  pluginId: string
+}
+
+async function runPlugin(params: RunPluginParams): Promise<string> {
+  const { app, partnerId, pluginId } = params
   const start = Date.now()
+  const log = createScopedLog(app.appId, partnerId)
   let errorText = ''
   try {
     // obtains function that corresponds to current pluginId
     const plugin = plugins.find(plugin => plugin.pluginId === pluginId)
     // if current plugin is not within the list of partners skip to next
     if (plugin === undefined) {
-      errorText = `Missing or disabled plugin ${app.appId.toLowerCase()}_${partnerId}`
-      datelog(errorText)
+      errorText = `[runPlugin] ${partnerId} Missing or disabled plugin`
+      log(errorText)
       return errorText
     }
 
     // get progress cache to see where previous query ended
-    datelog(
-      `Starting with partner:${partnerId} plugin:${pluginId}, app: ${app.appId}`
-    )
+    log(`[runPlugin] Starting with plugin:${pluginId}`)
     const progressCacheFileName = `${app.appId.toLowerCase()}:${partnerId}`
     const out = await dbProgress.get(progressCacheFileName).catch(e => {
       if (e.error != null && e.error === 'not_found') {
-        datelog(
-          `Previous Progress Record Not Found ${app.appId.toLowerCase()}_${partnerId}`
-        )
+        log(`[runPlugin] Previous Progress Record Not Found`)
         return {}
       } else {
-        console.log(e)
+        log.error('[runPlugin] Error fetching progress', e)
       }
     })
 
@@ -273,35 +348,61 @@ async function runPlugin(
     // set apiKeys and settings for use in partner's function
     const { apiKeys } = app.partnerIds[partnerId]
     const settings = progressSettings.progressCache
-    datelog(`Querying ${app.appId.toLowerCase()}_${partnerId}`)
+    log(`[runPlugin] Querying`)
     // run the plugin function
     const result = await promiseTimeout(
       'queryFunc',
       plugin.queryFunc({
         apiKeys,
-        settings
-      })
+        settings,
+        log
+      }),
+      log
     )
-    datelog(`Successful query: ${app.appId.toLowerCase()}_${partnerId}`)
+    log(`[runPlugin] Successful query`)
 
     await promiseTimeout(
       'insertTransactions',
-      insertTransactions(result.transactions, `${app.appId}_${partnerId}`)
-    )
+      insertTransactions(result.transactions, `${app.appId}_${partnerId}`, log),
+      log
+    ).catch(e => {
+      throw new Error(`Error inserting transactions: ${String(e)}`)
+    })
     progressSettings.progressCache = result.settings
     progressSettings._id = progressCacheFileName
-    await promiseTimeout(
-      'dbProgress.insert',
-      dbProgress.insert(progressSettings)
-    )
+
+    // Attempt to insert progress with retry on conflict
+    const maxAttempts = 2
+    let attempt = 0
+    while (attempt < maxAttempts) {
+      attempt++
+      try {
+        await promiseTimeout(
+          `dbProgress.insert (attempt ${attempt})`,
+          dbProgress.insert(progressSettings),
+          log
+        )
+        break
+      } catch (e) {
+        const err: any = e
+        const isConflict = err.statusCode === 409 || err.error === 'conflict'
+        if (isConflict && attempt < maxAttempts) {
+          log(`[runPlugin] Document conflict detected, re-reading and retrying`)
+          const updatedDoc = await dbProgress.get(progressCacheFileName)
+          progressSettings._rev = updatedDoc._rev
+          continue
+        }
+        throw new Error(`Error inserting progress: ${String(e)}`)
+      }
+    }
     // Returning a successful completion message
     const completionTime = (Date.now() - start) / 1000
-    const successfulCompletionMessage = `Successful update: ${app.appId.toLowerCase()}_${partnerId} in ${completionTime} seconds.`
-    datelog(successfulCompletionMessage)
+    const successfulCompletionMessage = `[runPlugin] ${partnerId} Successful update in ${completionTime} seconds.`
+    log(successfulCompletionMessage)
     return successfulCompletionMessage
   } catch (e) {
-    errorText = `Error: ${app.appId.toLowerCase()}_${partnerId}. Error message: ${e}`
-    datelog(errorText)
+    errorText = `[runPlugin] ${partnerId} Error: ${String(e)}`
+    log.error(errorText)
     return errorText
   }
 }

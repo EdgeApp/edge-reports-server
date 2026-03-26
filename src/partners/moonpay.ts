@@ -17,52 +17,165 @@ import {
   PartnerPlugin,
   PluginParams,
   PluginResult,
-  StandardTx
+  StandardTx,
+  Status
 } from '../types'
-import { datelog } from '../util'
+import {
+  ChainNameToPluginIdMapping,
+  createTokenId,
+  EdgeTokenId,
+  tokenTypes
+} from '../util/asEdgeTokenId'
+import { EVM_CHAIN_IDS, REVERSE_EVM_CHAIN_IDS } from '../util/chainIds'
+
+// Map Moonpay's networkCode to Edge pluginId
+const MOONPAY_NETWORK_TO_PLUGIN_ID: ChainNameToPluginIdMapping = {
+  algorand: 'algorand',
+  arbitrum: 'arbitrum',
+  avalanche_c_chain: 'avalanche',
+  base: 'base',
+  binance_smart_chain: 'binancesmartchain',
+  bitcoin: 'bitcoin',
+  bitcoin_cash: 'bitcoincash',
+  cardano: 'cardano',
+  cosmos: 'cosmoshub',
+  dogecoin: 'dogecoin',
+  ethereum: 'ethereum',
+  ethereum_classic: 'ethereumclassic',
+  hedera: 'hedera',
+  litecoin: 'litecoin',
+  optimism: 'optimism',
+  polygon: 'polygon',
+  ripple: 'ripple',
+  solana: 'solana',
+  stellar: 'stellar',
+  sui: 'sui',
+  ton: 'ton',
+  tron: 'tron',
+  zksync: 'zksync'
+}
+
+interface EdgeAssetInfo {
+  chainPluginId: string | undefined
+  evmChainId: number | undefined
+  tokenId: EdgeTokenId
+}
+
+type MoonpayCurrencyMetadata = ReturnType<typeof asMoonpayCurrencyMetadata>
+
+/**
+ * Process Moonpay currency metadata to extract Edge asset info
+ */
+function processMetadata(
+  metadata: MoonpayCurrencyMetadata | undefined,
+  currencyCode: string
+): EdgeAssetInfo {
+  if (metadata == null) {
+    throw new Error(`Missing metadata for currency ${currencyCode}`)
+  }
+
+  const networkCode = metadata.networkCode
+  const rawChainId = metadata.chainId
+  const chainIdNum = rawChainId != null ? parseInt(rawChainId, 10) : undefined
+
+  // Determine chainPluginId from networkCode or chainId
+  const chainPluginId =
+    (networkCode != null
+      ? MOONPAY_NETWORK_TO_PLUGIN_ID[networkCode]
+      : undefined) ??
+    (chainIdNum != null ? REVERSE_EVM_CHAIN_IDS[chainIdNum] : undefined)
+
+  // Determine evmChainId
+  let evmChainId: number | undefined
+  if (chainIdNum != null && REVERSE_EVM_CHAIN_IDS[chainIdNum] != null) {
+    evmChainId = chainIdNum
+  } else if (chainPluginId != null && EVM_CHAIN_IDS[chainPluginId] != null) {
+    evmChainId = EVM_CHAIN_IDS[chainPluginId]
+  }
+
+  // Determine tokenId from contract address
+  // If we have a chainPluginId but no contract address, it's a native/mainnet gas token (tokenId = null)
+  // If we have a contract address, create the tokenId
+  let tokenId: EdgeTokenId = null
+  const contractAddress = metadata.contractAddress
+  if (chainPluginId != null) {
+    if (
+      contractAddress != null &&
+      contractAddress !== '0x0000000000000000000000000000000000000000'
+    ) {
+      const tokenType = tokenTypes[chainPluginId]
+      if (tokenType == null) {
+        throw new Error(
+          `Unknown tokenType for chainPluginId ${chainPluginId} (currency: ${currencyCode})`
+        )
+      }
+      tokenId = createTokenId(
+        tokenType,
+        currencyCode.toUpperCase(),
+        contractAddress
+      )
+    } else {
+      // Native/mainnet gas token - explicitly null
+      tokenId = null
+    }
+  }
+
+  return { chainPluginId, evmChainId, tokenId }
+}
+
+const asMoonpayCurrencyMetadata = asObject({
+  chainId: asOptional(asString),
+  networkCode: asOptional(asString),
+  contractAddress: asOptional(asString)
+})
 
 const asMoonpayCurrency = asObject({
   id: asString,
   type: asString,
   name: asString,
-  code: asString
+  code: asString,
+  metadata: asOptional(asMoonpayCurrencyMetadata)
 })
 
-const asMoonpayTx = asObject({
+// Base cleaner with fields common to both buy and sell transactions
+const asMoonpayTxBase = asObject({
   baseCurrency: asMoonpayCurrency,
   baseCurrencyAmount: asNumber,
   baseCurrencyId: asString,
-  cardType: asOptional(asValue('apple_pay', 'google_pay', 'card')),
+  cardType: asOptional(asValue('apple_pay', 'google_pay')),
   country: asString,
   createdAt: asDate,
-  cryptoTransactionId: asString,
-  currencyId: asString,
+  id: asString,
+  status: asString,
+  quoteCurrencyAmount: asOptional(asNumber),
+  paymentMethod: asOptional(asString),
+  cryptoTransactionId: asOptional(asString),
+  currency: asOptional(asMoonpayCurrency),
+  walletAddress: asOptional(asString),
+  depositHash: asOptional(asString),
+  quoteCurrency: asOptional(asMoonpayCurrency),
+  payoutMethod: asOptional(asString)
+})
+
+const asMoonpayBuyFields = asObject({
   currency: asMoonpayCurrency,
-  id: asString,
-  paymentMethod: asOptional(asString),
-  quoteCurrencyAmount: asNumber,
-  walletAddress: asString
+  walletAddress: asString,
+  quoteCurrencyAmount: asNumber
 })
 
-const asMoonpaySellTx = asObject({
-  baseCurrency: asMoonpayCurrency,
-  baseCurrencyAmount: asNumber,
-  baseCurrencyId: asString,
-  country: asString,
-  createdAt: asDate,
-  depositHash: asString,
-  id: asString,
-  paymentMethod: asOptional(asString),
+const asMoonpaySellFields = asObject({
   quoteCurrency: asMoonpayCurrency,
   quoteCurrencyAmount: asNumber
 })
 
-type MoonpayTx = ReturnType<typeof asMoonpayTx>
-type MoonpaySellTx = ReturnType<typeof asMoonpaySellTx>
+type MoonpayTxBase = ReturnType<typeof asMoonpayTxBase>
 
-const asPreMoonpayTx = asObject({
-  status: asString
-})
+// Map Moonpay status to Edge status
+// Only 'completed' and 'pending' were found in 3 years of API data
+const statusMap: Record<string, Status> = {
+  completed: 'complete',
+  pending: 'pending'
+}
 
 const asMoonpayResult = asArray(asUnknown)
 
@@ -73,6 +186,7 @@ const PER_REQUEST_LIMIT = 50
 export async function queryMoonpay(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
+  const { log } = pluginParams
   const standardTxs: StandardTx[] = []
 
   let headers
@@ -103,7 +217,7 @@ export async function queryMoonpay(
 
   try {
     do {
-      console.log(`Querying Moonpay from ${queryIsoDate} to ${latestIsoDate}`)
+      log(`Querying from ${queryIsoDate} to ${latestIsoDate}`)
       let offset = 0
 
       while (true) {
@@ -115,17 +229,16 @@ export async function queryMoonpay(
         const txs = asMoonpayResult(await result.json())
 
         for (const rawTx of txs) {
-          if (asPreMoonpayTx(rawTx).status === 'completed') {
-            const standardTx = processMoonpaySellTx(rawTx)
-            standardTxs.push(standardTx)
-          }
+          const standardTx = processTx(rawTx)
+          standardTxs.push(standardTx)
         }
 
         if (txs.length > 0) {
-          console.log(
-            `Moonpay sell txs ${txs.length}: ${JSON.stringify(
-              txs.slice(-1)
-            ).slice(0, 100)}`
+          log(
+            `sell txs ${txs.length}: ${JSON.stringify(txs.slice(-1)).slice(
+              0,
+              100
+            )}`
           )
         }
 
@@ -148,16 +261,15 @@ export async function queryMoonpay(
         // in bulk update it throws an error for document update conflict because of this.
 
         for (const rawTx of txs) {
-          if (asPreMoonpayTx(rawTx).status === 'completed') {
-            const standardTx = processMoonpayTx(rawTx)
-            standardTxs.push(standardTx)
-          }
+          const standardTx = processTx(rawTx)
+          standardTxs.push(standardTx)
         }
         if (txs.length > 0) {
-          console.log(
-            `Moonpay buy txs ${txs.length}: ${JSON.stringify(
-              txs.slice(-1)
-            ).slice(0, 100)}`
+          log(
+            `buy txs ${txs.length}: ${JSON.stringify(txs.slice(-1)).slice(
+              0,
+              100
+            )}`
           )
         }
 
@@ -174,9 +286,8 @@ export async function queryMoonpay(
     } while (isoNow > latestIsoDate)
     latestIsoDate = isoNow
   } catch (e) {
-    datelog(e)
-    console.log(`Moonpay error: ${e}`)
-    console.log(`Saving progress up until ${queryIsoDate}`)
+    log.error(`Error: ${e}`)
+    log(`Saving progress up until ${queryIsoDate}`)
 
     // Set the latestIsoDate to the queryIsoDate so that the next query will
     // query the same time range again since we had a failure in that time range
@@ -198,83 +309,95 @@ export const moonpay: PartnerPlugin = {
   pluginId: 'moonpay'
 }
 
-export function processMoonpayTx(rawTx: unknown): StandardTx {
-  const tx: MoonpayTx = asMoonpayTx(rawTx)
+export function processTx(rawTx: unknown): StandardTx {
+  const tx: MoonpayTxBase = asMoonpayTxBase(rawTx)
   const isoDate = tx.createdAt.toISOString()
   const timestamp = tx.createdAt.getTime()
 
-  const direction = tx.baseCurrency.type === 'fiat' ? 'buy' : 'sell'
+  // Map Moonpay status to Edge status
+  const status: Status = statusMap[tx.status] ?? 'other'
 
-  const standardTx: StandardTx = {
-    status: 'complete',
-    orderId: tx.id,
+  // Buy transactions have paymentMethod, sell transactions have payoutMethod
+  const isBuy = tx.paymentMethod != null
+  const direction = isBuy ? 'buy' : 'sell'
 
-    countryCode: tx.country,
-    depositTxid: direction === 'sell' ? tx.cryptoTransactionId : undefined,
-    depositAddress: undefined,
-    depositCurrency: tx.baseCurrency.code.toUpperCase(),
-    depositChainPluginId: undefined,
-    depositEvmChainId: undefined,
-    depositTokenId: undefined,
-    depositAmount: tx.baseCurrencyAmount,
-    direction,
-    exchangeType: 'fiat',
-    paymentType: getFiatPaymentType(tx),
-    payoutTxid: direction === 'buy' ? tx.cryptoTransactionId : undefined,
-    payoutAddress: tx.walletAddress,
-    payoutCurrency: tx.currency.code.toUpperCase(),
-    payoutChainPluginId: undefined,
-    payoutEvmChainId: undefined,
-    payoutTokenId: undefined,
-    payoutAmount: tx.quoteCurrencyAmount,
-    timestamp: timestamp / 1000,
-    isoDate,
-    usdValue: -1,
-    rawTx
+  if (isBuy) {
+    const buyFields = asMoonpayBuyFields(rawTx)
+    const payoutAsset = processMetadata(
+      buyFields.currency.metadata,
+      buyFields.currency.code
+    )
+    const standardTx: StandardTx = {
+      status,
+      orderId: tx.id,
+      countryCode: tx.country,
+      depositTxid: undefined,
+      depositAddress: undefined,
+      depositCurrency: tx.baseCurrency.code.toUpperCase(),
+      depositChainPluginId: undefined,
+      depositEvmChainId: undefined,
+      depositTokenId: undefined,
+      depositAmount: tx.baseCurrencyAmount,
+      direction,
+      exchangeType: 'fiat',
+      paymentType: getFiatPaymentType(tx),
+      payoutTxid: tx.cryptoTransactionId,
+      payoutAddress: buyFields.walletAddress,
+      payoutCurrency: buyFields.currency.code.toUpperCase(),
+      payoutChainPluginId: payoutAsset.chainPluginId,
+      payoutEvmChainId: payoutAsset.evmChainId,
+      payoutTokenId: payoutAsset.tokenId,
+      payoutAmount: buyFields.quoteCurrencyAmount,
+      timestamp: timestamp / 1000,
+      isoDate,
+      usdValue: -1,
+      rawTx
+    }
+    return standardTx
+  } else {
+    const sellFields = asMoonpaySellFields(rawTx)
+    const depositAsset = processMetadata(
+      tx.baseCurrency.metadata,
+      tx.baseCurrency.code
+    )
+    const standardTx: StandardTx = {
+      status,
+      orderId: tx.id,
+      countryCode: tx.country,
+      depositTxid: tx.depositHash,
+      depositAddress: undefined,
+      depositCurrency: tx.baseCurrency.code.toUpperCase(),
+      depositChainPluginId: depositAsset.chainPluginId,
+      depositEvmChainId: depositAsset.evmChainId,
+      depositTokenId: depositAsset.tokenId,
+      depositAmount: tx.baseCurrencyAmount,
+      direction,
+      exchangeType: 'fiat',
+      paymentType: null,
+      payoutTxid: undefined,
+      payoutAddress: undefined,
+      payoutCurrency: sellFields.quoteCurrency.code.toUpperCase(),
+      payoutChainPluginId: undefined,
+      payoutEvmChainId: undefined,
+      payoutTokenId: undefined,
+      payoutAmount: sellFields.quoteCurrencyAmount,
+      timestamp: timestamp / 1000,
+      isoDate,
+      usdValue: -1,
+      rawTx
+    }
+    return standardTx
   }
-  return standardTx
 }
 
-export function processMoonpaySellTx(rawTx: unknown): StandardTx {
-  const tx: MoonpaySellTx = asMoonpaySellTx(rawTx)
-  const isoDate = tx.createdAt.toISOString()
-  const timestamp = tx.createdAt.getTime()
-  const standardTx: StandardTx = {
-    status: 'complete',
-    orderId: tx.id,
-
-    countryCode: tx.country,
-    depositTxid: tx.depositHash,
-    depositAddress: undefined,
-    depositCurrency: tx.baseCurrency.code.toUpperCase(),
-    depositChainPluginId: undefined,
-    depositEvmChainId: undefined,
-    depositTokenId: undefined,
-    depositAmount: tx.baseCurrencyAmount,
-    direction: 'sell',
-    exchangeType: 'fiat',
-    paymentType: getFiatPaymentType(tx),
-    payoutTxid: undefined,
-    payoutAddress: undefined,
-    payoutCurrency: tx.quoteCurrency.code.toUpperCase(),
-    payoutChainPluginId: undefined,
-    payoutEvmChainId: undefined,
-    payoutTokenId: undefined,
-    payoutAmount: tx.quoteCurrencyAmount,
-    timestamp: timestamp / 1000,
-    isoDate,
-    usdValue: -1,
-    rawTx: rawTx
-  }
-  return standardTx
-}
-
-const paymentMethodMap = {
+const paymentMethodMap: Record<string, FiatPaymentType> = {
   ach_bank_transfer: 'ach',
   apple_pay: 'applepay',
   credit_debit_card: 'credit',
+  gbp_bank_transfer: 'fasterpayments',
   gbp_open_banking_payment: 'fasterpayments',
   google_pay: 'googlepay',
+  interac: 'interac',
   moonpay_balance: 'moonpaybalance',
   paypal: 'paypal',
   pix_instant_payment: 'pix',
@@ -284,23 +407,18 @@ const paymentMethodMap = {
   yellow_card_bank_transfer: 'yellowcard'
 }
 
-function getFiatPaymentType(
-  tx: MoonpayTx | MoonpaySellTx
-): FiatPaymentType | null {
+function getFiatPaymentType(tx: MoonpayTxBase): FiatPaymentType | null {
   let paymentMethod: FiatPaymentType | null = null
   switch (tx.paymentMethod) {
     case undefined:
       return null
     case 'mobile_wallet':
       // Older versions of Moonpay data had a separate cardType field.
-      paymentMethod =
-        'cardType' in tx
-          ? tx.cardType === 'apple_pay'
-            ? 'applepay'
-            : tx.cardType === 'google_pay'
-            ? 'googlepay'
-            : null
-          : null
+      if (tx.cardType === 'apple_pay') {
+        paymentMethod = 'applepay'
+      } else if (tx.cardType === 'google_pay') {
+        paymentMethod = 'googlepay'
+      }
       break
     default:
       paymentMethod = paymentMethodMap[tx.paymentMethod]
