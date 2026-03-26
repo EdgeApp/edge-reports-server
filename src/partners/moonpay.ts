@@ -142,7 +142,7 @@ const asMoonpayTxBase = asObject({
   baseCurrency: asMoonpayCurrency,
   baseCurrencyAmount: asNumber,
   baseCurrencyId: asString,
-  cardType: asOptional(asValue('apple_pay', 'google_pay')),
+  cardType: asOptional(asValue('apple_pay', 'google_pay', 'card')),
   country: asString,
   createdAt: asDate,
   id: asString,
