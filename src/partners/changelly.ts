@@ -1,180 +1,251 @@
-import Changelly from 'api-changelly/lib.js'
-import { asArray, asNumber, asObject, asString, asUnknown } from 'cleaners'
+import {
+  asArray,
+  asMaybe,
+  asNumber,
+  asObject,
+  asOptional,
+  asString,
+  asUnknown,
+  asValue
+} from 'cleaners'
+import fetch from 'node-fetch'
+import { syncScrypt } from 'scrypt-js'
 
-import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
-import { datelog, safeParseFloat } from '../util'
+import {
+  EDGE_APP_START_DATE,
+  PartnerPlugin,
+  PluginParams,
+  PluginResult,
+  StandardTx,
+  Status
+} from '../types'
+import { datelog, safeParseFloat, snooze } from '../util'
+
+const CHANGELLY_URL = 'https://api-relay.changelly.com/';
+
+const SCRYPT_SALT = Uint8Array.from([
+  0xb5, 0x86, 0x5f, 0xfb, 0x9f, 0xa7, 0xb3, 0xbf, 0xe4, 0xb2, 0x38, 0x4d,
+  0x47, 0xce, 0x83, 0x1e, 0xe2, 0x2a, 0x4a, 0x9d, 0x5c, 0x34, 0xc7, 0xef,
+  0x7d, 0x21, 0x46, 0x7c, 0xc7, 0x58, 0xf8, 0x1b
+])
+const SCRYPT_N = 16384
+const SCRYPT_R = 1
+const SCRYPT_P = 1
+const SCRYPT_DKLEN = 32
+
+function deriveUserId(username: string): string {
+  const usernameBytes = Buffer.from(username, 'utf8')
+  const derived = syncScrypt(
+    usernameBytes,
+    SCRYPT_SALT,
+    SCRYPT_N,
+    SCRYPT_R,
+    SCRYPT_P,
+    SCRYPT_DKLEN
+  )
+  return Buffer.from(derived).toString('base64')
+}
+
+// #region Cleaners
+
+const asChangellyPluginParams = asObject({
+  settings: asObject({
+    latestIsoDate: asOptional(asString, EDGE_APP_START_DATE)
+  }),
+  apiKeys: asObject({
+    changellyUsername: asOptional(asString)
+  })
+})
+
+const asChangellyStatus = asMaybe(
+  asValue(
+    'finished',
+    'waiting',
+    'confirming',
+    'exchanging',
+    'sending',
+    'failed',
+    'refunded',
+    'expired'
+  ),
+  'other'
+)
 
 const asChangellyTx = asObject({
   id: asString,
-  payinHash: asString,
-  payoutHash: asString,
-  payinAddress: asString,
+  status: asChangellyStatus,
+  payinHash: asOptional(asString),
+  payoutHash: asOptional(asString),
+  payinAddress: asOptional(asString),
   currencyFrom: asString,
   amountFrom: asString,
-  payoutAddress: asString,
+  payoutAddress: asOptional(asString),
   currencyTo: asString,
   amountTo: asString,
   createdAt: asNumber
 })
 
-const asChangellyRawTx = asObject({
-  status: asString
-})
-
-const asChangellyResult = asObject({
+const asChangellyRpcResult = asObject({
   result: asArray(asUnknown)
 })
 
-const MAX_ATTEMPTS = 3
-const LIMIT = 300
-const TIMEOUT = 20000
-const QUERY_LOOKBACK = 60 * 60 * 24 * 5 // 5 days
+const asChangellyRpcError = asObject({
+  error: asObject({
+    code: asNumber,
+    message: asString
+  })
+})
 
-async function getTransactionsPromised(
-  changellySDK: any,
-  limit: number,
-  offset: number,
-  currencyFrom: string | undefined,
-  address: string | undefined,
-  extraId: string | undefined
-): Promise<ReturnType<typeof asChangellyResult>> {
-  let promise
-  let attempt = 1
-  while (true) {
-    const changellyFetch = new Promise((resolve, reject) => {
-      changellySDK.getTransactions(
-        limit,
-        offset,
-        currencyFrom,
-        address,
-        extraId,
-        (err, data) => {
-          if (err != null) {
-            resolve(err.code)
-          } else {
-            resolve(data)
-          }
-        }
-      )
-    })
+// #endregion
 
-    const timeoutTest = new Promise((resolve, reject) => {
-      setTimeout(resolve, TIMEOUT, 'ETIMEDOUT')
-    })
+type ChangellyTx = ReturnType<typeof asChangellyTx>
+type ChangellyStatus = ReturnType<typeof asChangellyStatus>
 
-    promise = await Promise.race([changellyFetch, timeoutTest])
-    if (promise === 'ETIMEDOUT' && attempt <= MAX_ATTEMPTS) {
-      datelog(`Changelly request timed out.  Retry attempt: ${attempt}`)
-      attempt++
-      continue
-    }
-    break
-  }
-  return promise
+const statusMap: { [key in ChangellyStatus]: Status } = {
+  finished: 'complete',
+  waiting: 'pending',
+  confirming: 'processing',
+  exchanging: 'processing',
+  sending: 'processing',
+  failed: 'other',
+  refunded: 'refunded',
+  expired: 'expired',
+  other: 'other'
 }
 
-export async function queryChangelly(
-  pluginParams: PluginParams
-): Promise<PluginResult> {
-  let changellySDK
-  let latestTimeStamp = 0
-  let offset = 0
-  let firstAttempt = false
-  if (typeof pluginParams.settings.latestTimeStamp === 'number') {
-    latestTimeStamp = pluginParams.settings.latestTimeStamp
+const MAX_RETRIES = 5
+const LIMIT = 50
+const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
+
+async function changellyRpc(
+  username: string,
+  userId: string,
+  method: string,
+  params: Record<string, unknown>
+): Promise<unknown> {
+  const ts = Date.now()
+  const body = JSON.stringify({
+    jsonrpc: '2.0',
+    id: `${method}:${userId}`,
+    method,
+    params
+  })
+
+  const response = await fetch(CHANGELLY_URL, {
+    method: 'POST',
+    body,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Auth': Buffer.from(
+        [username, userId, ts].join(':')
+      ).toString('base64')
+    }
+  })
+
+  if (!response.ok) {
+    const text = await response.text()
+    throw new Error(`Changelly HTTP ${response.status}: ${text}`)
   }
-  if (
-    typeof pluginParams.settings.firstAttempt === 'undefined' ||
-    pluginParams.settings.firstAttempt === true
-  ) {
-    firstAttempt = true
-  }
-  if (typeof pluginParams.settings.offset === 'number' && firstAttempt) {
-    offset = pluginParams.settings.offset
-  }
-  if (
-    typeof pluginParams.apiKeys.changellyApiKey === 'string' &&
-    typeof pluginParams.apiKeys.changellyApiSecret === 'string'
-  ) {
-    changellySDK = new Changelly(
-      pluginParams.apiKeys.changellyApiKey,
-      pluginParams.apiKeys.changellyApiSecret
+
+  const json = await response.json()
+
+  const maybeError = asMaybe(asChangellyRpcError)(json)
+  if (maybeError != null) {
+    throw new Error(
+      `Changelly RPC error ${maybeError.error.code}: ${maybeError.error.message}`
     )
-  } else {
-    return {
-      settings: {
-        latestTimeStamp: latestTimeStamp
-      },
-      transactions: []
+  }
+
+  return json
+}
+
+export const queryChangelly = async (
+  pluginParams: PluginParams
+): Promise<PluginResult> => {
+  const { settings, apiKeys } = asChangellyPluginParams(pluginParams)
+  let { changellyUsername } = apiKeys
+  let { latestIsoDate } = settings
+
+  if (changellyUsername == null) {
+    changellyUsername = 'edge-app';
+    // return { settings: { latestIsoDate }, transactions: [] }
+  }
+
+  const userId = deriveUserId(changellyUsername)
+  const standardTxs: StandardTx[] = []
+  let previousTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
+  if (previousTimestamp < 0) previousTimestamp = 0
+  const previousLatestTimestamp = Math.floor(previousTimestamp / 1000)
+
+  let offset = 0
+  let retry = 0
+  while (true) {
+    try {
+      datelog(`Query changelly offset: ${offset}`)
+      const result = await changellyRpc(
+        changellyUsername,
+        userId,
+        'getTransactions',
+        { limit: LIMIT, offset }
+      )
+      const txs = asChangellyRpcResult(result).result
+
+      if (txs.length === 0) {
+        datelog(`Changelly done at offset ${offset}`)
+        break
+      }
+
+      let reachedLookback = false
+      for (const rawTx of txs) {
+        const standardTx = processChangellyTx(rawTx)
+        standardTxs.push(standardTx)
+        if (standardTx.isoDate > latestIsoDate) {
+          latestIsoDate = standardTx.isoDate
+        }
+        if (standardTx.timestamp < previousLatestTimestamp) {
+          reachedLookback = true
+        }
+      }
+
+      if (reachedLookback) {
+        datelog(`Changelly reached lookback at offset ${offset}`)
+        break
+      }
+
+      offset += txs.length
+      retry = 0
+    } catch (e) {
+      datelog(e)
+      retry++
+      if (retry <= MAX_RETRIES) {
+        datelog(`Snoozing ${5 * retry}s`)
+        await snooze(5000 * retry)
+      } else {
+        break
+      }
     }
   }
 
-  const standardTxs: StandardTx[] = []
-  let newLatestTimeStamp = latestTimeStamp
-  let done = false
-  try {
-    while (!done) {
-      datelog(`Query changelly offset: ${offset}`)
-      const result = await getTransactionsPromised(
-        changellySDK,
-        LIMIT,
-        offset,
-        undefined,
-        undefined,
-        undefined
-      )
-      const txs = asChangellyResult(result).result
-      if (txs.length === 0) {
-        datelog(`Changelly done at offset ${offset}`)
-        firstAttempt = false
-        break
-      }
-      for (const rawTx of txs) {
-        if (asChangellyRawTx(rawTx).status === 'finished') {
-          const standardTx = processChangellyTx(rawTx)
-          standardTxs.push(standardTx)
-          if (standardTx.timestamp > newLatestTimeStamp) {
-            newLatestTimeStamp = standardTx.timestamp
-          }
-          if (
-            standardTx.timestamp < latestTimeStamp - QUERY_LOOKBACK &&
-            !done &&
-            !firstAttempt
-          ) {
-            datelog(
-              `Changelly done: date ${
-                standardTx.timestamp
-              } < ${latestTimeStamp - QUERY_LOOKBACK}`
-            )
-            done = true
-          }
-        }
-      }
-      offset += LIMIT
-    }
-  } catch (e) {
-    datelog(e)
-  }
-  const out = {
-    settings: { latestTimeStamp: newLatestTimeStamp, firstAttempt, offset },
+  const out: PluginResult = {
+    settings: { latestIsoDate },
     transactions: standardTxs
   }
   return out
 }
 
 export const changelly: PartnerPlugin = {
-  // queryFunc will take PluginSettings as arg and return PluginResult
   queryFunc: queryChangelly,
-  // results in a PluginResult
   pluginName: 'Changelly',
   pluginId: 'changelly'
 }
 
 export function processChangellyTx(rawTx: unknown): StandardTx {
-  const tx = asChangellyTx(rawTx)
+  const tx: ChangellyTx = asChangellyTx(rawTx)
+  const date = new Date(tx.createdAt / 1000)
+  const timestamp = tx.createdAt
 
   const standardTx: StandardTx = {
-    status: 'complete',
+    status: statusMap[tx.status],
     orderId: tx.id,
     countryCode: null,
     depositTxid: tx.payinHash,
@@ -194,8 +265,8 @@ export function processChangellyTx(rawTx: unknown): StandardTx {
     payoutEvmChainId: undefined,
     payoutTokenId: undefined,
     payoutAmount: safeParseFloat(tx.amountTo),
-    timestamp: tx.createdAt,
-    isoDate: new Date(tx.createdAt * 1000).toISOString(),
+    timestamp,
+    isoDate: date.toISOString(),
     usdValue: -1,
     rawTx
   }

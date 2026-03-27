@@ -8,6 +8,7 @@
 - changed: Use rates V3 for transactions with pluginId/tokenId
 - fixed: Moonpay by adding Revolut payment type
 - fixed: Use v2 rates API
+- changed: Changelly reporting revised
 
 ## 0.2.0
 
