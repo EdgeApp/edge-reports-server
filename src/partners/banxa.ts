@@ -183,8 +183,8 @@ async function fetchBanxaCoins(
         }
 
         // Determine contract address
-        // null, empty, "0x0000...", or non-hex addresses (like bip122:...) mean native gas token
-        // Also, if coin ID matches blockchain ID (e.g. HBAR-HBAR), it's the native coin
+        // null, empty, or "0x0000..." mean native gas token.
+        // Also, if coin ID matches blockchain ID (e.g. HBAR-HBAR), it's the native coin.
         let contractAddress: string | null = null
         const isNativeCoin =
           coin.id.toUpperCase() === blockchain.id.toUpperCase()
@@ -192,8 +192,7 @@ async function fetchBanxaCoins(
           !isNativeCoin &&
           blockchain.address != null &&
           blockchain.address !== '' &&
-          blockchain.address !== '0x0000000000000000000000000000000000000000' &&
-          blockchain.address.startsWith('0x') // Only EVM-style addresses are contracts
+          blockchain.address !== '0x0000000000000000000000000000000000000000'
         ) {
           contractAddress = blockchain.address
         }

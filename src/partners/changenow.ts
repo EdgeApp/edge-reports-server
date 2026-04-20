@@ -374,24 +374,15 @@ function getAssetInfo(network: string, currencyCode: string): EdgeAssetInfo {
     }
   }
 
-  try {
-    const tokenId = createTokenId(
-      tokenType,
-      currencyCode.toUpperCase(),
-      contractAddress
-    )
-    return {
-      chainPluginId,
-      evmChainId,
-      tokenId
-    }
-  } catch (e) {
-    // If tokenId creation fails, treat as native (no log available in this sync function)
-    return {
-      chainPluginId,
-      evmChainId,
-      tokenId: null
-    }
+  const tokenId = createTokenId(
+    tokenType,
+    currencyCode.toUpperCase(),
+    contractAddress
+  )
+  return {
+    chainPluginId,
+    evmChainId,
+    tokenId
   }
 }
 
