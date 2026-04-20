@@ -128,7 +128,14 @@ const CHANGEHERO_CHAIN_TO_PLUGIN_ID: Record<string, string> = {
 interface CurrencyInfo {
   contractAddress: string | null
 }
-let currencyCache: Map<string, CurrencyInfo> | null = null
+interface ChangeHeroCacheEntry {
+  cache: Map<string, CurrencyInfo>
+  timestamp: number
+}
+// Keyed by apiKey so multiple ChangeHero configs with distinct credentials
+// don't share cache entries from each other's API responses.
+const currencyCacheByKey: Map<string, ChangeHeroCacheEntry> = new Map()
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 function makeCurrencyCacheKey(ticker: string, chain: string): string {
   return `${ticker.toUpperCase()}_${chain.toLowerCase()}`
@@ -180,8 +187,14 @@ const MISSING_CURRENCIES: Record<string, CurrencyInfo> = {
   XMR_monero: { contractAddress: null }
 }
 
-async function fetchCurrencyCache(apiKey: string): Promise<void> {
-  if (currencyCache != null) return
+async function fetchCurrencyCache(
+  apiKey: string,
+  log: ScopedLog
+): Promise<Map<string, CurrencyInfo>> {
+  const existing = currencyCacheByKey.get(apiKey)
+  if (existing != null && Date.now() - existing.timestamp < CACHE_TTL_MS) {
+    return existing.cache
+  }
 
   try {
     const response = await retryFetch(API_URL, {
@@ -200,22 +213,24 @@ async function fetchCurrencyCache(apiKey: string): Promise<void> {
     const result = await response.json()
     const currencies = asChangeHeroCurrenciesResult(result).result
 
-    currencyCache = new Map()
+    const cache = new Map<string, CurrencyInfo>()
     for (const currency of currencies) {
       const key = makeCurrencyCacheKey(currency.name, currency.blockchain)
-      currencyCache.set(key, {
+      cache.set(key, {
         contractAddress: currency.contractAddress
       })
     }
 
     // Add hardcoded fallbacks for currencies not in API
     for (const [key, info] of Object.entries(MISSING_CURRENCIES)) {
-      if (!currencyCache.has(key)) {
-        currencyCache.set(key, info)
+      if (!cache.has(key)) {
+        cache.set(key, info)
       }
     }
 
-    datelog(`Changehero: Cached ${currencyCache.size} currency entries`)
+    currencyCacheByKey.set(apiKey, { cache, timestamp: Date.now() })
+    log(`Cached ${cache.size} currency entries`)
+    return cache
   } catch (e) {
     datelog(`Changehero: Failed to fetch currency cache: ${e}`)
     throw e
@@ -229,6 +244,7 @@ interface AssetInfo {
 }
 
 function getAssetInfo(
+  currencyCache: Map<string, CurrencyInfo>,
   chain: string | undefined,
   currencyCode: string,
   isoDate: string
@@ -244,7 +260,7 @@ function getAssetInfo(
     throw new Error(`Missing chain for currency ${currencyCode}`)
   }
 
-  const chainPluginId = CHANGEHERO_CHAIN_TO_PLUGIN_ID[chain]
+  const chainPluginId = CHANGEHERO_CHAIN_TO_PLUGIN_ID[chain.toLowerCase()]
   if (chainPluginId == null) {
     throw new Error(
       `Unknown Changehero chain "${chain}" for currency ${currencyCode}. Add mapping to CHANGEHERO_CHAIN_TO_PLUGIN_ID.`
@@ -256,9 +272,6 @@ function getAssetInfo(
 
   // Look up contract address from cache
   let tokenId: EdgeTokenId = null
-  if (currencyCache == null) {
-    throw new Error('Currency cache not initialized')
-  }
   const key = makeCurrencyCacheKey(currencyCode, chain)
   const currencyInfo = currencyCache.get(key)
   if (currencyInfo == null) {
@@ -384,21 +397,29 @@ export async function processChangeHeroTx(
 ): Promise<StandardTx> {
   const tx: ChangeHeroTx = asChangeHeroTx(rawTx)
 
-  // Ensure currency cache is populated (for backfill script usage)
-  if (currencyCache == null && pluginParams != null) {
-    const { apiKeys } = asChangeHeroPluginParams(pluginParams)
-    if (apiKeys.apiKey != null) {
-      await fetchCurrencyCache(apiKeys.apiKey)
-    }
+  const { apiKeys } = asChangeHeroPluginParams(pluginParams)
+  if (apiKeys.apiKey == null) {
+    throw new Error('ChangeHero apiKey required for asset info lookup')
   }
+  const currencyCache = await fetchCurrencyCache(apiKeys.apiKey, log)
 
   const isoDate = smartIsoDateFromTimestamp(tx.createdAt).isoDate
 
   // Get deposit asset info
-  const depositAsset = getAssetInfo(tx.chainFrom, tx.currencyFrom, isoDate)
+  const depositAsset = getAssetInfo(
+    currencyCache,
+    tx.chainFrom,
+    tx.currencyFrom,
+    isoDate
+  )
 
   // Get payout asset info
-  const payoutAsset = getAssetInfo(tx.chainTo, tx.currencyTo, isoDate)
+  const payoutAsset = getAssetInfo(
+    currencyCache,
+    tx.chainTo,
+    tx.currencyTo,
+    isoDate
+  )
 
   const standardTx: StandardTx = {
     status: statusMap[tx.status],
