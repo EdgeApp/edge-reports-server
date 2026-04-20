@@ -229,7 +229,7 @@ export async function queryMoonpay(
         const txs = asMoonpayResult(await result.json())
 
         for (const rawTx of txs) {
-          const standardTx = processTx(rawTx)
+          const standardTx = processTx(rawTx, 'sell')
           standardTxs.push(standardTx)
         }
 
@@ -261,7 +261,7 @@ export async function queryMoonpay(
         // in bulk update it throws an error for document update conflict because of this.
 
         for (const rawTx of txs) {
-          const standardTx = processTx(rawTx)
+          const standardTx = processTx(rawTx, 'buy')
           standardTxs.push(standardTx)
         }
         if (txs.length > 0) {
@@ -309,7 +309,10 @@ export const moonpay: PartnerPlugin = {
   pluginId: 'moonpay'
 }
 
-export function processTx(rawTx: unknown): StandardTx {
+export function processTx(
+  rawTx: unknown,
+  direction: 'buy' | 'sell'
+): StandardTx {
   const tx: MoonpayTxBase = asMoonpayTxBase(rawTx)
   const isoDate = tx.createdAt.toISOString()
   const timestamp = tx.createdAt.getTime()
@@ -317,11 +320,7 @@ export function processTx(rawTx: unknown): StandardTx {
   // Map Moonpay status to Edge status
   const status: Status = statusMap[tx.status] ?? 'other'
 
-  // Buy transactions have paymentMethod, sell transactions have payoutMethod
-  const isBuy = tx.paymentMethod != null
-  const direction = isBuy ? 'buy' : 'sell'
-
-  if (isBuy) {
+  if (direction === 'buy') {
     const buyFields = asMoonpayBuyFields(rawTx)
     const payoutAsset = processMetadata(
       buyFields.currency.metadata,
