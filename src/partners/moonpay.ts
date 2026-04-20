@@ -372,7 +372,7 @@ export function processTx(
       depositAmount: tx.baseCurrencyAmount,
       direction,
       exchangeType: 'fiat',
-      paymentType: null,
+      paymentType: getFiatPaymentType(tx),
       payoutTxid: undefined,
       payoutAddress: undefined,
       payoutCurrency: sellFields.quoteCurrency.code.toUpperCase(),
