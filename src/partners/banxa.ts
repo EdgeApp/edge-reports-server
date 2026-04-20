@@ -92,8 +92,13 @@ interface CachedAssetInfo {
   contractAddress: string | null
   pluginId: string | undefined
 }
-let banxaCoinsCache: Map<string, CachedAssetInfo> | null = null
-let banxaCoinsCacheTimestamp = 0
+interface BanxaCacheEntry {
+  cache: Map<string, CachedAssetInfo>
+  timestamp: number
+}
+// Keyed by partnerId so multiple Banxa partners with distinct credentials
+// don't share cache entries from each other's API responses.
+const banxaCoinsCacheByPartner: Map<string, BanxaCacheEntry> = new Map()
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 // Static fallback for historical coins no longer in the v2 API
@@ -124,11 +129,9 @@ async function fetchBanxaCoins(
   apiKeyV2: string,
   log: ScopedLog
 ): Promise<Map<string, CachedAssetInfo>> {
-  if (
-    banxaCoinsCache != null &&
-    Date.now() - banxaCoinsCacheTimestamp < CACHE_TTL_MS
-  ) {
-    return banxaCoinsCache
+  const existing = banxaCoinsCacheByPartner.get(partnerId)
+  if (existing != null && Date.now() - existing.timestamp < CACHE_TTL_MS) {
+    return existing.cache
   }
 
   const cache = new Map<string, CachedAssetInfo>()
@@ -200,8 +203,7 @@ async function fetchBanxaCoins(
     }
   }
 
-  banxaCoinsCache = cache
-  banxaCoinsCacheTimestamp = Date.now()
+  banxaCoinsCacheByPartner.set(partnerId, { cache, timestamp: Date.now() })
   log(`Loaded ${cache.size} coin/blockchain combinations from API`)
   return cache
 }
@@ -216,11 +218,15 @@ interface EdgeAssetInfo {
  * Get Edge asset info from Banxa blockchain code and coin code
  * Uses cached data from v2 API
  */
-function getAssetInfo(blockchainCode: string, coinCode: string): EdgeAssetInfo {
+function getAssetInfo(
+  coinsCache: Map<string, CachedAssetInfo>,
+  blockchainCode: string,
+  coinCode: string
+): EdgeAssetInfo {
   const cacheKey = `${coinCode.toUpperCase()}-${blockchainCode.toUpperCase()}`
 
   // Try API cache first, then historical fallback
-  let cachedInfo = banxaCoinsCache?.get(cacheKey)
+  let cachedInfo: CachedAssetInfo | undefined = coinsCache.get(cacheKey)
   if (cachedInfo == null) {
     cachedInfo = BANXA_HISTORICAL_COINS[cacheKey]
   }
@@ -528,9 +534,9 @@ export async function processBanxaTx(
   const blockchainCode = banxaTx.blockchain.code
   const coinCode = banxaTx.coin_code
 
-  await fetchBanxaCoins(partnerId, apiKeyV2, log)
+  const coinsCache = await fetchBanxaCoins(partnerId, apiKeyV2, log)
 
-  const cryptoAssetInfo = getAssetInfo(blockchainCode, coinCode)
+  const cryptoAssetInfo = getAssetInfo(coinsCache, blockchainCode, coinCode)
 
   // For buy transactions: deposit is fiat (no crypto info), payout is crypto
   // For sell transactions: deposit is crypto, payout is fiat (no crypto info)
