@@ -352,7 +352,10 @@ export async function queryLetsExchange(
   let windowStart = new Date(latestIsoDate).getTime() - QUERY_INTERVAL_MS
   const now = Date.now()
   let done = false
-  let newTxStart: number = 0
+  // Index of the first tx newer than the saved progress. -1 until we see one.
+  // Using -1 (not 0) prevents the MAX_NEW_TRANSACTIONS counter from counting
+  // old rollback-window txs before any new tx is encountered.
+  let newTxStart: number = -1
 
   // Outer loop: iterate over 30-day windows
   while (windowStart < now && !done) {
@@ -388,14 +391,14 @@ export async function queryLetsExchange(
           const standardTx = await processLetsExchangeTx(rawTx, pluginParams)
           standardTxs.push(standardTx)
           if (standardTx.isoDate > latestIsoDate) {
-            if (newTxStart === 0) {
-              newTxStart = standardTxs.length
+            if (newTxStart === -1) {
+              newTxStart = standardTxs.length - 1
             }
             latestIsoDate = standardTx.isoDate
           }
         }
 
-        const newTxs = standardTxs.length - newTxStart
+        const newTxs = newTxStart === -1 ? 0 : standardTxs.length - newTxStart
         log(
           `page ${page}/${lastPage} latestIsoDate ${latestIsoDate} newTxs: ${newTxs}/${MAX_NEW_TRANSACTIONS}`
         )
