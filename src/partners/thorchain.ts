@@ -300,6 +300,7 @@ export function makeThorchainProcessTx(
     if (pluginParams == null) {
       throw new Error(`${pluginId}: Missing pluginParams`)
     }
+    const { log } = pluginParams
     const { affiliateAddress, thorchainAddress } = asThorchainPluginParams(
       pluginParams
     ).apiKeys
@@ -311,12 +312,16 @@ export function makeThorchainProcessTx(
       throw new Error(`${pluginId}: Missing rawTx`)
     }
 
+    const txId = tx.in[0]?.txID ?? 'unknown'
+
     const { swap } = tx.metadata
     if (swap?.affiliateAddress !== affiliateAddress) {
+      log(`${pluginId}: skip ${txId} affiliateAddress mismatch`)
       return null
     }
 
     if (tx.status !== 'success') {
+      log(`${pluginId}: skip ${txId} status=${tx.status}`)
       return null
     }
 
@@ -325,6 +330,7 @@ export function makeThorchainProcessTx(
       o => o.affiliate === true || o.address === thorchainAddress
     )
     if (!affiliateOut) {
+      log(`${pluginId}: skip ${txId} no affiliate output`)
       return null
     }
 
@@ -356,6 +362,7 @@ export function makeThorchainProcessTx(
     // If there is a match between source and dest asset that means a refund was made
     // and the transaction failed
     if (srcDestMatch) {
+      log(`${pluginId}: skip ${txId} refund (src/dest asset match)`)
       return null
     }
 
@@ -386,6 +393,9 @@ export function makeThorchainProcessTx(
       // this transaction. Midgard sometimes doesn't return the correct output until the transaction
       // has completed for awhile.
       if (tx.pools.length === 2 && tx.out.length === 1) {
+        log(
+          `${pluginId}: skip ${txId} pools.length=2 out.length=1 (incomplete)`
+        )
         return null
       } else if (tx.pools.length === 1 && tx.out.length === 1) {
         // The output is a native currency output (maya/rune)
