@@ -94,6 +94,7 @@ interface CachedAssetInfo {
 }
 let banxaCoinsCache: Map<string, CachedAssetInfo> | null = null
 let banxaCoinsCacheTimestamp = 0
+let banxaCoinsCacheKey: string | null = null
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 // Static fallback for historical coins no longer in the v2 API
@@ -124,8 +125,10 @@ async function fetchBanxaCoins(
   apiKeyV2: string,
   log: ScopedLog
 ): Promise<Map<string, CachedAssetInfo>> {
+  const cacheKey = `${partnerId}:${apiKeyV2}`
   if (
     banxaCoinsCache != null &&
+    banxaCoinsCacheKey === cacheKey &&
     Date.now() - banxaCoinsCacheTimestamp < CACHE_TTL_MS
   ) {
     return banxaCoinsCache
@@ -201,6 +204,7 @@ async function fetchBanxaCoins(
   }
 
   banxaCoinsCache = cache
+  banxaCoinsCacheKey = cacheKey
   banxaCoinsCacheTimestamp = Date.now()
   log(`Loaded ${cache.size} coin/blockchain combinations from API`)
   return cache

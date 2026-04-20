@@ -261,6 +261,8 @@ export const queryChangeNow = async (
     return { settings: { latestIsoDate }, transactions: [] }
   }
 
+  await loadCurrencyCache(log, apiKey)
+
   const standardTxs: StandardTx[] = []
   let previousTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
   if (previousTimestamp < 0) previousTimestamp = 0
@@ -291,7 +293,7 @@ export const queryChangeNow = async (
         break
       }
       for (const rawTx of txs) {
-        const standardTx = await processChangeNowTx(rawTx, pluginParams)
+        const standardTx = await processChangeNowTx(rawTx, pluginParams, true)
         standardTxs.push(standardTx)
         if (standardTx.isoDate > latestIsoDate) {
           latestIsoDate = standardTx.isoDate
@@ -397,11 +399,13 @@ function getAssetInfo(network: string, currencyCode: string): EdgeAssetInfo {
 
 export async function processChangeNowTx(
   rawTx: unknown,
-  pluginParams: PluginParams
+  pluginParams: PluginParams,
+  isCurrencyCacheLoaded = false
 ): Promise<StandardTx> {
   const { log } = pluginParams
-  // Load currency cache before processing transactions
-  await loadCurrencyCache(log)
+  if (!isCurrencyCacheLoaded) {
+    await loadCurrencyCache(log)
+  }
 
   const tx: ChangeNowTx = asChangeNowTx(rawTx)
   const date = new Date(

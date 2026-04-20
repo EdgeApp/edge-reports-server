@@ -269,16 +269,36 @@ export function processRangoTx(
 
   const dateStr = isoDate.split('T')[0]
   const depositCurrency = firstStep.fromToken.symbol
+  const depositContractAddress =
+    firstStep.fromToken.address == null || firstStep.fromToken.address === ''
+      ? undefined
+      : firstStep.fromToken.address
+  const depositTokenType = tokenTypes[depositChainPluginId]
+  if (depositContractAddress != null && depositTokenType == null) {
+    throw new Error(
+      `Rango: Tokens are not supported for pluginId "${depositChainPluginId}" (currency: ${depositCurrency}, contract: ${depositContractAddress})`
+    )
+  }
   const depositTokenId = createTokenId(
-    tokenTypes[depositChainPluginId],
+    depositTokenType,
     depositCurrency,
-    firstStep.fromToken.address ?? undefined
+    depositContractAddress
   )
   const payoutCurrency = lastStep.toToken.symbol
+  const payoutContractAddress =
+    lastStep.toToken.address == null || lastStep.toToken.address === ''
+      ? undefined
+      : lastStep.toToken.address
+  const payoutTokenType = tokenTypes[payoutChainPluginId]
+  if (payoutContractAddress != null && payoutTokenType == null) {
+    throw new Error(
+      `Rango: Tokens are not supported for pluginId "${payoutChainPluginId}" (currency: ${payoutCurrency}, contract: ${payoutContractAddress})`
+    )
+  }
   const payoutTokenId = createTokenId(
-    tokenTypes[payoutChainPluginId],
+    payoutTokenType,
     payoutCurrency,
-    lastStep.toToken.address ?? undefined
+    payoutContractAddress
   )
 
   log(

@@ -230,7 +230,12 @@ async function getGodexEdgeAssetInfo(
   // For native assets (no contract address), tokenId is null
   // For tokens, use createTokenId
   if (contractAddress != null && contractAddress !== '') {
-    // createTokenId will throw if token not supported on this chain
+    if (tokenType == null) {
+      throw new Error(
+        `Godex: Tokens are not supported for pluginId '${pluginId}' (currency: ${currencyCode}, network: ${networkCode}, contract: ${contractAddress})`
+      )
+    }
+    // createTokenId will throw if contract is malformed
     result.tokenId = createTokenId(tokenType, currencyCode, contractAddress)
   } else {
     // Native asset, tokenId is null
