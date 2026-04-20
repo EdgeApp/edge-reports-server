@@ -365,33 +365,20 @@ function getAssetInfo(network: string, currencyCode: string): EdgeAssetInfo {
   // Create tokenId from contract address
   const tokenType = tokenTypes[chainPluginId]
   if (tokenType == null) {
-    // Chain doesn't support tokens, but we have a contract address
-    // This shouldn't happen, but treat as native
-    return {
-      chainPluginId,
-      evmChainId,
-      tokenId: null
-    }
+    throw new Error(
+      `Unknown tokenType for chainPluginId ${chainPluginId} (currency: ${currencyCode}, network: ${network})`
+    )
   }
 
-  try {
-    const tokenId = createTokenId(
-      tokenType,
-      currencyCode.toUpperCase(),
-      contractAddress
-    )
-    return {
-      chainPluginId,
-      evmChainId,
-      tokenId
-    }
-  } catch (e) {
-    // If tokenId creation fails, treat as native (no log available in this sync function)
-    return {
-      chainPluginId,
-      evmChainId,
-      tokenId: null
-    }
+  const tokenId = createTokenId(
+    tokenType,
+    currencyCode.toUpperCase(),
+    contractAddress
+  )
+  return {
+    chainPluginId,
+    evmChainId,
+    tokenId
   }
 }
 
