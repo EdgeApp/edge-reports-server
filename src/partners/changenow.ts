@@ -117,14 +117,13 @@ type ChangeNowCurrency = ReturnType<typeof asChangeNowCurrency>
 // Key format: "ticker:network" -> tokenContract
 interface CurrencyCache {
   currencies: Map<string, string | null> // ticker:network -> tokenContract
-  loaded: boolean
 }
-
-const currencyCache: CurrencyCache = {
-  currencies: new Map(),
-  loaded: false
+interface ChangeNowCacheEntry {
+  cache: CurrencyCache
+  timestamp: number
 }
-let currencyCacheTimestamp = 0
+const currencyCacheByKey: Map<string, ChangeNowCacheEntry> = new Map()
+const PUBLIC_CACHE_KEY = '__public__'
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 /**
@@ -133,15 +132,16 @@ const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 async function loadCurrencyCache(
   log: ScopedLog,
   apiKey?: string
-): Promise<void> {
-  if (
-    currencyCache.loaded &&
-    Date.now() - currencyCacheTimestamp < CACHE_TTL_MS
-  ) {
-    return
+): Promise<CurrencyCache> {
+  const cacheKey = apiKey ?? PUBLIC_CACHE_KEY
+  const existing = currencyCacheByKey.get(cacheKey)
+  if (existing != null && Date.now() - existing.timestamp < CACHE_TTL_MS) {
+    return existing.cache
   }
 
   try {
+    const cache: CurrencyCache = { currencies: new Map() }
+
     // The exchange/currencies endpoint doesn't require authentication
     const url = 'https://api.changenow.io/v2/exchange/currencies?active=true'
     const response = await retryFetch(url, {
@@ -158,7 +158,7 @@ async function loadCurrencyCache(
 
     for (const currency of currencies) {
       const key = `${currency.ticker.toLowerCase()}:${currency.network.toLowerCase()}`
-      currencyCache.currencies.set(key, currency.tokenContract ?? null)
+      cache.currencies.set(key, currency.tokenContract ?? null)
 
       // Also cache by legacyTicker if different from ticker
       if (
@@ -166,13 +166,13 @@ async function loadCurrencyCache(
         currency.legacyTicker !== currency.ticker
       ) {
         const legacyKey = `${currency.legacyTicker.toLowerCase()}:${currency.network.toLowerCase()}`
-        currencyCache.currencies.set(legacyKey, currency.tokenContract ?? null)
+        cache.currencies.set(legacyKey, currency.tokenContract ?? null)
       }
     }
 
-    currencyCache.loaded = true
-    currencyCacheTimestamp = Date.now()
+    currencyCacheByKey.set(cacheKey, { cache, timestamp: Date.now() })
     log(`Currency cache loaded with ${currencies.length} entries`)
+    return cache
   } catch (e) {
     log.error(`Error loading currency cache: ${e}`)
     throw e
@@ -183,6 +183,7 @@ async function loadCurrencyCache(
  * Look up contract address from cache
  */
 function getContractFromCache(
+  currencyCache: CurrencyCache,
   ticker: string,
   network: string
 ): string | null | undefined {
@@ -338,7 +339,11 @@ interface EdgeAssetInfo {
  * Get the Edge asset info for a given network and currency code.
  * Uses the cached currency data from the ChangeNow API.
  */
-function getAssetInfo(network: string, currencyCode: string): EdgeAssetInfo {
+function getAssetInfo(
+  currencyCache: CurrencyCache,
+  network: string,
+  currencyCode: string
+): EdgeAssetInfo {
   // Map network to pluginId
   const chainPluginId = CHANGENOW_NETWORK_TO_PLUGIN_ID[network.toLowerCase()]
   if (chainPluginId == null) {
@@ -348,7 +353,11 @@ function getAssetInfo(network: string, currencyCode: string): EdgeAssetInfo {
   const evmChainId = EVM_CHAIN_IDS[chainPluginId]
 
   // Look up contract address from cache
-  const contractAddress = getContractFromCache(currencyCode, network)
+  const contractAddress = getContractFromCache(
+    currencyCache,
+    currencyCode,
+    network
+  )
 
   // null means native token, undefined means cache miss
   if (contractAddress === null) {
@@ -388,7 +397,8 @@ export async function processChangeNowTx(
 ): Promise<StandardTx> {
   const { log } = pluginParams
   // Load currency cache before processing transactions
-  await loadCurrencyCache(log)
+  const { apiKeys } = asChangeNowPluginParams(pluginParams)
+  const currencyCache = await loadCurrencyCache(log, apiKeys.apiKey)
 
   const tx: ChangeNowTx = asChangeNowTx(rawTx)
   const date = new Date(
@@ -397,10 +407,18 @@ export async function processChangeNowTx(
   const timestamp = date.getTime() / 1000
 
   // Get deposit asset info
-  const depositAsset = getAssetInfo(tx.payin.network, tx.payin.currency)
+  const depositAsset = getAssetInfo(
+    currencyCache,
+    tx.payin.network,
+    tx.payin.currency
+  )
 
   // Get payout asset info
-  const payoutAsset = getAssetInfo(tx.payout.network, tx.payout.currency)
+  const payoutAsset = getAssetInfo(
+    currencyCache,
+    tx.payout.network,
+    tx.payout.currency
+  )
 
   const standardTx: StandardTx = {
     status: statusMap[tx.status],
