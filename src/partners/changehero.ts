@@ -125,6 +125,8 @@ interface CurrencyInfo {
   contractAddress: string | null
 }
 let currencyCache: Map<string, CurrencyInfo> | null = null
+let currencyCacheTimestamp = 0
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 function makeCurrencyCacheKey(ticker: string, chain: string): string {
   return `${ticker.toUpperCase()}_${chain.toLowerCase()}`
@@ -180,7 +182,12 @@ async function fetchCurrencyCache(
   apiKey: string,
   log: ScopedLog
 ): Promise<void> {
-  if (currencyCache != null) return
+  if (
+    currencyCache != null &&
+    Date.now() - currencyCacheTimestamp < CACHE_TTL_MS
+  ) {
+    return
+  }
 
   try {
     const response = await retryFetch(API_URL, {
@@ -214,6 +221,7 @@ async function fetchCurrencyCache(
       }
     }
 
+    currencyCacheTimestamp = Date.now()
     log(`Cached ${currencyCache.size} currency entries`)
   } catch (e) {
     log.error(`Failed to fetch currency cache: ${e}`)
