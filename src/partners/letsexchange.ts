@@ -104,7 +104,6 @@ const asLetsExchangeCoin = asObject({
 
 const asLetsExchangeCoinsResult = asArray(asUnknown)
 
-type LetsExchangeTxV2 = ReturnType<typeof asLetsExchangeTx>
 type LetsExchangeStatus = ReturnType<typeof asLetsExchangeStatus>
 
 const LIMIT = 1000
