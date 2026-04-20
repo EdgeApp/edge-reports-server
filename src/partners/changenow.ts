@@ -119,7 +119,7 @@ interface CurrencyCache {
 }
 
 const currencyCache: CurrencyCache = {
-  currencies: new Map(),
+  currencies: new Map<string, string | null>(),
   loaded: false
 }
 
@@ -146,9 +146,13 @@ async function loadCurrencyCache(apiKey?: string): Promise<void> {
     const result = await response.json()
     const currencies = asChangeNowCurrencyArray(result)
 
+    // Build a fresh map and swap atomically so concurrent readers never see
+    // a partially-populated cache (clearing the existing map in-place would
+    // race with other callers reading mid-refresh).
+    const newMap = new Map<string, string | null>()
     for (const currency of currencies) {
       const key = `${currency.ticker.toLowerCase()}:${currency.network.toLowerCase()}`
-      currencyCache.currencies.set(key, currency.tokenContract ?? null)
+      newMap.set(key, currency.tokenContract ?? null)
 
       // Also cache by legacyTicker if different from ticker
       if (
@@ -156,10 +160,11 @@ async function loadCurrencyCache(apiKey?: string): Promise<void> {
         currency.legacyTicker !== currency.ticker
       ) {
         const legacyKey = `${currency.legacyTicker.toLowerCase()}:${currency.network.toLowerCase()}`
-        currencyCache.currencies.set(legacyKey, currency.tokenContract ?? null)
+        newMap.set(legacyKey, currency.tokenContract ?? null)
       }
     }
 
+    currencyCache.currencies = newMap
     currencyCache.loaded = true
     datelog(`ChangeNow currency cache loaded with ${currencies.length} entries`)
   } catch (e) {
@@ -350,36 +355,20 @@ function getAssetInfo(network: string, currencyCode: string): EdgeAssetInfo {
   // Create tokenId from contract address
   const tokenType = tokenTypes[chainPluginId]
   if (tokenType == null) {
-    // Chain doesn't support tokens, but we have a contract address
-    // This shouldn't happen, but treat as native
-    return {
-      chainPluginId,
-      evmChainId,
-      tokenId: null
-    }
+    throw new Error(
+      `Unknown tokenType for chainPluginId ${chainPluginId} (currency: ${currencyCode}, network: ${network})`
+    )
   }
 
-  try {
-    const tokenId = createTokenId(
-      tokenType,
-      currencyCode.toUpperCase(),
-      contractAddress
-    )
-    return {
-      chainPluginId,
-      evmChainId,
-      tokenId
-    }
-  } catch (e) {
-    // If tokenId creation fails, treat as native
-    datelog(
-      `Warning: Failed to create tokenId for ${currencyCode} on ${network}: ${e}`
-    )
-    return {
-      chainPluginId,
-      evmChainId,
-      tokenId: null
-    }
+  const tokenId = createTokenId(
+    tokenType,
+    currencyCode.toUpperCase(),
+    contractAddress
+  )
+  return {
+    chainPluginId,
+    evmChainId,
+    tokenId
   }
 }
 
