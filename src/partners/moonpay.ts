@@ -229,7 +229,7 @@ export async function queryMoonpay(
         const txs = asMoonpayResult(await result.json())
 
         for (const rawTx of txs) {
-          const standardTx = processTx(rawTx, 'sell')
+          const standardTx = processMoonpayTx(rawTx, 'sell')
           standardTxs.push(standardTx)
         }
 
@@ -261,7 +261,7 @@ export async function queryMoonpay(
         // in bulk update it throws an error for document update conflict because of this.
 
         for (const rawTx of txs) {
-          const standardTx = processTx(rawTx, 'buy')
+          const standardTx = processMoonpayTx(rawTx, 'buy')
           standardTxs.push(standardTx)
         }
         if (txs.length > 0) {
@@ -309,7 +309,7 @@ export const moonpay: PartnerPlugin = {
   pluginId: 'moonpay'
 }
 
-export function processTx(
+export function processMoonpayTx(
   rawTx: unknown,
   direction: 'buy' | 'sell'
 ): StandardTx {
