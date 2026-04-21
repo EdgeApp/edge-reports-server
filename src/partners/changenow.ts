@@ -125,6 +125,7 @@ const currencyCache: CurrencyCache = {
   loaded: false
 }
 let currencyCacheTimestamp = 0
+let currencyCacheLoadPromise: Promise<void> | undefined
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 /**
@@ -141,44 +142,57 @@ async function loadCurrencyCache(
     return
   }
 
-  try {
-    // The exchange/currencies endpoint doesn't require authentication
-    const url = 'https://api.changenow.io/v2/exchange/currencies?active=true'
-    const response = await retryFetch(url, {
-      method: 'GET'
-    })
+  if (currencyCacheLoadPromise != null) {
+    await currencyCacheLoadPromise
+    return
+  }
 
-    if (!response.ok) {
-      const text = await response.text()
-      throw new Error(`Failed to fetch currencies: ${text}`)
-    }
+  currencyCacheLoadPromise = (async () => {
+    try {
+      // The exchange/currencies endpoint doesn't require authentication
+      const url = 'https://api.changenow.io/v2/exchange/currencies?active=true'
+      const response = await retryFetch(url, {
+        method: 'GET'
+      })
 
-    const result = await response.json()
-    const currencies = asChangeNowCurrencyArray(result)
-
-    // Clear stale entries (delisted/renamed currencies) before repopulating
-    currencyCache.currencies.clear()
-
-    for (const currency of currencies) {
-      const key = `${currency.ticker.toLowerCase()}:${currency.network.toLowerCase()}`
-      currencyCache.currencies.set(key, currency.tokenContract ?? null)
-
-      // Also cache by legacyTicker if different from ticker
-      if (
-        currency.legacyTicker != null &&
-        currency.legacyTicker !== currency.ticker
-      ) {
-        const legacyKey = `${currency.legacyTicker.toLowerCase()}:${currency.network.toLowerCase()}`
-        currencyCache.currencies.set(legacyKey, currency.tokenContract ?? null)
+      if (!response.ok) {
+        const text = await response.text()
+        throw new Error(`Failed to fetch currencies: ${text}`)
       }
-    }
 
-    currencyCache.loaded = true
-    currencyCacheTimestamp = Date.now()
-    log(`Currency cache loaded with ${currencies.length} entries`)
-  } catch (e) {
-    log.error(`Error loading currency cache: ${e}`)
-    throw e
+      const result = await response.json()
+      const currencies = asChangeNowCurrencyArray(result)
+
+      // Build a new map and swap it in atomically to avoid partial reads.
+      const nextCurrencies = new Map<string, string | null>()
+      for (const currency of currencies) {
+        const key = `${currency.ticker.toLowerCase()}:${currency.network.toLowerCase()}`
+        nextCurrencies.set(key, currency.tokenContract ?? null)
+
+        // Also cache by legacyTicker if different from ticker
+        if (
+          currency.legacyTicker != null &&
+          currency.legacyTicker !== currency.ticker
+        ) {
+          const legacyKey = `${currency.legacyTicker.toLowerCase()}:${currency.network.toLowerCase()}`
+          nextCurrencies.set(legacyKey, currency.tokenContract ?? null)
+        }
+      }
+
+      currencyCache.currencies = nextCurrencies
+      currencyCache.loaded = true
+      currencyCacheTimestamp = Date.now()
+      log(`Currency cache loaded with ${currencies.length} entries`)
+    } catch (e) {
+      log.error(`Error loading currency cache: ${e}`)
+      throw e
+    }
+  })()
+
+  try {
+    await currencyCacheLoadPromise
+  } finally {
+    currencyCacheLoadPromise = undefined
   }
 }
 
