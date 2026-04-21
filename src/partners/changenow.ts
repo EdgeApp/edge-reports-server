@@ -156,6 +156,9 @@ async function loadCurrencyCache(
     const result = await response.json()
     const currencies = asChangeNowCurrencyArray(result)
 
+    // Clear stale entries (delisted/renamed currencies) before repopulating
+    currencyCache.currencies.clear()
+
     for (const currency of currencies) {
       const key = `${currency.ticker.toLowerCase()}:${currency.network.toLowerCase()}`
       currencyCache.currencies.set(key, currency.tokenContract ?? null)
