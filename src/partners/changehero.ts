@@ -256,7 +256,7 @@ function getAssetInfo(
     throw new Error(`Missing chain for currency ${currencyCode}`)
   }
 
-  const chainPluginId = CHANGEHERO_CHAIN_TO_PLUGIN_ID[chain]
+  const chainPluginId = CHANGEHERO_CHAIN_TO_PLUGIN_ID[chain.toLowerCase()]
   if (chainPluginId == null) {
     throw new Error(
       `Unknown Changehero chain "${chain}" for currency ${currencyCode}. Add mapping to CHANGEHERO_CHAIN_TO_PLUGIN_ID.`
