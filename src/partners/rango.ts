@@ -272,14 +272,6 @@ export function processRangoTx(
   const payoutCurrency = lastStep.toToken.symbol
   const payoutTokenId = lastStep.toToken.address ?? null
 
-  log(
-    `${dateStr} ${depositCurrency} ${depositAmount} ${depositChainPluginId}${
-      depositTokenId != null ? ` ${depositTokenId}` : ''
-    } -> ${payoutCurrency} ${payoutAmount} ${payoutChainPluginId}${
-      payoutTokenId != null ? ` ${payoutTokenId}` : ''
-    }`
-  )
-
   const standardTx: StandardTx = {
     status: statusMap[tx.status],
     orderId: tx.requestId,
@@ -305,6 +297,16 @@ export function processRangoTx(
     isoDate,
     usdValue: -1,
     rawTx
+  }
+
+  if (statusMap[tx.status] === 'complete') {
+    log(
+      `${dateStr} ${depositCurrency} ${depositAmount} ${depositChainPluginId}${
+        depositTokenId != null ? ` ${depositTokenId}` : ''
+      } -> ${payoutCurrency} ${payoutAmount} ${payoutChainPluginId}${
+        payoutTokenId != null ? ` ${payoutTokenId}` : ''
+      }`
+    )
   }
 
   return standardTx
