@@ -204,7 +204,10 @@ function getAssetInfo(
   // Look up tokenId from contract address
   let tokenId: EdgeTokenId = null
   if (contract != null) {
-    if (GASTOKEN_CONTRACTS.includes(contract) && network === currencyCode) {
+    const isGasToken = GASTOKEN_CONTRACTS.some(
+      c => c.toLowerCase() === contract.toLowerCase()
+    )
+    if (isGasToken && network === currencyCode) {
       tokenId = null
     } else {
       const tokenType = tokenTypes[chainPluginId]
