@@ -254,7 +254,7 @@ export function processBitrefillTx(
   } catch (e) {
     throw new Error(`${String(e)}: ${JSON.stringify(rawTx)}`)
   }
-  const { isoDate } = smartIsoDateFromTimestamp(tx.invoiceTime)
+  const { isoDate, timestamp } = smartIsoDateFromTimestamp(tx.invoiceTime)
   const countryCode = countryCodeMap[tx.country]
 
   if (tx.altcoinPrice != null) {
@@ -275,8 +275,6 @@ export function processBitrefillTx(
     throw new Error(`${tx.orderId}: ${tx.country} has no country code`)
   }
   const evmChainId = EVM_CHAIN_IDS[edgeAsset.pluginId]
-
-  const timestamp = tx.invoiceTime / 1000
 
   const { paymentMethod } = tx
   let depositAmountStr: string | undefined
