@@ -155,10 +155,11 @@ async function loadCurrencyCache(
 
     const result = await response.json()
     const currencies = asChangeNowCurrencyArray(result)
+    const cache = new Map<string, string | null>()
 
     for (const currency of currencies) {
       const key = `${currency.ticker.toLowerCase()}:${currency.network.toLowerCase()}`
-      currencyCache.currencies.set(key, currency.tokenContract ?? null)
+      cache.set(key, currency.tokenContract ?? null)
 
       // Also cache by legacyTicker if different from ticker
       if (
@@ -166,10 +167,11 @@ async function loadCurrencyCache(
         currency.legacyTicker !== currency.ticker
       ) {
         const legacyKey = `${currency.legacyTicker.toLowerCase()}:${currency.network.toLowerCase()}`
-        currencyCache.currencies.set(legacyKey, currency.tokenContract ?? null)
+        cache.set(legacyKey, currency.tokenContract ?? null)
       }
     }
 
+    currencyCache.currencies = cache
     currencyCache.loaded = true
     currencyCacheTimestamp = Date.now()
     log(`Currency cache loaded with ${currencies.length} entries`)

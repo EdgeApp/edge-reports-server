@@ -163,7 +163,16 @@ async function getGodexCoinsCache(
     return cache
   } catch (e) {
     log.error(`Error loading coins cache: ${String(e)}`)
-    throw e
+    if (godexCoinsCache != null) {
+      // Keep using stale cache if refresh fails to avoid repeated failing requests.
+      godexCoinsCacheTimestamp = Date.now()
+      return godexCoinsCache
+    }
+
+    // Fall back to delisted-token cache when the first API fetch fails.
+    godexCoinsCache = cache
+    godexCoinsCacheTimestamp = Date.now()
+    return cache
   }
 }
 
