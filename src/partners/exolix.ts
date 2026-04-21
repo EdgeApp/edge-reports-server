@@ -207,7 +207,7 @@ function getAssetInfo(
     const isGasToken = GASTOKEN_CONTRACTS.some(
       c => c.toLowerCase() === contract.toLowerCase()
     )
-    if (isGasToken && network === currencyCode) {
+    if (isGasToken && network.toLowerCase() === currencyCode.toLowerCase()) {
       tokenId = null
     } else {
       const tokenType = tokenTypes[chainPluginId]
