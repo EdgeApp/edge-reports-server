@@ -84,6 +84,11 @@ function processMetadata(
       ? MOONPAY_NETWORK_TO_PLUGIN_ID[networkCode]
       : undefined) ??
     (chainIdNum != null ? REVERSE_EVM_CHAIN_IDS[chainIdNum] : undefined)
+  if (chainPluginId == null) {
+    throw new Error(
+      `Unknown network for currency ${currencyCode}: networkCode=${networkCode}, chainId=${rawChainId}`
+    )
+  }
 
   // Determine evmChainId
   let evmChainId: number | undefined
