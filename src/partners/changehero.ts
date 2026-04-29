@@ -305,7 +305,7 @@ export async function queryChangeHero(
   }
 
   // Fetch currency cache for contract address lookups
-  await fetchCurrencyCache(apiKey, log)
+  const currencyCache = await fetchCurrencyCache(apiKey, log)
 
   const standardTxs: StandardTx[] = []
   let previousTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
@@ -349,7 +349,7 @@ export async function queryChangeHero(
         break
       }
       for (const rawTx of txs) {
-        const standardTx = await processChangeHeroTx(rawTx, pluginParams)
+        const standardTx = await processChangeHeroTx(rawTx, currencyCache)
         standardTxs.push(standardTx)
 
         if (standardTx.isoDate > latestIsoDate) {
@@ -388,16 +388,9 @@ export const changehero: PartnerPlugin = {
 
 export async function processChangeHeroTx(
   rawTx: unknown,
-  pluginParams: PluginParams
+  currencyCache: Map<string, CurrencyInfo>
 ): Promise<StandardTx> {
   const tx: ChangeHeroTx = asChangeHeroTx(rawTx)
-  const { log } = pluginParams
-
-  const { apiKeys } = asChangeHeroPluginParams(pluginParams)
-  if (apiKeys.apiKey == null) {
-    throw new Error('ChangeHero apiKey required for asset info lookup')
-  }
-  const currencyCache = await fetchCurrencyCache(apiKeys.apiKey, log)
 
   const isoDate = smartIsoDateFromTimestamp(tx.createdAt).isoDate
 

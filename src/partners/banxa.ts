@@ -330,7 +330,7 @@ export async function queryBanxa(
   const { log } = pluginParams
   const ssFormatTxs: StandardTx[] = []
   const { settings, apiKeys } = asBanxaParams(pluginParams)
-  const { apiKey, partnerId, partnerUrl, secret } = apiKeys
+  const { apiKey, apiKeyV2, partnerId, partnerUrl, secret } = apiKeys
   const { latestIsoDate } = settings
 
   if (apiKey == null) {
@@ -387,7 +387,13 @@ export async function queryBanxa(
         const reply = await response.json()
         const jsonObj = asBanxaResult(reply)
         const txs = jsonObj.data.orders
-        await processBanxaOrders(txs, ssFormatTxs, pluginParams, log)
+        await processBanxaOrders(
+          txs,
+          ssFormatTxs,
+          apiKeyV2,
+          partnerId,
+          log
+        )
         if (txs.length < PAGE_LIMIT) {
           break
         }
@@ -450,7 +456,8 @@ async function fetchBanxaAPI(
 async function processBanxaOrders(
   rawtxs: unknown[],
   ssFormatTxs: StandardTx[],
-  pluginParams: PluginParams,
+  apiKeyV2: string,
+  partnerId: string,
   log: ScopedLog
 ): Promise<void> {
   let numComplete = 0
@@ -459,7 +466,7 @@ async function processBanxaOrders(
   for (const rawTx of rawtxs) {
     let standardTx: StandardTx
     try {
-      standardTx = await processBanxaTx(rawTx, pluginParams)
+      standardTx = await processBanxaTx(rawTx, apiKeyV2, partnerId, log)
     } catch (e) {
       log.error(String(e))
       throw e
@@ -493,19 +500,12 @@ async function processBanxaOrders(
 
 export async function processBanxaTx(
   rawTx: unknown,
-  pluginParams: PluginParams
+  apiKeyV2: string,
+  partnerId: string,
+  log: ScopedLog
 ): Promise<StandardTx> {
-  const { log } = pluginParams
   const banxaTx: BanxaTx = asBanxaTx(rawTx)
   const { isoDate, timestamp } = smartIsoDateFromTimestamp(banxaTx.created_at)
-  const { apiKeys } = asBanxaParams(pluginParams)
-  const { apiKeyV2, partnerId } = apiKeys
-
-  // Get apiKeyV2 from pluginParams (banxa3 partner)
-  // For backfillAssetInfo, this comes from the banxa3 partner config
-  if (apiKeyV2 == null || partnerId == null) {
-    throw new Error('Banxa apiKeyV2 required for asset info lookup')
-  }
 
   // Flip the amounts if the order is a SELL
   let payoutAddress
