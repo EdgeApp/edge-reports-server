@@ -186,8 +186,11 @@ const MISSING_CURRENCIES: Record<string, CurrencyInfo> = {
 async function fetchCurrencyCache(
   apiKey: string,
   log: ScopedLog
-): Promise<void> {
-  if (currencyCache != null) return
+): Promise<Map<string, CurrencyInfo>> {
+  const existing = currencyCacheByKey.get(apiKey)
+  if (existing != null && Date.now() - existing.timestamp < CACHE_TTL_MS) {
+    return existing.cache
+  }
 
   try {
     const response = await retryFetch(API_URL, {
@@ -221,7 +224,9 @@ async function fetchCurrencyCache(
       }
     }
 
-    log(`Cached ${currencyCache.size} currency entries`)
+    currencyCacheByKey.set(apiKey, { cache, timestamp: Date.now() })
+    log(`Cached ${cache.size} currency entries`)
+    return cache
   } catch (e) {
     log.error(`Failed to fetch currency cache: ${e}`)
     throw e
@@ -388,12 +393,9 @@ export async function processChangeHeroTx(
   const tx: ChangeHeroTx = asChangeHeroTx(rawTx)
   const { log } = pluginParams
 
-  // Ensure currency cache is populated (for backfill script usage)
-  if (currencyCache == null) {
-    const { apiKeys } = asChangeHeroPluginParams(pluginParams)
-    if (apiKeys.apiKey != null) {
-      await fetchCurrencyCache(apiKeys.apiKey, log)
-    }
+  const { apiKeys } = asChangeHeroPluginParams(pluginParams)
+  if (apiKeys.apiKey == null) {
+    throw new Error('ChangeHero apiKey required for asset info lookup')
   }
   const currencyCache = await fetchCurrencyCache(apiKeys.apiKey, log)
 
