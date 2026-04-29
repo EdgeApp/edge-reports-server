@@ -532,7 +532,7 @@ export async function processBanxaTx(
   const blockchainCode = banxaTx.blockchain.code
   const coinCode = banxaTx.coin_code
 
-  await fetchBanxaCoins(partnerId, apiKeyV2, log)
+  const coinsCache = await fetchBanxaCoins(partnerId, apiKeyV2, log)
 
   const cryptoAssetInfo = getAssetInfo(coinsCache, blockchainCode, coinCode)
 
