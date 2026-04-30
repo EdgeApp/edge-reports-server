@@ -299,15 +299,13 @@ export function processRangoTx(
     rawTx
   }
 
-  if (statusMap[tx.status] === 'complete') {
-    log(
-      `${dateStr} ${depositCurrency} ${depositAmount} ${depositChainPluginId}${
-        depositTokenId != null ? ` ${depositTokenId}` : ''
-      } -> ${payoutCurrency} ${payoutAmount} ${payoutChainPluginId}${
-        payoutTokenId != null ? ` ${payoutTokenId}` : ''
-      }`
-    )
-  }
+  log(
+    `${dateStr} ${depositCurrency} ${depositAmount} ${depositChainPluginId}${
+      depositTokenId != null ? ` ${depositTokenId}` : ''
+    } -> ${payoutCurrency} ${payoutAmount} ${payoutChainPluginId}${
+      payoutTokenId != null ? ` ${payoutTokenId}` : ''
+    }`
+  )
 
   return standardTx
 }
