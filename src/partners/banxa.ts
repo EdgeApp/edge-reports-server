@@ -333,10 +333,6 @@ export async function queryBanxa(
   const { apiKey, partnerId, partnerUrl, secret } = apiKeys
   const { latestIsoDate } = settings
 
-  if (apiKey == null) {
-    return { settings: { latestIsoDate }, transactions: [] }
-  }
-
   const today = new Date().toISOString()
   let startDate = new Date(
     new Date(latestIsoDate).getTime() - ROLLBACK
