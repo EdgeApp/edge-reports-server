@@ -128,13 +128,8 @@ const CHANGEHERO_CHAIN_TO_PLUGIN_ID: Record<string, string> = {
 interface CurrencyInfo {
   contractAddress: string | null
 }
-interface ChangeHeroCacheEntry {
-  cache: Map<string, CurrencyInfo>
-  timestamp: number
-}
-// Keyed by apiKey so multiple ChangeHero configs with distinct credentials
-// don't share cache entries from each other's API responses.
-const currencyCacheByKey: Map<string, ChangeHeroCacheEntry> = new Map()
+let currencyCache: Map<string, CurrencyInfo> | null = null
+let currencyCacheTimestamp = 0
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 function makeCurrencyCacheKey(ticker: string, chain: string): string {
@@ -191,9 +186,11 @@ async function fetchCurrencyCache(
   apiKey: string,
   log: ScopedLog
 ): Promise<Map<string, CurrencyInfo>> {
-  const existing = currencyCacheByKey.get(apiKey)
-  if (existing != null && Date.now() - existing.timestamp < CACHE_TTL_MS) {
-    return existing.cache
+  if (
+    currencyCache != null &&
+    Date.now() - currencyCacheTimestamp < CACHE_TTL_MS
+  ) {
+    return currencyCache
   }
 
   try {
@@ -228,7 +225,8 @@ async function fetchCurrencyCache(
       }
     }
 
-    currencyCacheByKey.set(apiKey, { cache, timestamp: Date.now() })
+    currencyCache = cache
+    currencyCacheTimestamp = Date.now()
     log(`Cached ${cache.size} currency entries`)
     return cache
   } catch (e) {
