@@ -177,11 +177,6 @@ const MAX_RETRIES = 5
 const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 const QUERY_TIME_BLOCK_MS = QUERY_LOOKBACK
 
-// Date after which depositNetwork/settleNetwork are reliably populated.
-// Historical transactions before this date may be missing these fields
-// and are allowed to skip asset info backfill.
-const NETWORK_FIELDS_REQUIRED_DATE = '2023-01-01T00:00:00.000Z'
-
 const statusMap: { [key in SideshiftStatus]: Status } = {
   pending: 'pending',
   processing: 'processing',
@@ -294,13 +289,9 @@ interface EdgeAssetInfo {
  */
 async function getAssetInfo(
   network: string | undefined,
-  asset: string,
-  isoDate: string
+  asset: string
 ): Promise<EdgeAssetInfo> {
   if (network == null) {
-    if (isoDate < NETWORK_FIELDS_REQUIRED_DATE) {
-      return { chainPluginId: undefined, evmChainId: undefined, tokenId: null }
-    }
     throw new Error(`Missing network for asset: ${asset}`)
   }
 
@@ -354,16 +345,8 @@ export async function processSideshiftTx(rawTx: unknown): Promise<StandardTx> {
   const { isoDate, timestamp } = smartIsoDateFromTimestamp(tx.createdAt)
 
   // Get asset info for deposit and payout
-  const depositAsset = await getAssetInfo(
-    tx.depositNetwork,
-    tx.depositAsset,
-    isoDate
-  )
-  const payoutAsset = await getAssetInfo(
-    tx.settleNetwork,
-    tx.settleAsset,
-    isoDate
-  )
+  const depositAsset = await getAssetInfo(tx.depositNetwork, tx.depositAsset)
+  const payoutAsset = await getAssetInfo(tx.settleNetwork, tx.settleAsset)
 
   const standardTx: StandardTx = {
     status: statusMap[tx.status],
