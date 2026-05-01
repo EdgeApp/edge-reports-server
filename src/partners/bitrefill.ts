@@ -200,15 +200,20 @@ export async function queryBitrefill(
   let count = 0
   while (true) {
     let jsonObj: ReturnType<typeof asBitrefillResult>
+    let resultText
     try {
       const result = await fetch(url, {
         method: 'GET',
         headers
       })
-      const json = await result.json()
+      resultText = await result.text()
+      const json = await JSON.parse(resultText)
       jsonObj = asBitrefillResult(json)
     } catch (e) {
       log.error(String(e))
+      if (resultText != null) {
+        log.error(resultText)
+      }
       break
     }
     const txs = jsonObj.orders
