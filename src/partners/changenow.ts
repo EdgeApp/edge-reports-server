@@ -66,6 +66,7 @@ const CHANGENOW_NETWORK_TO_PLUGIN_ID: ChainNameToPluginIdMapping = {
   kin: 'kin',
   ltc: 'litecoin',
   matic: 'polygon',
+  mon: 'monad',
   noah: 'noah',
   one: 'harmony',
   op: 'optimism',
