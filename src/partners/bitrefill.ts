@@ -207,7 +207,7 @@ export async function queryBitrefill(
         headers
       })
       resultText = await result.text()
-      const json = await JSON.parse(resultText)
+      const json = JSON.parse(resultText)
       jsonObj = asBitrefillResult(json)
     } catch (e) {
       log.error(String(e))
