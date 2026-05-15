@@ -34,22 +34,29 @@ const MOONPAY_NETWORK_TO_PLUGIN_ID: ChainNameToPluginIdMapping = {
   arbitrum: 'arbitrum',
   avalanche_c_chain: 'avalanche',
   base: 'base',
+  // Moonpay `networkCode`: `bnb_chain` = Beacon Chain, `binance_smart_chain` = BSC.
+  bnb_chain: 'binance',
   binance_smart_chain: 'binancesmartchain',
   bitcoin: 'bitcoin',
   bitcoin_cash: 'bitcoincash',
   cardano: 'cardano',
   cosmos: 'cosmoshub',
+  dash: 'dash',
   dogecoin: 'dogecoin',
+  eosio: 'eos',
   ethereum: 'ethereum',
   ethereum_classic: 'ethereumclassic',
   hedera: 'hedera',
   litecoin: 'litecoin',
   optimism: 'optimism',
   polygon: 'polygon',
+  qtum: 'qtum',
+  ravencoin: 'ravencoin',
   ripple: 'ripple',
   solana: 'solana',
   stellar: 'stellar',
   sui: 'sui',
+  tezos: 'tezos',
   ton: 'ton',
   tron: 'tron',
   zksync: 'zksync'
@@ -145,13 +152,17 @@ const asMoonpayCurrency = asObject({
   metadata: asOptional(asMoonpayCurrencyMetadata)
 })
 
-// Base cleaner with fields common to both buy and sell transactions
+// Base cleaner with fields common to both buy and sell transactions.
+// `country` is the only Moonpay-supplied country field (verified via
+// src/bin/moonpayCountryFieldSurvey.ts across 122k txs / 2 years), but is
+// optional because some legacy rows omit it.
 const asMoonpayTxBase = asObject({
   baseCurrency: asMoonpayCurrency,
   baseCurrencyAmount: asNumber,
   baseCurrencyId: asString,
-  cardType: asOptional(asValue('apple_pay', 'google_pay')),
-  country: asString,
+  // apple_pay / google_pay with paymentMethod mobile_wallet; "card" with credit_debit_card
+  cardType: asOptional(asValue('apple_pay', 'google_pay', 'card')),
+  country: asOptional(asString),
   createdAt: asDate,
   id: asString,
   status: asString,
@@ -420,7 +431,8 @@ function getFiatPaymentType(tx: MoonpayTxBase): FiatPaymentType | null {
     case undefined:
       return null
     case 'mobile_wallet':
-      // Older versions of Moonpay data had a separate cardType field.
+      // Moonpay uses cardType to distinguish wallet brands; plain cards use
+      // paymentMethod credit_debit_card with cardType "card" (see paymentMethodMap).
       if (tx.cardType === 'apple_pay') {
         paymentMethod = 'applepay'
       } else if (tx.cardType === 'google_pay') {

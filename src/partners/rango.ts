@@ -120,6 +120,7 @@ const RANGO_BLOCKCHAIN_TO_PLUGIN_ID: Record<string, string> = {
   POLYGON: 'polygon',
   SOLANA: 'solana',
   TRON: 'tron',
+  XRPL: 'ripple',
   ZKSYNC: 'zksync'
 }
 
