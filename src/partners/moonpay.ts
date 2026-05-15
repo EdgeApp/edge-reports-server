@@ -34,24 +34,40 @@ const MOONPAY_NETWORK_TO_PLUGIN_ID: ChainNameToPluginIdMapping = {
   arbitrum: 'arbitrum',
   avalanche_c_chain: 'avalanche',
   base: 'base',
+  // Moonpay `networkCode`: `bnb_chain` = Beacon Chain, `binance_smart_chain` = BSC.
+  bnb_chain: 'binance',
   binance_smart_chain: 'binancesmartchain',
   bitcoin: 'bitcoin',
   bitcoin_cash: 'bitcoincash',
   cardano: 'cardano',
+  celo: 'celo',
   cosmos: 'cosmoshub',
+  dash: 'dash',
+  digibyte: 'digibyte',
   dogecoin: 'dogecoin',
+  eosio: 'eos',
   ethereum: 'ethereum',
   ethereum_classic: 'ethereumclassic',
+  fantom: 'fantom',
+  filecoin: 'filecoin',
   hedera: 'hedera',
   litecoin: 'litecoin',
+  monero: 'monero',
   optimism: 'optimism',
+  osmosis: 'osmosis',
+  polkadot: 'polkadot',
   polygon: 'polygon',
+  qtum: 'qtum',
+  ravencoin: 'ravencoin',
   ripple: 'ripple',
+  rsk: 'rsk',
   solana: 'solana',
   stellar: 'stellar',
   sui: 'sui',
+  tezos: 'tezos',
   ton: 'ton',
   tron: 'tron',
+  zcash: 'zcash',
   zksync: 'zksync'
 }
 
@@ -145,13 +161,17 @@ const asMoonpayCurrency = asObject({
   metadata: asOptional(asMoonpayCurrencyMetadata)
 })
 
-// Base cleaner with fields common to both buy and sell transactions
+// Base cleaner with fields common to both buy and sell transactions.
+// `country` is the only Moonpay-supplied country field (verified via
+// src/bin/moonpayCountryFieldSurvey.ts across 122k txs / 2 years), but is
+// optional because some legacy rows omit it.
 const asMoonpayTxBase = asObject({
   baseCurrency: asMoonpayCurrency,
   baseCurrencyAmount: asNumber,
   baseCurrencyId: asString,
-  cardType: asOptional(asValue('apple_pay', 'google_pay')),
-  country: asString,
+  // apple_pay / google_pay with paymentMethod mobile_wallet; "card" with credit_debit_card
+  cardType: asOptional(asValue('apple_pay', 'google_pay', 'card')),
+  country: asOptional(asString),
   createdAt: asDate,
   id: asString,
   status: asString,
@@ -173,7 +193,9 @@ const asMoonpayBuyFields = asObject({
 
 const asMoonpaySellFields = asObject({
   quoteCurrency: asMoonpayCurrency,
-  quoteCurrencyAmount: asNumber
+  // Pending sell txs may have null quoteCurrencyAmount until the deposit is
+  // confirmed and the payout is calculated.
+  quoteCurrencyAmount: asOptional(asNumber, 0)
 })
 
 type MoonpayTxBase = ReturnType<typeof asMoonpayTxBase>
@@ -189,6 +211,11 @@ const asMoonpayResult = asArray(asUnknown)
 
 const PARTNER_START_DATE = '2024-06-17T00:00:00.000Z'
 const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 7
+// Cap each queryFunc invocation to ~6 months of transaction data. The runner
+// snoozes between invocations and persists progress in between, so during
+// long backfills the work is split across multiple wakeups instead of one
+// invocation having to traverse years of weekly windows.
+const MAX_QUERY_RANGE = 1000 * 60 * 60 * 24 * 30 * 6
 const PER_REQUEST_LIMIT = 50
 
 export async function queryMoonpay(
@@ -222,6 +249,13 @@ export async function queryMoonpay(
   ).toISOString()
 
   const isoNow = new Date().toISOString()
+  // Cap this invocation to MAX_QUERY_RANGE past the entry latestIsoDate.
+  // When we hit the cap we early-exit and let the next invocation resume
+  // from the saved progress.
+  const capIso = new Date(
+    new Date(latestIsoDate).getTime() + MAX_QUERY_RANGE
+  ).toISOString()
+  const targetIsoDate = capIso < isoNow ? capIso : isoNow
 
   try {
     do {
@@ -291,8 +325,13 @@ export async function queryMoonpay(
       latestIsoDate = new Date(
         new Date(latestIsoDate).getTime() + QUERY_LOOKBACK
       ).toISOString()
-    } while (isoNow > latestIsoDate)
-    latestIsoDate = isoNow
+    } while (targetIsoDate > latestIsoDate)
+    latestIsoDate = targetIsoDate
+    if (targetIsoDate < isoNow) {
+      log(
+        `Early exit at 6-month cap: saving progress up until ${targetIsoDate} (current time: ${isoNow})`
+      )
+    }
   } catch (e) {
     log.error(`Error: ${e}`)
     log(`Saving progress up until ${queryIsoDate}`)
@@ -325,8 +364,23 @@ export function processMoonpayTx(rawTx: unknown): StandardTx {
   // Map Moonpay status to Edge status
   const status: Status = statusMap[tx.status] ?? 'other'
 
-  // Buy transactions have paymentMethod, sell transactions have payoutMethod
-  const direction: 'buy' | 'sell' = tx.paymentMethod != null ? 'buy' : 'sell'
+  // A completed transaction must have a finalized payout amount. If this
+  // assertion ever trips, Moonpay has changed something about how completed
+  // transactions are reported and the parser needs to be revisited.
+  if (tx.quoteCurrencyAmount == null && tx.status === 'completed') {
+    throw new Error(
+      `Moonpay tx ${tx.id} is status=completed but has no quoteCurrencyAmount`
+    )
+  }
+
+  // Determine direction from baseCurrency.type:
+  //   fiat baseCurrency  => buy (fiat in, crypto out)
+  //   crypto baseCurrency => sell (crypto in, fiat out)
+  // Older buy txs from /v1/transactions can have paymentMethod=null
+  // (e.g. legacy card payments with cardType="card"), so we cannot rely on
+  // paymentMethod presence alone to distinguish buy vs sell.
+  const direction: 'buy' | 'sell' =
+    tx.baseCurrency.type === 'fiat' ? 'buy' : 'sell'
 
   if (direction === 'buy') {
     const buyFields = asMoonpayBuyFields(rawTx)
@@ -418,9 +472,15 @@ function getFiatPaymentType(tx: MoonpayTxBase): FiatPaymentType | null {
   let paymentMethod: FiatPaymentType | null = null
   switch (tx.paymentMethod) {
     case undefined:
+      // Legacy buy transactions can omit paymentMethod entirely. Fall back to
+      // cardType which Moonpay set on older card payments.
+      if (tx.cardType === 'card') return 'credit'
+      if (tx.cardType === 'apple_pay') return 'applepay'
+      if (tx.cardType === 'google_pay') return 'googlepay'
       return null
     case 'mobile_wallet':
-      // Older versions of Moonpay data had a separate cardType field.
+      // Moonpay uses cardType to distinguish wallet brands; plain cards use
+      // paymentMethod credit_debit_card with cardType "card" (see paymentMethodMap).
       if (tx.cardType === 'apple_pay') {
         paymentMethod = 'applepay'
       } else if (tx.cardType === 'google_pay') {
