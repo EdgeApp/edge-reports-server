@@ -53,6 +53,7 @@ export const tokenTypes: Record<string, TokenType> = {
   litecoin: null,
   monad: 'evm',
   monero: null,
+  opbnb: 'evm',
   optimism: 'evm',
   osmosis: 'cosmos',
   piratechain: null,
