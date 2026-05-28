@@ -80,6 +80,15 @@ const currencyMap: NexchangeCurrencyInfoMap = {
     network: 'ATOM',
     contract_address: 'NOT A VALID DENOM',
     common_symbol: 'BAD'
+  },
+  // A token (has a contract address) on a chain Edge does not model tokens for.
+  USDCXLM: {
+    code: 'USDCXLM',
+    is_fiat: false,
+    network: 'XLM',
+    contract_address:
+      'USDC-GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN',
+    common_symbol: 'USDC'
   }
 }
 
@@ -218,6 +227,15 @@ describe('nexchange plugin', () => {
     it('throws when a token chain has a contract address that fails createTokenId', () => {
       expect(() => resolveNexchangeAsset('BADTOKEN', currencyMap)).to.throw(
         /Invalid contract address/
+      )
+    })
+
+    it('throws for a token (contract address) on a chain Edge does not model tokens for', () => {
+      // USDC on Stellar: pricing it as native XLM would overcount volume, so
+      // the unmapped token type must surface as an error rather than fall back
+      // to tokenId: null.
+      expect(() => resolveNexchangeAsset('USDCXLM', currencyMap)).to.throw(
+        /Unknown tokenType for chainPluginId "stellar"/
       )
     })
   })
