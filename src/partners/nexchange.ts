@@ -224,9 +224,12 @@ function asUnmapped(currencyCode: string): ResolvedNexchangeAsset {
  * fields undefined in that case so downstream rates lookup can fall back to
  * currency-code mappings.
  *
- * Throws if a token-supporting chain has a contract address that cannot be
- * converted into an Edge tokenId, so the bad payload is surfaced rather than
- * silently producing an unenriched transaction.
+ * Throws when an asset has a contract address (i.e. it is a token) but cannot
+ * be converted into an Edge tokenId — either because Edge does not model
+ * tokens on that chain, or because the address fails createTokenId. This is
+ * deliberate: a token must never be silently downgraded to a native
+ * (tokenId: null) mapping, which would price it with the chain's gas-token
+ * rate and overcount volume.
  */
 export function resolveNexchangeAsset(
   currencyCode: string,
@@ -273,17 +276,16 @@ export function resolveNexchangeAsset(
     }
   }
 
-  // The contract address is present but the chain does not support tokens in
-  // Edge's model; fall back to a chain-only mapping so we at least populate
-  // the chain plugin id for rates lookup.
+  // The contract address is present, so this is a token. If Edge does not
+  // model tokens on this chain we must NOT fall back to a native
+  // (tokenId: null) mapping: that would price the token using the chain's
+  // gas-token rate and overcount volume whenever the token is worth less than
+  // the gas token. Surface the gap loudly instead.
   const tokenType = tokenTypes[chainPluginId]
   if (tokenType == null) {
-    return {
-      currencyCode: normalizedCode,
-      chainPluginId,
-      tokenId: null,
-      evmChainId
-    }
+    throw new Error(
+      `Unknown tokenType for chainPluginId "${chainPluginId}" (currency: ${normalizedCode}, contract: ${contractAddress}). Add tokenType to tokenTypes.`
+    )
   }
 
   const tokenId = createTokenId(tokenType, normalizedCode, contractAddress)
