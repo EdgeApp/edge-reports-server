@@ -30,7 +30,8 @@ const asExolixPluginParams = asObject({
     latestIsoDate: asOptional(asString, EXOLIX_START_DATE)
   }),
   apiKeys: asObject({
-    apiKey: asOptional(asString)
+    apiKey: asOptional(asString),
+    signature: asOptional(asString)
   })
 })
 
@@ -230,10 +231,10 @@ export async function queryExolix(
 ): Promise<PluginResult> {
   const { log } = pluginParams
   const { settings, apiKeys } = asExolixPluginParams(pluginParams)
-  const { apiKey } = apiKeys
+  const { apiKey, signature } = apiKeys
   let { latestIsoDate } = settings
 
-  if (apiKey == null) {
+  if (apiKey == null || signature == null) {
     return { settings: { latestIsoDate }, transactions: [] }
   }
 
@@ -252,7 +253,8 @@ export async function queryExolix(
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `${apiKey}`
+          Authorization: `${apiKey}`,
+          signature: `${signature}`
         }
       }
 

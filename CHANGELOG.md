@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- changed: Add signature header support to Exolix
 - changed: Add index for orderId
 - changed: Add EVM chainId, pluginId, and tokenId fields to StandardTx
 - changed: Update Lifi to provide chainId, pluginId, and tokenId
