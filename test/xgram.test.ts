@@ -1,7 +1,10 @@
 import { expect } from 'chai'
 import { describe, it } from 'mocha'
 
-import { processXgramTx, XgramCurrencies } from '../src/partners/xgram'
+import {
+  processXgramTxWithCurrencies,
+  XgramCurrencies
+} from '../src/partners/xgram'
 
 const currencies: XgramCurrencies = {
   BTC: {
@@ -33,7 +36,7 @@ const currencies: XgramCurrencies = {
 
 describe('processXgramTx', () => {
   it('maps source and destination asset IDs', () => {
-    const tx = processXgramTx(
+    const tx = processXgramTxWithCurrencies(
       {
         id: 'dyv3a2tdbgipvh0',
         'x-status': 'x-completed',
@@ -67,7 +70,7 @@ describe('processXgramTx', () => {
   })
 
   it('uses expected amounts and chain-specific token IDs for pending rows', () => {
-    const tx = processXgramTx(
+    const tx = processXgramTxWithCurrencies(
       {
         id: 'tmah3a2td9cp20q0',
         'x-status': 'x-new',
@@ -98,7 +101,7 @@ describe('processXgramTx', () => {
   })
 
   it('maps historical native currencies missing from the currency API', () => {
-    const tx = processXgramTx(
+    const tx = processXgramTxWithCurrencies(
       {
         id: 'talr3a0e49fplpog',
         'x-status': 'x-timeout',

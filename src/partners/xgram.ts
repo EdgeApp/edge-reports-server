@@ -375,8 +375,6 @@ export const queryXgram = async (
   if (previousTimestamp < 0) previousTimestamp = 0
   const targetIsoDate = new Date(previousTimestamp).toISOString()
 
-  const currencies = await fetchCurrencyCache(apiKey, log)
-
   // Because Xgram pages from newest to oldest, the watermark can only be
   // advanced once the entire newer-than-target range has been fetched and
   // processed without error. Track the candidate watermark separately and only
@@ -427,7 +425,7 @@ export const queryXgram = async (
     }
     let oldestIsoDate = '999999999999999999999999999999999999'
     for (const rawTx of txs) {
-      const standardTx = processXgramTx(rawTx, currencies)
+      const standardTx = await processXgramTx(rawTx, pluginParams)
       if (standardTx.isoDate < oldestIsoDate) {
         oldestIsoDate = standardTx.isoDate
       }
@@ -462,7 +460,20 @@ export const xgram: PartnerPlugin = {
   pluginId: 'xgram'
 }
 
-export function processXgramTx(
+export async function processXgramTx(
+  rawTx: unknown,
+  pluginParams: PluginParams
+): Promise<StandardTx> {
+  const { log } = pluginParams
+  const { apiKeys } = asStandardPluginParams(pluginParams)
+  const { apiKey } = apiKeys
+  if (apiKey == null) throw new Error('Missing Xgram apiKey')
+  const currencies = await fetchCurrencyCache(apiKey, log)
+
+  return processXgramTxWithCurrencies(rawTx, currencies)
+}
+
+export function processXgramTxWithCurrencies(
   rawTx: unknown,
   currencies: XgramCurrencies
 ): StandardTx {
