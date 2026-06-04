@@ -69,6 +69,10 @@ const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 const LIMIT = 200
 const MAX_ERROR_TEXT_LENGTH = 500
 
+let nexchangeCurrencyMapPromise:
+  | Promise<NexchangeCurrencyInfoMap>
+  | undefined
+
 const statusMap: { [key: string]: Status } = {
   released: 'complete',
   complete: 'complete',
@@ -192,6 +196,27 @@ export async function fetchNexchangeCurrencyMap(): Promise<
   return map
 }
 
+async function getNexchangeCurrencyMap(
+  pluginParams: PluginParams
+): Promise<NexchangeCurrencyInfoMap> {
+  if (nexchangeCurrencyMapPromise == null) {
+    nexchangeCurrencyMapPromise = fetchNexchangeCurrencyMap()
+      .then(currencyMap => {
+        pluginParams.log(
+          `Nexchange currency map loaded with ${
+            Object.keys(currencyMap).length
+          } entries`
+        )
+        return currencyMap
+      })
+      .catch(error => {
+        nexchangeCurrencyMapPromise = undefined
+        throw error
+      })
+  }
+  return await nexchangeCurrencyMapPromise
+}
+
 /**
  * Returned by `resolveNexchangeAsset`.  The shape is consistent across all
  * exit branches so callers can rely on the field set.  `chainPluginId`,
@@ -311,12 +336,6 @@ export async function queryNexchange(
   let offset = 0
 
   try {
-    // The currency catalog supplies the network/contract metadata that the
-    // audit-orders endpoint omits, so it is required for chain/token
-    // enrichment.  Fetch it up front; a failure aborts the run (saving
-    // nothing) rather than persisting a batch of unenriched transactions.
-    const currencyMap = await fetchNexchangeCurrencyMap()
-
     while (true) {
       const params: string[] = [
         `dateFrom=${encodeURIComponent(queryDateFrom)}`,
@@ -341,7 +360,7 @@ export async function queryNexchange(
       const { orders, nextCursor, hasMore } = asNexchangeOrdersResponse(json)
 
       for (const rawOrder of orders) {
-        const standardTx = processNexchangeTx(rawOrder, currencyMap)
+        const standardTx = await processNexchangeTx(rawOrder, pluginParams)
         txByOrderId.set(standardTx.orderId, standardTx)
         if (standardTx.isoDate > latestIsoDate) {
           latestIsoDate = standardTx.isoDate
@@ -351,6 +370,7 @@ export async function queryNexchange(
 
       if (!hasMore || orders.length === 0) break
 
+      offset += orders.length
       if (nextCursor != null && nextCursor !== '') {
         cursor = nextCursor
       } else {
@@ -358,7 +378,6 @@ export async function queryNexchange(
         // cursor value would re-pin pagination to the wrong position next
         // iteration.
         cursor = undefined
-        offset += orders.length
       }
     }
   } catch (e) {
@@ -383,6 +402,15 @@ export const nexchange: PartnerPlugin = {
 }
 
 export function processNexchangeTx(
+  rawTx: unknown,
+  pluginParams: PluginParams
+): Promise<StandardTx> {
+  return getNexchangeCurrencyMap(pluginParams).then(currencyMap =>
+    standardizeNexchangeOrder(rawTx, currencyMap)
+  )
+}
+
+export function standardizeNexchangeOrder(
   rawTx: unknown,
   currencyMap: NexchangeCurrencyInfoMap
 ): StandardTx {

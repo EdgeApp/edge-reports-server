@@ -5,8 +5,8 @@ import {
   NEXCHANGE_NETWORK_TO_PLUGIN_ID,
   NexchangeCurrencyInfoMap,
   parseApiDate,
-  processNexchangeTx,
   resolveNexchangeAsset,
+  standardizeNexchangeOrder,
   toQueryIsoDate
 } from '../src/partners/nexchange'
 
@@ -115,9 +115,9 @@ function makeRawOrder(overrides: { [key: string]: any } = {}): unknown {
 }
 
 describe('nexchange plugin', () => {
-  describe('processNexchangeTx', () => {
+  describe('standardizeNexchangeOrder', () => {
     it('maps Edge audit order payload into StandardTx with chain plugin and token ids', () => {
-      const tx = processNexchangeTx(
+      const tx = standardizeNexchangeOrder(
         makeRawOrder({ orderId: 'NEX-ABCD1234' }),
         currencyMap
       )
@@ -160,7 +160,7 @@ describe('nexchange plugin', () => {
     ]
     for (const [rawStatus, expected] of statusCases) {
       it(`maps status "${rawStatus}" to "${expected}"`, () => {
-        const tx = processNexchangeTx(
+        const tx = standardizeNexchangeOrder(
           makeRawOrder({ status: rawStatus }),
           currencyMap
         )
