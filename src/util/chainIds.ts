@@ -14,6 +14,7 @@ export const EVM_CHAIN_IDS: Record<string, number> = {
   filecoinfevm: 314,
   hyperevm: 999,
   optimism: 10,
+  opbnb: 204,
   polygon: 137,
   pulsechain: 369,
   rsk: 30,

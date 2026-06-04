@@ -5,18 +5,14 @@
 ## Installation
 
 ```sh
-# Install Yarn
-
-    https://linuxize.com/post/how-to-install-yarn-on-ubuntu-18-04/
-
 # Install Node
 
     curl -sL https://deb.nodesource.com/setup_10.x -o nodesource_setup.sh
     sudo bash nodesource_setup.sh
 
-# Run Yarn
+# Install dependencies
 
-    yarn
+    npm install
 
 # Install CouchDB v3.1
 
@@ -36,9 +32,9 @@
 
 ## Reporting Server
 
-To launch the reports server, just type `yarn start`.
+To launch the reports server, just type `npm start`.
 
-You can also build the server code by running `yarn build`, which puts its output in the `lib` folder. You can then use `forever-service` or similar tools to install the software on your server machine.
+You can also build the server code by running `npm run build.lib` (or `npm run prepare` for a full build), which puts its output in the `lib` folder. You can then use `forever-service` or similar tools to install the software on your server machine.
 
 ```sh
 
@@ -68,4 +64,4 @@ sudo forever-service delete reportsApi
 
 ## Demo app
 
-Run `yarn demo` to launch the demo app in your web browser.
+Run `npm run demo` to launch the demo app in your web browser.

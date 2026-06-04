@@ -6,8 +6,14 @@ import { asDbTx, DbTx, Status } from '../../types'
 import { EdgeTokenId } from '../../util/asEdgeTokenId'
 import { HttpError } from '../../util/httpErrors'
 import { trial } from '../../util/trail'
+import { validateApiKey } from '../../util/validateApiKey'
 
 const asGetTxInfoReq = asObject({
+  /**
+   * API key for authentication.
+   */
+  apiKey: asString,
+
   /**
    * Prefix of the destination address.
    * Minimum 3 character; Maximum 5 characters.
@@ -49,6 +55,14 @@ getTxInfoRouter.get('/', async function(req, res) {
       throw new HttpError(400, String(error))
     }
   )
+
+  // Validate API key
+  try {
+    await validateApiKey(query.apiKey)
+  } catch {
+    res.status(401).send('Invalid API Key')
+    return
+  }
 
   if (query.addressPrefix.length < 3) {
     res.status(400).send('addressPrefix must be at least 3 characters')

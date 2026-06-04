@@ -10,14 +10,195 @@ import {
 } from 'cleaners'
 
 import {
-  asStandardPluginParams,
   PartnerPlugin,
   PluginParams,
   PluginResult,
+  ScopedLog,
   StandardTx,
   Status
 } from '../types'
-import { datelog, retryFetch, snooze } from '../util'
+import { retryFetch, snooze } from '../util'
+import {
+  ChainNameToPluginIdMapping,
+  createTokenId,
+  EdgeTokenId,
+  tokenTypes
+} from '../util/asEdgeTokenId'
+import { EVM_CHAIN_IDS } from '../util/chainIds'
+
+// Map ChangeNow network names to Edge pluginIds
+const CHANGENOW_NETWORK_TO_PLUGIN_ID: ChainNameToPluginIdMapping = {
+  ada: 'cardano',
+  algo: 'algorand',
+  arbitrum: 'arbitrum',
+  atom: 'cosmoshub',
+  avaxc: 'avalanche',
+  axl: 'axelar',
+  base: 'base',
+  bch: 'bitcoincash',
+  binance: 'binance',
+  bnb: 'binance',
+  bsc: 'binancesmartchain',
+  bsv: 'bitcoinsv',
+  btg: 'bitcoingold',
+  btc: 'bitcoin',
+  celo: 'celo',
+  cchain: 'avalanche',
+  coreum: 'coreum',
+  dash: 'dash',
+  dgb: 'digibyte',
+  dgtx: 'dgtx',
+  doge: 'dogecoin',
+  dot: 'polkadot',
+  ebst: 'eboost',
+  eos: 'eos',
+  etc: 'ethereumclassic',
+  eth: 'ethereum',
+  ethw: 'ethereumpow',
+  eurs: 'eurs',
+  fct: 'factom',
+  fil: 'filecoin',
+  fio: 'fio',
+  firo: 'zcoin',
+  ftm: 'fantom',
+  grs: 'groestlcoin',
+  hbar: 'hedera',
+  kin: 'kin',
+  ltc: 'litecoin',
+  matic: 'polygon',
+  mon: 'monad',
+  noah: 'noah',
+  one: 'harmony',
+  op: 'optimism',
+  opbnb: 'opbnb',
+  optimism: 'optimism',
+  osmo: 'osmosis',
+  pivx: 'pivx',
+  pls: 'pulsechain',
+  ptoy: 'ptoy',
+  pulse: 'pulsechain',
+  qtum: 'qtum',
+  rune: 'thorchain',
+  rvn: 'ravencoin',
+  smart: 'smartcash',
+  sol: 'solana',
+  sonic: 'sonic',
+  stx: 'stacks',
+  sui: 'sui',
+  theta: 'theta',
+  ton: 'ton',
+  trx: 'tron',
+  vet: 'vechain',
+  vtc: 'vertcoin',
+  waxp: 'wax',
+  xchain: 'avalanchexchain',
+  xec: 'ecash',
+  xlm: 'stellar',
+  xmr: 'monero',
+  xrp: 'ripple',
+  xtz: 'tezos',
+  xzc: 'zcoin',
+  zec: 'zcash',
+  zksync: 'zksync'
+}
+
+// Cleaner for ChangeNow currency API response
+const asChangeNowCurrency = asObject({
+  ticker: asString,
+  network: asString,
+  tokenContract: asOptional(asString),
+  legacyTicker: asOptional(asString)
+})
+
+const asChangeNowCurrencyArray = asArray(asChangeNowCurrency)
+
+type ChangeNowCurrency = ReturnType<typeof asChangeNowCurrency>
+
+// In-memory cache for currency lookups
+// Key format: "ticker:network" -> tokenContract
+interface CurrencyCache {
+  currencies: Map<string, string | null> // ticker:network -> tokenContract
+  loaded: boolean
+}
+
+const currencyCache: CurrencyCache = {
+  currencies: new Map<string, string | null>(),
+  loaded: false
+}
+let currencyCacheTimestamp = 0
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
+
+/**
+ * Fetch all currencies from ChangeNow API and populate the cache
+ */
+async function loadCurrencyCache(
+  log: ScopedLog,
+  apiKey?: string
+): Promise<void> {
+  if (
+    currencyCache.loaded &&
+    Date.now() - currencyCacheTimestamp < CACHE_TTL_MS
+  ) {
+    return
+  }
+
+  try {
+    // The exchange/currencies endpoint doesn't require authentication
+    const url = 'https://api.changenow.io/v2/exchange/currencies?active=true'
+    const response = await retryFetch(url, {
+      method: 'GET'
+    })
+
+    if (!response.ok) {
+      const text = await response.text()
+      throw new Error(`Failed to fetch currencies: ${text}`)
+    }
+
+    const result = await response.json()
+    const currencies = asChangeNowCurrencyArray(result)
+
+    // Build a fresh map and swap atomically so concurrent readers never see
+    // a partially-populated cache (clearing the existing map in-place would
+    // race with other callers reading mid-refresh).
+    const newMap = new Map<string, string | null>()
+    for (const currency of currencies) {
+      const key = `${currency.ticker.toLowerCase()}:${currency.network.toLowerCase()}`
+      newMap.set(key, currency.tokenContract ?? null)
+
+      // Also cache by legacyTicker if different from ticker
+      if (
+        currency.legacyTicker != null &&
+        currency.legacyTicker !== currency.ticker
+      ) {
+        const legacyKey = `${currency.legacyTicker.toLowerCase()}:${currency.network.toLowerCase()}`
+        newMap.set(legacyKey, currency.tokenContract ?? null)
+      }
+    }
+
+    currencyCache.currencies = newMap
+    currencyCache.loaded = true
+    currencyCacheTimestamp = Date.now()
+    log(`Currency cache loaded with ${currencies.length} entries`)
+  } catch (e) {
+    log.error(`Error loading currency cache: ${e}`)
+    throw e
+  }
+}
+
+/**
+ * Look up contract address from cache
+ */
+function getContractFromCache(
+  ticker: string,
+  network: string
+): string | null | undefined {
+  const key = `${ticker.toLowerCase()}:${network.toLowerCase()}`
+  if (currencyCache.currencies.has(key)) {
+    return currencyCache.currencies.get(key)
+  }
+  // Return undefined if not in cache (different from null which means native token)
+  return undefined
+}
 
 const asChangeNowStatus = asMaybe(
   asValue('finished', 'waiting', 'expired'),
@@ -30,6 +211,7 @@ const asChangeNowTx = asObject({
   status: asChangeNowStatus,
   payin: asObject({
     currency: asString,
+    network: asString,
     address: asString,
     amount: asOptional(asNumber),
     expectedAmount: asOptional(asNumber),
@@ -37,6 +219,7 @@ const asChangeNowTx = asObject({
   }),
   payout: asObject({
     currency: asString,
+    network: asString,
     address: asString,
     amount: asOptional(asNumber),
     expectedAmount: asOptional(asNumber),
@@ -48,6 +231,18 @@ const asChangeNowResult = asObject({ exchanges: asArray(asUnknown) })
 
 type ChangeNowTx = ReturnType<typeof asChangeNowTx>
 type ChangeNowStatus = ReturnType<typeof asChangeNowStatus>
+
+// Custom plugin params cleaner
+const asChangeNowPluginParams = asObject({
+  apiKeys: asObject({
+    apiKey: asOptional(asString)
+  }),
+  settings: asObject({
+    latestIsoDate: asOptional(asString, '1970-01-01T00:00:00.000Z')
+  })
+})
+
+type ChangeNowPluginParams = ReturnType<typeof asChangeNowPluginParams>
 
 const MAX_RETRIES = 5
 const LIMIT = 200
@@ -63,9 +258,10 @@ const statusMap: { [key in ChangeNowStatus]: Status } = {
 export const queryChangeNow = async (
   pluginParams: PluginParams
 ): Promise<PluginResult> => {
-  const { settings, apiKeys } = asStandardPluginParams(pluginParams)
-  const { apiKey } = apiKeys
-  let { latestIsoDate } = settings
+  const { log } = pluginParams
+  const cleanParams = asChangeNowPluginParams(pluginParams)
+  const { apiKey } = cleanParams.apiKeys
+  let { latestIsoDate } = cleanParams.settings
 
   if (apiKey == null) {
     return { settings: { latestIsoDate }, transactions: [] }
@@ -91,7 +287,7 @@ export const queryChangeNow = async (
       })
       if (!response.ok) {
         const text = await response.text()
-        datelog(`Error in offset:${offset}`)
+        log.error(`Error in offset:${offset}`)
         throw new Error(text)
       }
       const result = await response.json()
@@ -101,21 +297,21 @@ export const queryChangeNow = async (
         break
       }
       for (const rawTx of txs) {
-        const standardTx = processChangeNowTx(rawTx)
+        const standardTx = await processChangeNowTx(rawTx, pluginParams)
         standardTxs.push(standardTx)
         if (standardTx.isoDate > latestIsoDate) {
           latestIsoDate = standardTx.isoDate
         }
       }
-      datelog(`ChangeNow offset ${offset} latestIsoDate ${latestIsoDate}`)
+      log(`offset ${offset} latestIsoDate ${latestIsoDate}`)
       offset += txs.length
       retry = 0
     } catch (e) {
-      datelog(e)
+      log.error(String(e))
       // Retry a few times with time delay to prevent throttling
       retry++
       if (retry <= MAX_RETRIES) {
-        datelog(`Snoozing ${5 * retry}s`)
+        log.warn(`Snoozing ${5 * retry}s`)
         await snooze(5000 * retry)
       } else {
         // We can safely save our progress since we go from oldest to newest.
@@ -138,12 +334,89 @@ export const changenow: PartnerPlugin = {
   pluginId: 'changenow'
 }
 
-export function processChangeNowTx(rawTx: unknown): StandardTx {
+interface EdgeAssetInfo {
+  chainPluginId: string | undefined
+  evmChainId: number | undefined
+  tokenId: EdgeTokenId | undefined
+}
+
+/**
+ * Get the Edge asset info for a given network and currency code.
+ * Uses the cached currency data from the ChangeNow API.
+ */
+function getAssetInfo(network: string, currencyCode: string): EdgeAssetInfo {
+  // Map network to pluginId
+  const chainPluginId = CHANGENOW_NETWORK_TO_PLUGIN_ID[network.toLowerCase()]
+  if (chainPluginId == null) {
+    throw new Error(`Unknown network: ${network}`)
+  }
+
+  const evmChainId = EVM_CHAIN_IDS[chainPluginId]
+
+  // Look up contract address from cache
+  const contractAddress = getContractFromCache(currencyCode, network)
+
+  // null means native token, undefined means cache miss
+  if (contractAddress === null) {
+    return {
+      chainPluginId,
+      evmChainId,
+      tokenId: null
+    }
+  }
+  if (contractAddress === undefined) {
+    throw new Error(`Currency info not found for ${currencyCode} on ${network}`)
+  }
+
+  // Create tokenId from contract address
+  const tokenType = tokenTypes[chainPluginId]
+  if (tokenType == null) {
+    throw new Error(
+      `Unknown tokenType for chainPluginId ${chainPluginId} (currency: ${currencyCode}, network: ${network})`
+    )
+  }
+
+  try {
+    const tokenId = createTokenId(
+      tokenType,
+      currencyCode.toUpperCase(),
+      contractAddress
+    )
+    return {
+      chainPluginId,
+      evmChainId,
+      tokenId
+    }
+  } catch (e) {
+    // If tokenId creation fails, treat as native (no log available in this sync function)
+    return {
+      chainPluginId,
+      evmChainId,
+      tokenId: null
+    }
+  }
+}
+
+export async function processChangeNowTx(
+  rawTx: unknown,
+  pluginParams: PluginParams
+): Promise<StandardTx> {
+  const { log } = pluginParams
+  // Load currency cache before processing transactions
+  await loadCurrencyCache(log)
+
   const tx: ChangeNowTx = asChangeNowTx(rawTx)
   const date = new Date(
     tx.createdAt.endsWith('Z') ? tx.createdAt : tx.createdAt + 'Z'
   )
   const timestamp = date.getTime() / 1000
+
+  // Get deposit asset info
+  const depositAsset = getAssetInfo(tx.payin.network, tx.payin.currency)
+
+  // Get payout asset info
+  const payoutAsset = getAssetInfo(tx.payout.network, tx.payout.currency)
+
   const standardTx: StandardTx = {
     status: statusMap[tx.status],
     orderId: tx.requestId,
@@ -151,9 +424,9 @@ export function processChangeNowTx(rawTx: unknown): StandardTx {
     depositTxid: tx.payin.hash,
     depositAddress: tx.payin.address,
     depositCurrency: tx.payin.currency.toUpperCase(),
-    depositChainPluginId: undefined,
-    depositEvmChainId: undefined,
-    depositTokenId: undefined,
+    depositChainPluginId: depositAsset.chainPluginId,
+    depositEvmChainId: depositAsset.evmChainId,
+    depositTokenId: depositAsset.tokenId,
     depositAmount: tx.payin.amount ?? tx.payin.expectedAmount ?? 0,
     direction: null,
     exchangeType: 'swap',
@@ -161,9 +434,9 @@ export function processChangeNowTx(rawTx: unknown): StandardTx {
     payoutTxid: tx.payout.hash,
     payoutAddress: tx.payout.address,
     payoutCurrency: tx.payout.currency.toUpperCase(),
-    payoutChainPluginId: undefined,
-    payoutEvmChainId: undefined,
-    payoutTokenId: undefined,
+    payoutChainPluginId: payoutAsset.chainPluginId,
+    payoutEvmChainId: payoutAsset.evmChainId,
+    payoutTokenId: payoutAsset.tokenId,
     payoutAmount: tx.payout.amount ?? tx.payout.expectedAmount ?? 0,
     timestamp,
     isoDate: date.toISOString(),
