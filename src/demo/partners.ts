@@ -97,6 +97,10 @@ export default {
     type: 'fiat',
     color: '#7214F5'
   },
+  nexchange: {
+    type: 'swap',
+    color: '#1D31B6'
+  },
   paybis: {
     type: 'fiat',
     color: '#FFB400'
