@@ -16,7 +16,7 @@
     "fix": "npm run lint -- --fix",
     "fio:promo": "node -r sucrase/register src/bin/fioPromo/fioPromo.ts",
     "lifi": "node -r sucrase/register src/bin/lifiReporter.ts",
-    "precommit": "lint-staged && npm run prepare",
+    "precommit": "lint-staged",
     "prepare": "husky && ./scripts/prepare.sh && npm-run-all clean configure -p build.* && npm run setup",
     "setup": "node -r sucrase/register src/initDbs.ts",
     "start": "node -r sucrase/register src/indexQuery.ts",
