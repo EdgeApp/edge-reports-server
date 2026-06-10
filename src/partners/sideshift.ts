@@ -1,6 +1,7 @@
 import {
   asArray,
   asMaybe,
+  asNumber,
   asObject,
   asOptional,
   asString,
@@ -156,6 +157,11 @@ const asSideshiftTx = asObject({
   prevDepositAddresses: asMaybe(asObject({ address: asMaybe(asString) })),
   depositAsset: asString,
   depositNetwork: asOptional(asString),
+  depositHash: asOptional(asString),
+  depositContractAddress: asOptional(asString),
+  // asMaybe so an unexpected encoding (e.g. a numeric string) degrades to
+  // undefined instead of throwing and aborting the whole 5-day query block
+  depositEvmChainId: asMaybe(asNumber),
   invoiceAmount: asString,
   settleAddress: asObject({
     address: asString
@@ -163,7 +169,11 @@ const asSideshiftTx = asObject({
   settleAmount: asString,
   settleAsset: asString,
   settleNetwork: asOptional(asString),
-  createdAt: asString
+  settleHash: asOptional(asString),
+  settleContractAddress: asOptional(asString),
+  settleEvmChainId: asMaybe(asNumber),
+  createdAt: asString,
+  settledAt: asOptional(asString)
 })
 
 const asSideshiftPluginParams = asObject({
@@ -363,7 +373,12 @@ export async function processSideshiftTx(
     status: statusMap[tx.status],
     orderId: tx.id,
     countryCode: null,
-    depositTxid: undefined,
+    // On EVM networks, TRON, Aptos, Sui, NEAR, and Algorand, SideShift's
+    // depositHash is the internal sweep transaction (deposit contract to
+    // their wallet), not the customer's own deposit transaction. The API
+    // exposes no better field, so treat this as an order reference, not a
+    // pointer to the customer's on-chain payment.
+    depositTxid: tx.depositHash,
     depositAddress,
     depositCurrency: tx.depositAsset,
     depositChainPluginId: depositAsset.chainPluginId,
@@ -373,7 +388,7 @@ export async function processSideshiftTx(
     direction: null,
     exchangeType: 'swap',
     paymentType: null,
-    payoutTxid: undefined,
+    payoutTxid: tx.settleHash,
     payoutAddress: tx.settleAddress.address,
     payoutCurrency: tx.settleAsset,
     payoutChainPluginId: payoutAsset.chainPluginId,
