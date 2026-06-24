@@ -16,7 +16,7 @@ import {
   StandardTx,
   Status
 } from '../types'
-import { datelog, retryFetch, snooze } from '../util'
+import { datelog, retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
 
 const asSwapterStatus = asMaybe(
   asValue(
@@ -198,8 +198,7 @@ export const swapter: PartnerPlugin = {
 export function processSwapterTx(rawTx: unknown): StandardTx {
   const tx: SwapterTx = asSwapterTx(rawTx)
 
-  const date = new Date(tx.time.create)
-  const timestamp = tx.time.create / 1000
+  const { timestamp, isoDate } = smartIsoDateFromTimestamp(tx.time.create)
 
   return {
     status: statusMap[tx.info.status],
@@ -227,7 +226,7 @@ export function processSwapterTx(rawTx: unknown): StandardTx {
     payoutAmount: tx.withdraw.amount,
 
     timestamp,
-    isoDate: date.toISOString(),
+    isoDate,
 
     usdValue: tx.info.equivalent > 0 ? tx.info.equivalent : -1,
 
