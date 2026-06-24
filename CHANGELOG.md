@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- added: Add Swapter reporting
 - changed: Add signature header support to Exolix
 - changed: Add index for orderId
 - changed: Add EVM chainId, pluginId, and tokenId fields to StandardTx
