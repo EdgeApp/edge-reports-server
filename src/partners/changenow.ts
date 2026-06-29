@@ -143,8 +143,12 @@ async function loadCurrencyCache(
   }
 
   try {
-    // The exchange/currencies endpoint doesn't require authentication
-    const url = 'https://api.changenow.io/v2/exchange/currencies?active=true'
+    // The exchange/currencies endpoint doesn't require authentication.
+    // Fetch the full list (omit `active=true`): historical transactions can
+    // reference currencies that ChangeNow has since deactivated/delisted (e.g.
+    // DASH). Filtering to active-only drops those entries, causing a cache miss
+    // and a fail-closed halt on otherwise-valid historical transactions.
+    const url = 'https://api.changenow.io/v2/exchange/currencies'
     const response = await retryFetch(url, {
       method: 'GET'
     })
