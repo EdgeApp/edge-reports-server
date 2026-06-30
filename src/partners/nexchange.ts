@@ -68,6 +68,10 @@ export type NexchangeCurrencyInfoMap = Record<string, NexchangeCurrencyMeta>
 const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 const LIMIT = 200
 const MAX_ERROR_TEXT_LENGTH = 500
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
+
+let currencyCache: NexchangeCurrencyInfoMap | undefined
+let currencyCacheTimestamp = 0
 
 const statusMap: { [key: string]: Status } = {
   released: 'complete',
@@ -176,6 +180,13 @@ function truncateForError(text: string): string {
 export async function fetchNexchangeCurrencyMap(): Promise<
   NexchangeCurrencyInfoMap
 > {
+  if (
+    currencyCache != null &&
+    Date.now() - currencyCacheTimestamp < CACHE_TTL_MS
+  ) {
+    return currencyCache
+  }
+
   const response = await retryFetch(CURRENCY_URL, { method: 'GET' })
   if (!response.ok) {
     const text = await response.text()
@@ -189,7 +200,19 @@ export async function fetchNexchangeCurrencyMap(): Promise<
   for (const currency of currencies) {
     map[currency.code.toUpperCase()] = currency
   }
+  currencyCache = map
+  currencyCacheTimestamp = Date.now()
   return map
+}
+
+async function loadNexchangeCurrencyMap(
+  pluginParams: PluginParams
+): Promise<NexchangeCurrencyInfoMap> {
+  const { currencyMap } = (pluginParams as unknown) as {
+    currencyMap?: NexchangeCurrencyInfoMap
+  }
+  if (currencyMap != null) return currencyMap
+  return await fetchNexchangeCurrencyMap()
 }
 
 /**
@@ -315,7 +338,7 @@ export async function queryNexchange(
     // audit-orders endpoint omits, so it is required for chain/token
     // enrichment.  Fetch it up front; a failure aborts the run (saving
     // nothing) rather than persisting a batch of unenriched transactions.
-    const currencyMap = await fetchNexchangeCurrencyMap()
+    await fetchNexchangeCurrencyMap()
 
     while (true) {
       const params: string[] = [
@@ -341,7 +364,7 @@ export async function queryNexchange(
       const { orders, nextCursor, hasMore } = asNexchangeOrdersResponse(json)
 
       for (const rawOrder of orders) {
-        const standardTx = processNexchangeTx(rawOrder, currencyMap)
+        const standardTx = await processNexchangeTx(rawOrder, pluginParams)
         txByOrderId.set(standardTx.orderId, standardTx)
         if (standardTx.isoDate > latestIsoDate) {
           latestIsoDate = standardTx.isoDate
@@ -382,11 +405,12 @@ export const nexchange: PartnerPlugin = {
   pluginId: 'nexchange'
 }
 
-export function processNexchangeTx(
+export async function processNexchangeTx(
   rawTx: unknown,
-  currencyMap: NexchangeCurrencyInfoMap
-): StandardTx {
+  pluginParams: PluginParams
+): Promise<StandardTx> {
   const tx = asNexchangeOrder(rawTx)
+  const currencyMap = await loadNexchangeCurrencyMap(pluginParams)
   const lowerStatus = tx.status.toLowerCase()
   const status = statusMap[lowerStatus] ?? 'other'
   const { isoDate, timestamp } = parseApiDate(tx.createdAt)

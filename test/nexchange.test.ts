@@ -9,6 +9,7 @@ import {
   resolveNexchangeAsset,
   toQueryIsoDate
 } from '../src/partners/nexchange'
+import { PluginParams } from '../src/types'
 
 const currencyMap: NexchangeCurrencyInfoMap = {
   BTC: {
@@ -92,6 +93,19 @@ const currencyMap: NexchangeCurrencyInfoMap = {
   }
 }
 
+const testLog = Object.assign(() => {}, {
+  warn: () => {},
+  error: () => {}
+})
+const pluginParams: PluginParams & {
+  currencyMap: NexchangeCurrencyInfoMap
+} = {
+  settings: {},
+  apiKeys: {},
+  log: testLog,
+  currencyMap
+}
+
 function makeRawOrder(overrides: { [key: string]: any } = {}): unknown {
   return {
     orderId: 'NEX-DEFAULT',
@@ -116,10 +130,10 @@ function makeRawOrder(overrides: { [key: string]: any } = {}): unknown {
 
 describe('nexchange plugin', () => {
   describe('processNexchangeTx', () => {
-    it('maps Edge audit order payload into StandardTx with chain plugin and token ids', () => {
-      const tx = processNexchangeTx(
+    it('maps Edge audit order payload into StandardTx with chain plugin and token ids', async () => {
+      const tx = await processNexchangeTx(
         makeRawOrder({ orderId: 'NEX-ABCD1234' }),
-        currencyMap
+        pluginParams
       )
 
       expect(tx.orderId).to.equal('NEX-ABCD1234')
@@ -159,10 +173,10 @@ describe('nexchange plugin', () => {
       ['something-else', 'other']
     ]
     for (const [rawStatus, expected] of statusCases) {
-      it(`maps status "${rawStatus}" to "${expected}"`, () => {
-        const tx = processNexchangeTx(
+      it(`maps status "${rawStatus}" to "${expected}"`, async () => {
+        const tx = await processNexchangeTx(
           makeRawOrder({ status: rawStatus }),
-          currencyMap
+          pluginParams
         )
         expect(tx.status).to.equal(expected)
       })

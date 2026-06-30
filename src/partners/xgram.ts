@@ -281,6 +281,23 @@ async function fetchCurrencyCache(
   return currencyCache
 }
 
+async function loadXgramCurrencies(
+  pluginParams: PluginParams
+): Promise<XgramCurrencies> {
+  const { currencies } = (pluginParams as unknown) as {
+    currencies?: XgramCurrencies
+  }
+  if (currencies != null) return currencies
+
+  const { log } = pluginParams
+  const { apiKeys } = asStandardPluginParams(pluginParams)
+  const { apiKey } = apiKeys
+  if (apiKey == null) {
+    throw new Error('Xgram apiKey required for asset info lookup')
+  }
+  return await fetchCurrencyCache(apiKey, log)
+}
+
 function isNativeTicker(chainPluginId: string, currencyCode: string): boolean {
   return NATIVE_TICKERS[chainPluginId]?.has(currencyCode.toUpperCase()) ?? false
 }
@@ -375,7 +392,7 @@ export const queryXgram = async (
   if (previousTimestamp < 0) previousTimestamp = 0
   const targetIsoDate = new Date(previousTimestamp).toISOString()
 
-  const currencies = await fetchCurrencyCache(apiKey, log)
+  await fetchCurrencyCache(apiKey, log)
 
   // Because Xgram pages from newest to oldest, the watermark can only be
   // advanced once the entire newer-than-target range has been fetched and
@@ -427,7 +444,7 @@ export const queryXgram = async (
     }
     let oldestIsoDate = '999999999999999999999999999999999999'
     for (const rawTx of txs) {
-      const standardTx = processXgramTx(rawTx, currencies)
+      const standardTx = await processXgramTx(rawTx, pluginParams)
       if (standardTx.isoDate < oldestIsoDate) {
         oldestIsoDate = standardTx.isoDate
       }
@@ -462,11 +479,12 @@ export const xgram: PartnerPlugin = {
   pluginId: 'xgram'
 }
 
-export function processXgramTx(
+export async function processXgramTx(
   rawTx: unknown,
-  currencies: XgramCurrencies
-): StandardTx {
+  pluginParams: PluginParams
+): Promise<StandardTx> {
   const tx: XgramTxTx = asXgramTx(rawTx)
+  const currencies = await loadXgramCurrencies(pluginParams)
   const { isoDate, timestamp } = parseXgramDate(tx.date)
   const depositCurrency = tx['x-fromCcy'].toUpperCase()
   const payoutCurrency = tx['x-toCcy'].toUpperCase()

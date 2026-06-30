@@ -2,6 +2,7 @@ import { expect } from 'chai'
 import { describe, it } from 'mocha'
 
 import { processXgramTx, XgramCurrencies } from '../src/partners/xgram'
+import { PluginParams } from '../src/types'
 
 const currencies: XgramCurrencies = {
   BTC: {
@@ -31,9 +32,22 @@ const currencies: XgramCurrencies = {
   }
 }
 
+const testLog = Object.assign(() => {}, {
+  warn: () => {},
+  error: () => {}
+})
+const pluginParams: PluginParams & {
+  currencies: XgramCurrencies
+} = {
+  settings: {},
+  apiKeys: {},
+  log: testLog,
+  currencies
+}
+
 describe('processXgramTx', () => {
-  it('maps source and destination asset IDs', () => {
-    const tx = processXgramTx(
+  it('maps source and destination asset IDs', async () => {
+    const tx = await processXgramTx(
       {
         id: 'dyv3a2tdbgipvh0',
         'x-status': 'x-completed',
@@ -49,7 +63,7 @@ describe('processXgramTx', () => {
         date: '27.05.2026 20:57:28',
         txId: 'payout-hash'
       },
-      currencies
+      pluginParams
     )
 
     expect(tx.status).equals('complete')
@@ -66,8 +80,8 @@ describe('processXgramTx', () => {
     expect(tx.isoDate).equals('2026-05-27T20:57:28.000Z')
   })
 
-  it('uses expected amounts and chain-specific token IDs for pending rows', () => {
-    const tx = processXgramTx(
+  it('uses expected amounts and chain-specific token IDs for pending rows', async () => {
+    const tx = await processXgramTx(
       {
         id: 'tmah3a2td9cp20q0',
         'x-status': 'x-new',
@@ -83,7 +97,7 @@ describe('processXgramTx', () => {
         date: '27.05.2026 20:56:54',
         txId: null
       },
-      currencies
+      pluginParams
     )
 
     expect(tx.status).equals('pending')
@@ -97,8 +111,8 @@ describe('processXgramTx', () => {
     expect(tx.payoutTokenId).equals(null)
   })
 
-  it('maps historical native currencies missing from the currency API', () => {
-    const tx = processXgramTx(
+  it('maps historical native currencies missing from the currency API', async () => {
+    const tx = await processXgramTx(
       {
         id: 'talr3a0e49fplpog',
         'x-status': 'x-timeout',
@@ -114,7 +128,7 @@ describe('processXgramTx', () => {
         date: '12.05.2026 20:07:51',
         txId: null
       },
-      currencies
+      pluginParams
     )
 
     expect(tx.status).equals('expired')
