@@ -113,7 +113,9 @@ const BANXA_HISTORICAL_COINS: Record<string, CachedAssetInfo> = {
   'RLUSD-XRP': {
     contractAddress: 'rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De',
     pluginId: 'ripple'
-  }
+  },
+  // ZEC delisted from Banxa v2 catalog
+  'ZEC-ZEC': { contractAddress: null, pluginId: 'zcash' }
 }
 
 /**
