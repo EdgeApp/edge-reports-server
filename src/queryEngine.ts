@@ -187,9 +187,11 @@ export async function queryEngine(): Promise<void> {
 const checkUpdateTx = (oldTx: StandardTx, newTx: StandardTx): string[] => {
   const fields = [
     'status',
+    'depositTxid',
     'depositChainPluginId',
     'depositEvmChainId',
     'depositTokenId',
+    'payoutTxid',
     'payoutChainPluginId',
     'payoutEvmChainId',
     'payoutTokenId'

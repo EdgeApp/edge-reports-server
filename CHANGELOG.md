@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- changed: Update sideshift plugin with new optional API fields
 - changed: Add signature header support to Exolix
 - changed: Add index for orderId
 - changed: Add EVM chainId, pluginId, and tokenId fields to StandardTx
