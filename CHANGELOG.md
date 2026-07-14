@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- added: CI job that runs the mocha test suite on every pull request
 - changed: Update sideshift plugin with new optional API fields
 - changed: Add signature header support to Exolix
 - changed: Add index for orderId
@@ -10,6 +11,7 @@
 - changed: Use rates V3 for transactions with pluginId/tokenId
 - fixed: Moonpay by adding Revolut payment type
 - fixed: Use v2 rates API
+- fixed: Repair the broken mocha test suite (correct util.test.ts import and stale analytics fixtures) so npm test passes
 
 ## 0.2.0
 
