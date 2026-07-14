@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- added: Add Swapter reporting
 - changed: Update sideshift plugin with new optional API fields
 - changed: Add signature header support to Exolix
 - changed: Add index for orderId
