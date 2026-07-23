@@ -22,6 +22,7 @@ import { letsexchange } from './partners/letsexchange'
 import { libertyx } from './partners/libertyx'
 import { lifi } from './partners/lifi'
 import { moonpay } from './partners/moonpay'
+import { nymswap } from './partners/nym'
 import { paybis } from './partners/paybis'
 import { paytrie } from './partners/paytrie'
 import { rango } from './partners/rango'
@@ -74,6 +75,7 @@ const plugins = [
   lifi,
   maya,
   moonpay,
+  nymswap,
   paybis,
   paytrie,
   rango,

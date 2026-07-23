@@ -97,6 +97,10 @@ export default {
     type: 'fiat',
     color: '#7214F5'
   },
+  nymswap: {
+    type: 'swap',
+    color: '#FB6E4E'
+  },
   paybis: {
     type: 'fiat',
     color: '#FFB400'
