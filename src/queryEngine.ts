@@ -25,6 +25,7 @@ import { moonpay } from './partners/moonpay'
 import { paybis } from './partners/paybis'
 import { paytrie } from './partners/paytrie'
 import { rango } from './partners/rango'
+import { revolut } from './partners/revolut'
 import { safello } from './partners/safello'
 import { sideshift } from './partners/sideshift'
 import { simplex } from './partners/simplex'
@@ -77,6 +78,7 @@ const plugins = [
   paybis,
   paytrie,
   rango,
+  revolut,
   safello,
   sideshift,
   simplex,

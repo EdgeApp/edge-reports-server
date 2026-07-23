@@ -109,6 +109,10 @@ export default {
     type: 'swap',
     color: '#5891EE'
   },
+  revolut: {
+    type: 'fiat',
+    color: '#191C33'
+  },
   safello: {
     type: 'fiat',
     color: deprecated
