@@ -104,7 +104,7 @@ describe('Revolut transaction mapping', function() {
     })
   }
 
-  it('does not ingest a repeated cursor page', async function() {
+  it('keeps fetched transactions without advancing after repeated cursor', async function() {
     const oldRetryFetch = util.retryFetch
     const oldSnooze = util.snooze
     const latestIsoDate = '2026-07-20T00:00:00.000Z'
@@ -137,7 +137,50 @@ describe('Revolut transaction mapping', function() {
 
       expect(callCount).equals(2)
       expect(result.transactions.map(tx => tx.orderId)).deep.equals([
-        'revolut-order-1'
+        'revolut-order-1',
+        'revolut-order-2'
+      ])
+      expect(result.settings.latestIsoDate).equals(latestIsoDate)
+    } finally {
+      ;(util as any).retryFetch = oldRetryFetch
+      ;(util as any).snooze = oldSnooze
+    }
+  })
+
+  it('keeps fetched transactions without advancing after malformed cursor', async function() {
+    const oldRetryFetch = util.retryFetch
+    const oldSnooze = util.snooze
+    const latestIsoDate = '2026-07-20T00:00:00.000Z'
+    let callCount = 0
+
+    ;(util as any).retryFetch = async () => {
+      callCount++
+      return {
+        ok: true,
+        json: async () => ({
+          transactions: [
+            {
+              ...baseRawTx,
+              id: 'revolut-order-malformed-cursor',
+              created_at: '2026-07-21T00:00:00.000Z'
+            }
+          ],
+          next_cursor: { cursor: 'page-2' }
+        }),
+        text: async () => ''
+      }
+    }
+    ;(util as any).snooze = async () => {}
+
+    try {
+      const result = await queryRevolut({
+        settings: { latestIsoDate },
+        apiKeys: { apiKey: 'revolut-api-key' }
+      })
+
+      expect(callCount).equals(1)
+      expect(result.transactions.map(tx => tx.orderId)).deep.equals([
+        'revolut-order-malformed-cursor'
       ])
       expect(result.settings.latestIsoDate).equals(latestIsoDate)
     } finally {

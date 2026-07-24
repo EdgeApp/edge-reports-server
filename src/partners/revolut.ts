@@ -46,7 +46,7 @@ const asPreRevolutTx = asObject({
 
 const asRevolutResult = asObject({
   transactions: asArray(asUnknown),
-  next_cursor: asMaybe(asString)
+  next_cursor: asUnknown
 })
 
 const PLUGIN_START_DATE = '2024-01-01T00:00:00.000Z'
@@ -115,20 +115,10 @@ export async function queryRevolut(
 
         const jsonObj = await response.json()
         const result = asRevolutResult(jsonObj)
-        const nextCursor = result.next_cursor
+        const rawNextCursor = result.next_cursor
+        const nextCursor =
+          typeof rawNextCursor === 'string' ? rawNextCursor : undefined
         pageCount++
-
-        if (
-          nextCursor != null &&
-          nextCursor !== '' &&
-          (nextCursor === requestCursor || seenCursors.has(nextCursor))
-        ) {
-          datelog(
-            `Stopping Revolut pagination on repeated cursor ${nextCursor}`
-          )
-          completedPagination = false
-          break
-        }
 
         for (const rawTx of result.transactions) {
           if (asPreRevolutTx(rawTx).state === 'completed') {
@@ -142,6 +132,24 @@ export async function queryRevolut(
 
         if (result.transactions.length > 0) {
           datelog(`Revolut txs ${result.transactions.length}`)
+        }
+
+        if (rawNextCursor != null && typeof rawNextCursor !== 'string') {
+          datelog(`Stopping Revolut pagination on malformed next_cursor`)
+          completedPagination = false
+          break
+        }
+
+        if (
+          nextCursor != null &&
+          nextCursor !== '' &&
+          (nextCursor === requestCursor || seenCursors.has(nextCursor))
+        ) {
+          datelog(
+            `Stopping Revolut pagination on repeated cursor ${nextCursor}`
+          )
+          completedPagination = false
+          break
         }
 
         if (nextCursor == null || nextCursor === '') {
@@ -159,6 +167,7 @@ export async function queryRevolut(
       }
 
       if (!completedPagination) {
+        standardTxs.push(...windowTxs)
         break
       }
 
