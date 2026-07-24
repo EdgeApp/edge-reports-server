@@ -104,7 +104,7 @@ describe('Revolut transaction mapping', function() {
     })
   }
 
-  it('does not advance settings when pagination repeats a cursor', async function() {
+  it('does not ingest a repeated cursor page', async function() {
     const oldRetryFetch = util.retryFetch
     const oldSnooze = util.snooze
     const latestIsoDate = '2026-07-20T00:00:00.000Z'
@@ -136,9 +136,83 @@ describe('Revolut transaction mapping', function() {
       })
 
       expect(callCount).equals(2)
-      expect(result.transactions.length).equals(2)
+      expect(result.transactions.map(tx => tx.orderId)).deep.equals([
+        'revolut-order-1'
+      ])
       expect(result.settings.latestIsoDate).equals(latestIsoDate)
     } finally {
+      ;(util as any).retryFetch = oldRetryFetch
+      ;(util as any).snooze = oldSnooze
+    }
+  })
+
+  it('does not re-append successful pages during retry', async function() {
+    const oldRetryFetch = util.retryFetch
+    const oldSnooze = util.snooze
+    const latestIsoDate = '2026-07-20T00:00:00.000Z'
+    let callCount = 0
+
+    ;(util as any).retryFetch = async (_url: string) => {
+      callCount++
+      if (callCount === 2) throw new Error('temporary failure')
+
+      return {
+        ok: true,
+        json: async () => ({
+          transactions: [
+            {
+              ...baseRawTx,
+              id: 'revolut-order-1',
+              created_at: '2026-07-21T00:00:00.000Z'
+            }
+          ],
+          next_cursor: callCount === 1 ? 'page-2' : undefined
+        }),
+        text: async () => ''
+      }
+    }
+    ;(util as any).snooze = async () => {}
+
+    try {
+      const result = await queryRevolut({
+        settings: { latestIsoDate },
+        apiKeys: { apiKey: 'revolut-api-key' }
+      })
+
+      expect(callCount).equals(3)
+      expect(result.transactions.map(tx => tx.orderId)).deep.equals([
+        'revolut-order-1'
+      ])
+    } finally {
+      ;(util as any).retryFetch = oldRetryFetch
+      ;(util as any).snooze = oldSnooze
+    }
+  })
+
+  it('advances settings after empty history', async function() {
+    const oldRetryFetch = util.retryFetch
+    const oldSnooze = util.snooze
+    const oldDateNow = Date.now
+    const now = Date.parse('2026-07-24T00:00:00.000Z')
+
+    ;(Date as any).now = () => now
+    ;(util as any).retryFetch = async () => ({
+      ok: true,
+      json: async () => ({ transactions: [], next_cursor: undefined }),
+      text: async () => ''
+    })
+    ;(util as any).snooze = async () => {}
+
+    try {
+      const result = await queryRevolut({
+        settings: { latestIsoDate: '2026-07-20T00:00:00.000Z' },
+        apiKeys: { apiKey: 'revolut-api-key' }
+      })
+
+      expect(result.transactions).deep.equals([])
+      expect(result.settings.latestIsoDate).equals('2026-07-24T00:00:00.000Z')
+    } finally {
+      Date.now = oldDateNow
       ;(util as any).retryFetch = oldRetryFetch
       ;(util as any).snooze = oldSnooze
     }

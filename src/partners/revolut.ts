@@ -86,7 +86,8 @@ export async function queryRevolut(
     const endTime = startTime + QUERY_TIME_BLOCK_MS
 
     try {
-      const windowLatestIsoDate = latestIsoDate
+      let windowLatestIsoDate = latestIsoDate
+      const windowTxs: StandardTx[] = []
       let cursor: string | undefined
       const seenCursors = new Set<string>()
       let pageCount = 0
@@ -117,12 +118,24 @@ export async function queryRevolut(
         const nextCursor = result.next_cursor
         pageCount++
 
+        if (
+          nextCursor != null &&
+          nextCursor !== '' &&
+          (nextCursor === requestCursor || seenCursors.has(nextCursor))
+        ) {
+          datelog(
+            `Stopping Revolut pagination on repeated cursor ${nextCursor}`
+          )
+          completedPagination = false
+          break
+        }
+
         for (const rawTx of result.transactions) {
           if (asPreRevolutTx(rawTx).state === 'completed') {
             const standardTx = processRevolutTx(rawTx)
-            standardTxs.push(standardTx)
-            if (standardTx.isoDate > latestIsoDate) {
-              latestIsoDate = standardTx.isoDate
+            windowTxs.push(standardTx)
+            if (standardTx.isoDate > windowLatestIsoDate) {
+              windowLatestIsoDate = standardTx.isoDate
             }
           }
         }
@@ -132,14 +145,6 @@ export async function queryRevolut(
         }
 
         if (nextCursor == null || nextCursor === '') {
-          break
-        }
-
-        if (nextCursor === requestCursor || seenCursors.has(nextCursor)) {
-          datelog(
-            `Stopping Revolut pagination on repeated cursor ${nextCursor}`
-          )
-          completedPagination = false
           break
         }
 
@@ -154,10 +159,17 @@ export async function queryRevolut(
       }
 
       if (!completedPagination) {
-        latestIsoDate = windowLatestIsoDate
         break
       }
 
+      const watermarkTime = Math.min(endTime, now)
+      const windowEndIsoDate = new Date(watermarkTime).toISOString()
+      if (windowEndIsoDate > windowLatestIsoDate) {
+        windowLatestIsoDate = windowEndIsoDate
+      }
+
+      standardTxs.push(...windowTxs)
+      latestIsoDate = windowLatestIsoDate
       startTime = endTime
       if (endTime > now) {
         break
