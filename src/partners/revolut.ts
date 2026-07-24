@@ -1,9 +1,9 @@
 import {
   asArray,
   asDate,
+  asMaybe,
   asNumber,
   asObject,
-  asOptional,
   asString,
   asUnknown,
   asValue
@@ -20,6 +20,10 @@ import {
 } from '../types'
 import { datelog, retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
 
+const asRevolutPaymentMethod = asMaybe(
+  asValue('revolut', 'card', 'bank_transfer', 'apple_pay', 'google_pay')
+)
+
 const asRevolutTx = asObject({
   id: asString,
   type: asValue('buy', 'sell'),
@@ -28,10 +32,10 @@ const asRevolutTx = asObject({
   fiat_currency: asString,
   crypto_amount: asNumber,
   crypto_currency: asString,
-  wallet_address: asOptional(asString),
-  tx_hash: asOptional(asString),
-  country_code: asOptional(asString),
-  payment_method: asOptional(asString)
+  wallet_address: asMaybe(asString),
+  tx_hash: asMaybe(asString),
+  country_code: asMaybe(asString),
+  payment_method: asRevolutPaymentMethod
 })
 
 type RevolutTx = ReturnType<typeof asRevolutTx>
@@ -42,7 +46,7 @@ const asPreRevolutTx = asObject({
 
 const asRevolutResult = asObject({
   transactions: asArray(asUnknown),
-  next_cursor: asOptional(asString)
+  next_cursor: asMaybe(asString)
 })
 
 const PLUGIN_START_DATE = '2024-01-01T00:00:00.000Z'
@@ -82,9 +86,11 @@ export async function queryRevolut(
     const endTime = startTime + QUERY_TIME_BLOCK_MS
 
     try {
+      const windowLatestIsoDate = latestIsoDate
       let cursor: string | undefined
       const seenCursors = new Set<string>()
       let pageCount = 0
+      let completedPagination = true
 
       while (true) {
         const requestCursor = cursor
@@ -133,16 +139,23 @@ export async function queryRevolut(
           datelog(
             `Stopping Revolut pagination on repeated cursor ${nextCursor}`
           )
+          completedPagination = false
           break
         }
 
         if (pageCount >= MAX_PAGES) {
           datelog(`Stopping Revolut pagination after ${MAX_PAGES} pages`)
+          completedPagination = false
           break
         }
 
         seenCursors.add(nextCursor)
         cursor = nextCursor
+      }
+
+      if (!completedPagination) {
+        latestIsoDate = windowLatestIsoDate
+        break
       }
 
       startTime = endTime
@@ -200,7 +213,7 @@ export function processRevolutTx(rawTx: unknown): StandardTx {
     exchangeType: 'fiat',
     paymentType: getRevolutPaymentType(tx),
     payoutTxid,
-    payoutAddress: tx.wallet_address,
+    payoutAddress: direction === 'buy' ? tx.wallet_address : undefined,
     payoutCurrency:
       direction === 'buy'
         ? tx.crypto_currency.toUpperCase()
@@ -229,8 +242,6 @@ function getRevolutPaymentType(tx: RevolutTx): FiatPaymentType | null {
     case 'google_pay':
       return 'googlepay'
     default:
-      throw new Error(
-        `Unknown payment method: ${tx.payment_method} for ${tx.id}`
-      )
+      return null
   }
 }

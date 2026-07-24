@@ -1,7 +1,8 @@
 import { expect } from 'chai'
 import { describe, it } from 'mocha'
 
-import { processRevolutTx } from '../src/partners/revolut'
+import { queryRevolut, processRevolutTx } from '../src/partners/revolut'
+import * as util from '../src/util'
 
 const baseRawTx = {
   id: 'revolut-order',
@@ -63,6 +64,22 @@ describe('Revolut transaction mapping', function() {
       payoutAmount: 250
     })
     expect(standardTx.payoutTxid).equals(undefined)
+    expect(standardTx.payoutAddress).equals(undefined)
+  })
+
+  it('ignores null or mistyped optional fields', function() {
+    const standardTx = processRevolutTx({
+      ...baseRawTx,
+      wallet_address: null,
+      tx_hash: 123,
+      country_code: false,
+      payment_method: 'new_provider'
+    })
+
+    expect(standardTx.countryCode).equals(null)
+    expect(standardTx.paymentType).equals(null)
+    expect(standardTx.payoutTxid).equals(undefined)
+    expect(standardTx.payoutAddress).equals(undefined)
   })
 
   for (const testCase of [
@@ -86,4 +103,44 @@ describe('Revolut transaction mapping', function() {
       expect(standardTx.paymentType).equals(testCase.paymentType)
     })
   }
+
+  it('does not advance settings when pagination repeats a cursor', async function() {
+    const oldRetryFetch = util.retryFetch
+    const oldSnooze = util.snooze
+    const latestIsoDate = '2026-07-20T00:00:00.000Z'
+    let callCount = 0
+
+    ;(util as any).retryFetch = async () => {
+      callCount++
+      return {
+        ok: true,
+        json: async () => ({
+          transactions: [
+            {
+              ...baseRawTx,
+              id: `revolut-order-${callCount}`,
+              created_at: '2026-07-21T00:00:00.000Z'
+            }
+          ],
+          next_cursor: 'same-cursor'
+        }),
+        text: async () => ''
+      }
+    }
+    ;(util as any).snooze = async () => {}
+
+    try {
+      const result = await queryRevolut({
+        settings: { latestIsoDate },
+        apiKeys: { apiKey: 'revolut-api-key' }
+      })
+
+      expect(callCount).equals(2)
+      expect(result.transactions.length).equals(2)
+      expect(result.settings.latestIsoDate).equals(latestIsoDate)
+    } finally {
+      ;(util as any).retryFetch = oldRetryFetch
+      ;(util as any).snooze = oldSnooze
+    }
+  })
 })
