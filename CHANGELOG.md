@@ -3,6 +3,7 @@
 ## Unreleased
 
 - changed: Update sideshift plugin with new optional API fields
+- changed: Query both old and new Sideshift affiliate accounts and merge completed orders to preserve full shift history across an affiliate-account rotation
 - changed: Add signature header support to Exolix
 - changed: Add index for orderId
 - changed: Add EVM chainId, pluginId, and tokenId fields to StandardTx
