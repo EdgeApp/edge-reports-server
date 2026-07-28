@@ -37,6 +37,7 @@ const SIDESHIFT_NETWORK_TO_PLUGIN_ID: ChainNameToPluginIdMapping = {
   bitcoin: 'bitcoin',
   bitcoincash: 'bitcoincash',
   bsc: 'binancesmartchain',
+  bsv: 'bitcoinsv',
   cardano: 'cardano',
   cosmos: 'cosmoshub',
   dash: 'dash',
@@ -73,6 +74,7 @@ const ASSET_NAME_OVERRIDES: Record<string, string> = {
 // Delisted coins that are no longer in the SideShift API
 // Map: `${coin}-${network}` -> contract address (null for native gas tokens)
 const DELISTED_COINS: Record<string, string | null> = {
+  'BSV-bsv': null, // Native gas token
   'BUSD-bsc': '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56',
   'FTM-fantom': null, // Native gas token
   'MATIC-ethereum': '0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0',
