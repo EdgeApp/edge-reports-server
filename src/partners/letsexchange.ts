@@ -202,13 +202,13 @@ const LETSEXCHANGE_NETWORK_TO_PLUGIN_ID: Record<string, string> = {
 }
 
 // When the API omits network fields, infer native chain from currency code.
-// Only unambiguous 1:1 native-ticker cases (not USDT, USDC, BNB, etc.).
+// Only unambiguous 1:1 native-ticker cases (not USDT, USDC, BNB, ETH, AVAX,
+// MATIC, FTM, etc. — those are multi-chain or also exist as ERC-20 tokens).
 const LETSEXCHANGE_CURRENCY_TO_DEFAULT_NETWORK: Record<string, string> = {
   ADA: 'ADA',
   ALGO: 'ALGO',
   ARRR: 'ARRR',
   ATOM: 'ATOM',
-  AVAX: 'AVAXC',
   BCH: 'BCH',
   BSV: 'BSV',
   BTC: 'BTC',
@@ -221,16 +221,13 @@ const LETSEXCHANGE_CURRENCY_TO_DEFAULT_NETWORK: Record<string, string> = {
   DOT: 'DOT',
   EOS: 'EOS',
   ETC: 'ETC',
-  ETH: 'ETH',
   ETHW: 'ETHW',
   FIL: 'FIL',
   FIO: 'FIO',
   FIRO: 'FIRO',
-  FTM: 'FTM',
   GRS: 'GRS',
   HBAR: 'HBAR',
   LTC: 'LTC',
-  MATIC: 'MATIC',
   PIVX: 'PIVX',
   POL: 'POL',
   PLS: 'PLS',

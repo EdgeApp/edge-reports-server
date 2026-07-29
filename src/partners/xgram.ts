@@ -449,7 +449,16 @@ export const queryXgram = async (
     }
     let oldestIsoDate = '999999999999999999999999999999999999'
     for (const rawTx of txs) {
-      const standardTx = processXgramTx(rawTx, currencies)
+      let standardTx: StandardTx
+      try {
+        standardTx = processXgramTx(rawTx, currencies)
+      } catch (e) {
+        log.error(String(e))
+        // Process failure: stop without advancing the watermark, but keep
+        // already-collected txs so they can still be persisted.
+        done = true
+        break
+      }
       if (standardTx.isoDate < oldestIsoDate) {
         oldestIsoDate = standardTx.isoDate
       }
