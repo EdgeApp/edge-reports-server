@@ -616,6 +616,8 @@ function getFiatPaymentType(tx: BanxaTx): FiatPaymentType {
       return 'googlepay'
     case 'iDEAL Transfer':
       return 'ideal'
+    case 'KLARNA Checkout':
+      return 'klarna'
     case 'ZeroHash ACH Sell':
     case 'Fortress/Plaid ACH':
       return 'ach'
