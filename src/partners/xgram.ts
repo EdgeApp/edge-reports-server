@@ -76,6 +76,7 @@ interface EdgeAssetInfo {
 }
 
 const MAX_RETRIES = 5
+const MAX_ERROR_TEXT_LENGTH = 500
 const LIMIT = 50
 const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
@@ -268,7 +269,9 @@ async function fetchCurrencyCache(
   )
   if (!response.ok) {
     const text = await response.text()
-    throw new Error(`Xgram currency list error ${response.status}: ${text}`)
+    throw new Error(
+      `Xgram currency list error ${response.status}: ${truncateForError(text)}`
+    )
   }
 
   const result = await response.json()
@@ -286,6 +289,16 @@ async function fetchCurrencyCache(
   currencyCacheTimestamp = Date.now()
   log(`Cached ${Object.keys(currencyCache).length} Xgram currencies`)
   return currencyCache
+}
+
+/**
+ * Upstream error bodies land in the logs verbatim, so bound them instead of
+ * persisting an unknown amount of partner response data.
+ */
+function truncateForError(text: string): string {
+  return text.length > MAX_ERROR_TEXT_LENGTH
+    ? `${text.slice(0, MAX_ERROR_TEXT_LENGTH)}…`
+    : text
 }
 
 function isNativeTicker(chainPluginId: string, currencyCode: string): boolean {
@@ -409,7 +422,9 @@ export const queryXgram = async (
       })
       if (!response.ok) {
         const text = await response.text()
-        throw new Error(`Xgram history error ${response.status}: ${text}`)
+        throw new Error(
+          `Xgram history error ${response.status}: ${truncateForError(text)}`
+        )
       }
       const result = await response.json()
       txs = asXgramResult(result).exchanges
