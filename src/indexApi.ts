@@ -8,7 +8,7 @@ import { analyticsRouter } from './routes/v1/analytics'
 import { checkTxsRouter } from './routes/v1/checkTxs'
 import { getAppIdRouter } from './routes/v1/getAppId'
 import { getPluginIdsRouter } from './routes/v1/getPluginIds'
-import { getTxInfoRouter } from './routes/v1/getTxInfo'
+// import { getTxInfoRouter } from './routes/v1/getTxInfo'
 import { HttpError } from './util/httpErrors'
 
 export const nanoDb = nano(config.couchDbFullpath)
@@ -28,7 +28,8 @@ async function main(): Promise<void> {
   app.use('/v1/checkTxs/', checkTxsRouter)
   app.use('/v1/getAppId/', getAppIdRouter)
   app.use('/v1/getPluginIds/', getPluginIdsRouter)
-  app.use('/v1/getTxInfo/', getTxInfoRouter)
+  // Disabled: not private enough and is scrapable.
+  // app.use('/v1/getTxInfo/', getTxInfoRouter)
 
   // Error router
   app.use(function(err, _req, res, _next) {
