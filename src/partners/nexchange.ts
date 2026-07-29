@@ -309,6 +309,10 @@ export async function queryNexchange(
   const txByOrderId: Map<string, StandardTx> = new Map()
   let cursor: string | undefined
   let offset = 0
+  // Rows consumed so far, including pages fetched by cursor. Offset paging must
+  // resume from this count, otherwise falling back from a cursor would re-request
+  // pages that were already consumed.
+  let fetchedCount = 0
 
   try {
     // The currency catalog supplies the network/contract metadata that the
@@ -339,6 +343,7 @@ export async function queryNexchange(
       }
       const json = await response.json()
       const { orders, nextCursor, hasMore } = asNexchangeOrdersResponse(json)
+      fetchedCount += orders.length
 
       for (const rawOrder of orders) {
         const standardTx = processNexchangeTx(rawOrder, currencyMap)
@@ -358,7 +363,7 @@ export async function queryNexchange(
         // cursor value would re-pin pagination to the wrong position next
         // iteration.
         cursor = undefined
-        offset += orders.length
+        offset = fetchedCount
       }
     }
   } catch (e) {
