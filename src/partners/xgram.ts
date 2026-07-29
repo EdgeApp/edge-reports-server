@@ -272,10 +272,17 @@ async function fetchCurrencyCache(
   }
 
   const result = await response.json()
-  currencyCache = {
-    ...asXgramCurrencies(result),
-    ...MISSING_CURRENCIES
+  const currencies = asXgramCurrencies(result)
+
+  // The live catalog is authoritative. Only fill in tickers it omits, so
+  // hardcoded networks and contracts can never mask API corrections.
+  for (const [currencyCode, currency] of Object.entries(MISSING_CURRENCIES)) {
+    if (currencies[currencyCode] == null) {
+      currencies[currencyCode] = currency
+    }
   }
+
+  currencyCache = currencies
   currencyCacheTimestamp = Date.now()
   log(`Cached ${Object.keys(currencyCache).length} Xgram currencies`)
   return currencyCache
