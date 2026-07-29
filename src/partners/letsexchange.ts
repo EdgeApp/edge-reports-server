@@ -363,7 +363,10 @@ function getAssetInfo(
 ): AssetInfo | undefined {
   const network = resolveNetworkCode(initialNetwork, currencyCode, isoDate)
   if (network == null) {
-    return undefined
+    if (isoDate < NETWORK_FIELDS_AVAILABLE_DATE) {
+      return undefined
+    }
+    throw new Error(`Missing network for currency ${currencyCode}`)
   }
 
   const networkUpper = network.toUpperCase()

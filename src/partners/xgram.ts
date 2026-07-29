@@ -272,9 +272,10 @@ async function fetchCurrencyCache(
   }
 
   const result = await response.json()
+  // Hardcoded fallbacks first so the live catalog can correct/overwrite them.
   currencyCache = {
-    ...asXgramCurrencies(result),
-    ...MISSING_CURRENCIES
+    ...MISSING_CURRENCIES,
+    ...asXgramCurrencies(result)
   }
   currencyCacheTimestamp = Date.now()
   log(`Cached ${Object.keys(currencyCache).length} Xgram currencies`)

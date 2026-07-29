@@ -351,6 +351,9 @@ export async function queryNexchange(
 
       if (!hasMore || orders.length === 0) break
 
+      // Always advance offset by the page size so a later cursor→offset
+      // fallback skips every order already consumed via cursors.
+      offset += orders.length
       if (nextCursor != null && nextCursor !== '') {
         cursor = nextCursor
       } else {
@@ -358,7 +361,6 @@ export async function queryNexchange(
         // cursor value would re-pin pagination to the wrong position next
         // iteration.
         cursor = undefined
-        offset += orders.length
       }
     }
   } catch (e) {
