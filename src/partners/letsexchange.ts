@@ -363,7 +363,13 @@ function getAssetInfo(
 ): AssetInfo | undefined {
   const network = resolveNetworkCode(initialNetwork, currencyCode, isoDate)
   if (network == null) {
-    return undefined
+    // Transactions predating the network fields cannot be backfilled, so they
+    // are allowed through unenriched. Anything newer must resolve a network or
+    // fail closed rather than persist missing chain and token data.
+    if (isoDate < NETWORK_FIELDS_AVAILABLE_DATE) {
+      return undefined
+    }
+    throw new Error(`Missing network for currency ${currencyCode}`)
   }
 
   const networkUpper = network.toUpperCase()
