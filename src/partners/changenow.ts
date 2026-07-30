@@ -143,8 +143,12 @@ async function loadCurrencyCache(
   }
 
   try {
-    // The exchange/currencies endpoint doesn't require authentication
-    const url = 'https://api.changenow.io/v2/exchange/currencies?active=true'
+    // The exchange/currencies endpoint doesn't require authentication.
+    // Fetch the full list (omit `active=true`): historical transactions can
+    // reference currencies that ChangeNow has since deactivated/delisted (e.g.
+    // DASH). Filtering to active-only drops those entries, causing a cache miss
+    // and a fail-closed halt on otherwise-valid historical transactions.
+    const url = 'https://api.changenow.io/v2/exchange/currencies'
     const response = await retryFetch(url, {
       method: 'GET'
     })
@@ -376,24 +380,19 @@ function getAssetInfo(network: string, currencyCode: string): EdgeAssetInfo {
     )
   }
 
-  try {
-    const tokenId = createTokenId(
-      tokenType,
-      currencyCode.toUpperCase(),
-      contractAddress
-    )
-    return {
-      chainPluginId,
-      evmChainId,
-      tokenId
-    }
-  } catch (e) {
-    // If tokenId creation fails, treat as native (no log available in this sync function)
-    return {
-      chainPluginId,
-      evmChainId,
-      tokenId: null
-    }
+  // Let createTokenId throw if the contract address cannot be converted: a
+  // token must never be silently downgraded to a native (tokenId: null)
+  // mapping, which would price it with the chain's gas-token rate and
+  // overcount volume whenever the token is worth less than the gas token.
+  const tokenId = createTokenId(
+    tokenType,
+    currencyCode.toUpperCase(),
+    contractAddress
+  )
+  return {
+    chainPluginId,
+    evmChainId,
+    tokenId
   }
 }
 

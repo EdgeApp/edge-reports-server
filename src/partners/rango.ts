@@ -115,10 +115,13 @@ const RANGO_BLOCKCHAIN_TO_PLUGIN_ID: Record<string, string> = {
   FANTOM: 'fantom',
   LTC: 'litecoin',
   MATIC: 'polygon',
+  MONAD: 'monad',
   OPTIMISM: 'optimism',
   OSMOSIS: 'osmosis',
   POLYGON: 'polygon',
   SOLANA: 'solana',
+  SONIC: 'sonic',
+  SUI: 'sui',
   TON: 'ton',
   TRON: 'tron',
   XRPL: 'ripple',
@@ -178,17 +181,17 @@ export async function queryRango(
       let processedCount = 0
 
       for (const rawTx of txs) {
-        try {
-          const standardTx = processRangoTx(rawTx, pluginParams)
-          standardTxs.push(standardTx)
-          processedCount++
+        // Do not catch per-tx errors: a failure here (e.g. a token that cannot
+        // be resolved to a tokenId) must halt the run rather than silently
+        // dropping the transaction. The outer catch saves progress up to the
+        // last fully processed tx, and the oldest-to-newest ordering means the
+        // failing tx is retried on the next run.
+        const standardTx = processRangoTx(rawTx, pluginParams)
+        standardTxs.push(standardTx)
+        processedCount++
 
-          if (standardTx.isoDate > latestIsoDate) {
-            latestIsoDate = standardTx.isoDate
-          }
-        } catch (e) {
-          // Log but continue processing other transactions
-          log.warn(`Failed to process tx: ${String(e)}`)
+        if (standardTx.isoDate > latestIsoDate) {
+          latestIsoDate = standardTx.isoDate
         }
       }
 

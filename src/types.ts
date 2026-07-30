@@ -93,6 +93,7 @@ const asFiatPaymentType = asValue(
   'interac',
   'iobank',
   'israelibank',
+  'klarna',
   'mexicobank',
   'mobikwik',
   'moonpay',

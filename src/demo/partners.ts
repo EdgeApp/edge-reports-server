@@ -97,6 +97,10 @@ export default {
     type: 'fiat',
     color: '#7214F5'
   },
+  nexchange: {
+    type: 'swap',
+    color: '#1D31B6'
+  },
   paybis: {
     type: 'fiat',
     color: '#FFB400'
@@ -152,5 +156,9 @@ export default {
   xanpool: {
     type: 'fiat',
     color: '#46228B'
+  },
+  xgram: {
+    type: 'swap',
+    color: '#0FA7B1'
   }
 } as const
