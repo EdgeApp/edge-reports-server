@@ -1,5 +1,6 @@
 import {
   asArray,
+  asMap,
   asMaybe,
   asNumber,
   asObject,
@@ -14,6 +15,7 @@ import {
   PartnerPlugin,
   PluginParams,
   PluginResult,
+  ScopedLog,
   StandardTx,
   Status
 } from '../types'
@@ -35,6 +37,7 @@ const SIDESHIFT_NETWORK_TO_PLUGIN_ID: ChainNameToPluginIdMapping = {
   bitcoin: 'bitcoin',
   bitcoincash: 'bitcoincash',
   bsc: 'binancesmartchain',
+  bsv: 'bitcoinsv',
   cardano: 'cardano',
   cosmos: 'cosmoshub',
   dash: 'dash',
@@ -71,6 +74,7 @@ const ASSET_NAME_OVERRIDES: Record<string, string> = {
 // Delisted coins that are no longer in the SideShift API
 // Map: `${coin}-${network}` -> contract address (null for native gas tokens)
 const DELISTED_COINS: Record<string, string | null> = {
+  'BSV-bsv': null, // Native gas token
   'BUSD-bsc': '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56',
   'FTM-fantom': null, // Native gas token
   'MATIC-ethereum': '0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0',
@@ -176,19 +180,60 @@ const asSideshiftTx = asObject({
   settledAt: asOptional(asString)
 })
 
-const asSideshiftPluginParams = asObject({
-  apiKeys: asObject({
-    sideshiftAffiliateId: asString,
-    sideshiftAffiliateSecret: asString
-  }),
-  settings: asObject({
-    latestIsoDate: asOptional(asString, '1970-01-01T00:00:00.000Z')
-  })
+// apiKeys reaching a partner plugin are a flat string->string map
+// (see asPartnerInfo in types.ts), so additional accounts are carried as
+// explicit string fields rather than a nested array. The primary
+// sideshiftAffiliateId/Secret pair is the pre-existing account whose completed
+// orders are already recorded, so it keeps its watermark and resumes
+// incrementally. The optional sideshiftAffiliateId2/Secret2 pair is a
+// newly-added affiliate account; it has no recorded history, so it backfills
+// from epoch (see querySideshift). Backward compatible: when the *2 fields are
+// absent only the primary pair is queried. Putting the established account in
+// the primary slot is what keeps a rotation cheap: the account with years of
+// history never re-scans from epoch.
+const asSideshiftApiKeys = asObject({
+  sideshiftAffiliateId: asString,
+  sideshiftAffiliateSecret: asString,
+  sideshiftAffiliateId2: asOptional(asString),
+  sideshiftAffiliateSecret2: asOptional(asString)
 })
 
+const DEFAULT_LATEST_ISO_DATE = '1970-01-01T00:00:00.000Z'
+
+// `accounts` is a per-affiliateId cursor map. Legacy progress docs only carry
+// the top-level `latestIsoDate`; the primary account inherits it across the
+// upgrade (so the existing single account keeps its watermark), while any
+// newly-added account starts from the epoch default to backfill its full
+// history. See querySideshift for the per-account fallback rationale.
+const asSideshiftSettings = asObject({
+  latestIsoDate: asOptional(asString, DEFAULT_LATEST_ISO_DATE),
+  accounts: asOptional(asMap(asString), () => ({}))
+})
+
+const asSideshiftPluginParams = asObject({
+  apiKeys: asSideshiftApiKeys,
+  settings: asSideshiftSettings
+})
+
+interface SideshiftAccount {
+  affiliateId: string
+  affiliateSecret: string
+}
+
+type SideshiftApiKeys = ReturnType<typeof asSideshiftApiKeys>
 type SideshiftTx = ReturnType<typeof asSideshiftTx>
 type SideshiftStatus = ReturnType<typeof asSideshiftStatus>
 const asSideshiftResult = asArray(asUnknown)
+
+// Fetches one raw page of completed orders for an account, and processes a raw
+// order into a StandardTx. Both are injectable so the multi-account merge and
+// cursor logic can be exercised in tests without the live Sideshift API.
+type FetchSideshiftOrders = (
+  account: SideshiftAccount,
+  startTime: number,
+  now: number
+) => Promise<unknown[]>
+type ProcessSideshiftOrder = (rawTx: unknown) => Promise<StandardTx>
 
 const MAX_RETRIES = 5
 const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
@@ -219,13 +264,82 @@ function affiliateSignature(
     .digest('hex')
 }
 
-export async function querySideshift(
-  pluginParams: PluginParams
-): Promise<PluginResult> {
-  const { log } = pluginParams
-  const { settings, apiKeys } = asSideshiftPluginParams(pluginParams)
-  const { sideshiftAffiliateId, sideshiftAffiliateSecret } = apiKeys
-  let { latestIsoDate } = settings
+// Builds the list of affiliate accounts to query from the configured apiKeys.
+// Returns the primary (pre-existing) account plus the optional newly-added
+// account, deduped by affiliateId so a single-account config yields exactly one
+// account. Order matters: the primary stays at index 0 because querySideshift
+// gives index 0 the legacy watermark and backfills the rest from epoch.
+export function getSideshiftAccounts(
+  apiKeys: SideshiftApiKeys
+): SideshiftAccount[] {
+  const {
+    sideshiftAffiliateId,
+    sideshiftAffiliateSecret,
+    sideshiftAffiliateId2,
+    sideshiftAffiliateSecret2
+  } = apiKeys
+
+  const accounts: SideshiftAccount[] = [
+    {
+      affiliateId: sideshiftAffiliateId,
+      affiliateSecret: sideshiftAffiliateSecret
+    }
+  ]
+
+  // A half-configured pair means the operator intended a second account but
+  // it would be silently skipped, so fail loudly instead.
+  if ((sideshiftAffiliateId2 != null) !== (sideshiftAffiliateSecret2 != null)) {
+    throw new Error(
+      'Sideshift config error: sideshiftAffiliateId2 and sideshiftAffiliateSecret2 must both be set'
+    )
+  }
+
+  if (
+    sideshiftAffiliateId2 != null &&
+    sideshiftAffiliateSecret2 != null &&
+    sideshiftAffiliateId2 !== sideshiftAffiliateId
+  ) {
+    accounts.push({
+      affiliateId: sideshiftAffiliateId2,
+      affiliateSecret: sideshiftAffiliateSecret2
+    })
+  }
+
+  return accounts
+}
+
+const defaultFetchSideshiftOrders: FetchSideshiftOrders = async (
+  account,
+  startTime,
+  now
+): Promise<unknown[]> => {
+  const signature = affiliateSignature(
+    account.affiliateId,
+    account.affiliateSecret,
+    now
+  )
+  const url = `https://sideshift.ai/api/affiliate/completedOrders?affiliateId=${account.affiliateId}&since=${startTime}&currentTime=${now}&signature=${signature}`
+  const response = await retryFetch(url)
+  if (!response.ok) {
+    const text = await response.text()
+    throw new Error(text)
+  }
+  const jsonObj = await response.json()
+  return asSideshiftResult(jsonObj)
+}
+
+// Queries the completed orders for a single affiliate account, advancing its
+// own cursor. Mirrors the original per-account query/signature/retry/time-block
+// behavior exactly; only the fetch + per-order processing are abstracted so the
+// merge can be tested without the live API.
+async function querySideshiftAccount(
+  account: SideshiftAccount,
+  initialLatestIsoDate: string,
+  fetchOrders: FetchSideshiftOrders,
+  processOrder: ProcessSideshiftOrder,
+  log: ScopedLog
+): Promise<{ transactions: StandardTx[]; latestIsoDate: string }> {
+  let latestIsoDate = initialLatestIsoDate
 
   let lastCheckedTimestamp = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
   if (lastCheckedTimestamp < 0) lastCheckedTimestamp = 0
@@ -238,33 +352,20 @@ export async function querySideshift(
     const endTime = startTime + QUERY_TIME_BLOCK_MS
     const now = Date.now()
 
-    const signature = affiliateSignature(
-      sideshiftAffiliateId,
-      sideshiftAffiliateSecret,
-      now
-    )
-
-    const url = `https://sideshift.ai/api/affiliate/completedOrders?affiliateId=${sideshiftAffiliateId}&since=${startTime}&currentTime=${now}&signature=${signature}`
     try {
-      const response = await retryFetch(url)
-      if (!response.ok) {
-        const text = await response.text()
-        throw new Error(text)
-      }
-      const jsonObj = await response.json()
-      const orders = asSideshiftResult(jsonObj)
+      const orders = await fetchOrders(account, startTime, now)
       if (orders.length === 0) {
         break
       }
       for (const rawTx of orders) {
-        const standardTx = await processSideshiftTx(rawTx, pluginParams)
+        const standardTx = await processOrder(rawTx)
         standardTxs.push(standardTx)
         if (standardTx.isoDate > latestIsoDate) {
           latestIsoDate = standardTx.isoDate
         }
       }
       startTime = new Date(latestIsoDate).getTime()
-      log(`latestIsoDate ${latestIsoDate}`)
+      log(`${account.affiliateId} latestIsoDate ${latestIsoDate}`)
       if (endTime > now) {
         break
       }
@@ -283,8 +384,60 @@ export async function querySideshift(
     }
   }
 
+  return { transactions: standardTxs, latestIsoDate }
+}
+
+export async function querySideshift(
+  pluginParams: PluginParams,
+  fetchOrders: FetchSideshiftOrders = defaultFetchSideshiftOrders,
+  processOrder: ProcessSideshiftOrder = async rawTx =>
+    await processSideshiftTx(rawTx, pluginParams)
+): Promise<PluginResult> {
+  const { log } = pluginParams
+  const { settings, apiKeys } = asSideshiftPluginParams(pluginParams)
+  const {
+    latestIsoDate: legacyLatestIsoDate,
+    accounts: accountCursors
+  } = settings
+
+  const accounts = getSideshiftAccounts(apiKeys)
+
+  const standardTxs: StandardTx[] = []
+  const newAccountCursors: { [affiliateId: string]: string } = {}
+  let overallLatestIsoDate = legacyLatestIsoDate
+
+  for (let index = 0; index < accounts.length; index++) {
+    const account = accounts[index]
+    // Resume from the account's own cursor when known. On the first run that an
+    // account appears (no map entry), the PRIMARY account (index 0) inherits the
+    // legacy single cursor so the pre-existing account keeps its watermark, while
+    // a newly-added account starts from the epoch default to backfill its full
+    // history. Inheriting the primary's advanced watermark would make a new
+    // account skip every order older than that point permanently.
+    const fallbackCursor =
+      index === 0 ? legacyLatestIsoDate : DEFAULT_LATEST_ISO_DATE
+    const startCursor = accountCursors[account.affiliateId] ?? fallbackCursor
+
+    const { transactions, latestIsoDate } = await querySideshiftAccount(
+      account,
+      startCursor,
+      fetchOrders,
+      processOrder,
+      log
+    )
+
+    standardTxs.push(...transactions)
+    newAccountCursors[account.affiliateId] = latestIsoDate
+    if (latestIsoDate > overallLatestIsoDate) {
+      overallLatestIsoDate = latestIsoDate
+    }
+  }
+
   const out = {
-    settings: { latestIsoDate },
+    settings: {
+      latestIsoDate: overallLatestIsoDate,
+      accounts: newAccountCursors
+    },
     transactions: standardTxs
   }
   return out
