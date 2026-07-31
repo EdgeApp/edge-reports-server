@@ -1,0 +1,1544 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Edge Reports v2</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb; --page: #f9f9f7;
+    --ink-1: #0b0b0b; --ink-2: #52514e; --ink-3: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --good: #006300; --bad: #d03b3b;
+    --accent: #2a78d6;
+    --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100;
+    --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7; --s8:#e34948;
+    --other:#898781;
+    --wash: rgba(11,11,11,0.04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --page: #0d0d0d;
+      --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+      --good: #0ca30c; --bad: #e66767;
+      --accent: #3987e5;
+      --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500;
+      --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
+      --wash: rgba(255,255,255,0.06);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19; --page: #0d0d0d;
+    --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --good: #0ca30c; --bad: #e66767;
+    --accent: #3987e5;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500;
+    --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
+    --wash: rgba(255,255,255,0.06);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page); color: var(--ink-1);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 20px 24px 64px; }
+  header.top { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .logo { width: 26px; height: 26px; border-radius: 7px; background: linear-gradient(135deg, #66eda8, #0dad4d); }
+  header.top h1 { font-size: 17px; font-weight: 650; margin: 0; }
+  header.top .sub { color: var(--ink-3); font-size: 12.5px; margin-top: 1px; }
+  .spacer { flex: 1; }
+
+  .btn {
+    background: var(--surface-1); border: 1px solid var(--border); color: var(--ink-1);
+    border-radius: 8px; padding: 6px 11px; font: inherit; font-size: 13px; cursor: pointer;
+  }
+  .btn:hover { background: var(--wash); }
+
+  /* ---------- filter row ---------- */
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; position: relative; z-index: 30; }
+  .seg { display: inline-flex; background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px; padding: 2px; }
+  .seg button {
+    border: 0; background: transparent; color: var(--ink-2); font: inherit; font-size: 13px;
+    padding: 5px 11px; border-radius: 6px; cursor: pointer; white-space: nowrap;
+  }
+  .seg button:hover { color: var(--ink-1); }
+  .seg button.on { background: var(--wash); color: var(--ink-1); font-weight: 600; }
+  .dd { position: relative; }
+  .dd-panel {
+    position: absolute; top: calc(100% + 6px); left: 0; min-width: 218px;
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 8px 28px rgba(0,0,0,.12); padding: 6px; display: none; z-index: 40;
+  }
+  .dd.open .dd-panel { display: block; }
+  .dd-row {
+    display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+    border: 0; background: transparent; color: var(--ink-1); font: inherit; font-size: 13px;
+    padding: 7px 9px; border-radius: 7px; cursor: pointer;
+  }
+  .dd-row:hover { background: var(--wash); }
+  .dd-row .check { width: 16px; font-weight: 700; color: var(--accent); }
+  .dd-foot { border-top: 1px solid var(--border); margin-top: 6px; padding: 9px 9px 4px; }
+  .dd-foot label { display: block; font-size: 11.5px; color: var(--ink-3); margin: 6px 0 2px; }
+  .dd-foot input[type="date"] {
+    width: 100%; font: inherit; font-size: 13px; padding: 4px 6px;
+    border: 1px solid var(--border); border-radius: 6px; background: transparent; color: var(--ink-1);
+  }
+  .dd-foot .btn { margin-top: 9px; width: 100%; }
+  .dd-search { padding: 4px 6px 8px; }
+  .dd-search input {
+    width: 100%; font: inherit; font-size: 13px; padding: 5px 8px;
+    border: 1px solid var(--border); border-radius: 7px; background: transparent; color: var(--ink-1);
+  }
+  .dd-list { max-height: 260px; overflow: auto; }
+  .dd-actions { display: flex; gap: 6px; padding: 2px 6px 6px; }
+  .dd-actions button { flex: 1; font-size: 12px; padding: 4px 6px; }
+  .sw { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
+  /* ---------- summary card ---------- */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 800px) { .stats { grid-template-columns: repeat(2, 1fr); gap: 14px 0; } }
+  .stat { padding: 2px 18px; min-width: 0; }
+  .stat + .stat { border-left: 1px solid var(--grid); }
+  @media (max-width: 800px) { .stat:nth-child(3) { border-left: 0; } }
+  .stat:first-child { padding-left: 4px; }
+  .stat .lbl { font-size: 12px; color: var(--ink-2); }
+  .stat .val { font-size: 25px; font-weight: 650; margin-top: 2px; letter-spacing: -.01em; }
+  .stat .delta { font-size: 12px; margin-top: 1px; }
+  .stat .delta.up { color: var(--good); } .stat .delta.down { color: var(--bad); }
+  .stat .delta .vs { color: var(--ink-3); }
+  .stat svg { display: block; margin-top: 6px; }
+
+  /* ---------- sections & cards ---------- */
+  .section-head { display: flex; align-items: center; gap: 12px; margin: 26px 0 10px; position: relative; z-index: 20; }
+  .section-head h2 { font-size: 15px; font-weight: 650; margin: 0; }
+  .section-head .rule { flex: 1; height: 1px; background: var(--grid); }
+  .card {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px 16px 12px; margin-bottom: 14px; min-width: 0;
+  }
+  .card h3 { font-size: 13.5px; font-weight: 650; margin: 0; }
+  .hint { color: var(--ink-3); font-size: 12px; }
+  .card-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .share-flex { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+  .share-flex .bars { flex: 1; min-width: 320px; }
+
+  .chart-wrap { position: relative; }
+  .tooltip {
+    position: absolute; pointer-events: none; display: none; z-index: 20;
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 8px 28px rgba(0,0,0,.14); padding: 9px 11px; min-width: 190px; font-size: 12.5px;
+  }
+  .tooltip .tt-date { color: var(--ink-3); font-size: 11.5px; margin-bottom: 5px; }
+  .tooltip table { border-collapse: collapse; width: 100%; }
+  .tooltip td { padding: 1.5px 0; }
+  .tooltip td.v { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; padding-left: 14px; }
+  .tooltip td.n { color: var(--ink-2); }
+  .tooltip .key { display: inline-block; width: 10px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+  .tooltip tr.total td { border-top: 1px solid var(--border); padding-top: 4px; font-weight: 650; color: var(--ink-1); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-top: 10px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2);
+    border: 1px solid var(--border); background: transparent; border-radius: 999px;
+    padding: 3px 10px; cursor: pointer; font-family: inherit;
+  }
+  .chip:hover { background: var(--wash); }
+  .chip.off { opacity: .38; }
+
+  /* ---------- table ---------- */
+  table.prov { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.prov th {
+    text-align: right; font-weight: 600; color: var(--ink-3); font-size: 11.5px;
+    padding: 6px 10px; border-bottom: 1px solid var(--grid); cursor: pointer; user-select: none; white-space: nowrap;
+  }
+  table.prov th:first-child { text-align: left; }
+  table.prov td { padding: 7px 10px; border-bottom: 1px solid var(--grid); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.prov td:first-child { text-align: left; font-variant-numeric: normal; }
+  table.prov tr:last-child td { border-bottom: 0; }
+  table.prov tr:hover td { background: var(--wash); }
+  .pname { display: inline-flex; align-items: center; gap: 8px; color: var(--ink-1); }
+  .share-cell { display: inline-flex; align-items: center; gap: 8px; justify-content: flex-end; }
+  .share-bar { width: 84px; height: 5px; border-radius: 3px; background: var(--grid); overflow: hidden; }
+  .share-bar i { display: block; height: 100%; border-radius: 3px; background: var(--accent); }
+  .muted { color: var(--ink-3); }
+  .dim td { opacity: .5; }
+  .pager { display: flex; align-items: center; gap: 10px; justify-content: flex-end; margin-top: 10px; font-size: 12.5px; color: var(--ink-3); }
+  .pager .btn { padding: 3px 10px; font-size: 12px; }
+  .pager .btn[disabled] { opacity: .4; cursor: default; }
+  select.ps {
+    font: inherit; font-size: 12.5px; color: var(--ink-1); background: var(--surface-1);
+    border: 1px solid var(--border); border-radius: 6px; padding: 2px 6px;
+  }
+  .share-flex svg path { transition: transform .15s ease, opacity .15s ease; }
+  .share-flex .bars g { transition: opacity .15s ease; }
+  .chart-wrap svg [data-s] { transition: opacity .12s ease; }
+
+  /* ---------- notes ---------- */
+  .notes h3 { margin-bottom: 8px; font-size: 13.5px; }
+  .notes h4 { font-size: 12.5px; margin: 14px 0 4px; color: var(--ink-2); }
+  .notes ul { margin: 4px 0 0; padding-left: 18px; color: var(--ink-2); font-size: 13px; }
+  .notes li { margin: 3px 0; }
+  .notes li b { color: var(--ink-1); font-weight: 600; }
+
+  /* ---------- auth / key entry (v2) ---------- */
+  .gate {
+    position: fixed; inset: 0; z-index: 100; display: none;
+    align-items: center; justify-content: center; background: var(--page);
+  }
+  .gate.show { display: flex; }
+  .gate-card {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px;
+    box-shadow: 0 8px 28px rgba(0,0,0,.12); padding: 26px 26px 22px; width: 340px; max-width: calc(100vw - 32px);
+  }
+  .gate-card .logo { width: 30px; height: 30px; margin-bottom: 12px; }
+  .gate-card h2 { font-size: 17px; font-weight: 650; margin: 0 0 4px; }
+  .gate-card p { color: var(--ink-3); font-size: 12.5px; margin: 0 0 16px; }
+  .gate-card label { display: block; font-size: 12px; color: var(--ink-2); margin-bottom: 5px; }
+  .gate-card input {
+    width: 100%; font: inherit; font-size: 14px; padding: 9px 11px;
+    border: 1px solid var(--border); border-radius: 9px; background: transparent; color: var(--ink-1);
+  }
+  .gate-card .btn { width: 100%; margin-top: 14px; padding: 9px 11px; font-size: 14px; font-weight: 600; }
+  .gate-err { color: var(--bad); font-size: 12.5px; margin-top: 10px; min-height: 16px; }
+  .signout { font-size: 12.5px; }
+
+  /* boot / loading / empty states */
+  #app { display: none; }
+  #app.ready { display: block; }
+  .boot {
+    position: fixed; inset: 0; z-index: 90; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 10px; background: var(--page); color: var(--ink-3); font-size: 13px;
+  }
+  .boot.hide { display: none; }
+  .spin { width: 22px; height: 22px; border: 2px solid var(--grid); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .empty { padding: 40px 16px; text-align: center; color: var(--ink-3); font-size: 13px; }
+</style>
+
+<!-- key entry gate: shown when no valid apiKey (fixes v1's silent infinite spinner) -->
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <div class="logo"></div>
+    <h2>Edge Reports</h2>
+    <p>Enter your API key to view the dashboard.</p>
+    <label for="keyInput">API key</label>
+    <input id="keyInput" type="password" autocomplete="off" spellcheck="false" placeholder="API key">
+    <button class="btn" id="keySubmit">View reports</button>
+    <div class="gate-err" id="gateErr"></div>
+  </div>
+</div>
+
+<!-- first-paint boot overlay -->
+<div class="boot" id="boot"><div class="spin"></div><div id="bootMsg">Loading reports…</div></div>
+
+<div id="app">
+<div class="wrap">
+  <header class="top">
+    <div class="logo"></div>
+    <div>
+      <h1>Edge Reports</h1>
+      <div class="sub" id="headerSub">v2 dashboard</div>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn" id="themeBtn" title="Toggle light/dark">◐ Theme</button>
+    <button class="btn signout" id="signOut" title="Clear API key">Sign out</button>
+  </header>
+
+  <!-- global filters: scope everything on the page -->
+  <div class="filters">
+    <div class="dd" id="rangeDD">
+      <button class="btn" id="rangeBtn">▦ Last 30 days ▾</button>
+      <div class="dd-panel" id="rangePanel"></div>
+    </div>
+    <div class="seg" id="typeSeg">
+      <button data-v="all" class="on">All</button>
+      <button data-v="fiat">Fiat buy/sell</button>
+      <button data-v="swap">Swap</button>
+    </div>
+    <div class="dd" id="provDD">
+      <button class="btn" id="provBtn">All providers ▾</button>
+      <div class="dd-panel" style="min-width:250px">
+        <div class="dd-search"><input id="provSearch" placeholder="Search providers…"></div>
+        <div class="dd-actions">
+          <button class="btn" id="provAll">Select all</button>
+          <button class="btn" id="provNone">Clear</button>
+        </div>
+        <div class="dd-list" id="provList"></div>
+      </div>
+    </div>
+    <div class="dd" id="pairDD">
+      <button class="btn" id="pairBtn">All pairs ▾</button>
+      <div class="dd-panel" style="min-width:230px">
+        <div class="dd-search"><input id="pairSearch" placeholder="Search pairs…"></div>
+        <div class="dd-actions">
+          <button class="btn" id="pairAll">Select all</button>
+          <button class="btn" id="pairNone">Clear</button>
+        </div>
+        <div class="dd-list" id="pairList"></div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <span class="hint" id="granHint"></span>
+  </div>
+
+  <!-- one summary card -->
+  <div class="card">
+    <div class="stats" id="stats"></div>
+  </div>
+
+  <!-- ================= PROVIDERS ================= -->
+  <div class="section-head">
+    <h2>Providers</h2>
+    <div class="rule"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h3 id="provTrendTitle">Volume by provider</h3>
+      <div class="spacer"></div>
+      <div class="seg" id="metricSeg">
+        <button data-v="volume" class="on">Volume</button>
+        <button data-v="revenue">Est. revenue</button>
+        <button data-v="txs">Transactions</button>
+      </div>
+      <div class="seg" id="provChartSeg">
+        <button data-v="stacked" class="on">Stacked</button>
+        <button data-v="lines">Lines</button>
+      </div>
+      <label class="hint" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" id="provOther" checked> include other
+      </label>
+    </div>
+    <div class="chart-wrap">
+      <svg id="provTrend" width="100%" height="320"></svg>
+      <div class="tooltip" id="provTT"></div>
+    </div>
+    <div class="legend" id="provLegend"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h3>Provider share</h3>
+      <span class="hint">of <span id="provShareMetricLbl">volume</span> in range · same top 8 + other as the chart above</span>
+      <div class="spacer"></div>
+      <label class="hint" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" id="provShareOtherCb" checked> include other
+      </label>
+    </div>
+    <div class="share-flex">
+      <svg id="provDonut" width="200" height="200"></svg>
+      <div class="bars"><svg id="provBars" width="100%"></svg></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h3>Provider detail</h3>
+      <span class="hint" id="provCount"></span>
+      <div class="spacer"></div>
+      <label class="hint" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" id="showInactive"> show inactive providers
+      </label>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="prov" id="provTable"></table>
+    </div>
+  </div>
+
+  <!-- ================= CURRENCY PAIRS ================= -->
+  <div class="section-head">
+    <h2>Currency pairs</h2>
+    <div class="rule"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h3>Volume by pair</h3>
+      <span class="hint">across selected providers</span>
+      <div class="spacer"></div>
+      <div class="seg" id="pairChartSeg">
+        <button data-v="stacked" class="on">Stacked</button>
+        <button data-v="lines">Lines</button>
+      </div>
+      <label class="hint" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" id="pairOther" checked> include other
+      </label>
+    </div>
+    <div class="chart-wrap">
+      <svg id="pairTrend" width="100%" height="300"></svg>
+      <div class="tooltip" id="pairTT"></div>
+    </div>
+    <div class="legend" id="pairLegend"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h3>Pair share</h3>
+      <span class="hint">of volume in range · same top 8 + other as the chart above</span>
+      <div class="spacer"></div>
+      <label class="hint" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" id="pairShareOtherCb" checked> include other
+      </label>
+    </div>
+    <div class="share-flex">
+      <svg id="pairDonut" width="200" height="200"></svg>
+      <div class="bars"><svg id="pairBars" width="100%"></svg></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h3>Pair detail</h3>
+      <span class="hint" id="pairCount"></span>
+      <div class="spacer"></div>
+      <label class="hint" style="display:inline-flex;align-items:center;gap:6px">
+        rows per page
+        <select class="ps" id="pairPageSize">
+          <option value="10" selected>10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+        </select>
+      </label>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="prov" id="pairTable"></table>
+    </div>
+    <div class="pager" id="pairPager"></div>
+  </div>
+
+  <div class="card notes">
+    <h3>What changed vs the current site, and why</h3>
+    <ul>
+      <li><b>Two entity groups, one top-level filter row, every filter scopes every card.</b> The page is grouped into Providers and Currency pairs, and all four filters (range, type, providers, pairs) apply to the whole page including the summary. One data caveat: the API records volume per pair but not transactions per pair, so under a pair filter each provider's txs (and avg tx) are estimated by scaling its tx count by that pair share of its volume.</li>
+      <li><b>Revenue is a first-class metric.</b> The current site only shows gross volume. This design applies a per-provider rev-share rate to volume (rates editable in config) and shows Est. revenue in the summary, the provider trend, and the table. Data requirement: the analytics response has no revenue field today; either compute client-side from a rates map or add it to the cache/API.</li>
+      <li><b>Trend + share pairing.</b> Each group gets a time-series card (stacked bars or lines per entity), a share card (donut for at-a-glance proportion, ranked horizontal bars for exact comparison), and a detail table (the pair table is paginated with a rows-per-page control). No dual-axis charts anywhere; the metric toggle swaps the whole view instead.</li>
+      <li><b>Hover to focus, filter only up top.</b> Legend pills highlight their series on hover (everything else dims) instead of mutating the global filter; the donut and ranked bars in each share card are hover-linked (a segment pops out and its row highlights, and vice versa). Share cards show exactly the same top 8 + Other split as their trend chart, and every trend and share card has its own local "include other" checkbox that hides the folded tail from that card only (share totals and percentages recompute over what is shown).</li>
+      <li><b>Number formatting.</b> Compact in tiles, axes and bars ($40.7M), full precision in tooltips and the table. Clean rounded axis ticks.</li>
+      <li><b>Color discipline.</b> 8 CVD-validated series colors per group, assigned to the top 8 entities of the current view (its range, filters and metric), so the trend chart, share card and detail table always agree on who is "Other". The tail folds into gray. The 40-swatch legend with five near-black providers goes away.</li>
+      <li><b>Range selection.</b> One preset dropdown (rows, not a calendar grid) with a custom range in the footer; granularity picks itself from range length.</li>
+      <li><b>The mini-chart wall</b> becomes a sortable detail table with share bars, sparklines and avg tx size, and doubles as the accessible table view. Inactive providers hidden behind a toggle.</li>
+    </ul>
+    <h4>Data source</h4>
+    <ul>
+      <li>Live data from the <b>/v1</b> reporting API: <b>getAppId</b> (apiKey auth), <b>getPluginIds</b> (provider list) and one <b>analytics</b> POST (daily buckets, last 24 months) for all providers at once. Est. revenue is derived client-side from the per-provider rev-share rates in server config (<b>/v2/config</b>); the analytics response has no revenue field.</li>
+      <li>A bad or missing API key now redirects to the key-entry screen instead of hanging: getAppId returns plain text on 400, so the response is checked before parsing and fetch errors are surfaced.</li>
+      <li>Pair transactions are not recorded by the API (only pair volume), so under a pair filter each provider's txs and avg tx are estimated by scaling its tx count by that pair's share of its volume.</li>
+    </ul>
+  </div>
+</div>
+</div><!-- /#app -->
+
+<script>
+'use strict';
+/* ================================================================
+   Edge Reports v2 — live data layer
+
+   The rendering + interaction engine below is ported verbatim from the
+   design prototype. Only the data source changed: the prototype's
+   deterministic sample generator is replaced by the real /v1 reporting
+   API. Everything the engine consumes is still just two structures,
+   PROVIDERS[] and daily[][], built here from API responses.
+   ================================================================ */
+
+const DAY = 864e5;
+const DAYS = 730; // 24 months of daily buckets, matching the widest preset
+
+// API is same-origin (indexApi serves this bundle and the /v1 + /v2 routes).
+const API_BASE = '';
+
+// Real "today" at UTC midnight; the daily array is a contiguous DAYS-long
+// window ending today. Buckets are keyed by their UTC calendar day so the
+// mapping is timezone-safe regardless of where the browser runs.
+const _now = new Date();
+const TODAY = new Date(_now.getFullYear(), _now.getMonth(), _now.getDate());
+const utcDayIndex = ms => {
+  const d = new Date(ms);
+  return Math.floor(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) / DAY);
+};
+const TODAY_DAY_INDEX = utcDayIndex(_now.getTime());
+
+/* ---------------- cookies ---------------- */
+function getCookie(name) {
+  const m = document.cookie.match('(?:^|; )' + name.replace(/([.$?*|{}()[\]\\/+^])/g, '\\$1') + '=([^;]*)');
+  return m ? decodeURIComponent(m[1]) : null;
+}
+function setCookie(name, value, days) {
+  const exp = new Date(Date.now() + (days || 365) * DAY).toUTCString();
+  document.cookie = name + '=' + encodeURIComponent(value) + '; path=/; expires=' + exp + '; SameSite=Lax';
+}
+function clearCookie(name) {
+  document.cookie = name + '=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+}
+
+/* ---------------- API layer ---------------- */
+class AuthError extends Error {}
+
+// getAppId returns PLAIN TEXT on a bad key (400) and JSON on success. v1 called
+// response.json() unconditionally, which threw on the 400 body and left the page
+// spinning forever. Here a non-2xx is turned into an AuthError so the caller can
+// redirect to the key screen.
+async function apiGetAppId(apiKey) {
+  const res = await fetch(API_BASE + '/v1/getAppId/?apiKey=' + encodeURIComponent(apiKey));
+  if (!res.ok) throw new AuthError('Invalid API key');
+  return res.json();
+}
+async function apiGetConfig(apiKey) {
+  const res = await fetch(API_BASE + '/v2/config/?apiKey=' + encodeURIComponent(apiKey));
+  if (res.status === 401 || res.status === 400) throw new AuthError('Invalid API key');
+  if (!res.ok) throw new Error('Failed to load config (' + res.status + ')');
+  return res.json();
+}
+async function apiGetPluginIds(apiKey) {
+  const res = await fetch(API_BASE + '/v1/getPluginIds/?apiKey=' + encodeURIComponent(apiKey));
+  if (res.status === 401 || res.status === 400) throw new AuthError('Invalid API key');
+  if (res.status === 404) return []; // app has no partners registered yet
+  if (!res.ok) throw new Error('Failed to load providers (' + res.status + ')');
+  return res.json();
+}
+async function apiAnalytics(apiKey, pluginIds, startIso, endIso) {
+  const res = await fetch(API_BASE + '/v1/analytics/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ start: startIso, end: endIso, apiKey, pluginIds, timePeriod: 'day' })
+  });
+  if (res.status === 401 || res.status === 400) throw new AuthError('Invalid API key');
+  if (!res.ok) throw new Error('Failed to load analytics (' + res.status + ')');
+  return res.json();
+}
+
+/* ---------------- runtime data (filled by loadData) ---------------- */
+let PROVIDERS = [];
+let daily = [];
+let REV_SHARE = {};       // pluginId -> rev-share fraction
+let PROVIDER_TYPES = {};  // pluginId -> 'fiat' | 'swap'
+let PAIR_RANKED = [];     // pair names, ranked by recent volume (filter order)
+let ALL_PAIR_NAMES = [];  // every pair seen
+
+const PROVIDER_DISPLAY = { lifi: 'LI.FI', btcx: 'BTCx', nym: 'NYM' };
+function displayName(pluginId) {
+  if (PROVIDER_DISPLAY[pluginId]) return PROVIDER_DISPLAY[pluginId];
+  return pluginId.charAt(0).toUpperCase() + pluginId.slice(1);
+}
+
+// Turn one partner's analytics day buckets into a contiguous DAYS-long array of
+// { t, usd, txs, pairs } aligned to the shared TODAY window.
+function buildProviderDaily(dayBuckets) {
+  const arr = new Array(DAYS);
+  for (let idx = 0; idx < DAYS; idx++) {
+    arr[idx] = { t: new Date(TODAY.getTime() - (DAYS - 1 - idx) * DAY), usd: 0, txs: 0, pairs: {} };
+  }
+  for (const b of dayBuckets) {
+    const bucketDayIndex = utcDayIndex(b.start * 1000); // bucket.start is seconds
+    const idx = DAYS - 1 - (TODAY_DAY_INDEX - bucketDayIndex);
+    if (idx < 0 || idx >= DAYS) continue;
+    const slot = arr[idx];
+    slot.usd += b.usdValue || 0;
+    slot.txs += b.numTxs || 0;
+    const pairs = b.currencyPairs || {};
+    for (const k in pairs) slot.pairs[k] = (slot.pairs[k] || 0) + pairs[k];
+  }
+  return arr;
+}
+
+async function loadData(apiKey) {
+  const [cfg, pluginIds] = await Promise.all([apiGetConfig(apiKey), apiGetPluginIds(apiKey)]);
+  REV_SHARE = cfg.revShareRates || {};
+  PROVIDER_TYPES = cfg.providerTypes || {};
+
+  const startIso = new Date(TODAY.getTime() - (DAYS - 1) * DAY).toISOString();
+  const endIso = new Date(TODAY.getTime() + DAY).toISOString();
+
+  const analytics = pluginIds.length > 0
+    ? await apiAnalytics(apiKey, pluginIds, startIso, endIso)
+    : [];
+  const byPartner = {};
+  for (const entry of analytics) byPartner[entry.partnerId] = entry;
+
+  PROVIDERS = pluginIds.map((pluginId, i) => ({
+    name: displayName(pluginId),
+    id: pluginId,
+    type: PROVIDER_TYPES[pluginId] === 'fiat' ? 'fiat' : 'swap',
+    rr: REV_SHARE[pluginId] || 0,
+    active: false, // set below once volume is known
+    i
+  }));
+  daily = PROVIDERS.map(p => {
+    const entry = byPartner[p.id];
+    return buildProviderDaily(entry && entry.result ? entry.result.day || [] : []);
+  });
+  // A provider is "active" if it moved any volume in the loaded window.
+  PROVIDERS.forEach(p => { p.active = daily[p.i].some(b => b.usd > 0); });
+
+  initDerived();
+}
+
+// pair rankings + master lists, recomputed from the loaded data (was static in
+// the prototype). Rank by the most recent 90 days so the filter list is stable.
+function initDerived() {
+  const pairTotals = {};
+  for (const p of PROVIDERS) {
+    if (!p.active) continue;
+    for (const b of daily[p.i].slice(-90)) {
+      for (const k in b.pairs) pairTotals[k] = (pairTotals[k] || 0) + b.pairs[k];
+    }
+  }
+  const allPairs = new Set();
+  for (const p of PROVIDERS) {
+    if (!p.active) continue;
+    for (const b of daily[p.i]) for (const k in b.pairs) allPairs.add(k);
+  }
+  ALL_PAIR_NAMES = [...allPairs];
+  PAIR_RANKED = [...allPairs].sort((a, b) => (pairTotals[b] || 0) - (pairTotals[a] || 0));
+}
+
+
+/* ---------------- formatting ---------------- */
+const fmtMoney = v => {
+  const a = Math.abs(v);
+  if (a >= 1e9) return '$' + (v/1e9).toFixed(a >= 1e10 ? 0 : 1) + 'B';
+  if (a >= 1e6) return '$' + (v/1e6).toFixed(a >= 1e8 ? 0 : 1) + 'M';
+  if (a >= 1e3) return '$' + (v/1e3).toFixed(a >= 1e5 ? 0 : 1) + 'K';
+  return '$' + Math.round(v);
+};
+const fmtMoneyFull = v => '$' + Math.round(v).toLocaleString('en-US');
+const fmtNum = v => {
+  const a = Math.abs(v);
+  if (a >= 1e6) return (v/1e6).toFixed(1) + 'M';
+  if (a >= 1e4) return (v/1e3).toFixed(1) + 'K';
+  return Math.round(v).toLocaleString('en-US');
+};
+const fmtPct = v => (v >= 0 ? '+' : '') + (v*100).toFixed(1) + '%';
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const fmtDate = (d, gran) =>
+  gran === 'month' ? MONTHS[d.getMonth()] + ' ’' + String(d.getFullYear()).slice(2)
+  : MONTHS[d.getMonth()] + ' ' + d.getDate();
+
+/* ---------------- state ---------------- */
+const PRESETS = [
+  { id:'7d',  label:'Last 7 days',   days:7,   gran:'day' },
+  { id:'30d', label:'Last 30 days',  days:30,  gran:'day' },
+  { id:'90d', label:'Last 90 days',  days:90,  gran:'day' },
+  { id:'qtd', label:'This quarter',  days:31,  gran:'day' },
+  { id:'12m', label:'Last 12 months',days:365, gran:'month' },
+  { id:'24m', label:'Last 24 months',days:730, gran:'month' },
+];
+const state = {
+  preset: '30d', custom: null,
+  metric: 'volume', type: 'all',
+  provChart: 'stacked', pairChart: 'stacked',
+  enabled: new Set(),      // filled in boot() once providers load
+  enabledPairs: new Set(), // filled in boot() once pairs load
+  showInactive: false,
+  sortBy: 'vol', sortDir: -1,
+  pairSortBy: 'vol', pairSortDir: -1,
+  pairPage: 0, pairPageSize: 10,
+  provShowOther: true, pairShowOther: true,
+  provShareOther: true, pairShareOther: true,
+  provSearch: '', pairSearch: '',
+};
+
+/* ---------------- data slicing ---------------- */
+function rangeDays() {
+  if (state.custom) {
+    const s = Math.max(0, Math.floor((TODAY - state.custom[0]) / DAY));
+    const e = Math.max(0, Math.floor((TODAY - state.custom[1]) / DAY));
+    return { from: s, to: e, gran: (s - e) > 120 ? 'month' : 'day' };
+  }
+  const p = PRESETS.find(p => p.id === state.preset);
+  return { from: p.days - 1, to: 0, gran: p.gran };
+}
+const typeMatch = p => state.type === 'all' || p.type === state.type;
+
+// pair-filtered slice of one bucket: volume over enabled pairs, txs scaled by pair share
+function bucketSlice(b) {
+  let pv = 0, tot = 0;
+  for (const k in b.pairs) { tot += b.pairs[k]; if (state.enabledPairs.has(k)) pv += b.pairs[k]; }
+  return { vol: pv, txs: tot > 0 ? b.txs * pv / tot : 0 };
+}
+function providerRows(daysBack) { // per-provider aggregates over the window (type- and pair-filtered)
+  const { from, to } = daysBack;
+  return PROVIDERS.filter(p => p.active && typeMatch(p)).map(p => {
+    let usd = 0, txs = 0;
+    const arr = daily[p.i];
+    for (let d = DAYS - 1 - from; d <= DAYS - 1 - to; d++) {
+      const b = arr[d]; if (!b) continue;
+      const s = bucketSlice(b);
+      usd += s.vol; txs += s.txs;
+    }
+    return { p, usd, txs, rev: usd * p.rr };
+  });
+}
+function provBuckets(daysBack) { // time buckets per enabled provider
+  const { from, to, gran } = daysBack;
+  const provs = PROVIDERS.filter(p => p.active && typeMatch(p) && state.enabled.has(p.name));
+  const out = [], seen = {};
+  for (let d = from; d >= to; d--) {
+    const t = new Date(TODAY.getTime() - d * DAY);
+    let slot;
+    if (gran === 'day') { slot = { t, vals: {} }; out.push(slot); }
+    else {
+      const key = t.getFullYear() + '-' + t.getMonth();
+      if (!seen[key]) { seen[key] = { t: new Date(t.getFullYear(), t.getMonth(), 1), vals: {} }; out.push(seen[key]); }
+      slot = seen[key];
+    }
+    for (const p of provs) {
+      const b = daily[p.i][DAYS - 1 - d]; if (!b) continue;
+      const s = bucketSlice(b);
+      const v = slot.vals[p.name] || (slot.vals[p.name] = { usd: 0, txs: 0, rev: 0 });
+      v.usd += s.vol; v.txs += s.txs; v.rev += s.vol * p.rr;
+    }
+  }
+  return { out, gran };
+}
+function pairAgg(daysBack) { // per-pair totals over the window (cascades from provider selection)
+  const { from, to } = daysBack;
+  const agg = {};
+  for (const p of PROVIDERS.filter(p => p.active && typeMatch(p) && state.enabled.has(p.name))) {
+    for (let d = from; d >= to; d--) {
+      const b = daily[p.i][DAYS - 1 - d]; if (!b) continue;
+      for (const k in b.pairs) {
+        if (!state.enabledPairs.has(k)) continue;
+        agg[k] = (agg[k] || 0) + b.pairs[k];
+      }
+    }
+  }
+  return agg;
+}
+function pairBuckets(daysBack) { // time buckets per enabled pair (cascades from provider selection)
+  const { from, to, gran } = daysBack;
+  const provs = PROVIDERS.filter(p => p.active && typeMatch(p) && state.enabled.has(p.name));
+  const out = [], seen = {};
+  for (let d = from; d >= to; d--) {
+    const t = new Date(TODAY.getTime() - d * DAY);
+    let slot;
+    if (gran === 'day') { slot = { t, vals: {} }; out.push(slot); }
+    else {
+      const key = t.getFullYear() + '-' + t.getMonth();
+      if (!seen[key]) { seen[key] = { t: new Date(t.getFullYear(), t.getMonth(), 1), vals: {} }; out.push(seen[key]); }
+      slot = seen[key];
+    }
+    for (const p of provs) {
+      const b = daily[p.i][DAYS - 1 - d]; if (!b) continue;
+      for (const k in b.pairs) {
+        if (!state.enabledPairs.has(k)) continue;
+        slot.vals[k] = (slot.vals[k] || 0) + b.pairs[k];
+      }
+    }
+  }
+  return { out, gran };
+}
+const metricOf = (v, m) => m === 'volume' ? v.usd : m === 'revenue' ? v.rev : v.txs;
+const fmtMetric = (v, m) => m === 'txs' ? fmtNum(v) : fmtMoney(v);
+const fmtMetricFull = (v, m) => m === 'txs' ? Math.round(v).toLocaleString('en-US') : fmtMoneyFull(v);
+
+/* color slots per group: top 8 of the CURRENT view (range, type, provider and pair
+   selection, and the selected metric for providers). Slots re-rank when the view
+   changes so the chart, share card and detail table always agree on who is "Other". */
+let SLOT = {}, PAIRSLOT = {};
+const colorOf = name => SLOT[name] ? `var(--s${SLOT[name]})` : 'var(--other)';
+const colorOfPair = name => PAIRSLOT[name] ? `var(--s${PAIRSLOT[name]})` : 'var(--other)';
+function computeSlots() {
+  const db = rangeDays();
+  const rows = providerRows(db).filter(r => state.enabled.has(r.p.name))
+    .map(r => ({ n: r.p.name, v: metricOf({ usd: r.usd, rev: r.rev, txs: r.txs }, state.metric) }))
+    .sort((a, b) => b.v - a.v);
+  SLOT = {}; rows.slice(0, 8).forEach((r, i) => SLOT[r.n] = i + 1);
+  const prs = Object.entries(pairAgg(db)).sort((a, b) => b[1] - a[1]);
+  PAIRSLOT = {}; prs.slice(0, 8).forEach((e, i) => PAIRSLOT[e[0]] = i + 1);
+}
+
+/* PAIR_RANKED (stable pair ordering for the filter dropdown) is computed in
+   initDerived() once the live data has loaded. */
+
+/* ---------------- svg helpers ---------------- */
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function niceTicks(max, n = 4) {
+  if (max <= 0) return [0, 1];
+  const raw = max / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s * n >= max) || 10 * mag;
+  const ticks = []; for (let v = 0; v <= max + 1e-9; v += step) ticks.push(v);
+  if (ticks[ticks.length-1] < max) ticks.push(ticks[ticks.length-1] + step);
+  return ticks;
+}
+function roundTopBarPath(x, y, w, h, r) {
+  return `M${x} ${y + h}V${y + r}Q${x} ${y} ${x + r} ${y}H${x + w - r}Q${x + w} ${y} ${x + w} ${y + r}V${y + h}Z`;
+}
+function roundEndBarPath(x, y, w, h, r) { // horizontal, rounded right end
+  return `M${x} ${y}H${x + w - r}Q${x + w} ${y} ${x + w} ${y + r}V${y + h - r}Q${x + w} ${y + h} ${x + w - r} ${y + h}H${x}Z`;
+}
+
+/* ---------------- summary card ---------------- */
+/* one resampling rule for every mini trend line: split the full range into n
+   equal-width buckets and take the MEAN of each, so a partial trailing chunk
+   never fakes a dip and every sparkline spans its box edge to edge */
+function trendPoints(dayVals, n) {
+  const N = dayVals.length;
+  if (N === 0) return [0, 0];
+  if (N <= n) return dayVals.slice();
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const a = Math.floor(i * N / n), b = Math.max(a + 1, Math.floor((i + 1) * N / n));
+    let s = 0; for (let j = a; j < b; j++) s += dayVals[j];
+    pts.push(s / (b - a));
+  }
+  return pts;
+}
+function sparkline(points, w, h, color) {
+  const max = Math.max(...points, 1e-9), min = Math.min(...points, 0);
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('width', w); svg.setAttribute('height', h);
+  const x = i => 2 + i * (w - 4) / (points.length - 1);
+  const y = v => h - 3 - (v - min) / (max - min || 1) * (h - 6);
+  const line = points.map((v, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1)).join(' ');
+  const last = points.length - 1;
+  el('path', {
+    d: line + `L${x(last).toFixed(1)} ${h - 1}L${x(0).toFixed(1)} ${h - 1}Z`,
+    fill: color, 'fill-opacity': .13, stroke: 'none',
+  }, svg);
+  el('path', { d: line, fill:'none', stroke: color, 'stroke-width':1.5, 'stroke-linejoin':'round', 'stroke-linecap':'round' }, svg);
+  el('circle', { cx:x(last), cy:y(points[last]), r:3, fill: color, stroke:'var(--surface-1)', 'stroke-width':2 }, svg);
+  return svg;
+}
+function renderSummary() {
+  const db = rangeDays();
+  const enabledOnly = rows => rows.filter(r => state.enabled.has(r.p.name));
+  const cur = enabledOnly(providerRows(db));
+  const span = db.from - db.to + 1;
+  const prev = enabledOnly(providerRows({ from: db.from + span, to: db.to + span, gran: db.gran }));
+  const sum = (rows, k) => rows.reduce((s, r) => s + r[k], 0);
+  const vol = sum(cur,'usd'), rev = sum(cur,'rev'), txs = sum(cur,'txs');
+  const pVol = sum(prev,'usd'), pRev = sum(prev,'rev'), pTxs = sum(prev,'txs');
+  const avg = txs ? vol / txs : 0, pAvg = pTxs ? pVol / pTxs : 0;
+
+  // 12-point sparklines across the range, per stat, fully filtered
+  const days = [];
+  for (let d = db.from; d >= db.to; d--) {
+    let v = 0, t = 0, r = 0;
+    for (const p of PROVIDERS.filter(p => p.active && typeMatch(p) && state.enabled.has(p.name))) {
+      const b = daily[p.i][DAYS - 1 - d]; if (!b) continue;
+      const s = bucketSlice(b);
+      v += s.vol; t += s.txs; r += s.vol * p.rr;
+    }
+    days.push({ v, t, r });
+  }
+  const stats = [
+    { lbl:'Volume', val: fmtMoney(vol), d: pVol ? (vol-pVol)/pVol : null, spark: days.map(x => x.v), color: 'var(--s1)' },
+    { lbl:'Est. revenue', val: fmtMoney(rev), d: pRev ? (rev-pRev)/pRev : null, spark: days.map(x => x.r), color: 'var(--s3)' },
+    { lbl:'Transactions', val: fmtNum(txs), d: pTxs ? (txs-pTxs)/pTxs : null, spark: days.map(x => x.t), color: 'var(--s7)' },
+    { lbl:'Avg transaction', val: fmtMoney(avg), d: pAvg ? (avg-pAvg)/pAvg : null, spark: days.map(x => x.t ? x.v / x.t : 0), color: 'var(--s2)' },
+  ];
+  const root = document.getElementById('stats');
+  root.textContent = '';
+  for (const t of stats) {
+    const box = document.createElement('div'); box.className = 'stat';
+    const lbl = document.createElement('div'); lbl.className = 'lbl'; lbl.textContent = t.lbl;
+    const val = document.createElement('div'); val.className = 'val'; val.textContent = t.val;
+    box.append(lbl, val);
+    if (t.d != null) {
+      const d = document.createElement('div');
+      d.className = 'delta ' + (t.d >= 0 ? 'up' : 'down');
+      d.textContent = fmtPct(t.d) + ' ';
+      const vs = document.createElement('span'); vs.className = 'vs'; vs.textContent = 'vs prior period';
+      d.appendChild(vs);
+      box.appendChild(d);
+    }
+    root.appendChild(box); // attach first so the box has a measurable width
+    if (t.spark) {
+      const w = Math.max(120, box.clientWidth - 30);
+      const n = Math.max(12, Math.min(40, Math.floor(w / 8)));
+      box.appendChild(sparkline(trendPoints(t.spark, n), w, 28, t.color));
+    }
+  }
+}
+
+/* ---------------- generic time-series chart ---------------- */
+const M = { l: 56, r: 16, t: 12, b: 26 };
+
+function foldSeries(presentNames, slotMap) {
+  const tops = presentNames.filter(n => slotMap[n]).sort((a, b) => slotMap[a] - slotMap[b]);
+  const others = presentNames.filter(n => !slotMap[n]);
+  return { tops, others };
+}
+function drawTimeSeries(svg, ttEl, cfg) {
+  // cfg: out [{t, vals}], gran, chartType, valueOf(name, bucket)->number,
+  //      colorFn, fmtV, fmtVFull, seriesFold {tops, others}
+  svg.textContent = '';
+  const W = svg.clientWidth || 900, H = +svg.getAttribute('height');
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const { out, gran, chartType, colorFn, fmtV, fmtVFull } = cfg;
+  const { tops, others } = cfg.seriesFold;
+  const names = others.length ? [...tops, 'Other'] : tops;
+
+  const stacksPer = out.map(b => {
+    const per = tops.map(n => ({ n, v: cfg.valueOf(n, b) }));
+    if (others.length) per.push({ n: 'Other', v: others.reduce((s, n) => s + cfg.valueOf(n, b), 0) });
+    return per;
+  });
+
+  const plotW = W - M.l - M.r, plotH = H - M.t - M.b;
+  const x = i => M.l + (i + .5) * plotW / out.length;
+  let maxV;
+  if (chartType === 'stacked') maxV = Math.max(...stacksPer.map(s => s.reduce((a, r) => a + r.v, 0)), 1e-9);
+  else maxV = Math.max(...stacksPer.flat().map(r => r.v), 1e-9);
+  const ticks = niceTicks(maxV);
+  const top = ticks[ticks.length - 1];
+  const y = v => M.t + plotH - v / top * plotH;
+
+  for (const tv of ticks) {
+    el('line', { x1: M.l, x2: W - M.r, y1: y(tv), y2: y(tv), stroke: tv === 0 ? 'var(--axis)' : 'var(--grid)', 'stroke-width': 1 }, svg);
+    const t = el('text', { x: M.l - 8, y: y(tv) + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--ink-3)' }, svg);
+    t.textContent = fmtV(tv);
+  }
+  const every = Math.ceil(out.length / Math.floor(plotW / 78));
+  const lastRegular = Math.floor((out.length - 1) / every) * every;
+  out.forEach((b, i) => {
+    if (i % every !== 0 && i !== out.length - 1) return;
+    if (i === out.length - 1 && i % every !== 0 && (i - lastRegular) * plotW / out.length < 58) return;
+    const t = el('text', { x: x(i), y: H - 8, 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--ink-3)' }, svg);
+    t.textContent = fmtDate(b.t, gran);
+  });
+
+  if (chartType === 'stacked') {
+    const bw = Math.min(24, Math.max(3, plotW / out.length - 2));
+    let peakI = 0, peakV = 0;
+    stacksPer.forEach((s, i) => { const tot = s.reduce((a, r) => a + r.v, 0); if (tot > peakV) { peakV = tot; peakI = i; } });
+    stacksPer.forEach((segs, i) => {
+      let acc = 0;
+      const drawn = segs.filter(s => s.v > 0);
+      drawn.forEach((s, si) => {
+        const y1 = y(acc + s.v), y0 = y(acc);
+        const hh = Math.max(0, y0 - y1 - (si < drawn.length - 1 ? 2 : 0)); // 2px surface gap
+        const fill = s.n === 'Other' ? 'var(--other)' : colorFn(s.n);
+        if (si === drawn.length - 1) {
+          const r = Math.min(4, bw / 2);
+          el('path', { d: roundTopBarPath(x(i) - bw / 2, y1, bw, hh, r), fill, 'data-s': s.n }, svg);
+        } else {
+          el('rect', { x: x(i) - bw / 2, y: y1, width: bw, height: hh, fill, 'data-s': s.n }, svg);
+        }
+        acc += s.v;
+      });
+      if (i === peakI && out.length > 6) {
+        const t = el('text', { x: x(i), y: y(peakV) - 6, 'text-anchor': 'middle', 'font-size': 11, 'font-weight': 600, fill: 'var(--ink-2)' }, svg);
+        t.textContent = fmtV(peakV);
+      }
+    });
+  } else {
+    names.forEach(n => {
+      const pts = stacksPer.map((s, i) => [x(i), y((s.find(r => r.n === n) || { v: 0 }).v)]);
+      const d = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+      const c = n === 'Other' ? 'var(--other)' : colorFn(n);
+      el('path', { d, fill: 'none', stroke: c, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', 'data-s': n }, svg);
+      const lastPt = pts[pts.length - 1];
+      el('circle', { cx: lastPt[0], cy: lastPt[1], r: 4, fill: c, stroke: 'var(--surface-1)', 'stroke-width': 2, 'data-s': n }, svg);
+    });
+    const ends = names.map(n => ({ n, v: (stacksPer[stacksPer.length - 1].find(r => r.n === n) || { v: 0 }).v }))
+      .sort((a, b) => b.v - a.v).slice(0, 3);
+    const used = [];
+    for (const e of ends) {
+      const yy = y(e.v);
+      if (used.some(u => Math.abs(u - yy) < 13)) continue;
+      used.push(yy);
+      const t = el('text', { x: W - M.r - 2, y: yy + 4, 'text-anchor': 'end', 'font-size': 11, 'font-weight': 600, fill: 'var(--ink-2)', 'data-s': e.n }, svg);
+      t.textContent = e.n;
+    }
+  }
+
+  // hover: crosshair + all-series tooltip
+  const cross = el('line', { y1: M.t, y2: H - M.b, stroke: 'var(--axis)', 'stroke-width': 1, visibility: 'hidden' }, svg);
+  const wrap = svg.parentElement;
+  svg.onpointermove = ev => {
+    const r = svg.getBoundingClientRect();
+    const px = (ev.clientX - r.left) * (W / r.width);
+    let best = 0, bd = 1e9;
+    out.forEach((b, i) => { const d = Math.abs(x(i) - px); if (d < bd) { bd = d; best = i; } });
+    cross.setAttribute('x1', x(best)); cross.setAttribute('x2', x(best));
+    cross.setAttribute('visibility', 'visible');
+    const rowsAll = [...stacksPer[best]].sort((a, b) => b.v - a.v);
+    const total = rowsAll.reduce((s, r) => s + r.v, 0);
+    ttEl.textContent = '';
+    const dt = document.createElement('div'); dt.className = 'tt-date';
+    dt.textContent = fmtDate(out[best].t, gran) + (gran === 'day' ? ', ' + out[best].t.getFullYear() : '');
+    ttEl.appendChild(dt);
+    const tbl = document.createElement('table');
+    for (const s of rowsAll.slice(0, 10)) {
+      if (s.v <= 0) continue;
+      const tr = document.createElement('tr');
+      const n = document.createElement('td'); n.className = 'n';
+      const key = document.createElement('span'); key.className = 'key';
+      key.style.background = s.n === 'Other' ? 'var(--other)' : colorFn(s.n);
+      n.append(key, document.createTextNode(s.n));
+      const v = document.createElement('td'); v.className = 'v';
+      v.textContent = fmtVFull(s.v);
+      tr.append(n, v); tbl.appendChild(tr);
+    }
+    const tr = document.createElement('tr'); tr.className = 'total';
+    const n = document.createElement('td'); n.className = 'n'; n.textContent = 'Total';
+    const v = document.createElement('td'); v.className = 'v'; v.textContent = fmtVFull(total);
+    tr.append(n, v); tbl.appendChild(tr);
+    ttEl.appendChild(tbl);
+    ttEl.style.display = 'block';
+    const wr = wrap.getBoundingClientRect();
+    let lx = ev.clientX - wr.left + 16;
+    if (lx + ttEl.offsetWidth > wr.width - 8) lx = ev.clientX - wr.left - ttEl.offsetWidth - 16;
+    ttEl.style.left = lx + 'px';
+    ttEl.style.top = Math.min(ev.clientY - wr.top + 12, wr.height - ttEl.offsetHeight - 6) + 'px';
+  };
+  svg.onpointerleave = () => { ttEl.style.display = 'none'; cross.setAttribute('visibility', 'hidden'); };
+}
+
+/* ---------------- legends ----------------
+   Chips are hover highlighters, not filter controls: hovering one dims every
+   other series in the chart above it. Filtering lives only in the top bar. */
+function highlightSeries(svg, name) {
+  svg.querySelectorAll('[data-s]').forEach(m => {
+    m.style.opacity = (name == null || m.getAttribute('data-s') === name) ? '' : '0.12';
+  });
+}
+function renderChips(rootId, names, colorFn, otherTitle, svgId) {
+  const lg = document.getElementById(rootId);
+  lg.textContent = '';
+  const svg = document.getElementById(svgId);
+  for (const n of names) {
+    const chip = document.createElement('button');
+    chip.className = 'chip';
+    chip.style.cursor = 'default';
+    const sw = document.createElement('span'); sw.className = 'sw';
+    sw.style.background = n === 'Other' ? 'var(--other)' : colorFn(n);
+    chip.append(sw, document.createTextNode(n));
+    if (n === 'Other') chip.title = otherTitle || '';
+    chip.onpointerenter = () => highlightSeries(svg, n);
+    chip.onpointerleave = () => highlightSeries(svg, null);
+    lg.appendChild(chip);
+  }
+}
+
+/* ---------------- donut + ranked bars (share cards) ---------------- */
+function drawDonut(svg, cx, cy, R, data, fmtV, centerLbl) {
+  svg.textContent = '';
+  const total = data.reduce((s, d) => s + d.v, 0) || 1;
+  let a0 = -Math.PI / 2;
+  const r0 = R * .62;
+  for (const d of data) {
+    const a1 = a0 + d.v / total * 2 * Math.PI;
+    const large = a1 - a0 > Math.PI ? 1 : 0;
+    const p = (r, a) => [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+    const [x0o, y0o] = p(R, a0), [x1o, y1o] = p(R, a1), [x1i, y1i] = p(r0, a1), [x0i, y0i] = p(r0, a0);
+    const mid = (a0 + a1) / 2;
+    el('path', {
+      d: `M${x0o} ${y0o}A${R} ${R} 0 ${large} 1 ${x1o} ${y1o}L${x1i} ${y1i}A${r0} ${r0} 0 ${large} 0 ${x0i} ${y0i}Z`,
+      fill: d.color, stroke: 'var(--surface-1)', 'stroke-width': 2,
+      'data-n': d.n,
+      'data-dx': (Math.cos(mid) * 6).toFixed(2), 'data-dy': (Math.sin(mid) * 6).toFixed(2),
+    }, svg);
+    a0 = a1;
+  }
+  const t1 = el('text', { x: cx, y: cy - 2, 'text-anchor': 'middle', 'font-size': 21, 'font-weight': 650, fill: 'var(--ink-1)' }, svg);
+  t1.textContent = fmtV(total);
+  const t2 = el('text', { x: cx, y: cy + 16, 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--ink-3)' }, svg);
+  t2.textContent = centerLbl;
+}
+function drawRankedBars(svg, rows, fmtV) {
+  // rows: [{n, v, color}] already sorted desc; last row may be Other
+  svg.textContent = '';
+  const W = svg.clientWidth || 600;
+  const lh = 27, H = rows.length * lh + 4;
+  svg.setAttribute('height', H);
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const total = rows.reduce((s, r) => s + r.v, 0) || 1;
+  const max = Math.max(...rows.map(r => r.v), 1e-9);
+  const lx = 108, vw = 118, bw = W - lx - vw;
+  rows.forEach((r, i) => {
+    const yy = i * lh + lh / 2 + 2;
+    const g = el('g', { 'data-n': r.n }, svg);
+    const t = el('text', { x: lx - 10, y: yy + 4, 'text-anchor': 'end', 'font-size': 12, fill: 'var(--ink-2)' }, g);
+    t.textContent = r.n;
+    const w = Math.max(2, r.v / max * bw);
+    el('path', { d: roundEndBarPath(lx, yy - 6, w, 12, Math.min(4, w / 2)), fill: r.color }, g);
+    const tv = el('text', { x: lx + w + 8, y: yy + 4, 'font-size': 12, 'font-weight': 600, fill: 'var(--ink-2)' }, g);
+    tv.textContent = fmtV(r.v);
+    const tp = el('text', { x: W - 2, y: yy + 4, 'text-anchor': 'end', 'font-size': 11.5, fill: 'var(--ink-3)' }, g);
+    tp.textContent = (r.v / total * 100).toFixed(1) + '%';
+    // full-row transparent hit target, larger than the mark
+    el('rect', { x: 0, y: i * lh, width: W, height: lh, fill: 'transparent' }, g);
+  });
+}
+
+/* linked hover between a share card's donut and its ranked bars */
+function linkShare(donutSvg, barsSvg) {
+  const segs = [...donutSvg.querySelectorAll('path[data-n]')];
+  const rowGs = [...barsSvg.querySelectorAll('g[data-n]')];
+  const set = name => {
+    const inDonut = name != null && segs.some(s => s.dataset.n === name);
+    segs.forEach(s => {
+      const isHit = s.dataset.n === name;
+      s.style.opacity = (name == null || !inDonut || isHit) ? '' : '0.3';
+      s.setAttribute('transform', (isHit ? `translate(${s.dataset.dx} ${s.dataset.dy})` : ''));
+    });
+    rowGs.forEach(g => { g.style.opacity = (name == null || g.dataset.n === name) ? '' : '0.3'; });
+  };
+  const wire = elm => {
+    elm.addEventListener('pointerenter', () => set(elm.dataset.n));
+    elm.addEventListener('pointerleave', () => set(null));
+  };
+  segs.forEach(wire); rowGs.forEach(wire);
+}
+
+/* ---------------- provider section ---------------- */
+function renderProvTrend() {
+  const db = rangeDays();
+  const { out, gran } = provBuckets(db);
+  document.getElementById('granHint').textContent =
+    out.length + (gran === 'month' ? ' monthly' : ' daily') + ' buckets';
+  const m = state.metric;
+  document.getElementById('provTrendTitle').textContent =
+    (m === 'volume' ? 'Volume' : m === 'revenue' ? 'Estimated revenue' : 'Transactions') + ' by provider';
+  document.getElementById('provShareMetricLbl').textContent =
+    m === 'txs' ? 'transactions' : m === 'revenue' ? 'est. revenue' : 'volume';
+
+  const present = PROVIDERS.filter(p => p.active && typeMatch(p) && state.enabled.has(p.name)).map(p => p.name);
+  const fold = foldSeries(present, SLOT);
+  const othersTitle = fold.others.join(', ');
+  if (!state.provShowOther) fold.others = []; // card-local: hide the Other series here only
+  drawTimeSeries(document.getElementById('provTrend'), document.getElementById('provTT'), {
+    out, gran, chartType: state.provChart,
+    valueOf: (n, b) => b.vals[n] ? metricOf(b.vals[n], m) : 0,
+    colorFn: colorOf,
+    fmtV: v => fmtMetric(v, m), fmtVFull: v => fmtMetricFull(v, m),
+    seriesFold: fold,
+  });
+  const names = fold.others.length ? [...fold.tops, 'Other'] : fold.tops;
+  renderChips('provLegend', names, colorOf, othersTitle, 'provTrend');
+}
+function renderProvShare() {
+  const db = rangeDays();
+  const m = state.metric;
+  const rows = providerRows(db).filter(r => state.enabled.has(r.p.name))
+    .map(r => ({ n: r.p.name, v: metricOf({ usd: r.usd, rev: r.rev, txs: r.txs }, m) }))
+    .sort((a, b) => b.v - a.v);
+  // parity with the trend chart: the same top 8 series + Other, in ring AND bars
+  const shown = rows.slice(0, 8).map(r => ({ ...r, color: colorOf(r.n) }));
+  const rest = rows.slice(8).reduce((s, r) => s + r.v, 0);
+  if (state.provShareOther && rest > 0) shown.push({ n: 'Other', v: rest, color: 'var(--other)' });
+  drawDonut(document.getElementById('provDonut'), 100, 100, 82, shown,
+    v => fmtMetric(v, m), m === 'txs' ? 'total txs' : m === 'revenue' ? 'total est. rev' : 'total volume');
+  drawRankedBars(document.getElementById('provBars'), shown, v => fmtMetric(v, m));
+  linkShare(document.getElementById('provDonut'), document.getElementById('provBars'));
+}
+const trendDeltaOf = pts => {
+  const mean = pts.reduce((a, b) => a + b, 0) / pts.length;
+  return mean ? (pts[pts.length - 1] - pts[0]) / mean : 0;
+};
+function renderTable() {
+  const db = rangeDays();
+  const rowsAll = providerRows(db).filter(r => state.enabled.has(r.p.name));
+  const totalUsd = rowsAll.reduce((s, r) => s + r.usd, 0) || 1;
+  let list = rowsAll.map(r => ({ ...r, share: r.usd / totalUsd, avg: r.txs ? r.usd / r.txs : 0 }));
+  list.forEach(r => {
+    const dayVals = [];
+    for (let d = db.from; d >= db.to; d--) {
+      const b = daily[r.p.i][DAYS - 1 - d];
+      dayVals.push(b ? bucketSlice(b).vol : 0);
+    }
+    r.trendPts = trendPoints(dayVals, 12);
+    r.trend = trendDeltaOf(r.trendPts);
+  });
+  const inactive = PROVIDERS.filter(p => !p.active);
+  const key = { name: r => r.p.name.toLowerCase(), vol: r => r.usd, rev: r => r.rev, txs: r => r.txs, avg: r => r.avg, share: r => r.share, trend: r => r.trend };
+  list.sort((a, b) => {
+    const ka = key[state.sortBy](a), kb = key[state.sortBy](b);
+    return (ka < kb ? -1 : ka > kb ? 1 : 0) * state.sortDir;
+  });
+  const tbl = document.getElementById('provTable');
+  tbl.textContent = '';
+  const thr = document.createElement('tr');
+  const cols = [['name','Provider'],['vol','Volume'],['share','Share'],['rev','Est. revenue'],['txs','Txs'],['avg','Avg tx'],['trend','Trend']];
+  for (const [id, label] of cols) {
+    const th = document.createElement('th');
+    th.textContent = label + (state.sortBy === id ? (state.sortDir < 0 ? ' ▼' : ' ▲') : '');
+    th.onclick = () => {
+      if (state.sortBy === id) state.sortDir *= -1; else { state.sortBy = id; state.sortDir = id === 'name' ? 1 : -1; }
+      renderTable();
+    };
+    thr.appendChild(th);
+  }
+  tbl.appendChild(thr);
+
+  const db2 = db;
+  const mk = (r, dimmed) => {
+    const tr = document.createElement('tr');
+    if (dimmed) tr.className = 'dim';
+    const td0 = document.createElement('td');
+    const nm = document.createElement('span'); nm.className = 'pname';
+    const sw = document.createElement('span'); sw.className = 'sw';
+    sw.style.background = dimmed ? 'var(--grid)' : colorOf(r.p.name);
+    nm.append(sw, document.createTextNode(r.p.name));
+    td0.appendChild(nm);
+    const badge = document.createElement('span'); badge.className = 'muted';
+    badge.textContent = '  ' + (r.p.type === 'fiat' ? 'fiat' : 'swap');
+    badge.style.fontSize = '11px';
+    td0.appendChild(badge);
+    tr.appendChild(td0);
+    let td = document.createElement('td'); td.textContent = fmtMoney(r.usd); td.title = fmtMoneyFull(r.usd); tr.appendChild(td);
+    td = document.createElement('td');
+    const sc = document.createElement('span'); sc.className = 'share-cell';
+    const sb = document.createElement('span'); sb.className = 'share-bar';
+    const fi = document.createElement('i'); fi.style.width = Math.min(100, r.share * 250) + '%';
+    sb.appendChild(fi);
+    const pt = document.createElement('span'); pt.textContent = (r.share * 100).toFixed(1) + '%';
+    sc.append(sb, pt); td.appendChild(sc); tr.appendChild(td);
+    td = document.createElement('td'); td.textContent = fmtMoney(r.rev); tr.appendChild(td);
+    td = document.createElement('td'); td.textContent = Math.round(r.txs).toLocaleString('en-US'); tr.appendChild(td);
+    td = document.createElement('td'); td.textContent = fmtMoney(r.avg); tr.appendChild(td);
+    td = document.createElement('td');
+    if (!dimmed && r.trendPts) td.appendChild(sparkline(r.trendPts, 90, 24, colorOf(r.p.name)));
+    tr.appendChild(td);
+    return tr;
+  };
+  for (const r of list) tbl.appendChild(mk(r, false));
+  if (state.showInactive) {
+    for (const p of inactive) tbl.appendChild(mk({ p, usd: 0, rev: 0, txs: 0, avg: 0, share: 0 }, true));
+  }
+  document.getElementById('provCount').textContent =
+    list.length + ' shown · ' + inactive.length + ' inactive hidden' + (state.showInactive ? ' (shown)' : '');
+}
+
+/* ---------------- pairs section ---------------- */
+function renderPairTrend() {
+  const db = rangeDays();
+  const { out, gran } = pairBuckets(db);
+  const present = [...new Set(out.flatMap(b => Object.keys(b.vals)))]
+    .sort((a, b) => (PAIR_RANKED.indexOf(a) + 1 || 99) - (PAIR_RANKED.indexOf(b) + 1 || 99));
+  const fold = foldSeries(present, PAIRSLOT);
+  const othersTitle = fold.others.join(', ');
+  if (!state.pairShowOther) fold.others = []; // card-local: hide the Other series here only
+  drawTimeSeries(document.getElementById('pairTrend'), document.getElementById('pairTT'), {
+    out, gran, chartType: state.pairChart,
+    valueOf: (n, b) => b.vals[n] || 0,
+    colorFn: colorOfPair,
+    fmtV: fmtMoney, fmtVFull: fmtMoneyFull,
+    seriesFold: fold,
+  });
+  const names = fold.others.length ? [...fold.tops, 'Other'] : fold.tops;
+  renderChips('pairLegend', names, colorOfPair, othersTitle, 'pairTrend');
+}
+function renderPairShare() {
+  const db = rangeDays();
+  const agg = pairAgg(db);
+  const rows = Object.entries(agg).map(([n, v]) => ({ n, v })).sort((a, b) => b.v - a.v);
+  // parity with the trend chart: the same top 8 series + Other, in ring AND bars
+  const shown = rows.slice(0, 8).map(r => ({ ...r, color: colorOfPair(r.n) }));
+  const rest = rows.slice(8).reduce((s, r) => s + r.v, 0);
+  if (state.pairShareOther && rest > 0) shown.push({ n: 'Other', v: rest, color: 'var(--other)' });
+  drawDonut(document.getElementById('pairDonut'), 100, 100, 82, shown, fmtMoney, 'total volume');
+  drawRankedBars(document.getElementById('pairBars'), shown, fmtMoney);
+  linkShare(document.getElementById('pairDonut'), document.getElementById('pairBars'));
+}
+
+/* ---------------- pair detail table (paginated) ---------------- */
+function pairDetailRows(daysBack) {
+  const { from, to } = daysBack;
+  const agg = {};
+  for (const p of PROVIDERS.filter(p => p.active && typeMatch(p) && state.enabled.has(p.name))) {
+    for (let d = from; d >= to; d--) {
+      const b = daily[p.i][DAYS - 1 - d]; if (!b) continue;
+      for (const k in b.pairs) {
+        if (!state.enabledPairs.has(k)) continue;
+        const a = agg[k] || (agg[k] = { vol: 0, rev: 0, provs: new Set() });
+        a.vol += b.pairs[k]; a.rev += b.pairs[k] * p.rr;
+        if (b.pairs[k] > 0) a.provs.add(p.name);
+      }
+    }
+  }
+  return Object.entries(agg).map(([n, a]) => ({ n, vol: a.vol, rev: a.rev, provs: a.provs.size }));
+}
+function renderPairTable() {
+  const db = rangeDays();
+  const rows = pairDetailRows(db);
+  const total = rows.reduce((s, r) => s + r.vol, 0) || 1;
+  const { out } = pairBuckets(db); // per-bucket per-pair volumes for sparklines/trend
+  rows.forEach(r => {
+    r.share = r.vol / total;
+    r.trendPts = trendPoints(out.map(b => b.vals[r.n] || 0), 12);
+    r.trend = trendDeltaOf(r.trendPts);
+  });
+  const key = { name: r => r.n.toLowerCase(), vol: r => r.vol, share: r => r.share, rev: r => r.rev, provs: r => r.provs, trend: r => r.trend };
+  rows.sort((a, b) => {
+    const ka = key[state.pairSortBy](a), kb = key[state.pairSortBy](b);
+    return (ka < kb ? -1 : ka > kb ? 1 : 0) * state.pairSortDir;
+  });
+  const ps = state.pairPageSize;
+  const pages = Math.max(1, Math.ceil(rows.length / ps));
+  state.pairPage = Math.min(state.pairPage, pages - 1);
+  const pageRows = rows.slice(state.pairPage * ps, (state.pairPage + 1) * ps);
+
+  const tbl = document.getElementById('pairTable');
+  tbl.textContent = '';
+  const thr = document.createElement('tr');
+  const cols = [['name','Pair'],['vol','Volume'],['share','Share'],['rev','Est. revenue'],['provs','Providers'],['trend','Trend']];
+  for (const [id, label] of cols) {
+    const th = document.createElement('th');
+    th.textContent = label + (state.pairSortBy === id ? (state.pairSortDir < 0 ? ' ▼' : ' ▲') : '');
+    th.onclick = () => {
+      if (state.pairSortBy === id) state.pairSortDir *= -1;
+      else { state.pairSortBy = id; state.pairSortDir = id === 'name' ? 1 : -1; }
+      state.pairPage = 0;
+      renderPairTable();
+    };
+    thr.appendChild(th);
+  }
+  tbl.appendChild(thr);
+  for (const r of pageRows) {
+    const tr = document.createElement('tr');
+    const td0 = document.createElement('td');
+    const nm = document.createElement('span'); nm.className = 'pname';
+    const sw = document.createElement('span'); sw.className = 'sw';
+    sw.style.background = colorOfPair(r.n);
+    nm.append(sw, document.createTextNode(r.n));
+    td0.appendChild(nm);
+    tr.appendChild(td0);
+    let td = document.createElement('td'); td.textContent = fmtMoney(r.vol); td.title = fmtMoneyFull(r.vol); tr.appendChild(td);
+    td = document.createElement('td');
+    const sc = document.createElement('span'); sc.className = 'share-cell';
+    const sb = document.createElement('span'); sb.className = 'share-bar';
+    const fi = document.createElement('i'); fi.style.width = Math.min(100, r.share * 250) + '%';
+    sb.appendChild(fi);
+    const pt = document.createElement('span'); pt.textContent = (r.share * 100).toFixed(1) + '%';
+    sc.append(sb, pt); td.appendChild(sc); tr.appendChild(td);
+    td = document.createElement('td'); td.textContent = fmtMoney(r.rev); tr.appendChild(td);
+    td = document.createElement('td'); td.textContent = r.provs; tr.appendChild(td);
+    td = document.createElement('td');
+    td.appendChild(sparkline(r.trendPts, 90, 24, colorOfPair(r.n)));
+    tr.appendChild(td);
+    tbl.appendChild(tr);
+  }
+
+  document.getElementById('pairCount').textContent = rows.length + ' pairs';
+  const pager = document.getElementById('pairPager');
+  pager.textContent = '';
+  const info = document.createElement('span');
+  const lo = rows.length ? state.pairPage * ps + 1 : 0;
+  info.textContent = lo + '–' + Math.min(rows.length, (state.pairPage + 1) * ps) + ' of ' + rows.length;
+  const prev = document.createElement('button'); prev.className = 'btn'; prev.textContent = '‹ Prev';
+  const next = document.createElement('button'); next.className = 'btn'; next.textContent = 'Next ›';
+  prev.disabled = state.pairPage === 0;
+  next.disabled = state.pairPage >= pages - 1;
+  prev.onclick = () => { if (state.pairPage > 0) { state.pairPage--; renderPairTable(); } };
+  next.onclick = () => { if (state.pairPage < pages - 1) { state.pairPage++; renderPairTable(); } };
+  pager.append(info, prev, next);
+}
+
+/* ---------------- filter UI ---------------- */
+function renderRangePanel() {
+  const panel = document.getElementById('rangePanel');
+  panel.textContent = '';
+  for (const p of PRESETS) {
+    const b = document.createElement('button'); b.className = 'dd-row';
+    const c = document.createElement('span'); c.className = 'check';
+    c.textContent = (!state.custom && state.preset === p.id) ? '✓' : '';
+    b.append(c, document.createTextNode(p.label));
+    b.onclick = () => {
+      state.preset = p.id; state.custom = null;
+      document.getElementById('rangeBtn').textContent = '▦ ' + p.label + ' ▾';
+      closeDD(); renderAll(); renderRangePanel();
+    };
+    panel.appendChild(b);
+  }
+  const foot = document.createElement('div'); foot.className = 'dd-foot';
+  const l1 = document.createElement('label'); l1.textContent = 'Custom range';
+  const i1 = document.createElement('input'); i1.type = 'date'; i1.value = '2026-06-01';
+  const i2 = document.createElement('input'); i2.type = 'date'; i2.value = '2026-07-30'; i2.style.marginTop = '4px';
+  const go = document.createElement('button'); go.className = 'btn'; go.textContent = 'Apply';
+  go.onclick = () => {
+    const a = new Date(i1.value), b = new Date(i2.value);
+    if (isNaN(a) || isNaN(b) || a > b) return;
+    state.custom = [a, b];
+    document.getElementById('rangeBtn').textContent = '▦ ' + i1.value + ' → ' + i2.value + ' ▾';
+    closeDD(); renderAll(); renderRangePanel();
+  };
+  foot.append(l1, i1, i2, go);
+  panel.appendChild(foot);
+}
+function renderProvList() {
+  const list = document.getElementById('provList');
+  list.textContent = '';
+  const q = state.provSearch.toLowerCase();
+  for (const p of PROVIDERS.filter(p => p.active)) {
+    if (q && !p.name.toLowerCase().includes(q)) continue;
+    const b = document.createElement('button'); b.className = 'dd-row';
+    const c = document.createElement('span'); c.className = 'check';
+    c.textContent = state.enabled.has(p.name) ? '✓' : '';
+    const sw = document.createElement('span'); sw.className = 'sw';
+    sw.style.background = colorOf(p.name);
+    b.append(c, sw, document.createTextNode(p.name));
+    const tag = document.createElement('span'); tag.className = 'muted'; tag.style.marginLeft = 'auto'; tag.style.fontSize = '11px';
+    tag.textContent = p.type;
+    b.appendChild(tag);
+    b.onclick = () => {
+      state.enabled.has(p.name) ? state.enabled.delete(p.name) : state.enabled.add(p.name);
+      updateProvBtn(); renderProvList(); renderAll();
+    };
+    list.appendChild(b);
+  }
+}
+function renderPairList() {
+  const list = document.getElementById('pairList');
+  list.textContent = '';
+  const q = state.pairSearch.toLowerCase();
+  for (const n of PAIR_RANKED) {
+    if (q && !n.toLowerCase().includes(q)) continue;
+    const b = document.createElement('button'); b.className = 'dd-row';
+    const c = document.createElement('span'); c.className = 'check';
+    c.textContent = state.enabledPairs.has(n) ? '✓' : '';
+    const sw = document.createElement('span'); sw.className = 'sw';
+    sw.style.background = colorOfPair(n);
+    b.append(c, sw, document.createTextNode(n));
+    b.onclick = () => {
+      state.enabledPairs.has(n) ? state.enabledPairs.delete(n) : state.enabledPairs.add(n);
+      updatePairBtn(); renderPairList(); renderAll();
+    };
+    list.appendChild(b);
+  }
+}
+function updateProvBtn() {
+  const total = PROVIDERS.filter(p => p.active).length;
+  const n = state.enabled.size;
+  document.getElementById('provBtn').textContent =
+    (n === total ? 'All providers' : n + '/' + total + ' providers') + ' ▾';
+}
+function updatePairBtn() {
+  const total = PAIR_RANKED.length;
+  const n = state.enabledPairs.size;
+  document.getElementById('pairBtn').textContent =
+    (n === total ? 'All pairs' : n + '/' + total + ' pairs') + ' ▾';
+}
+function closeDD() { document.querySelectorAll('.dd.open').forEach(d => d.classList.remove('open')); }
+
+/* ---------------- wiring ---------------- */
+function seg(id, onPick) {
+  const root = document.getElementById(id);
+  root.querySelectorAll('button').forEach(b => b.onclick = () => {
+    root.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+    onPick(b.dataset.v);
+  });
+}
+seg('metricSeg', v => { state.metric = v; renderAll(); });
+seg('provChartSeg', v => { state.provChart = v; renderProvTrend(); });
+seg('pairChartSeg', v => { state.pairChart = v; renderPairTrend(); });
+seg('typeSeg', v => { state.type = v; renderAll(); });
+function toggleDD(ddId) {
+  return e => {
+    e.stopPropagation();
+    const d = document.getElementById(ddId);
+    const was = d.classList.contains('open');
+    closeDD(); if (!was) d.classList.add('open');
+  };
+}
+document.getElementById('rangeBtn').onclick = toggleDD('rangeDD');
+document.getElementById('provBtn').onclick = toggleDD('provDD');
+document.getElementById('pairBtn').onclick = toggleDD('pairDD');
+document.querySelectorAll('.dd-panel').forEach(p => p.onclick = e => e.stopPropagation());
+document.addEventListener('click', closeDD);
+document.getElementById('provSearch').oninput = e => { state.provSearch = e.target.value; renderProvList(); };
+document.getElementById('pairSearch').oninput = e => { state.pairSearch = e.target.value; renderPairList(); };
+document.getElementById('provAll').onclick = () => { PROVIDERS.filter(p => p.active).forEach(p => state.enabled.add(p.name)); updateProvBtn(); renderProvList(); renderAll(); };
+document.getElementById('provNone').onclick = () => { state.enabled.clear(); updateProvBtn(); renderProvList(); renderAll(); };
+document.getElementById('pairAll').onclick = () => { PAIR_RANKED.forEach(n => state.enabledPairs.add(n)); updatePairBtn(); renderPairList(); renderAll(); };
+document.getElementById('pairNone').onclick = () => { state.enabledPairs.clear(); updatePairBtn(); renderPairList(); renderAll(); };
+document.getElementById('showInactive').onchange = e => { state.showInactive = e.target.checked; renderTable(); };
+document.getElementById('provOther').onchange = e => { state.provShowOther = e.target.checked; renderProvTrend(); };
+document.getElementById('pairOther').onchange = e => { state.pairShowOther = e.target.checked; renderPairTrend(); };
+document.getElementById('provShareOtherCb').onchange = e => { state.provShareOther = e.target.checked; renderProvShare(); };
+document.getElementById('pairShareOtherCb').onchange = e => { state.pairShareOther = e.target.checked; renderPairShare(); };
+document.getElementById('pairPageSize').onchange = e => { state.pairPageSize = +e.target.value; state.pairPage = 0; renderPairTable(); };
+document.getElementById('themeBtn').onclick = () => {
+  const r = document.documentElement;
+  const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+  const cur = r.dataset.theme || (dark ? 'dark' : 'light');
+  r.dataset.theme = cur === 'dark' ? 'light' : 'dark';
+  renderAll();
+};
+
+function renderProviders() { renderProvTrend(); renderProvShare(); renderTable(); }
+function renderPairs() { renderPairTrend(); renderPairShare(); renderPairTable(); }
+function renderAll() { computeSlots(); renderSummary(); renderProviders(); renderPairs(); }
+
+/* ---------------- boot / auth ---------------- */
+const API_KEY_COOKIE = 'apiKey';
+let rsz;
+
+function renderDashboard() {
+  // seed the filter selections from whatever loaded (all on by default)
+  state.enabled = new Set(PROVIDERS.filter(p => p.active).map(p => p.name));
+  state.enabledPairs = new Set(ALL_PAIR_NAMES);
+  const activeCount = PROVIDERS.filter(p => p.active).length;
+  document.getElementById('headerSub').textContent =
+    activeCount + ' active provider' + (activeCount === 1 ? '' : 's') + ' · live /v1 data';
+  computeSlots(); // assign colors before the dropdown swatches render
+  renderRangePanel();
+  renderProvList(); renderPairList();
+  updateProvBtn(); updatePairBtn();
+  renderAll();
+}
+
+function showGate(message) {
+  document.getElementById('boot').classList.add('hide');
+  document.getElementById('app').classList.remove('ready');
+  document.getElementById('gateErr').textContent = message || '';
+  document.getElementById('gate').classList.add('show');
+  const input = document.getElementById('keyInput');
+  input.value = '';
+  input.focus();
+}
+
+async function enter(apiKey) {
+  document.getElementById('gate').classList.remove('show');
+  const boot = document.getElementById('boot');
+  boot.classList.remove('hide');
+  document.getElementById('bootMsg').textContent = 'Loading reports…';
+  try {
+    await apiGetAppId(apiKey);        // validates the key (redirect on failure)
+    setCookie(API_KEY_COOKIE, apiKey);
+    await loadData(apiKey);
+    boot.classList.add('hide');
+    document.getElementById('app').classList.add('ready');
+    renderDashboard();
+    // charts size to their container, so a first post-display render is needed
+    renderAll();
+  } catch (err) {
+    if (err instanceof AuthError) {
+      clearCookie(API_KEY_COOKIE);
+      showGate('That API key was not recognized.');
+    } else {
+      showGate('Could not load reports: ' + (err && err.message ? err.message : 'unknown error'));
+    }
+  }
+}
+
+function submitKey() {
+  const key = document.getElementById('keyInput').value.trim();
+  if (key === '') { document.getElementById('gateErr').textContent = 'Enter an API key.'; return; }
+  enter(key);
+}
+document.getElementById('keySubmit').onclick = submitKey;
+document.getElementById('keyInput').addEventListener('keydown', e => { if (e.key === 'Enter') submitKey(); });
+document.getElementById('signOut').onclick = () => { clearCookie(API_KEY_COOKIE); showGate(''); };
+
+addEventListener('resize', () => {
+  if (!document.getElementById('app').classList.contains('ready')) return;
+  clearTimeout(rsz); rsz = setTimeout(renderAll, 150);
+});
+
+// A ?apiKey= query param seeds the key (handy for links); otherwise use the cookie.
+const params = new URLSearchParams(location.search);
+const initialKey = params.get('apiKey') || getCookie(API_KEY_COOKIE);
+if (initialKey != null && initialKey !== '') enter(initialKey);
+else showGate('');
+</script>
