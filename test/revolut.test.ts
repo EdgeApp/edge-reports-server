@@ -254,6 +254,53 @@ describe('processRevolutTx', function() {
     expect(standardTx.payoutTokenId).to.equal(undefined)
   })
 
+  it('stores the partner-reported USD fee as revenue on a settled order', function() {
+    const standardTx = processRevolutTx(
+      makeOrder({
+        fees_partner_currency: {
+          partner_fee: { amount: 1.51, currency: 'USD' }
+        }
+      }),
+      pluginParams
+    )
+    expect(standardTx.revenueUsd).to.equal(1.51)
+    expect(standardTx.revenueSource).to.equal('reported')
+  })
+
+  it('records no revenue on an unsettled attempt even when a fee is present', function() {
+    // A failed attempt's fee is not revenue.
+    const standardTx = processRevolutTx(
+      makeOrder({
+        status: 'FAILED',
+        fees_partner_currency: {
+          partner_fee: { amount: 1.51, currency: 'USD' }
+        }
+      }),
+      pluginParams
+    )
+    expect(standardTx.revenueUsd).to.equal(undefined)
+    expect(standardTx.revenueSource).to.equal(undefined)
+  })
+
+  it('records no revenue when the settlement currency is not USD', function() {
+    // The plugin cannot convert honestly, so it abstains rather than guesses.
+    const standardTx = processRevolutTx(
+      makeOrder({
+        fees_partner_currency: {
+          partner_fee: { amount: 1.3, currency: 'EUR' }
+        }
+      }),
+      pluginParams
+    )
+    expect(standardTx.revenueUsd).to.equal(undefined)
+  })
+
+  it('records no revenue when the fee block is absent', function() {
+    const standardTx = processRevolutTx(makeOrder(), pluginParams)
+    expect(standardTx.revenueUsd).to.equal(undefined)
+    expect(standardTx.revenueSource).to.equal(undefined)
+  })
+
   it('throws on a structurally invalid order', function() {
     expect(() =>
       processRevolutTx({ id: 'no-amounts' }, pluginParams)

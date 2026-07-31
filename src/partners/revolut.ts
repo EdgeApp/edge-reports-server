@@ -84,7 +84,15 @@ const asRevolutOrder = asObject({
   status: asRevolutStatus,
   payment: asMaybe(asString),
   wallet: asMaybe(asString),
-  transaction_hash: asMaybe(asString)
+  transaction_hash: asMaybe(asString),
+  // Edge's actual cut, pre-converted by Revolut to the partner's settlement
+  // currency (USD across the full live history). asMaybe throughout: FAILED
+  // rows commonly omit the whole block.
+  fees_partner_currency: asMaybe(
+    asObject({
+      partner_fee: asMaybe(asRevolutAmount)
+    })
+  )
 })
 type RevolutOrder = ReturnType<typeof asRevolutOrder>
 
@@ -333,6 +341,17 @@ export function processRevolutTx(
   const { isoDate, timestamp } = smartIsoDateFromTimestamp(tx.created_at)
   const payout = resolveRevolutAsset(tx.crypto.currencyId)
 
+  // Actual revenue, only when Revolut reports it in USD and the order settled:
+  // an unsettled attempt's fee is not revenue, and a non-USD settlement
+  // currency would need a conversion this plugin cannot do honestly.
+  const partnerFee = tx.fees_partner_currency?.partner_fee
+  const revenueUsd =
+    tx.status === 'COMPLETED' &&
+    partnerFee != null &&
+    partnerFee.currency === 'USD'
+      ? partnerFee.amount
+      : undefined
+
   // Revolut Ramp only reports on-ramp orders, so fiat is always the deposit
   // side and crypto always the payout side. `wallet` is the user's receiving
   // address and `transaction_hash` the payout transaction.
@@ -360,6 +379,8 @@ export function processRevolutTx(
     timestamp,
     isoDate,
     usdValue: -1,
+    revenueUsd,
+    revenueSource: revenueUsd != null ? 'reported' : undefined,
     rawTx
   }
 }

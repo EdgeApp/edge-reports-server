@@ -101,7 +101,8 @@ export async function cacheEngine(): Promise<void> {
               'depositCurrency',
               'payoutCurrency',
               'timestamp',
-              'usdValue'
+              'usdValue',
+              'revenueUsd'
             ],
             use_index: 'timestamp-p',
             sort: ['timestamp'],
@@ -145,6 +146,7 @@ export async function cacheEngine(): Promise<void> {
                 timestamp: bucket.start,
                 usdValue: bucket.usdValue,
                 numTxs: bucket.numTxs,
+                revenueUsd: bucket.revenueUsd,
                 currencyCodes: bucket.currencyCodes,
                 currencyPairs: bucket.currencyPairs
               }

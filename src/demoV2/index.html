@@ -412,7 +412,7 @@
     <h3>What changed vs the current site, and why</h3>
     <ul>
       <li><b>Two entity groups, one top-level filter row, every filter scopes every card.</b> The page is grouped into Providers and Currency pairs, and all four filters (range, type, providers, pairs) apply to the whole page including the summary. One data caveat: the API records volume per pair but not transactions per pair, so under a pair filter each provider's txs (and avg tx) are estimated by scaling its tx count by that pair share of its volume.</li>
-      <li><b>Revenue is a first-class metric.</b> The current site only shows gross volume. This design applies a per-provider rev-share rate to volume (rates editable in config) and shows Est. revenue in the summary, the provider trend, and the table. Data requirement: the analytics response has no revenue field today; either compute client-side from a rates map or add it to the cache/API.</li>
+      <li><b>Revenue is a first-class metric.</b> The current site only shows gross volume. Where the partner's API reports Edge's actual fee (e.g. Revolut), buckets carry the summed reported revenue and the dashboard uses it directly, marked with a check. Everywhere else revenue is estimated as volume times the app doc's per-partner rev-share rate.</li>
       <li><b>Trend + share pairing.</b> Each group gets a time-series card (stacked bars or lines per entity), a share card (donut for at-a-glance proportion, ranked horizontal bars for exact comparison), and a detail table (the pair table is paginated with a rows-per-page control). No dual-axis charts anywhere; the metric toggle swaps the whole view instead.</li>
       <li><b>Hover to focus, filter only up top.</b> Legend pills highlight their series on hover (everything else dims) instead of mutating the global filter; the donut and ranked bars in each share card are hover-linked (a segment pops out and its row highlights, and vice versa). Share cards show exactly the same top 8 + Other split as their trend chart, and every trend and share card has its own local "include other" checkbox that hides the folded tail from that card only (share totals and percentages recompute over what is shown).</li>
       <li><b>Number formatting.</b> Compact in tiles, axes and bars ($40.7M), full precision in tooltips and the table. Clean rounded axis ticks.</li>
@@ -422,7 +422,7 @@
     </ul>
     <h4>Data source</h4>
     <ul>
-      <li>Live data from the <b>/v1</b> reporting API: <b>getAppId</b> (apiKey auth), <b>getPluginIds</b> (provider list) and one <b>analytics</b> POST (daily buckets, last 24 months) for all providers at once. Est. revenue is derived client-side from the per-provider rev-share rates in server config (<b>/v2/config</b>); the analytics response has no revenue field.</li>
+      <li>Live data from the <b>/v1</b> reporting API: <b>getAppId</b> (apiKey auth), <b>getPluginIds</b> (provider list) and one <b>analytics</b> POST (daily buckets, last 24 months) for all providers at once. Revenue uses the bucket's partner-reported <b>revenueUsd</b> when the provider reports one, and otherwise is estimated client-side from the per-partner rev-share rates on the app doc (served by <b>/v2/config</b>).</li>
       <li>A bad or missing API key now redirects to the key-entry screen instead of hanging: getAppId returns plain text on 400, so the response is checked before parsing and fetch errors are surfaced.</li>
       <li>Pair transactions are not recorded by the API (only pair volume), so under a pair filter each provider's txs and avg tx are estimated by scaling its tx count by that pair's share of its volume.</li>
     </ul>
@@ -527,7 +527,7 @@ function displayName(pluginId) {
 function buildProviderDaily(dayBuckets) {
   const arr = new Array(DAYS);
   for (let idx = 0; idx < DAYS; idx++) {
-    arr[idx] = { t: new Date(TODAY.getTime() - (DAYS - 1 - idx) * DAY), usd: 0, txs: 0, pairs: {} };
+    arr[idx] = { t: new Date(TODAY.getTime() - (DAYS - 1 - idx) * DAY), usd: 0, txs: 0, rev: 0, pairs: {} };
   }
   for (const b of dayBuckets) {
     const bucketDayIndex = utcDayIndex(b.start * 1000); // bucket.start is seconds
@@ -536,6 +536,7 @@ function buildProviderDaily(dayBuckets) {
     const slot = arr[idx];
     slot.usd += b.usdValue || 0;
     slot.txs += b.numTxs || 0;
+    slot.rev += b.revenueUsd || 0; // reported by the partner, summed at ingest
     const pairs = b.currencyPairs || {};
     for (const k in pairs) slot.pairs[k] = (slot.pairs[k] || 0) + pairs[k];
   }
@@ -570,6 +571,11 @@ async function loadData(apiKey) {
   });
   // A provider is "active" if it moved any volume in the loaded window.
   PROVIDERS.forEach(p => { p.active = daily[p.i].some(b => b.usd > 0); });
+  // "reported": the partner's API reports Edge's actual fee per order, so
+  // revenue for this provider is fact, not volume * rate. Detected from the
+  // data rather than configured, so a partner that starts reporting upgrades
+  // itself on the next cache rebuild.
+  PROVIDERS.forEach(p => { p.reported = daily[p.i].some(b => b.rev > 0); });
 
   initDerived();
 }
@@ -655,19 +661,24 @@ const typeMatch = p => state.type === 'all' || p.type === state.type;
 function bucketSlice(b) {
   let pv = 0, tot = 0;
   for (const k in b.pairs) { tot += b.pairs[k]; if (state.enabledPairs.has(k)) pv += b.pairs[k]; }
-  return { vol: pv, txs: tot > 0 ? b.txs * pv / tot : 0 };
+  // Reported revenue is per bucket, not per pair, so pair filtering attributes
+  // it proportionally to the filtered share of volume (same rule as txs).
+  return { vol: pv, txs: tot > 0 ? b.txs * pv / tot : 0, rev: tot > 0 ? b.rev * pv / tot : 0 };
 }
+// Revenue for one provider slice: the partner-reported figure when this
+// provider reports one, else the estimate volume * revShareRate.
+function revOf(p, s) { return p.reported ? s.rev : s.vol * p.rr; }
 function providerRows(daysBack) { // per-provider aggregates over the window (type- and pair-filtered)
   const { from, to } = daysBack;
   return PROVIDERS.filter(p => p.active && typeMatch(p)).map(p => {
-    let usd = 0, txs = 0;
+    let usd = 0, txs = 0, rev = 0;
     const arr = daily[p.i];
     for (let d = DAYS - 1 - from; d <= DAYS - 1 - to; d++) {
       const b = arr[d]; if (!b) continue;
       const s = bucketSlice(b);
-      usd += s.vol; txs += s.txs;
+      usd += s.vol; txs += s.txs; rev += revOf(p, s);
     }
-    return { p, usd, txs, rev: usd * p.rr };
+    return { p, usd, txs, rev };
   });
 }
 function provBuckets(daysBack) { // time buckets per enabled provider
@@ -687,7 +698,7 @@ function provBuckets(daysBack) { // time buckets per enabled provider
       const b = daily[p.i][DAYS - 1 - d]; if (!b) continue;
       const s = bucketSlice(b);
       const v = slot.vals[p.name] || (slot.vals[p.name] = { usd: 0, txs: 0, rev: 0 });
-      v.usd += s.vol; v.txs += s.txs; v.rev += s.vol * p.rr;
+      v.usd += s.vol; v.txs += s.txs; v.rev += revOf(p, s);
     }
   }
   return { out, gran };
@@ -825,7 +836,7 @@ function renderSummary() {
     for (const p of PROVIDERS.filter(p => p.active && typeMatch(p) && state.enabled.has(p.name))) {
       const b = daily[p.i][DAYS - 1 - d]; if (!b) continue;
       const s = bucketSlice(b);
-      v += s.vol; t += s.txs; r += s.vol * p.rr;
+      v += s.vol; t += s.txs; r += revOf(p, s);
     }
     days.push({ v, t, r });
   }
@@ -1194,7 +1205,9 @@ function renderTable() {
     sb.appendChild(fi);
     const pt = document.createElement('span'); pt.textContent = (r.share * 100).toFixed(1) + '%';
     sc.append(sb, pt); td.appendChild(sc); tr.appendChild(td);
-    td = document.createElement('td'); td.textContent = fmtMoney(r.rev); tr.appendChild(td);
+    td = document.createElement('td'); td.textContent = fmtMoney(r.rev);
+    if (r.p.reported) { td.textContent += ' \u2713'; td.title = 'Reported by the partner (actual fees), not estimated'; }
+    tr.appendChild(td);
     td = document.createElement('td'); td.textContent = Math.round(r.txs).toLocaleString('en-US'); tr.appendChild(td);
     td = document.createElement('td'); td.textContent = fmtMoney(r.avg); tr.appendChild(td);
     td = document.createElement('td');
@@ -1249,10 +1262,14 @@ function pairDetailRows(daysBack) {
   for (const p of PROVIDERS.filter(p => p.active && typeMatch(p) && state.enabled.has(p.name))) {
     for (let d = from; d >= to; d--) {
       const b = daily[p.i][DAYS - 1 - d]; if (!b) continue;
+      // Reported revenue is per bucket, so attribute it to pairs by volume
+      // share (same proportional rule as bucketSlice).
+      let tot = 0; for (const k in b.pairs) tot += b.pairs[k];
       for (const k in b.pairs) {
         if (!state.enabledPairs.has(k)) continue;
         const a = agg[k] || (agg[k] = { vol: 0, rev: 0, provs: new Set() });
-        a.vol += b.pairs[k]; a.rev += b.pairs[k] * p.rr;
+        a.vol += b.pairs[k];
+        a.rev += p.reported ? (tot > 0 ? b.rev * b.pairs[k] / tot : 0) : b.pairs[k] * p.rr;
         if (b.pairs[k] > 0) a.provs.add(p.name);
       }
     }

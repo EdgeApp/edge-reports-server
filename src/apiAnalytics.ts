@@ -13,12 +13,14 @@ interface DbTx {
   payoutCurrency: string
   timestamp: number
   usdValue: number
+  revenueUsd?: number
 }
 
 interface Bucket {
   start: number
   usdValue: number
   numTxs: number
+  revenueUsd: number
   isoDate: string
   currencyCodes: { [currencyCode: string]: number }
   currencyPairs: { [currencyPair: string]: number }
@@ -49,6 +51,7 @@ export const getAnalytics = (
         isoDate: monthStart.toISOString(),
         usdValue: 0,
         numTxs: 0,
+        revenueUsd: 0,
         currencyCodes: {},
         currencyPairs: {}
       })
@@ -66,6 +69,7 @@ export const getAnalytics = (
         isoDate: dayStart.toISOString(),
         usdValue: 0,
         numTxs: 0,
+        revenueUsd: 0,
         currencyCodes: {},
         currencyPairs: {}
       })
@@ -83,6 +87,7 @@ export const getAnalytics = (
         isoDate: hourStart.toISOString(),
         usdValue: 0,
         numTxs: 0,
+        revenueUsd: 0,
         currencyCodes: {},
         currencyPairs: {}
       })
@@ -160,6 +165,8 @@ const bucketAdder = (bucket: Bucket, tx: DbTx): void => {
   bucket.numTxs++
   // usdValue
   bucket.usdValue += tx.usdValue != null ? tx.usdValue : 0
+  // reported revenue (partners that do not report one contribute 0)
+  bucket.revenueUsd += tx.revenueUsd != null ? tx.revenueUsd : 0
   // currencyCode
   if (bucket.currencyCodes[tx.depositCurrency] == null) {
     bucket.currencyCodes[tx.depositCurrency] = 0

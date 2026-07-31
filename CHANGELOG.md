@@ -7,6 +7,7 @@
 - added: Add Swapter reporting
 - added: Add NYM Swap (nymswap) reporting
 - added: Isolated v2 reports dashboard at /v2/ (real /v1 API data, apiKey auth with redirect on a bad key)
+- added: Partner-reported revenue (revenueUsd/revenueSource) on StandardTx, summed through the analytics cache; Revolut reports it, and the v2 dashboard uses reported figures where present with volume x revShareRate as the estimate elsewhere
 - changed: Update sideshift plugin with new optional API fields
 - changed: Query both old and new Sideshift affiliate accounts and merge completed orders to preserve full shift history across an affiliate-account rotation
 - changed: Add signature header support to Exolix

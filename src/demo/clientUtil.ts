@@ -144,6 +144,7 @@ export const createQuarterBuckets = (analytics: AnalyticsResult): Bucket[] => {
       start: realTimestamp / 1000,
       usdValue: 0,
       numTxs: 0,
+      revenueUsd: undefined,
       isoDate: new Date(realTimestamp).toISOString(),
       currencyCodes: {},
       currencyPairs: {}

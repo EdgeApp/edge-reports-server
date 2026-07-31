@@ -1,4 +1,4 @@
-import { asArray, asNumber, asObject, asString } from 'cleaners'
+import { asArray, asNumber, asObject, asOptional, asString } from 'cleaners'
 import nano from 'nano'
 
 import { config } from './config'
@@ -15,7 +15,8 @@ export const asDbReq = asObject({
       depositCurrency: asString,
       payoutCurrency: asString,
       timestamp: asNumber,
-      usdValue: asNumber
+      usdValue: asNumber,
+      revenueUsd: asOptional(asNumber)
     })
   )
 })
@@ -106,6 +107,7 @@ export const cacheAnalytic = async (
             start: cacheObj.timestamp,
             usdValue: cacheObj.usdValue,
             numTxs: cacheObj.numTxs,
+            revenueUsd: cacheObj.revenueUsd,
             isoDate: new Date(cacheObj.timestamp).toISOString(),
             currencyCodes: cacheObj.currencyCodes,
             currencyPairs: cacheObj.currencyPairs

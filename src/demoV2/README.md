@@ -34,20 +34,27 @@ Auth reuses v1's simple apiKey model: the key lives in the `apiKey` cookie (a
 
 ### Est. revenue
 
-The reporting API has no revenue field. v2 derives estimated revenue client-side
-as `volume * revShareRate`, where the rate map is keyed by pluginId. Providers
-with no rate contribute 0.
+Where the partner's API reports Edge's actual fee per order (e.g. Revolut's
+`partner_fee`, pre-converted to USD), the plugin stores it on the transaction as
+`revenueUsd` with `revenueSource: 'reported'`, the cache engine sums it into the
+analytics buckets, and the dashboard uses it directly, marked with a check in
+the provider table. That figure is a fact about the order and never recomputed.
 
-The rates live in the `reports_settings` db as the `revShareRates` doc, the same
-place `currencyCodeMappings` already lives:
+For partners that report no fee, revenue is estimated at read time as
+`volume * revShareRate`. The rate lives on the app doc in `reports_apps`, as an
+optional `revShareRate` beside that partner's `apiKeys`:
 
 ```json
-{ "_id": "revShareRates", "rates": { "<pluginId>": 0.005 } }
+"partnerIds": {
+  "moonpay": { "apiKeys": { "apiKey": "..." }, "revShareRate": 0.008 }
+}
 ```
 
-They are deliberately not in source or `config.json`: they are commercial terms
-and this repo is public. A missing doc means no rates, and the dashboard shows 0
-estimated revenue rather than a number that should not be public.
+Per app and per partner, because the rate is a property of the deal. Estimating
+at read time rather than at ingest means correcting a rate fixes history
+immediately, while reported figures stay immutable. The rates are deliberately
+not in source or `config.json`: they are commercial terms and this repo is
+public. A partner with neither reported fees nor a rate contributes 0.
 
 ## Local testing
 

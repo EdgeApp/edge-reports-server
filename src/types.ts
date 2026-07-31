@@ -148,6 +148,21 @@ export const asStandardTx = asObject({
   isoDate: asString,
   timestamp: asNumber,
   usdValue: asNumber,
+  /**
+   * Edge's actual revenue on this order in USD, when the partner's API reports
+   * it (e.g. Revolut's partner_fee, pre-converted to USD by Revolut). Stored at
+   * ingest as a fact about the order, never recomputed. Absent when the partner
+   * does not report one; the v2 dashboard then estimates revenue at read time
+   * as usdValue * the app doc's per-partner revShareRate, so a corrected rate
+   * fixes history immediately while reported figures stay immutable.
+   */
+  revenueUsd: asOptional(asNumber),
+  /**
+   * How revenueUsd was obtained. 'reported' is the only value written at
+   * ingest; 'estimated' exists so read-time consumers can tag derived figures
+   * without inventing a second vocabulary.
+   */
+  revenueSource: asOptional(asValue('reported', 'estimated')),
   rawTx: asUnknown
 })
 
@@ -203,6 +218,9 @@ const asCacheEntry = asObject({
   timestamp: asNumber,
   usdValue: asNumber,
   numTxs: asNumber,
+  // Sum of reported revenueUsd across the bucket's txs. Optional: cache docs
+  // written before this field existed lack it, and rebuilding fills it in.
+  revenueUsd: asOptional(asNumber),
   currencyCodes: asObject(asNumber),
   currencyPairs: asObject(asNumber)
 })
@@ -215,6 +233,7 @@ export const asBucket = asObject({
   start: asNumber,
   usdValue: asNumber,
   numTxs: asNumber,
+  revenueUsd: asOptional(asNumber),
   isoDate: asString,
   currencyCodes: asObject(asNumber),
   currencyPairs: asObject(asNumber)
@@ -274,8 +293,31 @@ export type AnalyticsResult = ReturnType<typeof asAnalyticsResult>
 
 export type CurrencyCodeMappings = ReturnType<typeof asCurrencyCodeMappings>
 export type DbCurrencyCodeMappings = ReturnType<typeof asDbCurrencyCodeMappings>
-export type DbTx = ReturnType<typeof asDbTx>
-export type StandardTx = ReturnType<typeof asStandardTx>
+// Same optional-key relaxation as StandardTx (asDbTx spreads its shape).
+export type DbTx = Omit<
+  ReturnType<typeof asDbTx>,
+  'revenueUsd' | 'revenueSource'
+> & {
+  revenueUsd?: number
+  revenueSource?: string
+}
+/**
+ * `revenueUsd`/`revenueSource` are truly optional KEYS, not just
+ * possibly-undefined values: only partners whose APIs report an actual fee set
+ * them, and requiring every other plugin to spell out two explicit undefineds
+ * would churn the whole partner directory for no information. The cleaner
+ * still validates both fields when present.
+ */
+export type StandardTx = Omit<
+  ReturnType<typeof asStandardTx>,
+  'revenueUsd' | 'revenueSource'
+> & {
+  revenueUsd?: number
+  // Widened to string at the type level because asObject's shape inference
+  // widens asValue literals anyway; the cleaner still enforces
+  // 'reported' | 'estimated' at runtime.
+  revenueSource?: string
+}
 export type PluginParams = ReturnType<typeof asPluginParams> & {
   log: ScopedLog
 }
