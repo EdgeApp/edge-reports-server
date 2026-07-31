@@ -1270,7 +1270,7 @@
       "numAllTxs": 165
     },
     "app": "edge",
-    "pluginId": "coinswitch",
+    "partnerId": "coinswitch",
     "start": 1594023608,
     "end": 1596055300
   },
@@ -1549,7 +1549,7 @@
       "numAllTxs": 5
     },
     "app": "app-dummy",
-    "pluginId": "partner-dummy",
+    "partnerId": "partner-dummy",
     "start": 1300000000,
     "end": 1300070000
   },
@@ -2656,7 +2656,7 @@
       "numAllTxs": 5
     },
     "app": "app-dummy",
-    "pluginId": "partner-dummy",
+    "partnerId": "partner-dummy",
     "start": 1708992000,
     "end": 1709424000
   },
@@ -2815,7 +2815,7 @@
       "numAllTxs": 2
     },
     "app": "app-dummy",
-    "pluginId": "partner-dummy",
+    "partnerId": "partner-dummy",
     "start": 1672444800,
     "end": 1706918400
   }
