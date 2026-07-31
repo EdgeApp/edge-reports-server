@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- added: Document the verified reporting-API status and unblock path for nexchange, Simplex and Bridgeless
 - changed: Update sideshift plugin with new optional API fields
 - changed: Query both old and new Sideshift affiliate accounts and merge completed orders to preserve full shift history across an affiliate-account rotation
 - changed: Add signature header support to Exolix
