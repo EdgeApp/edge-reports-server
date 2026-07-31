@@ -179,7 +179,15 @@ export const asStandardPluginParams = asObject({
 
 const asPartnerInfo = asObject({
   pluginId: asOptional(asString),
-  apiKeys: asMap(asString)
+  apiKeys: asMap(asString),
+  /**
+   * Revenue-share rate for this app-partner relationship (fraction of volume),
+   * used by the v2 dashboard to estimate revenue when the partner's API does
+   * not report actual fees. Lives here, beside the credentials that define the
+   * relationship, because the rate is a property of the deal: per app AND per
+   * partner. Never committed to source; this repo is public.
+   */
+  revShareRate: asOptional(asNumber)
 })
 
 export const asApp = asObject({
