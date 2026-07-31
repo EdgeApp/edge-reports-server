@@ -28,6 +28,7 @@ import { rango } from './partners/rango'
 import { safello } from './partners/safello'
 import { sideshift } from './partners/sideshift'
 import { simplex } from './partners/simplex'
+import { swapter } from './partners/swapter'
 import { swapuz } from './partners/swapuz'
 import { switchain } from './partners/switchain'
 import { maya, thorchain } from './partners/thorchain'
@@ -80,6 +81,7 @@ const plugins = [
   safello,
   sideshift,
   simplex,
+  swapter,
   swapuz,
   switchain,
   thorchain,

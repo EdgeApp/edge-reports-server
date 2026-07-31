@@ -121,6 +121,10 @@ export default {
     type: 'swap',
     color: '#E35852'
   },
+  swapter: {
+    type: 'swap',
+    color: '#00C9A7'
+  },
   swapuz: {
     type: 'swap',
     color: '#56BD7C'
