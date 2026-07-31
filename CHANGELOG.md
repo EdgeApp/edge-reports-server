@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- added: CI job that runs the mocha test suite on every pull request
+- added: Add Revolut fiat payment provider
+- added: Add Swapter reporting
+- added: Add NYM Swap (nymswap) reporting
 - changed: Update sideshift plugin with new optional API fields
 - changed: Query both old and new Sideshift affiliate accounts and merge completed orders to preserve full shift history across an affiliate-account rotation
 - changed: Add signature header support to Exolix
@@ -11,6 +15,7 @@
 - changed: Use rates V3 for transactions with pluginId/tokenId
 - fixed: Moonpay by adding Revolut payment type
 - fixed: Use v2 rates API
+- fixed: Repair the broken mocha test suite (correct util.test.ts import and stale analytics fixtures) so npm test passes
 
 ## 0.2.0
 
