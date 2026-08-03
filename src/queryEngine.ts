@@ -22,6 +22,7 @@ import { letsexchange } from './partners/letsexchange'
 import { libertyx } from './partners/libertyx'
 import { lifi } from './partners/lifi'
 import { moonpay } from './partners/moonpay'
+import { nexchange } from './partners/nexchange'
 import { paybis } from './partners/paybis'
 import { paytrie } from './partners/paytrie'
 import { rango } from './partners/rango'
@@ -34,6 +35,7 @@ import { maya, thorchain } from './partners/thorchain'
 import { transak } from './partners/transak'
 import { wyre } from './partners/wyre'
 import { xanpool } from './partners/xanpool'
+import { xgram } from './partners/xgram'
 import {
   asApp,
   asApps,
@@ -74,6 +76,7 @@ const plugins = [
   lifi,
   maya,
   moonpay,
+  nexchange,
   paybis,
   paytrie,
   rango,
@@ -85,7 +88,8 @@ const plugins = [
   thorchain,
   transak,
   wyre,
-  xanpool
+  xanpool,
+  xgram
 ]
 const QUERY_FREQ_MS = 60 * 1000
 const MAX_CONCURRENT_QUERIES = 3

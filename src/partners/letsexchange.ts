@@ -201,6 +201,68 @@ const LETSEXCHANGE_NETWORK_TO_PLUGIN_ID: Record<string, string> = {
   ZKSYNC: 'zksync'
 }
 
+// When the API omits network fields, infer native chain from currency code.
+// Only unambiguous 1:1 native-ticker cases (not USDT, USDC, BNB, etc.).
+const LETSEXCHANGE_CURRENCY_TO_DEFAULT_NETWORK: Record<string, string> = {
+  ADA: 'ADA',
+  ALGO: 'ALGO',
+  ARRR: 'ARRR',
+  ATOM: 'ATOM',
+  AVAX: 'AVAXC',
+  BCH: 'BCH',
+  BSV: 'BSV',
+  BTC: 'BTC',
+  BTG: 'BTG',
+  CELO: 'CELO',
+  COREUM: 'COREUM',
+  DASH: 'DASH',
+  DGB: 'DGB',
+  DOGE: 'DOGE',
+  DOT: 'DOT',
+  EOS: 'EOS',
+  ETC: 'ETC',
+  ETH: 'ETH',
+  ETHW: 'ETHW',
+  FIL: 'FIL',
+  FIO: 'FIO',
+  FIRO: 'FIRO',
+  FTM: 'FTM',
+  GRS: 'GRS',
+  HBAR: 'HBAR',
+  LTC: 'LTC',
+  MATIC: 'MATIC',
+  PIVX: 'PIVX',
+  POL: 'POL',
+  PLS: 'PLS',
+  QTUM: 'QTUM',
+  RUNE: 'RUNE',
+  RVN: 'RVN',
+  SOL: 'SOL',
+  SONIC: 'SONIC',
+  SUI: 'SUI',
+  TLOS: 'TLOS',
+  TON: 'TON',
+  TRX: 'TRX',
+  XEC: 'XEC',
+  XLM: 'XLM',
+  XMR: 'XMR',
+  XRP: 'XRP',
+  XTZ: 'XTZ',
+  ZANO: 'ZANO',
+  ZEC: 'ZEC'
+}
+
+function resolveNetworkCode(
+  network: string | null,
+  currencyCode: string,
+  isoDate: string
+): string | null {
+  if (network != null) return network
+  if (isoDate < NETWORK_FIELDS_AVAILABLE_DATE) return null
+  const currencyUpper = currencyCode.toUpperCase()
+  return LETSEXCHANGE_CURRENCY_TO_DEFAULT_NETWORK[currencyUpper] ?? null
+}
+
 // Native token placeholder addresses that should be treated as null (native coin)
 // All values should be lowercase for case-insensitive matching
 const NATIVE_TOKEN_ADDRESSES = new Set([
@@ -299,13 +361,10 @@ function getAssetInfo(
   contractAddress: string | null,
   isoDate: string
 ): AssetInfo | undefined {
-  if (initialNetwork == null) {
-    if (isoDate < NETWORK_FIELDS_AVAILABLE_DATE) {
-      return undefined
-    }
-    throw new Error(`Missing network for currency ${currencyCode}`)
+  const network = resolveNetworkCode(initialNetwork, currencyCode, isoDate)
+  if (network == null) {
+    return undefined
   }
-  const network = initialNetwork
 
   const networkUpper = network.toUpperCase()
   const chainPluginId = LETSEXCHANGE_NETWORK_TO_PLUGIN_ID[networkUpper]

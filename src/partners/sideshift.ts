@@ -81,6 +81,7 @@ const DELISTED_COINS: Record<string, string | null> = {
   'MATIC-polygon': null, // Native gas token (rebranded to POL)
   'MKR-ethereum': '0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2',
   'PYTH-solana': 'HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3',
+  'SWARMS-solana': '74SBV4zDXxTRgv1pEMoECskKBkZHc2yGPnc7GYVepump',
   'USDC-tron': 'TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8',
   'XMR-monero': null, // Native gas token
   'ZEC-zcash': null // Native gas token

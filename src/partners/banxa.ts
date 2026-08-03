@@ -607,7 +607,10 @@ function getFiatPaymentType(tx: BanxaTx): FiatPaymentType {
     case 'WorldPay ApplePay':
     case 'Primer Apple Pay':
       return 'applepay'
+    case 'Primer Paypal Pay':
+      return 'paypal'
     case 'WorldPay GooglePay':
+    case 'Primer Google Pay':
       return 'googlepay'
     case 'iDEAL Transfer':
       return 'ideal'
