@@ -376,24 +376,19 @@ function getAssetInfo(network: string, currencyCode: string): EdgeAssetInfo {
     )
   }
 
-  try {
-    const tokenId = createTokenId(
-      tokenType,
-      currencyCode.toUpperCase(),
-      contractAddress
-    )
-    return {
-      chainPluginId,
-      evmChainId,
-      tokenId
-    }
-  } catch (e) {
-    // If tokenId creation fails, treat as native (no log available in this sync function)
-    return {
-      chainPluginId,
-      evmChainId,
-      tokenId: null
-    }
+  // Let createTokenId throw if the contract address cannot be converted: a
+  // token must never be silently downgraded to a native (tokenId: null)
+  // mapping, which would price it with the chain's gas-token rate and
+  // overcount volume whenever the token is worth less than the gas token.
+  const tokenId = createTokenId(
+    tokenType,
+    currencyCode.toUpperCase(),
+    contractAddress
+  )
+  return {
+    chainPluginId,
+    evmChainId,
+    tokenId
   }
 }
 
