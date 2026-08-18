@@ -80,6 +80,7 @@ const asFiatPaymentType = asValue(
   'bpay',
   'blueshyft',
   'cash',
+  'cashapp',
   'colombiabank',
   'credit',
   'directtobank',

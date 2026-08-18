@@ -587,6 +587,8 @@ function getFiatPaymentType(tx: BanxaTx): FiatPaymentType {
     case 'Sofort Transfer':
       return 'sofort'
     case 'Checkout Credit Card':
+    case 'Checkout Payouts':
+    case 'CHECKOUTPO':
     case 'Primer Credit Card':
     case 'WorldPay Credit Card':
       return 'credit'
