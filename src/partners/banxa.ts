@@ -627,6 +627,8 @@ function getFiatPaymentType(tx: BanxaTx): FiatPaymentType {
       return 'turkishbank'
     case 'ClearJunction Sell Sepa':
       return 'sepa'
+    case 'DLocal Brazil PIX Payout':
+    case 'DLOCALPIXPO':
     case 'Dlocal Brazil PIX':
       return 'pix'
     case 'DLocal South Africa IO':
