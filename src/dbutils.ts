@@ -1,4 +1,4 @@
-import { asArray, asNumber, asObject, asString } from 'cleaners'
+import { asArray, asNumber, asObject, asOptional, asString } from 'cleaners'
 import nano from 'nano'
 
 import { config } from './config'
@@ -14,8 +14,11 @@ export const asDbReq = asObject({
       orderId: asString,
       depositCurrency: asString,
       payoutCurrency: asString,
+      depositChainPluginId: asOptional(asString),
+      payoutChainPluginId: asOptional(asString),
       timestamp: asNumber,
-      usdValue: asNumber
+      usdValue: asNumber,
+      revenueUsd: asOptional(asNumber)
     })
   )
 })
@@ -92,7 +95,7 @@ export const cacheAnalytic = async (
           usdValue: { $gte: 0 },
           timestamp: { $gte: startForDayTimePeriod ?? start, $lt: end }
         },
-        use_index: 'timestamp-index',
+        use_index: 'timestamp-p',
         sort: ['timestamp'],
         limit: 1000000
       }
@@ -106,9 +109,11 @@ export const cacheAnalytic = async (
             start: cacheObj.timestamp,
             usdValue: cacheObj.usdValue,
             numTxs: cacheObj.numTxs,
+            revenueUsd: cacheObj.revenueUsd,
             isoDate: new Date(cacheObj.timestamp).toISOString(),
             currencyCodes: cacheObj.currencyCodes,
-            currencyPairs: cacheObj.currencyPairs
+            currencyPairs: cacheObj.currencyPairs,
+            chainedPairs: cacheObj.chainedPairs
           }
         })
         console.time(`${partnerId} ${timePeriod} cache fetched`)

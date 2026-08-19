@@ -125,6 +125,17 @@ export type FiatPaymentType = ReturnType<typeof asFiatPaymentType>
 /** The type of exchange that the partner is. A 'fiat' type means on/off ramp. */
 const asExchangeType = asValue('fiat', 'swap')
 
+/**
+ * How `revenueUsd` was obtained. The type parameter is pinned to the literal
+ * tuple on purpose: left to inference `asValue` widens to `string`, which
+ * silently costs every consumer the compile-time guarantee and leaves only the
+ * runtime cleaner to catch a bad value, after it may already be persisted.
+ */
+const asRevenueSource = asValue<['reported', 'estimated']>(
+  'reported',
+  'estimated'
+)
+
 export const asStandardTx = asObject({
   orderId: asString,
   countryCode: asEither(asString, asNull, asUndefined),
@@ -149,6 +160,21 @@ export const asStandardTx = asObject({
   isoDate: asString,
   timestamp: asNumber,
   usdValue: asNumber,
+  /**
+   * Edge's actual revenue on this order in USD, when the partner's API reports
+   * it (e.g. Revolut's partner_fee, pre-converted to USD by Revolut). Stored at
+   * ingest as a fact about the order, never recomputed. Absent when the partner
+   * does not report one; the v2 dashboard then estimates revenue at read time
+   * as usdValue * the app doc's per-partner revShareRate, so a corrected rate
+   * fixes history immediately while reported figures stay immutable.
+   */
+  revenueUsd: asOptional(asNumber),
+  /**
+   * How revenueUsd was obtained. 'reported' is the only value written at
+   * ingest; 'estimated' exists so read-time consumers can tag derived figures
+   * without inventing a second vocabulary.
+   */
+  revenueSource: asOptional(asRevenueSource),
   rawTx: asUnknown
 })
 
@@ -180,7 +206,15 @@ export const asStandardPluginParams = asObject({
 
 const asPartnerInfo = asObject({
   pluginId: asOptional(asString),
-  apiKeys: asMap(asString)
+  apiKeys: asMap(asString),
+  /**
+   * Revenue-share rate for this app-partner relationship (fraction of volume),
+   * used by the v2 dashboard to estimate revenue when the partner's API does
+   * not report actual fees. Lives here, beside the credentials that define the
+   * relationship, because the rate is a property of the deal: per app AND per
+   * partner. Never committed to source; this repo is public.
+   */
+  revShareRate: asOptional(asNumber)
 })
 
 export const asApp = asObject({
@@ -196,8 +230,12 @@ const asCacheEntry = asObject({
   timestamp: asNumber,
   usdValue: asNumber,
   numTxs: asNumber,
+  // Sum of reported revenueUsd across the bucket's txs. Optional: cache docs
+  // written before this field existed lack it, and rebuilding fills it in.
+  revenueUsd: asOptional(asNumber),
   currencyCodes: asObject(asNumber),
-  currencyPairs: asObject(asNumber)
+  currencyPairs: asObject(asNumber),
+  chainedPairs: asOptional(asObject(asNumber))
 })
 
 export const asCacheQuery = asObject({
@@ -208,9 +246,11 @@ export const asBucket = asObject({
   start: asNumber,
   usdValue: asNumber,
   numTxs: asNumber,
+  revenueUsd: asOptional(asNumber),
   isoDate: asString,
   currencyCodes: asObject(asNumber),
-  currencyPairs: asObject(asNumber)
+  currencyPairs: asObject(asNumber),
+  chainedPairs: asOptional(asObject(asNumber))
 })
 
 export const asAnalyticsResult = asObject({
@@ -267,8 +307,28 @@ export type AnalyticsResult = ReturnType<typeof asAnalyticsResult>
 
 export type CurrencyCodeMappings = ReturnType<typeof asCurrencyCodeMappings>
 export type DbCurrencyCodeMappings = ReturnType<typeof asDbCurrencyCodeMappings>
-export type DbTx = ReturnType<typeof asDbTx>
-export type StandardTx = ReturnType<typeof asStandardTx>
+// Same optional-key relaxation as StandardTx (asDbTx spreads its shape).
+export type DbTx = Omit<
+  ReturnType<typeof asDbTx>,
+  'revenueUsd' | 'revenueSource'
+> & {
+  revenueUsd?: number
+  revenueSource?: 'reported' | 'estimated'
+}
+/**
+ * `revenueUsd`/`revenueSource` are truly optional KEYS, not just
+ * possibly-undefined values: only partners whose APIs report an actual fee set
+ * them, and requiring every other plugin to spell out two explicit undefineds
+ * would churn the whole partner directory for no information. The cleaner
+ * still validates both fields when present.
+ */
+export type StandardTx = Omit<
+  ReturnType<typeof asStandardTx>,
+  'revenueUsd' | 'revenueSource'
+> & {
+  revenueUsd?: number
+  revenueSource?: 'reported' | 'estimated'
+}
 export type PluginParams = ReturnType<typeof asPluginParams> & {
   log: ScopedLog
 }
