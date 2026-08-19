@@ -5,7 +5,7 @@ import {
   createQuarterBuckets,
   movingAveDataSort,
   sevenDayDataMerge
-} from '../lib/util'
+} from '../src/demo/clientUtil'
 import { fixtures } from './utilFixtures.js'
 
 // add case with 1, 2, 3, 4 month bucket
