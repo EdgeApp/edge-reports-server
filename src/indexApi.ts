@@ -8,7 +8,9 @@ import { analyticsRouter } from './routes/v1/analytics'
 import { checkTxsRouter } from './routes/v1/checkTxs'
 import { getAppIdRouter } from './routes/v1/getAppId'
 import { getPluginIdsRouter } from './routes/v1/getPluginIds'
+// Disabled on deploy: not private enough and is scrapable.
 // import { getTxInfoRouter } from './routes/v1/getTxInfo'
+import { getConfigRouter } from './routes/v2/getConfig'
 import { HttpError } from './util/httpErrors'
 
 export const nanoDb = nano(config.couchDbFullpath)
@@ -30,6 +32,11 @@ async function main(): Promise<void> {
   app.use('/v1/getPluginIds/', getPluginIdsRouter)
   // Disabled: not private enough and is scrapable.
   // app.use('/v1/getTxInfo/', getTxInfoRouter)
+
+  // v2 dashboard config (isolated; v1 routes untouched). The static handler
+  // above serves the built /v2/ bundle from dist; this API path falls through
+  // it because no matching file exists in dist.
+  app.use('/v2/config/', getConfigRouter)
 
   // Error router
   app.use(function(err, _req, res, _next) {
