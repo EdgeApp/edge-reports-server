@@ -12,14 +12,13 @@ import {
 } from 'cleaners'
 
 import {
-  asStandardPluginParams,
   PartnerPlugin,
   PluginParams,
   PluginResult,
   StandardTx,
   Status
 } from '../types'
-import { retryFetch, safeParseFloat, snooze } from '../util'
+import { describeRawTx, retryFetch, safeParseFloat, snooze } from '../util'
 import { createTokenId, EdgeTokenId, tokenTypes } from '../util/asEdgeTokenId'
 import { EVM_CHAIN_IDS } from '../util/chainIds'
 
@@ -77,6 +76,13 @@ interface EdgeAssetInfo {
 
 const MAX_RETRIES = 5
 const LIMIT = 50
+
+// Hard ceiling on pages per run, matching the sibling plugins. Every exit below
+// is driven by a partner-supplied signal, which leaves how long the worker runs
+// as the partner's decision; a page that never empties would spin indefinitely.
+// Xgram only advances its watermark on a clean completion, so a capped run
+// re-queries the same range next cycle rather than skipping orders.
+const MAX_PAGES = 200
 const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 
@@ -345,6 +351,23 @@ function parseAmount(
   return safeParseFloat(amount)
 }
 
+/**
+ * Best-effort isoDate for an order that failed to process, used only to keep the
+ * newest-to-oldest walk's stop condition working across quarantined rows.
+ * Returns null when even the raw date is unusable, in which case that row simply
+ * cannot participate in the boundary test.
+ */
+function readXgramIsoDate(rawTx: unknown): string | null {
+  if (typeof rawTx !== 'object' || rawTx === null) return null
+  const date = (rawTx as { [key: string]: unknown }).date
+  if (typeof date !== 'string') return null
+  try {
+    return parseXgramDate(date).isoDate
+  } catch {
+    return null
+  }
+}
+
 function parseXgramDate(date: string): { isoDate: string; timestamp: number } {
   const match = date.match(/^(\d{2})\.(\d{2})\.(\d{4}) (\d{2}:\d{2}:\d{2})$/)
   if (match == null) {
@@ -358,13 +381,36 @@ function parseXgramDate(date: string): { isoDate: string; timestamp: number } {
   return { isoDate: parsed.toISOString(), timestamp: parsed.getTime() / 1000 }
 }
 
+/**
+ * Xgram walks newest to oldest, so a run that stops early cannot express its
+ * progress as a watermark: the watermark tracks the NEWEST order, while an
+ * early stop leaves the OLDEST end unfinished. These two extra settings carry
+ * that state instead.
+ *
+ * `resumePage` is the page the next run should start from, and
+ * `pendingLatestIsoDate` is the newest order seen so far in a walk that has not
+ * finished yet. Without them, a run that hit the page cap would restart at page
+ * zero every cycle, refetch the same newest pages forever, and never reach
+ * older history, so any backfill larger than one run's cap could never complete.
+ */
+const asXgramPluginParams = asObject({
+  settings: asObject({
+    latestIsoDate: asOptional(asString, '1970-01-01T00:00:00.000Z'),
+    resumePage: asOptional(asNumber, 0),
+    pendingLatestIsoDate: asOptional(asString)
+  }),
+  apiKeys: asObject({
+    apiKey: asMaybe(asString)
+  })
+})
+
 export const queryXgram = async (
   pluginParams: PluginParams
 ): Promise<PluginResult> => {
   const { log } = pluginParams
-  const { settings, apiKeys } = asStandardPluginParams(pluginParams)
+  const { settings, apiKeys } = asXgramPluginParams(pluginParams)
   const { apiKey } = apiKeys
-  const { latestIsoDate } = settings
+  const { latestIsoDate, resumePage, pendingLatestIsoDate } = settings
 
   if (apiKey == null) {
     return { settings: { latestIsoDate }, transactions: [] }
@@ -384,12 +430,18 @@ export const queryXgram = async (
   // permanent fetch failure) must leave the persisted watermark untouched so
   // the next run re-queries the same range instead of skipping the orders that
   // were never reached.
-  let newLatestIsoDate = latestIsoDate
+  // Carry the in-progress candidate across a resumed walk: the newest orders
+  // are only seen on the first run of that walk, so re-deriving it here would
+  // throw away the real watermark.
+  let newLatestIsoDate = pendingLatestIsoDate ?? latestIsoDate
   let completed = false
-  let page = 0
+  // Orders dropped as unprocessable, surfaced as a count after the walk.
+  let skipped = 0
+  let page = resumePage
   let retry = 0
   let done = false
-  while (!done) {
+  const pageBudget = resumePage + MAX_PAGES
+  while (!done && page < pageBudget) {
     const url = `https://xgram.io/api/v1/exchange-history?page=${page}&limit=${LIMIT}`
     let txs
     try {
@@ -427,7 +479,40 @@ export const queryXgram = async (
     }
     let oldestIsoDate = '999999999999999999999999999999999999'
     for (const rawTx of txs) {
-      const standardTx = processXgramTx(rawTx, currencies)
+      // Quarantine rather than throwing out of queryXgram entirely. This loop
+      // sits outside the try/catch that guards the fetch, so an unresolvable
+      // currency used to reject the whole promise: runPlugin caught it at top
+      // level and never persisted anything, discarding every order already
+      // processed on earlier pages of the same run. Sibling plugins all keep
+      // their processing step recoverable; this one now does too.
+      let standardTx: StandardTx
+      try {
+        standardTx = processXgramTx(rawTx, currencies)
+      } catch (e) {
+        skipped++
+        log.error(
+          `Xgram: skipping unprocessable order, ingestion continues: ${String(
+            e
+          )}: ${describeRawTx(rawTx)}`
+        )
+        // The walk runs newest to oldest and stops at the lookback boundary, so
+        // the boundary test cannot depend on an order having processed
+        // successfully: a page of quarantined rows would otherwise never look
+        // old enough to stop, and the walk would keep paging back through
+        // history until the page cap. Re-read the date straight off the raw
+        // payload, which is a plain string and survives whatever made the rest
+        // of the record unprocessable.
+        const skippedIsoDate = readXgramIsoDate(rawTx)
+        if (skippedIsoDate != null) {
+          if (skippedIsoDate < oldestIsoDate) oldestIsoDate = skippedIsoDate
+          if (skippedIsoDate < targetIsoDate) {
+            completed = true
+            done = true
+            break
+          }
+        }
+        continue
+      }
       if (standardTx.isoDate < oldestIsoDate) {
         oldestIsoDate = standardTx.isoDate
       }
@@ -449,8 +534,27 @@ export const queryXgram = async (
     page += 1
     retry = 0
   }
+  if (!completed && page >= pageBudget) {
+    log.warn(
+      `Xgram hit its ${MAX_PAGES}-page budget at page ${page}; the walk resumes there next run rather than restarting`
+    )
+  }
+  if (skipped > 0) {
+    log.error(
+      `Xgram: ${skipped} order(s) skipped as unprocessable this run; each is logged above and needs a mapping fix plus a backfill`
+    )
+  }
+
   const out: PluginResult = {
-    settings: { latestIsoDate: completed ? newLatestIsoDate : latestIsoDate },
+    settings: completed
+      ? { latestIsoDate: newLatestIsoDate, resumePage: 0 }
+      : {
+          // The walk is unfinished, so the watermark stays put and the next run
+          // picks the backwards walk up where this one stopped.
+          latestIsoDate,
+          resumePage: page,
+          pendingLatestIsoDate: newLatestIsoDate
+        },
     transactions: standardTxs
   }
   return out
