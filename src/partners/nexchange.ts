@@ -2,6 +2,7 @@ import {
   asArray,
   asBoolean,
   asEither,
+  asMaybe,
   asNull,
   asObject,
   asOptional,
@@ -22,7 +23,7 @@ import { createTokenId, tokenTypes } from '../util/asEdgeTokenId'
 import { EVM_CHAIN_IDS } from '../util/chainIds'
 
 // n.exchange endpoints are fixed for all deployments; they intentionally are
-// not exposed via apiKeys.  Auth uses the modern `x-api-key` header — the
+// not exposed via apiKeys.  Auth uses the modern `x-api-key` header, the
 // legacy `Authorization: ApiKey <key>` form is not used.
 const BASE_URL = 'https://api.n.exchange/en/api/v1'
 const CURRENCY_URL = 'https://api.n.exchange/en/api/v2/currency/'
@@ -30,8 +31,8 @@ const CURRENCY_URL = 'https://api.n.exchange/en/api/v2/currency/'
 const asNexchangeTransfer = asObject({
   currency: asString,
   amount: asString,
-  address: asOptional(asEither(asString, asNull), null),
-  txid: asOptional(asEither(asString, asNull), null)
+  address: asMaybe(asEither(asString, asNull), null),
+  txid: asMaybe(asEither(asString, asNull), null)
 })
 
 const asNexchangeOrder = asObject({
@@ -40,12 +41,12 @@ const asNexchangeOrder = asObject({
   createdAt: asString,
   deposit: asNexchangeTransfer,
   payout: asNexchangeTransfer,
-  countryCode: asOptional(asEither(asString, asNull), null)
+  countryCode: asMaybe(asEither(asString, asNull), null)
 })
 
 const asNexchangeOrdersResponse = asObject({
   orders: asArray(asUnknown),
-  nextCursor: asOptional(asEither(asString, asNull), null),
+  nextCursor: asMaybe(asEither(asString, asNull), null),
   hasMore: asBoolean
 })
 
@@ -55,9 +56,9 @@ const asNexchangeOrdersResponse = asObject({
 const asNexchangeCurrencyMeta = asObject({
   code: asString,
   is_fiat: asOptional(asBoolean, false),
-  network: asOptional(asEither(asString, asNull), null),
-  contract_address: asOptional(asEither(asString, asNull), null),
-  common_symbol: asOptional(asEither(asString, asNull), null)
+  network: asMaybe(asEither(asString, asNull), null),
+  contract_address: asMaybe(asEither(asString, asNull), null),
+  common_symbol: asMaybe(asEither(asString, asNull), null)
 })
 
 const asNexchangeCurrencyList = asArray(asNexchangeCurrencyMeta)
@@ -67,6 +68,14 @@ export type NexchangeCurrencyInfoMap = Record<string, NexchangeCurrencyMeta>
 
 const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 const LIMIT = 200
+
+// Hard ceiling on pages per run. Every loop below already terminates on the
+// partner's own signal, but that makes termination the partner's decision: a
+// stuck cursor or a page that never shortens would spin the worker and grow the
+// in-memory batch without bound. Hitting the cap ends the run WITHOUT advancing
+// progress, so the unread remainder is simply re-queried next cycle, exactly
+// like the retry-exhaustion path.
+const MAX_PAGES = 200
 const MAX_ERROR_TEXT_LENGTH = 500
 
 const statusMap: { [key: string]: Status } = {
@@ -98,7 +107,7 @@ const statusMap: { [key: string]: Status } = {
 //
 // n.exchange uses TRON as the canonical network name in the v2 currency
 // catalog, but historical Edge audit-orders payloads have also been observed
-// to reference TRX — both are mapped so the plugin works regardless of which
+// to reference TRX. Both are mapped so the plugin works regardless of which
 // the API returns.
 export const NEXCHANGE_NETWORK_TO_PLUGIN_ID: Record<string, string> = {
   ada: 'cardano',
@@ -225,7 +234,7 @@ function asUnmapped(currencyCode: string): ResolvedNexchangeAsset {
  * currency-code mappings.
  *
  * Throws when an asset has a contract address (i.e. it is a token) but cannot
- * be converted into an Edge tokenId — either because Edge does not model
+ * be converted into an Edge tokenId, either because Edge does not model
  * tokens on that chain, or because the address fails createTokenId. This is
  * deliberate: a token must never be silently downgraded to a native
  * (tokenId: null) mapping, which would price it with the chain's gas-token
@@ -266,8 +275,16 @@ export function resolveNexchangeAsset(
   const evmChainId = EVM_CHAIN_IDS[chainPluginId]
   const contractAddress = meta.contract_address
 
-  // No contract_address means a native chain asset.
-  if (contractAddress == null || contractAddress === '') {
+  // A missing/empty contract_address, or a zero address (0x000…0), denotes the
+  // chain's native/gas asset, not a token. The zero-address case matters because
+  // createTokenId would otherwise mint a non-null tokenId for the gas asset and
+  // mis-route its rates and volume (Banxa and Moonpay special-case this the same
+  // way).
+  if (
+    contractAddress == null ||
+    contractAddress === '' ||
+    /^0x0+$/i.test(contractAddress)
+  ) {
     return {
       currencyCode: normalizedCode,
       chainPluginId,
@@ -309,6 +326,7 @@ export async function queryNexchange(
   const txByOrderId: Map<string, StandardTx> = new Map()
   let cursor: string | undefined
   let offset = 0
+  let page = 0
 
   try {
     // The currency catalog supplies the network/contract metadata that the
@@ -317,7 +335,7 @@ export async function queryNexchange(
     // nothing) rather than persisting a batch of unenriched transactions.
     const currencyMap = await fetchNexchangeCurrencyMap()
 
-    while (true) {
+    for (; page < MAX_PAGES; page++) {
       const params: string[] = [
         `dateFrom=${encodeURIComponent(queryDateFrom)}`,
         `limit=${LIMIT.toString()}`,
@@ -368,6 +386,12 @@ export async function queryNexchange(
     // can safely persist that progress and resume from it next run. A failing
     // order halts pagination (it is never silently skipped) so its volume is
     // retried rather than lost.
+  }
+
+  if (page >= MAX_PAGES) {
+    log.warn(
+      `nexchange hit the ${MAX_PAGES}-page cap; pagination is ascending so progress advances to the last processed order and the remainder resumes next run`
+    )
   }
 
   return {
