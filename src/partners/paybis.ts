@@ -23,6 +23,8 @@ import {
   Status
 } from '../types'
 import { retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
+import { ChainNameToPluginIdMapping, EdgeTokenId } from '../util/asEdgeTokenId'
+import { EVM_CHAIN_IDS } from '../util/chainIds'
 
 const PLUGIN_START_DATE = '2023-09-01T00:00:00.000Z'
 const asStatuses = asMaybe(
@@ -56,22 +58,33 @@ const asUser = asObject({
 //   currency: asOptional(asString)
 // })
 
-// More complex structures
-// const asBlockchain = asObject({
-//   name: asString,
-//   network: asString
-// })
-// const asCurrencyDetail = asObject({
-//   id: asString,
-//   name: asString,
-//   currency: asObject({
-//     code: asCurrencyCode
-//   }),
-//   blockchain: asOptional(asBlockchain)
-// })
+// Paybis `to.asset.blockchain.name` / `from.asset.blockchain.name` values
+// observed on live orders. `network` is mainnet/testnet, not the chain.
+export const PAYBIS_BLOCKCHAIN_TO_PLUGIN_ID: ChainNameToPluginIdMapping = {
+  bitcoin: 'bitcoin',
+  'bitcoin-cash': 'bitcoincash',
+  bitcoincash: 'bitcoincash',
+  dogecoin: 'dogecoin',
+  ethereum: 'ethereum',
+  litecoin: 'litecoin',
+  polygon: 'polygon',
+  ripple: 'ripple',
+  solana: 'solana',
+  tron: 'tron'
+}
+
+const asPaybisBlockchain = asObject({
+  name: asString,
+  network: asOptional(asString)
+})
+const asPaybisAsset = asObject({
+  id: asOptional(asString),
+  name: asOptional(asString),
+  blockchain: asOptional(asPaybisBlockchain)
+})
 const asFromToStructure = asObject({
   name: asString,
-  // asset: asOptional(asCurrencyDetail),
+  asset: asMaybe(asPaybisAsset),
   address: asOptional(asString)
   // destinationTag: asOptional(asString)
 })
@@ -261,6 +274,46 @@ export const paybis: PartnerPlugin = {
   pluginId: 'paybis'
 }
 
+interface PaybisChainInfo {
+  chainPluginId: string | undefined
+  evmChainId: number | undefined
+  tokenId: EdgeTokenId | undefined
+}
+
+const emptyChain = (): PaybisChainInfo => ({
+  chainPluginId: undefined,
+  evmChainId: undefined,
+  tokenId: undefined
+})
+
+/**
+ * Resolve Edge chain fields from a Paybis asset. Paybis does not send a
+ * contract address on the order, so tokenId stays undefined even when the
+ * chain is known. Missing asset/blockchain (the fiat leg) leaves chain
+ * fields unset. An unknown blockchain.name throws so a new chain is not
+ * silently stored as ticker-only.
+ */
+export function resolvePaybisChain(
+  asset: ReturnType<typeof asPaybisAsset> | undefined
+): PaybisChainInfo {
+  const blockchainName = asset?.blockchain?.name
+  if (blockchainName == null || blockchainName === '') {
+    return emptyChain()
+  }
+  const chainPluginId =
+    PAYBIS_BLOCKCHAIN_TO_PLUGIN_ID[blockchainName.toLowerCase()]
+  if (chainPluginId == null) {
+    throw new Error(
+      `Unknown Paybis blockchain "${blockchainName}". Add mapping to PAYBIS_BLOCKCHAIN_TO_PLUGIN_ID.`
+    )
+  }
+  return {
+    chainPluginId,
+    evmChainId: EVM_CHAIN_IDS[chainPluginId],
+    tokenId: undefined
+  }
+}
+
 export function processPaybisTx(rawTx: unknown): StandardTx {
   const tx = asPaybisTx(rawTx)
   const { amounts, createdAt, gateway, hash, id } = tx
@@ -274,6 +327,14 @@ export function processPaybisTx(rawTx: unknown): StandardTx {
   const payoutTxid = gateway === 'fiat_to_crypto' ? hash : undefined
   const direction = gateway === 'fiat_to_crypto' ? 'buy' : 'sell'
 
+  const cryptoChain =
+    direction === 'buy'
+      ? resolvePaybisChain(tx.to.asset)
+      : resolvePaybisChain(tx.from.asset)
+  const fiatChain = emptyChain()
+  const depositChain = direction === 'buy' ? fiatChain : cryptoChain
+  const payoutChain = direction === 'buy' ? cryptoChain : fiatChain
+
   const standardTx: StandardTx = {
     status: statusMap[tx.status],
     orderId: id,
@@ -281,9 +342,9 @@ export function processPaybisTx(rawTx: unknown): StandardTx {
     depositTxid,
     depositAddress: undefined,
     depositCurrency: spentOriginal.currency,
-    depositChainPluginId: undefined,
-    depositEvmChainId: undefined,
-    depositTokenId: undefined,
+    depositChainPluginId: depositChain.chainPluginId,
+    depositEvmChainId: depositChain.evmChainId,
+    depositTokenId: depositChain.tokenId,
     depositAmount,
     direction,
     exchangeType: 'fiat',
@@ -291,9 +352,9 @@ export function processPaybisTx(rawTx: unknown): StandardTx {
     payoutTxid,
     payoutAddress: tx.to.address,
     payoutCurrency: receivedOriginal.currency,
-    payoutChainPluginId: undefined,
-    payoutEvmChainId: undefined,
-    payoutTokenId: undefined,
+    payoutChainPluginId: payoutChain.chainPluginId,
+    payoutEvmChainId: payoutChain.evmChainId,
+    payoutTokenId: payoutChain.tokenId,
     payoutAmount,
     timestamp,
     isoDate,

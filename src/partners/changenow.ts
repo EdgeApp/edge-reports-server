@@ -17,7 +17,7 @@ import {
   StandardTx,
   Status
 } from '../types'
-import { retryFetch, snooze } from '../util'
+import { describeRawTx, retryFetch, snooze } from '../util'
 import {
   ChainNameToPluginIdMapping,
   createTokenId,
@@ -143,8 +143,12 @@ async function loadCurrencyCache(
   }
 
   try {
-    // The exchange/currencies endpoint doesn't require authentication
-    const url = 'https://api.changenow.io/v2/exchange/currencies?active=true'
+    // The exchange/currencies endpoint doesn't require authentication.
+    // Fetch the full list (omit `active=true`): historical transactions can
+    // reference currencies that ChangeNow has since deactivated/delisted (e.g.
+    // DASH). Filtering to active-only drops those entries, causing a cache miss
+    // and a fail-closed halt on otherwise-valid historical transactions.
+    const url = 'https://api.changenow.io/v2/exchange/currencies'
     const response = await retryFetch(url, {
       method: 'GET'
     })
@@ -248,6 +252,10 @@ const MAX_RETRIES = 5
 const LIMIT = 200
 const QUERY_LOOKBACK = 1000 * 60 * 60 * 24 * 5 // 5 days
 
+// Hard ceiling on pages per run, matching the sibling plugins: without it the
+// offset walk is bounded only by the partner's own "no more rows" signal.
+const MAX_PAGES = 200
+
 const statusMap: { [key in ChangeNowStatus]: Status } = {
   finished: 'complete',
   waiting: 'pending',
@@ -274,7 +282,21 @@ export const queryChangeNow = async (
 
   let offset = 0
   let retry = 0
-  while (true) {
+  // Orders dropped because they could not be processed. Surfaced after the
+  // walk so a recurring mapping gap is visible as a count, not just as
+  // scattered error lines.
+  let skipped = 0
+  let page = 0
+
+  // Load the shared currency cache ONCE, here, and let a failure propagate.
+  // processChangeNowTx also calls this, but inside the per-order guard below a
+  // currencies-endpoint outage would be indistinguishable from an unmappable
+  // order: every row would be "skipped" while the offset kept advancing, so a
+  // transient outage would quietly walk the whole window and record nothing.
+  // Failing the run here keeps that an abort, which is what it is.
+  await loadCurrencyCache(log)
+
+  while (page < MAX_PAGES) {
     const url = `https://api.changenow.io/v2/exchanges?sortDirection=ASC&limit=${LIMIT}&dateFrom=${previousLatestIsoDate}&offset=${offset}`
 
     try {
@@ -297,7 +319,26 @@ export const queryChangeNow = async (
         break
       }
       for (const rawTx of txs) {
-        const standardTx = await processChangeNowTx(rawTx, pluginParams)
+        // Quarantine, rather than either of the two failure modes that look
+        // like opposites but are both data loss. Letting the error propagate
+        // stalls the whole partner: the outer catch retries the same
+        // deterministic failure, breaks, and every later poll re-fetches the
+        // same range and dies on the same row, so nothing newer is ever
+        // recorded. Emitting the row anyway would price a token with the
+        // chain's gas-token rate. So the row is dropped and reported LOUDLY,
+        // and ingestion continues past it.
+        let standardTx: StandardTx
+        try {
+          standardTx = await processChangeNowTx(rawTx, pluginParams)
+        } catch (e) {
+          skipped++
+          log.error(
+            `ChangeNow: skipping unprocessable order, ingestion continues: ${String(
+              e
+            )}: ${describeRawTx(rawTx)}`
+          )
+          continue
+        }
         standardTxs.push(standardTx)
         if (standardTx.isoDate > latestIsoDate) {
           latestIsoDate = standardTx.isoDate
@@ -305,6 +346,7 @@ export const queryChangeNow = async (
       }
       log(`offset ${offset} latestIsoDate ${latestIsoDate}`)
       offset += txs.length
+      page++
       retry = 0
     } catch (e) {
       log.error(String(e))
@@ -319,6 +361,17 @@ export const queryChangeNow = async (
       }
     }
   }
+  if (page >= MAX_PAGES) {
+    log.warn(
+      `ChangeNow hit the ${MAX_PAGES}-page cap; the remainder resumes next run from the saved watermark`
+    )
+  }
+  if (skipped > 0) {
+    log.error(
+      `ChangeNow: ${skipped} order(s) skipped as unprocessable this run; each is logged above and needs a mapping fix plus a backfill`
+    )
+  }
+
   const out: PluginResult = {
     settings: { latestIsoDate },
     transactions: standardTxs
@@ -376,24 +429,19 @@ function getAssetInfo(network: string, currencyCode: string): EdgeAssetInfo {
     )
   }
 
-  try {
-    const tokenId = createTokenId(
-      tokenType,
-      currencyCode.toUpperCase(),
-      contractAddress
-    )
-    return {
-      chainPluginId,
-      evmChainId,
-      tokenId
-    }
-  } catch (e) {
-    // If tokenId creation fails, treat as native (no log available in this sync function)
-    return {
-      chainPluginId,
-      evmChainId,
-      tokenId: null
-    }
+  // Let createTokenId throw if the contract address cannot be converted: a
+  // token must never be silently downgraded to a native (tokenId: null)
+  // mapping, which would price it with the chain's gas-token rate and
+  // overcount volume whenever the token is worth less than the gas token.
+  const tokenId = createTokenId(
+    tokenType,
+    currencyCode.toUpperCase(),
+    contractAddress
+  )
+  return {
+    chainPluginId,
+    evmChainId,
+    tokenId
   }
 }
 

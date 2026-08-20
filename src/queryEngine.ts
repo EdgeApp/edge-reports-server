@@ -22,18 +22,23 @@ import { letsexchange } from './partners/letsexchange'
 import { libertyx } from './partners/libertyx'
 import { lifi } from './partners/lifi'
 import { moonpay } from './partners/moonpay'
+import { nexchange } from './partners/nexchange'
+import { nymswap } from './partners/nym'
 import { paybis } from './partners/paybis'
 import { paytrie } from './partners/paytrie'
 import { rango } from './partners/rango'
+import { revolut } from './partners/revolut'
 import { safello } from './partners/safello'
 import { sideshift } from './partners/sideshift'
 import { simplex } from './partners/simplex'
+import { swapter } from './partners/swapter'
 import { swapuz } from './partners/swapuz'
 import { switchain } from './partners/switchain'
 import { maya, thorchain } from './partners/thorchain'
 import { transak } from './partners/transak'
 import { wyre } from './partners/wyre'
 import { xanpool } from './partners/xanpool'
+import { xgram } from './partners/xgram'
 import {
   asApp,
   asApps,
@@ -74,18 +79,23 @@ const plugins = [
   lifi,
   maya,
   moonpay,
+  nexchange,
+  nymswap,
   paybis,
   paytrie,
   rango,
+  revolut,
   safello,
   sideshift,
   simplex,
+  swapter,
   swapuz,
   switchain,
   thorchain,
   transak,
   wyre,
-  xanpool
+  xanpool,
+  xgram
 ]
 const QUERY_FREQ_MS = 60 * 1000
 const MAX_CONCURRENT_QUERIES = 3
@@ -194,7 +204,13 @@ const checkUpdateTx = (oldTx: StandardTx, newTx: StandardTx): string[] => {
     'payoutTxid',
     'payoutChainPluginId',
     'payoutEvmChainId',
-    'payoutTokenId'
+    'payoutTokenId',
+    // Partner-reported revenue arrives late: a partner can settle the fee after
+    // the order row already exists. Without these the engine sees no tracked
+    // change, skips the write, and the revenue never reaches Couch or the
+    // analytics cache.
+    'revenueUsd',
+    'revenueSource'
   ] as const
   const changedFields: string[] = []
   for (const field of fields) {

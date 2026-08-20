@@ -11,17 +11,22 @@ interface DbTx {
   orderId: string
   depositCurrency: string
   payoutCurrency: string
+  depositChainPluginId?: string
+  payoutChainPluginId?: string
   timestamp: number
   usdValue: number
+  revenueUsd?: number
 }
 
 interface Bucket {
   start: number
   usdValue: number
   numTxs: number
+  revenueUsd: number
   isoDate: string
   currencyCodes: { [currencyCode: string]: number }
   currencyPairs: { [currencyPair: string]: number }
+  chainedPairs: { [currencyPair: string]: number }
 }
 
 export const getAnalytics = (
@@ -49,8 +54,10 @@ export const getAnalytics = (
         isoDate: monthStart.toISOString(),
         usdValue: 0,
         numTxs: 0,
+        revenueUsd: 0,
         currencyCodes: {},
-        currencyPairs: {}
+        currencyPairs: {},
+        chainedPairs: {}
       })
       m++
       monthStart = new Date(Date.UTC(y, m, 1, 0))
@@ -66,8 +73,10 @@ export const getAnalytics = (
         isoDate: dayStart.toISOString(),
         usdValue: 0,
         numTxs: 0,
+        revenueUsd: 0,
         currencyCodes: {},
-        currencyPairs: {}
+        currencyPairs: {},
+        chainedPairs: {}
       })
       d++
       dayStart = new Date(Date.UTC(y, m, d, 0))
@@ -83,8 +92,10 @@ export const getAnalytics = (
         isoDate: hourStart.toISOString(),
         usdValue: 0,
         numTxs: 0,
+        revenueUsd: 0,
         currencyCodes: {},
-        currencyPairs: {}
+        currencyPairs: {},
+        chainedPairs: {}
       })
       h++
       hourStart = new Date(Date.UTC(y, m, d, h))
@@ -160,6 +171,8 @@ const bucketAdder = (bucket: Bucket, tx: DbTx): void => {
   bucket.numTxs++
   // usdValue
   bucket.usdValue += tx.usdValue != null ? tx.usdValue : 0
+  // reported revenue (partners that do not report one contribute 0)
+  bucket.revenueUsd += tx.revenueUsd != null ? tx.revenueUsd : 0
   // currencyCode
   if (bucket.currencyCodes[tx.depositCurrency] == null) {
     bucket.currencyCodes[tx.depositCurrency] = 0
@@ -177,4 +190,29 @@ const bucketAdder = (bucket: Bucket, tx: DbTx): void => {
     bucket.currencyPairs[currencyPair] = 0
   }
   bucket.currencyPairs[currencyPair] += tx.usdValue != null ? tx.usdValue : 0
+  const chainedPair = chainedPairKey(tx)
+  if (bucket.chainedPairs[chainedPair] == null) {
+    bucket.chainedPairs[chainedPair] = 0
+  }
+  bucket.chainedPairs[chainedPair] += tx.usdValue != null ? tx.usdValue : 0
+}
+
+export function assetChainKey(
+  currency: string,
+  chainPluginId?: string
+): string {
+  if (chainPluginId == null || chainPluginId === '') return currency
+  return `${currency}@${chainPluginId}`
+}
+
+export function chainedPairKey(tx: {
+  depositCurrency: string
+  payoutCurrency: string
+  depositChainPluginId?: string
+  payoutChainPluginId?: string
+}): string {
+  return `${assetChainKey(
+    tx.depositCurrency,
+    tx.depositChainPluginId
+  )}>${assetChainKey(tx.payoutCurrency, tx.payoutChainPluginId)}`
 }

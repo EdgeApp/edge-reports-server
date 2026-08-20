@@ -10,7 +10,7 @@
   "scripts": {
     "build.lib": "sucrase -q -t typescript,imports,jsx -d ./lib ./src",
     "build.types": "tsc",
-    "build.dist": "parcel build",
+    "build.dist": "parcel build && parcel build src/demoV2/index.html --dist-dir dist/v2 --public-url ./",
     "clean": "rimraf lib dist .parcel-cache",
     "configure": "configure",
     "fix": "npm run lint -- --fix",
@@ -27,6 +27,7 @@
     "stats": "node -r sucrase/register src/bin/partitionStats.ts",
     "test": "mocha -r sucrase/register 'test/**/*.test.ts'",
     "demo": "parcel serve src/demo/index.html",
+    "demo.v2": "parcel serve src/demoV2/index.html --dist-dir dist/v2 --public-url ./ -p 1235",
     "lint": "eslint --ext .js,.jsx,.ts,.tsx ."
   },
   "lint-staged": {

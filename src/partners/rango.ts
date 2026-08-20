@@ -18,7 +18,7 @@ import {
   StandardTx,
   Status
 } from '../types'
-import { retryFetch } from '../util'
+import { describeRawTx, retryFetch } from '../util'
 import { createTokenId, tokenTypes } from '../util/asEdgeTokenId'
 import { EVM_CHAIN_IDS } from '../util/chainIds'
 
@@ -115,10 +115,13 @@ const RANGO_BLOCKCHAIN_TO_PLUGIN_ID: Record<string, string> = {
   FANTOM: 'fantom',
   LTC: 'litecoin',
   MATIC: 'polygon',
+  MONAD: 'monad',
   OPTIMISM: 'optimism',
   OSMOSIS: 'osmosis',
   POLYGON: 'polygon',
   SOLANA: 'solana',
+  SONIC: 'sonic',
+  SUI: 'sui',
   TON: 'ton',
   TRON: 'tron',
   XRPL: 'ripple',
@@ -138,6 +141,9 @@ export async function queryRango(
   }
 
   const standardTxs: StandardTx[] = []
+  // Transactions dropped because they could not be processed, surfaced as a
+  // count after the walk so a recurring mapping gap is visible.
+  let skipped = 0
   let startMs = new Date(latestIsoDate).getTime() - QUERY_LOOKBACK
   if (startMs < 0) startMs = 0
 
@@ -178,17 +184,30 @@ export async function queryRango(
       let processedCount = 0
 
       for (const rawTx of txs) {
+        // Quarantine the unprocessable tx: drop it, report it LOUDLY, and keep
+        // going. Halting instead does not "retry the failing tx next run", it
+        // stalls the partner outright, because the next run re-fetches the same
+        // range and dies on the same row, so nothing newer is ever recorded.
+        // Emitting it anyway is the other failure mode: a token priced with the
+        // chain's gas-token rate. Neither is acceptable, so the row is skipped
+        // and the error names it for a mapping fix and backfill.
+        let standardTx: StandardTx
         try {
-          const standardTx = processRangoTx(rawTx, pluginParams)
-          standardTxs.push(standardTx)
-          processedCount++
-
-          if (standardTx.isoDate > latestIsoDate) {
-            latestIsoDate = standardTx.isoDate
-          }
+          standardTx = processRangoTx(rawTx, pluginParams)
         } catch (e) {
-          // Log but continue processing other transactions
-          log.warn(`Failed to process tx: ${String(e)}`)
+          skipped++
+          log.error(
+            `Rango: skipping unprocessable tx, ingestion continues: ${String(
+              e
+            )}: ${describeRawTx(rawTx)}`
+          )
+          continue
+        }
+        standardTxs.push(standardTx)
+        processedCount++
+
+        if (standardTx.isoDate > latestIsoDate) {
+          latestIsoDate = standardTx.isoDate
         }
       }
 
@@ -208,6 +227,12 @@ export async function queryRango(
     log.error(String(e))
     // Do not throw - save progress since we query from oldest to newest
     // This ensures we don't lose transactions on transient failures
+  }
+
+  if (skipped > 0) {
+    log.error(
+      `Rango: ${skipped} tx(s) skipped as unprocessable this run; each is logged above and needs a mapping fix plus a backfill`
+    )
   }
 
   const out: PluginResult = {

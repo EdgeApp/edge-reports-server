@@ -182,3 +182,30 @@ export const safeParseFloat = (val: string): number => {
   if (val === '') return 0
   return parseFloat(val)
 }
+
+/**
+ * A one-line, log-safe description of a partner payload for a cleaner failure.
+ *
+ * Triage needs enough to find the record and see how its shape drifted, which
+ * is its identifier plus the field names it arrived with. Serializing the whole
+ * payload instead would copy counterparty addresses and transaction ids into
+ * centralized logs, where anyone with log access could recover them; the full
+ * record stays retrievable from Couch by that id.
+ *
+ * `idFields` is tried in order, since partners disagree on what the id is
+ * called (orderId, id, requestId, ...).
+ */
+export const describeRawTx = (
+  rawTx: unknown,
+  idFields: string[] = ['orderId', 'id', 'requestId', 'uid', 'transactionId']
+): string => {
+  if (typeof rawTx !== 'object' || rawTx === null) return `<${typeof rawTx}>`
+  const record = rawTx as { [key: string]: unknown }
+  for (const field of idFields) {
+    const value = record[field]
+    if (typeof value === 'string' && value !== '') {
+      return `${field}=${value} fields=[${Object.keys(record).join(',')}]`
+    }
+  }
+  return `id=unknown fields=[${Object.keys(record).join(',')}]`
+}

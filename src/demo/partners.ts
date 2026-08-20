@@ -97,6 +97,14 @@ export default {
     type: 'fiat',
     color: '#7214F5'
   },
+  nexchange: {
+    type: 'swap',
+    color: '#1D31B6'
+  },
+  nymswap: {
+    type: 'swap',
+    color: '#FB6E4E'
+  },
   paybis: {
     type: 'fiat',
     color: '#FFB400'
@@ -109,6 +117,10 @@ export default {
     type: 'swap',
     color: '#5891EE'
   },
+  revolut: {
+    type: 'fiat',
+    color: '#191C33'
+  },
   safello: {
     type: 'fiat',
     color: deprecated
@@ -120,6 +132,10 @@ export default {
   sideshift: {
     type: 'swap',
     color: '#E35852'
+  },
+  swapter: {
+    type: 'swap',
+    color: '#00C9A7'
   },
   swapuz: {
     type: 'swap',
@@ -152,5 +168,9 @@ export default {
   xanpool: {
     type: 'fiat',
     color: '#46228B'
+  },
+  xgram: {
+    type: 'swap',
+    color: '#0FA7B1'
   }
 } as const

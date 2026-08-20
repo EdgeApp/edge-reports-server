@@ -201,6 +201,81 @@ const LETSEXCHANGE_NETWORK_TO_PLUGIN_ID: Record<string, string> = {
   ZKSYNC: 'zksync'
 }
 
+// When the API omits network fields, infer native chain from currency code.
+// Only unambiguous 1:1 native-ticker cases (not USDT, USDC, BNB, etc.).
+const LETSEXCHANGE_CURRENCY_TO_DEFAULT_NETWORK: Record<string, string> = {
+  ADA: 'ADA',
+  ALGO: 'ALGO',
+  ARRR: 'ARRR',
+  ATOM: 'ATOM',
+  AVAX: 'AVAXC',
+  BCH: 'BCH',
+  BSV: 'BSV',
+  BTC: 'BTC',
+  BTG: 'BTG',
+  CELO: 'CELO',
+  COREUM: 'COREUM',
+  DASH: 'DASH',
+  DGB: 'DGB',
+  DOGE: 'DOGE',
+  DOT: 'DOT',
+  EOS: 'EOS',
+  ETC: 'ETC',
+  ETH: 'ETH',
+  ETHW: 'ETHW',
+  FIL: 'FIL',
+  FIO: 'FIO',
+  FIRO: 'FIRO',
+  FTM: 'FTM',
+  GRS: 'GRS',
+  HBAR: 'HBAR',
+  LTC: 'LTC',
+  MATIC: 'MATIC',
+  PIVX: 'PIVX',
+  POL: 'POL',
+  PLS: 'PLS',
+  QTUM: 'QTUM',
+  RUNE: 'RUNE',
+  RVN: 'RVN',
+  SOL: 'SOL',
+  SONIC: 'SONIC',
+  SUI: 'SUI',
+  TLOS: 'TLOS',
+  TON: 'TON',
+  TRX: 'TRX',
+  XEC: 'XEC',
+  XLM: 'XLM',
+  XMR: 'XMR',
+  XRP: 'XRP',
+  XTZ: 'XTZ',
+  ZANO: 'ZANO',
+  ZEC: 'ZEC'
+}
+
+/**
+ * Resolves the network for an order.
+ *
+ * Returns `null` for the two cases that mean different things, so the caller
+ * can tell them apart: an order predating the API's network fields is an
+ * expected gap, while a recent order we cannot resolve is a mapping hole that
+ * must be reported rather than absorbed. `unresolved` marks the second.
+ */
+function resolveNetworkCode(
+  network: string | null,
+  currencyCode: string,
+  isoDate: string
+): { network: string | null; unresolved: boolean } {
+  if (network != null) return { network, unresolved: false }
+  // Predates the API exposing network fields at all: nothing to report.
+  if (isoDate < NETWORK_FIELDS_AVAILABLE_DATE) {
+    return { network: null, unresolved: false }
+  }
+  const currencyUpper = currencyCode.toUpperCase()
+  const fallback = LETSEXCHANGE_CURRENCY_TO_DEFAULT_NETWORK[currencyUpper]
+  if (fallback != null) return { network: fallback, unresolved: false }
+  return { network: null, unresolved: true }
+}
+
 // Native token placeholder addresses that should be treated as null (native coin)
 // All values should be lowercase for case-insensitive matching
 const NATIVE_TOKEN_ADDRESSES = new Set([
@@ -297,15 +372,32 @@ function getAssetInfo(
   initialNetwork: string | null,
   currencyCode: string,
   contractAddress: string | null,
-  isoDate: string
+  isoDate: string,
+  log: PluginParams['log']
 ): AssetInfo | undefined {
-  if (initialNetwork == null) {
-    if (isoDate < NETWORK_FIELDS_AVAILABLE_DATE) {
-      return undefined
+  const { network, unresolved } = resolveNetworkCode(
+    initialNetwork,
+    currencyCode,
+    isoDate
+  )
+  if (network == null) {
+    // A recent order whose network we cannot resolve loses chainPluginId,
+    // evmChainId and tokenId permanently, and the asset then gets priced by
+    // currency code alone. Silently is the one way that must not happen (see
+    // the same policy stated in changenow.ts and nexchange.ts), so name the
+    // currency that needs adding to LETSEXCHANGE_CURRENCY_TO_DEFAULT_NETWORK.
+    if (unresolved) {
+      // The fallback map is native-ticker only, on purpose, so pointing every
+      // case at it would be wrong advice: inventing a default network for a
+      // multi-chain ticker like USDT or USDC would mis-attribute the asset
+      // rather than fix anything. Which remedy applies depends on the ticker,
+      // so say so instead of guessing.
+      log.error(
+        `LetsExchange: no network for ${currencyCode} on a ${isoDate} order; chain and token data dropped. If ${currencyCode} exists on exactly one chain, add it to LETSEXCHANGE_CURRENCY_TO_DEFAULT_NETWORK; if it is multi-chain, the API omitted the network field and the gap has to be raised with LetsExchange.`
+      )
     }
-    throw new Error(`Missing network for currency ${currencyCode}`)
+    return undefined
   }
-  const network = initialNetwork
 
   const networkUpper = network.toUpperCase()
   const chainPluginId = LETSEXCHANGE_NETWORK_TO_PLUGIN_ID[networkUpper]
@@ -508,14 +600,16 @@ export async function processLetsExchangeTx(
     tx.coin_from_network ?? tx.network_from_code,
     tx.coin_from,
     tx.coin_from_contract_address,
-    isoDate
+    isoDate,
+    log
   )
   // Get payout asset info using contract address from API response
   const payoutAsset = getAssetInfo(
     tx.coin_to_network ?? tx.network_to_code,
     tx.coin_to,
     tx.coin_to_contract_address,
-    isoDate
+    isoDate,
+    log
   )
 
   const status = statusMap[tx.status]

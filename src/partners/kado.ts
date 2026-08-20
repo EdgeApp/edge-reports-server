@@ -18,8 +18,14 @@ import {
   PluginResult,
   StandardTx
 } from '../types'
-import { retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
-import { queryDummy } from './dummy'
+import {
+  describeRawTx,
+  retryFetch,
+  smartIsoDateFromTimestamp,
+  snooze
+} from '../util'
+import { ChainNameToPluginIdMapping, EdgeTokenId } from '../util/asEdgeTokenId'
+import { EVM_CHAIN_IDS } from '../util/chainIds'
 
 // Define cleaner for individual transactions in onRamps and offRamps
 const asTxType = asValue('buy', 'sell')
@@ -63,6 +69,16 @@ const asResponse = asObject({
 
 const MAX_RETRIES = 5
 
+// Kado `network` values from live orders. Lookup is lowercased so `Solana`
+// and `solana` share a row.
+export const KADO_NETWORK_TO_PLUGIN_ID: ChainNameToPluginIdMapping = {
+  bitcoin: 'bitcoin',
+  ethereum: 'ethereum',
+  injective: 'injective',
+  litecoin: 'litecoin',
+  solana: 'solana'
+}
+
 export async function queryKado(
   pluginParams: PluginParams
 ): Promise<PluginResult> {
@@ -78,6 +94,8 @@ export async function queryKado(
   }
 
   const standardTxs: StandardTx[] = []
+  // Orders dropped as unmappable, surfaced as a count after the walk.
+  let skipped = 0
   let retry = 0
 
   const url = `https://api.kado.money/v2/organizations/${apiKey}/orders`
@@ -90,12 +108,25 @@ export async function queryKado(
     const jsonObj = await response.json()
     const transferResults = asResponse(jsonObj)
     const { onRamps, offRamps } = transferResults.data
-    for (const rawTx of onRamps) {
-      const standardTx: StandardTx = processKadoTx(rawTx)
-      standardTxs.push(standardTx)
-    }
-    for (const rawTx of offRamps) {
-      const standardTx: StandardTx = processKadoTx(rawTx)
+    // Quarantine an unmappable order rather than letting it escape into the
+    // fetch catch below. That catch snoozes without re-requesting and still
+    // returns the truncated batch, so runPlugin would record a successful
+    // update while every order after the bad row went missing, and each later
+    // cycle would sleep on the same mapping error. Dropping the row loudly
+    // keeps the rest of the batch flowing and names what needs mapping.
+    for (const rawTx of [...onRamps, ...offRamps]) {
+      let standardTx: StandardTx
+      try {
+        standardTx = processKadoTx(rawTx)
+      } catch (e) {
+        skipped++
+        log.error(
+          `Kado: skipping unprocessable order, ingestion continues: ${String(
+            e
+          )}: ${describeRawTx(rawTx)}`
+        )
+        continue
+      }
       standardTxs.push(standardTx)
     }
     log(`latestIsoDate:${latestIsoDate}`)
@@ -113,6 +144,12 @@ export async function queryKado(
     }
   }
 
+  if (skipped > 0) {
+    log.error(
+      `Kado: ${skipped} order(s) skipped as unmappable this run; each is logged above and needs a KADO_NETWORK_TO_PLUGIN_ID entry plus a backfill`
+    )
+  }
+
   const out = {
     settings: {},
     transactions: standardTxs
@@ -121,9 +158,43 @@ export async function queryKado(
 }
 
 export const kado: PartnerPlugin = {
-  queryFunc: queryDummy,
+  queryFunc: queryKado,
   pluginName: 'Kado',
   pluginId: 'kado'
+}
+
+interface KadoChainInfo {
+  chainPluginId: string | undefined
+  evmChainId: number | undefined
+  tokenId: EdgeTokenId | undefined
+}
+
+const emptyKadoChain = (): KadoChainInfo => ({
+  chainPluginId: undefined,
+  evmChainId: undefined,
+  tokenId: undefined
+})
+
+/**
+ * Map Kado's `network` field to an Edge pluginId. Kado does not send a
+ * contract on the order, so tokenId stays undefined. An unknown network
+ * throws so a new chain is not stored as ticker-only.
+ */
+export function resolveKadoChain(network: string): KadoChainInfo {
+  if (network === '') {
+    return emptyKadoChain()
+  }
+  const chainPluginId = KADO_NETWORK_TO_PLUGIN_ID[network.toLowerCase()]
+  if (chainPluginId == null) {
+    throw new Error(
+      `Unknown Kado network "${network}". Add mapping to KADO_NETWORK_TO_PLUGIN_ID.`
+    )
+  }
+  return {
+    chainPluginId,
+    evmChainId: EVM_CHAIN_IDS[chainPluginId],
+    tokenId: undefined
+  }
 }
 
 export function processKadoTx(rawTx: unknown): StandardTx {
@@ -131,6 +202,8 @@ export function processKadoTx(rawTx: unknown): StandardTx {
   const { isoDate, timestamp } = smartIsoDateFromTimestamp(
     tx.createdAt.toISOString()
   )
+  const cryptoChain = resolveKadoChain(tx.network)
+  const fiatChain = emptyKadoChain()
   if ('paidAmountUsd' in tx) {
     return {
       status: 'complete',
@@ -139,9 +212,9 @@ export function processKadoTx(rawTx: unknown): StandardTx {
       depositTxid: undefined,
       depositAddress: undefined,
       depositCurrency: 'USD',
-      depositChainPluginId: undefined,
-      depositEvmChainId: undefined,
-      depositTokenId: undefined,
+      depositChainPluginId: fiatChain.chainPluginId,
+      depositEvmChainId: fiatChain.evmChainId,
+      depositTokenId: fiatChain.tokenId,
       depositAmount: tx.paidAmountUsd,
       direction: tx.type,
       exchangeType: 'fiat',
@@ -149,9 +222,9 @@ export function processKadoTx(rawTx: unknown): StandardTx {
       payoutTxid: undefined,
       payoutAddress: tx.walletAddress,
       payoutCurrency: tx.cryptoCurrency,
-      payoutChainPluginId: undefined,
-      payoutEvmChainId: undefined,
-      payoutTokenId: undefined,
+      payoutChainPluginId: cryptoChain.chainPluginId,
+      payoutEvmChainId: cryptoChain.evmChainId,
+      payoutTokenId: cryptoChain.tokenId,
       payoutAmount: tx.receiveUnitCount,
       timestamp,
       isoDate,
@@ -166,9 +239,9 @@ export function processKadoTx(rawTx: unknown): StandardTx {
       depositTxid: undefined,
       depositAddress: undefined,
       depositCurrency: tx.cryptoCurrency,
-      depositChainPluginId: undefined,
-      depositEvmChainId: undefined,
-      depositTokenId: undefined,
+      depositChainPluginId: cryptoChain.chainPluginId,
+      depositEvmChainId: cryptoChain.evmChainId,
+      depositTokenId: cryptoChain.tokenId,
       depositAmount: tx.depositUnitCount,
       direction: tx.type,
       exchangeType: 'fiat',
@@ -176,9 +249,9 @@ export function processKadoTx(rawTx: unknown): StandardTx {
       payoutTxid: undefined,
       payoutAddress: undefined,
       payoutCurrency: 'USD',
-      payoutChainPluginId: undefined,
-      payoutEvmChainId: undefined,
-      payoutTokenId: undefined,
+      payoutChainPluginId: fiatChain.chainPluginId,
+      payoutEvmChainId: fiatChain.evmChainId,
+      payoutTokenId: fiatChain.tokenId,
       payoutAmount: tx.receiveUsd,
       timestamp,
       isoDate,

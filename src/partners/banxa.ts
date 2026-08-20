@@ -113,7 +113,9 @@ const BANXA_HISTORICAL_COINS: Record<string, CachedAssetInfo> = {
   'RLUSD-XRP': {
     contractAddress: 'rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De',
     pluginId: 'ripple'
-  }
+  },
+  // ZEC delisted from Banxa v2 catalog
+  'ZEC-ZEC': { contractAddress: null, pluginId: 'zcash' }
 }
 
 /**
@@ -585,6 +587,8 @@ function getFiatPaymentType(tx: BanxaTx): FiatPaymentType {
     case 'Sofort Transfer':
       return 'sofort'
     case 'Checkout Credit Card':
+    case 'Checkout Payouts':
+    case 'CHECKOUTPO':
     case 'Primer Credit Card':
     case 'WorldPay Credit Card':
       return 'credit'
@@ -607,10 +611,15 @@ function getFiatPaymentType(tx: BanxaTx): FiatPaymentType {
     case 'WorldPay ApplePay':
     case 'Primer Apple Pay':
       return 'applepay'
+    case 'Primer Paypal Pay':
+      return 'paypal'
     case 'WorldPay GooglePay':
+    case 'Primer Google Pay':
       return 'googlepay'
     case 'iDEAL Transfer':
       return 'ideal'
+    case 'KLARNA Checkout':
+      return 'klarna'
     case 'ZeroHash ACH Sell':
     case 'Fortress/Plaid ACH':
       return 'ach'
@@ -618,6 +627,8 @@ function getFiatPaymentType(tx: BanxaTx): FiatPaymentType {
       return 'turkishbank'
     case 'ClearJunction Sell Sepa':
       return 'sepa'
+    case 'DLocal Brazil PIX Payout':
+    case 'DLOCALPIXPO':
     case 'Dlocal Brazil PIX':
       return 'pix'
     case 'DLocal South Africa IO':

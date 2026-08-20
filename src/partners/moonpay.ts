@@ -454,6 +454,7 @@ export function processMoonpayTx(rawTx: unknown): StandardTx {
 const paymentMethodMap: Record<string, FiatPaymentType> = {
   ach_bank_transfer: 'ach',
   apple_pay: 'applepay',
+  cash_app: 'cashapp',
   credit_debit_card: 'credit',
   gbp_bank_transfer: 'fasterpayments',
   gbp_open_banking_payment: 'fasterpayments',
@@ -470,7 +471,8 @@ const paymentMethodMap: Record<string, FiatPaymentType> = {
 
 function getFiatPaymentType(tx: MoonpayTxBase): FiatPaymentType | null {
   let paymentMethod: FiatPaymentType | null = null
-  switch (tx.paymentMethod) {
+  const rawPaymentMethod = tx.paymentMethod ?? tx.payoutMethod
+  switch (rawPaymentMethod) {
     case undefined:
       // Legacy buy transactions can omit paymentMethod entirely. Fall back to
       // cardType which Moonpay set on older card payments.
@@ -488,11 +490,11 @@ function getFiatPaymentType(tx: MoonpayTxBase): FiatPaymentType | null {
       }
       break
     default:
-      paymentMethod = paymentMethodMap[tx.paymentMethod]
+      paymentMethod = paymentMethodMap[rawPaymentMethod]
       break
   }
   if (paymentMethod == null) {
-    throw new Error(`Unknown payment method: ${tx.paymentMethod} for ${tx.id}`)
+    throw new Error(`Unknown payment method: ${rawPaymentMethod} for ${tx.id}`)
   }
   return paymentMethod
 }

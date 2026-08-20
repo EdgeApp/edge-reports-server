@@ -92,7 +92,10 @@ getTxInfoRouter.get('/', async function(req, res) {
 
   const rows = results.docs
     .map(doc => asMaybe(asDbTx)(doc))
-    .filter((item): item is DbTx => item != null)
+    // Narrow on the cleaner's own return type: DbTx's revenue keys are
+    // optional-key relaxed, so it is no longer a subtype of that return type
+    // and cannot serve as the predicate target.
+    .filter((item): item is NonNullable<typeof item> => item != null)
 
   const txs: TxInfo[] = rows.map(row => ({
     providerId: getProviderId(row),
