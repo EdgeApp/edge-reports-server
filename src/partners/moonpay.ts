@@ -17,9 +17,11 @@ import {
   PartnerPlugin,
   PluginParams,
   PluginResult,
+  ScopedLog,
   StandardTx,
   Status
 } from '../types'
+import { describeRawTx } from '../util'
 import {
   ChainNameToPluginIdMapping,
   createTokenId,
@@ -223,6 +225,9 @@ export async function queryMoonpay(
 ): Promise<PluginResult> {
   const { log } = pluginParams
   const standardTxs: StandardTx[] = []
+  // Orders dropped because they could not be processed, surfaced as a count
+  // after the walk so a recurring mapping gap is visible.
+  let skipped = 0
 
   let headers
   const { apiKeys, settings } = asStandardPluginParams(pluginParams)
@@ -270,10 +275,9 @@ export async function queryMoonpay(
         })
         const txs = asMoonpayResult(await result.json())
 
-        for (const rawTx of txs) {
-          const standardTx = processMoonpayTx(rawTx)
-          standardTxs.push(standardTx)
-        }
+        const page = processMoonpayTxs(txs, log)
+        standardTxs.push(...page.standardTxs)
+        skipped += page.skipped
 
         if (txs.length > 0) {
           log(
@@ -302,10 +306,9 @@ export async function queryMoonpay(
         // cryptoTransactionId is a duplicate among other transactions sometimes
         // in bulk update it throws an error for document update conflict because of this.
 
-        for (const rawTx of txs) {
-          const standardTx = processMoonpayTx(rawTx)
-          standardTxs.push(standardTx)
-        }
+        const page = processMoonpayTxs(txs, log)
+        standardTxs.push(...page.standardTxs)
+        skipped += page.skipped
         if (txs.length > 0) {
           log(
             `buy txs ${txs.length}: ${JSON.stringify(txs.slice(-1)).slice(
@@ -341,11 +344,46 @@ export async function queryMoonpay(
     latestIsoDate = queryIsoDate
   }
 
+  if (skipped > 0) {
+    log.error(
+      `Moonpay: ${skipped} order(s) skipped as unprocessable this run; each is logged above and needs a mapping fix plus a backfill`
+    )
+  }
+
   const out: PluginResult = {
     settings: { latestIsoDate },
     transactions: standardTxs
   }
   return out
+}
+
+/**
+ * Process one page of Moonpay orders, quarantining any order that cannot be
+ * processed. Letting the error reach queryMoonpay's catch rolls the cursor
+ * back to the start of the failing week, so every later run refails the same
+ * week and nothing newer is recorded. So the order is dropped and logged
+ * LOUDLY, and the rest of the page is kept. A failed API request still rolls
+ * the cursor back, because that is a transient outage, not a bad order.
+ */
+export function processMoonpayTxs(
+  rawTxs: unknown[],
+  log: ScopedLog
+): { standardTxs: StandardTx[]; skipped: number } {
+  const standardTxs: StandardTx[] = []
+  let skipped = 0
+  for (const rawTx of rawTxs) {
+    try {
+      standardTxs.push(processMoonpayTx(rawTx))
+    } catch (e) {
+      skipped++
+      log.error(
+        `Moonpay: skipping unprocessable order, ingestion continues: ${String(
+          e
+        )}: ${describeRawTx(rawTx)}`
+      )
+    }
+  }
+  return { standardTxs, skipped }
 }
 
 export const moonpay: PartnerPlugin = {
@@ -465,6 +503,7 @@ const paymentMethodMap: Record<string, FiatPaymentType> = {
   pix_instant_payment: 'pix',
   revolut_pay: 'revolut',
   sepa_bank_transfer: 'sepa',
+  sepa_open_banking_payment: 'sepa',
   venmo: 'venmo',
   yellow_card_bank_transfer: 'yellowcard'
 }
