@@ -18,7 +18,12 @@ import {
   StandardTx,
   Status
 } from '../types'
-import { retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
+import {
+  describeRawTx,
+  retryFetch,
+  smartIsoDateFromTimestamp,
+  snooze
+} from '../util'
 import { createTokenId, tokenTypes } from '../util/asEdgeTokenId'
 import { EVM_CHAIN_IDS, REVERSE_EVM_CHAIN_IDS } from '../util/chainIds'
 
@@ -67,6 +72,12 @@ const asTransfer = asObject({
   // })
 })
 
+// The LI.FI order id (sending.txHash), read leniently so a transfer that
+// fails the full cleaner can still be named in the skip log.
+const asMaybeSendingTxHash = asMaybe(
+  asObject({ sending: asObject({ txHash: asString }) })
+)
+
 // Define the cleaner for the whole JSON
 const asTransfersResult = asObject({
   transfers: asArray(asUnknown)
@@ -99,6 +110,9 @@ export async function queryLifi(
   if (lastCheckedTimestamp < 0) lastCheckedTimestamp = 0
 
   const standardTxs: StandardTx[] = []
+  // Transfers dropped because they could not be processed, surfaced as a
+  // count after the walk so a recurring mapping gap is visible.
+  let skipped = 0
   let retry = 0
   let startTime = lastCheckedTimestamp
 
@@ -118,8 +132,9 @@ export async function queryLifi(
       }
       const jsonObj = await response.json()
       const transferResults = asTransfersResult(jsonObj)
-      for (const rawTx of transferResults.transfers) {
-        const standardTx = processLifiTx(rawTx, pluginParams)
+      const page = processLifiTransfers(transferResults.transfers, pluginParams)
+      skipped += page.skipped
+      for (const standardTx of page.standardTxs) {
         standardTxs.push(standardTx)
         if (standardTx.isoDate > latestIsoDate) {
           latestIsoDate = standardTx.isoDate
@@ -147,11 +162,47 @@ export async function queryLifi(
     await snooze(3000)
   }
 
+  if (skipped > 0) {
+    log.error(
+      `Li.Fi: ${skipped} transfer(s) skipped as unprocessable this run; each is logged above and needs a mapping fix plus a backfill`
+    )
+  }
+
   const out = {
     settings: { latestIsoDate },
     transactions: standardTxs
   }
   return out
+}
+
+/**
+ * Process one page of LI.FI transfers, quarantining any transfer that cannot
+ * be processed. Letting the error propagate stalls the partner: the query
+ * retries the same time block, gives up, and every later run re-fetches the
+ * same block and dies on the same transfer, so nothing newer is recorded. So
+ * the transfer is dropped and logged LOUDLY, and the rest of the page is kept.
+ */
+export function processLifiTransfers(
+  rawTxs: unknown[],
+  pluginParams: PluginParams
+): { standardTxs: StandardTx[]; skipped: number } {
+  const { log } = pluginParams
+  const standardTxs: StandardTx[] = []
+  let skipped = 0
+  for (const rawTx of rawTxs) {
+    try {
+      standardTxs.push(processLifiTx(rawTx, pluginParams))
+    } catch (e) {
+      skipped++
+      log.error(
+        `Li.Fi: skipping unprocessable transfer, ingestion continues: ${String(
+          e
+        )}: sending.txHash=${asMaybeSendingTxHash(rawTx)?.sending.txHash ??
+          'unknown'} ${describeRawTx(rawTx)}`
+      )
+    }
+  }
+  return { standardTxs, skipped }
 }
 
 export const lifi: PartnerPlugin = {
