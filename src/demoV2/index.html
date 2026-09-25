@@ -1753,7 +1753,13 @@ function filteredChains() {
 }
 function updateSelectAllLabel(btnId, search) {
   document.getElementById(btnId).textContent =
-    search.trim() !== '' ? 'Select all (filtered)' : 'Select all';
+    search.trim() !== '' ? 'Select filtered' : 'Select all';
+}
+// With a search, the selection becomes exactly the matching rows.
+// Without one, the matching rows are added to the selection.
+function selectMatching(selected, matching, search) {
+  if (search.trim() !== '') selected.clear();
+  matching.forEach(x => selected.add(x));
 }
 function renderProvList() {
   const list = document.getElementById('provList');
@@ -1865,11 +1871,11 @@ document.addEventListener('click', closeDD);
 document.getElementById('provSearch').oninput = e => { state.provSearch = e.target.value; renderProvList(); };
 document.getElementById('pairSearch').oninput = e => { state.pairSearch = e.target.value; renderPairList(); };
 document.getElementById('chainSearch').oninput = e => { state.chainSearch = e.target.value; renderChainList(); };
-document.getElementById('provAll').onclick = () => { filteredActiveProviders().forEach(p => state.enabled.add(p.name)); updateProvBtn(); renderProvList(); renderAll(); };
+document.getElementById('provAll').onclick = () => { selectMatching(state.enabled, filteredActiveProviders().map(p => p.name), state.provSearch); updateProvBtn(); renderProvList(); renderAll(); };
 document.getElementById('provNone').onclick = () => { state.enabled.clear(); updateProvBtn(); renderProvList(); renderAll(); };
-document.getElementById('pairAll').onclick = () => { filteredPairs().forEach(n => state.enabledPairs.add(n)); updatePairBtn(); renderPairList(); renderAll(); };
+document.getElementById('pairAll').onclick = () => { selectMatching(state.enabledPairs, filteredPairs(), state.pairSearch); updatePairBtn(); renderPairList(); renderAll(); };
 document.getElementById('pairNone').onclick = () => { state.enabledPairs.clear(); updatePairBtn(); renderPairList(); renderAll(); };
-document.getElementById('chainAll').onclick = () => { filteredChains().forEach(id => state.enabledChains.add(id)); updateChainBtn(); renderChainList(); renderPairList(); renderAll(); };
+document.getElementById('chainAll').onclick = () => { selectMatching(state.enabledChains, filteredChains(), state.chainSearch); updateChainBtn(); renderChainList(); renderPairList(); renderAll(); };
 document.getElementById('chainNone').onclick = () => { state.enabledChains.clear(); updateChainBtn(); renderChainList(); renderPairList(); renderAll(); };
 document.getElementById('showInactive').onchange = e => { state.showInactive = e.target.checked; renderTable(); };
 document.getElementById('provOther').onchange = e => { state.provShowOther = e.target.checked; renderProvTrend(); };

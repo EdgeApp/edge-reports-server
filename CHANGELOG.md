@@ -21,6 +21,7 @@
 - changed: Store chain pluginIds on new Paybis, Nym, and Kado orders
 - changed: v2 Select all applies only to the currently filtered providers and pairs
 - changed: Show ChangeNOW with that spelling in the v2 provider list
+- changed: v2 filter dropdowns read "Select filtered" while searching, and it selects exactly the matching rows
 - fixed: Classify banxa2, banxa3, gebo and Ionia gift cards as fiat in the v2 dashboard filter, by projecting the provider types from the v1 partner registry instead of a second hand-written copy
 - fixed: Quarantine an unprocessable partner transaction instead of halting ingestion behind it in ChangeNow, Rango and Xgram, so one bad row no longer stops every newer transaction from being recorded
 - fixed: Report LetsExchange orders whose network cannot be resolved instead of silently dropping their chain and token data
