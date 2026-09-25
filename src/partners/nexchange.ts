@@ -136,6 +136,7 @@ export const NEXCHANGE_NETWORK_TO_PLUGIN_ID: Record<string, string> = {
   matic: 'polygon',
   op: 'optimism',
   pol: 'polygon',
+  robinhood: 'robinhood',
   sol: 'solana',
   sonic: 'sonic',
   sui: 'sui',

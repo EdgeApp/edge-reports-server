@@ -51,6 +51,7 @@ const SIDESHIFT_NETWORK_TO_PLUGIN_ID: ChainNameToPluginIdMapping = {
   polkadot: 'polkadot',
   polygon: 'polygon',
   ripple: 'ripple',
+  robinhood: 'robinhood',
   rootstock: 'rsk',
   solana: 'solana',
   sonic: 'sonic',
@@ -116,15 +117,23 @@ async function fetchSideshiftCoins(): Promise<Map<string, string | null>> {
     return sideshiftCoinsCache
   }
 
-  const cache = new Map<string, string | null>()
-
   const response = await retryFetch('https://sideshift.ai/api/v2/coins')
   if (!response.ok) {
     throw new Error(`Failed to fetch sideshift coins: ${response.status}`)
   }
 
-  const coins = asSideshiftCoinsResponse(await response.json())
+  return setSideshiftCoins(await response.json())
+}
 
+/**
+ * Seed the coins cache from a /v2/coins response. Split out of
+ * fetchSideshiftCoins so tests can seed the cache without the network.
+ */
+export function setSideshiftCoins(
+  response: unknown
+): Map<string, string | null> {
+  const coins = asSideshiftCoinsResponse(response)
+  const cache = new Map<string, string | null>()
   for (const coin of coins) {
     for (const network of coin.networks) {
       const key = `${coin.coin.toUpperCase()}-${network}`

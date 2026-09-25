@@ -63,6 +63,7 @@ const CHANGENOW_NETWORK_TO_PLUGIN_ID: ChainNameToPluginIdMapping = {
   ftm: 'fantom',
   grs: 'groestlcoin',
   hbar: 'hedera',
+  hood: 'robinhood',
   kin: 'kin',
   ltc: 'litecoin',
   matic: 'polygon',
@@ -112,7 +113,7 @@ const asChangeNowCurrency = asObject({
 
 const asChangeNowCurrencyArray = asArray(asChangeNowCurrency)
 
-type ChangeNowCurrency = ReturnType<typeof asChangeNowCurrency>
+export type ChangeNowCurrency = ReturnType<typeof asChangeNowCurrency>
 
 // In-memory cache for currency lookups
 // Key format: "ticker:network" -> tokenContract
@@ -127,6 +128,34 @@ const currencyCache: CurrencyCache = {
 }
 let currencyCacheTimestamp = 0
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
+
+/**
+ * Replace the currency cache with the given ChangeNow currency list. Tests
+ * seed the cache through this instead of the network.
+ */
+export function setChangeNowCurrencies(currencies: ChangeNowCurrency[]): void {
+  // Build a fresh map and swap atomically so concurrent readers never see
+  // a partially-populated cache (clearing the existing map in-place would
+  // race with other callers reading mid-refresh).
+  const newMap = new Map<string, string | null>()
+  for (const currency of currencies) {
+    const key = `${currency.ticker.toLowerCase()}:${currency.network.toLowerCase()}`
+    newMap.set(key, currency.tokenContract ?? null)
+
+    // Also cache by legacyTicker if different from ticker
+    if (
+      currency.legacyTicker != null &&
+      currency.legacyTicker !== currency.ticker
+    ) {
+      const legacyKey = `${currency.legacyTicker.toLowerCase()}:${currency.network.toLowerCase()}`
+      newMap.set(legacyKey, currency.tokenContract ?? null)
+    }
+  }
+
+  currencyCache.currencies = newMap
+  currencyCache.loaded = true
+  currencyCacheTimestamp = Date.now()
+}
 
 /**
  * Fetch all currencies from ChangeNow API and populate the cache
@@ -161,27 +190,7 @@ async function loadCurrencyCache(
     const result = await response.json()
     const currencies = asChangeNowCurrencyArray(result)
 
-    // Build a fresh map and swap atomically so concurrent readers never see
-    // a partially-populated cache (clearing the existing map in-place would
-    // race with other callers reading mid-refresh).
-    const newMap = new Map<string, string | null>()
-    for (const currency of currencies) {
-      const key = `${currency.ticker.toLowerCase()}:${currency.network.toLowerCase()}`
-      newMap.set(key, currency.tokenContract ?? null)
-
-      // Also cache by legacyTicker if different from ticker
-      if (
-        currency.legacyTicker != null &&
-        currency.legacyTicker !== currency.ticker
-      ) {
-        const legacyKey = `${currency.legacyTicker.toLowerCase()}:${currency.network.toLowerCase()}`
-        newMap.set(legacyKey, currency.tokenContract ?? null)
-      }
-    }
-
-    currencyCache.currencies = newMap
-    currencyCache.loaded = true
-    currencyCacheTimestamp = Date.now()
+    setChangeNowCurrencies(currencies)
     log(`Currency cache loaded with ${currencies.length} entries`)
   } catch (e) {
     log.error(`Error loading currency cache: ${e}`)
