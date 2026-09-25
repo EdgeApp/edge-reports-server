@@ -9,11 +9,26 @@ refactoring anything v1 depends on.
 ## What it is
 
 The full rendering and interaction engine is ported from the design prototype:
-one summary card, a Providers section and a Currency pairs section, each with a
-trend chart (stacked bars or lines), a share card (donut + ranked bars, hover
-linked), and a detail table (the pair table paginated). Global filters (range,
-type, providers, pairs) scope every card. Top-8-plus-Other color rules keep the
-chart, share card and table in agreement.
+one summary card, then Providers, Networks and Currency pairs sections, each with
+a trend chart (stacked bars or lines), a share card (donut + ranked bars, hover
+linked), and a detail table (the network and pair tables paginated). Global
+filters (range, type, providers, networks, pairs) scope every card. Top-8-plus-
+Other color rules keep the chart, share card and table in agreement.
+
+Each trend chart has its own interval control (Auto, Day, Week, Month). Auto
+follows the range: daily up to 31 days, weekly up to 180 days, monthly beyond
+(so 7d/30d are daily, 90d and this quarter weekly, 12m/24m monthly). Weeks are
+ISO weeks (Monday start, UTC). The tooltip names the bucket and flags a week or
+month the range cuts short, since its bar covers fewer days than its peers.
+
+A network is the chain an asset lives on (the `@pluginId` half of a chained
+pair key). A pair whose legs sit on one network counts fully toward it; a
+cross-network pair (e.g. BTC to ETH) counts half toward each side, so the
+network totals add up to the pair totals instead of counting a swap twice. A
+leg with no network (fiat, or an order stored before chain ids were recorded)
+yields to the other leg, so a USD to BTC buy counts fully toward Bitcoin. Only
+pairs with no network on either leg land in "Unknown network". The network
+filter matches pairs the same way.
 
 The only thing that changed from the prototype is the data source: the baked-in
 sample generator is replaced by the real `/v1` reporting API.
@@ -27,7 +42,7 @@ sample generator is replaced by the real `/v1` reporting API.
   classification. Isolated v2 route; no v1 route touched.
 - `GET /v1/getPluginIds?apiKey=`: the app's registered providers.
 - `POST /v1/analytics`: one call for all providers, `timePeriod: "day"`, last
-  24 months. v2 rebuckets to month client-side for the longer presets.
+  24 months. v2 rebuckets to day, week or month client-side, per chart.
 
 Auth reuses v1's simple apiKey model: the key lives in the `apiKey` cookie (a
 `?apiKey=` query param also seeds it). No new auth system.

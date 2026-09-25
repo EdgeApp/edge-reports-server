@@ -10,6 +10,7 @@
 - added: Partner-reported revenue (revenueUsd/revenueSource) on StandardTx, summed through the analytics cache; Revolut reports it, and the v2 dashboard uses reported figures where present with volume x revShareRate as the estimate elsewhere
 - added: Document the verified reporting-API status and unblock path for nexchange, Simplex and Bridgeless
 - added: v2 dashboard chain filter, using chained pair keys (CODE@pluginId) in the analytics cache
+- added: v2 dashboard Networks section and a per-chart Day/Week/Month interval with range-based defaults
 - changed: Update sideshift plugin with new optional API fields
 - changed: Query both old and new Sideshift affiliate accounts and merge completed orders to preserve full shift history across an affiliate-account rotation
 - changed: Add signature header support to Exolix
