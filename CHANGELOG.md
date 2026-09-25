@@ -11,6 +11,7 @@
 - added: Document the verified reporting-API status and unblock path for nexchange, Simplex and Bridgeless
 - added: v2 dashboard chain filter, using chained pair keys (CODE@pluginId) in the analytics cache
 - added: v2 dashboard Networks section and a per-chart Day/Week/Month interval with range-based defaults
+- added: rewindProgress script to rewind partner query cursors for a backfill
 - changed: Update sideshift plugin with new optional API fields
 - changed: Query both old and new Sideshift affiliate accounts and merge completed orders to preserve full shift history across an affiliate-account rotation
 - changed: Add signature header support to Exolix
@@ -29,6 +30,10 @@
 - fixed: Moonpay by adding Revolut payment type
 - fixed: Use v2 rates API
 - fixed: Repair the broken mocha test suite (correct util.test.ts import and stale analytics fixtures) so npm test passes
+- fixed: Record Robinhood Chain orders from ChangeNOW, Rango, LI.FI, SideShift, LetsExchange and Nexchange
+- fixed: Skip and log an unprocessable LI.FI transfer instead of stalling LI.FI ingestion
+- fixed: Map Moonpay sepa_open_banking_payment to SEPA and skip unprocessable Moonpay orders
+- fixed: Store chain and token ids on Changelly orders
 
 ## 0.2.0
 
