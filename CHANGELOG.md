@@ -34,6 +34,7 @@
 - fixed: Skip and log an unprocessable LI.FI transfer instead of stalling LI.FI ingestion
 - fixed: Map Moonpay sepa_open_banking_payment to SEPA and skip unprocessable Moonpay orders
 - fixed: Store chain and token ids on Changelly orders
+- fixed: Map the Paybis TON blockchain and skip unprocessable Paybis orders instead of stalling Paybis ingestion
 
 ## 0.2.0
 
