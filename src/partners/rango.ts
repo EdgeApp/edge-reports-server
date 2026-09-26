@@ -119,6 +119,7 @@ const RANGO_BLOCKCHAIN_TO_PLUGIN_ID: Record<string, string> = {
   OPTIMISM: 'optimism',
   OSMOSIS: 'osmosis',
   POLYGON: 'polygon',
+  ROBINHOOD: 'robinhood',
   SOLANA: 'solana',
   SONIC: 'sonic',
   SUI: 'sui',

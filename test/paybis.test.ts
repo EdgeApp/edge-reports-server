@@ -149,4 +149,32 @@ describe('processPaybisTx', function() {
       })
     ).to.throw(/Unknown Paybis blockchain "not-a-chain"/)
   })
+
+  it('stores the TON chain on a TON buy', function() {
+    const standardTx = processPaybisTx({
+      id: 'pb-buy-ton',
+      gateway: 'fiat_to_crypto',
+      status: 'completed',
+      from: { name: 'Credit/Debit Card' },
+      to: {
+        name: 'Toncoin',
+        asset: {
+          id: 'TON',
+          name: 'Toncoin',
+          blockchain: { name: 'ton', network: 'mainnet' }
+        }
+      },
+      createdAt: '2026-06-02T00:00:00.000Z',
+      amounts: {
+        spentOriginal: { amount: '50', currency: 'USD' },
+        spentFiat: { amount: '50', currency: 'USD' },
+        receivedOriginal: { amount: '15', currency: 'TON' },
+        receivedFiat: { amount: '50', currency: 'USD' }
+      },
+      user: { country: null }
+    })
+    expect(standardTx.payoutCurrency).to.equal('TON')
+    expect(standardTx.payoutChainPluginId).to.equal('ton')
+    expect(standardTx.payoutEvmChainId).to.equal(undefined)
+  })
 })

@@ -64,6 +64,7 @@ export const tokenTypes: Record<string, TokenType> = {
   qtum: null,
   ravencoin: null,
   ripple: 'xrpl',
+  robinhood: 'evm',
   rsk: 'evm',
   smartcash: null,
   solana: 'simple',

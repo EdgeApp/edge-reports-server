@@ -274,9 +274,9 @@
       </div>
     </div>
     <div class="dd" id="chainDD">
-      <button class="btn" id="chainBtn">All chains ▾</button>
+      <button class="btn" id="chainBtn">All networks ▾</button>
       <div class="dd-panel" style="min-width:230px">
-        <div class="dd-search"><input id="chainSearch" placeholder="Search chains…"></div>
+        <div class="dd-search"><input id="chainSearch" placeholder="Search networks…"></div>
         <div class="dd-actions">
           <button class="btn" id="chainAll">Select all</button>
           <button class="btn" id="chainNone">Clear</button>
@@ -284,8 +284,6 @@
         <div class="dd-list" id="chainList"></div>
       </div>
     </div>
-    <div class="spacer"></div>
-    <span class="hint" id="granHint"></span>
   </div>
 
   <!-- one summary card -->
@@ -302,6 +300,7 @@
   <div class="card">
     <div class="card-head">
       <h3 id="provTrendTitle">Volume by provider</h3>
+      <span class="hint" id="provGranHint"></span>
       <div class="spacer"></div>
       <div class="seg" id="metricSeg">
         <button data-v="volume" class="on">Volume</button>
@@ -311,6 +310,12 @@
       <div class="seg" id="provChartSeg">
         <button data-v="stacked" class="on">Stacked</button>
         <button data-v="lines">Lines</button>
+      </div>
+      <div class="seg" id="provGranSeg" title="Interval">
+        <button data-v="auto" class="on">Auto</button>
+        <button data-v="day">Day</button>
+        <button data-v="week">Week</button>
+        <button data-v="month">Month</button>
       </div>
       <label class="hint" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
         <input type="checkbox" id="provOther" checked> include other
@@ -352,6 +357,73 @@
     </div>
   </div>
 
+  <!-- ================= NETWORKS ================= -->
+  <div class="section-head">
+    <h2>Networks</h2>
+    <div class="rule"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h3>Volume by network</h3>
+      <span class="hint">across selected providers · <span id="netGranHint"></span></span>
+      <div class="spacer"></div>
+      <div class="seg" id="netChartSeg">
+        <button data-v="stacked" class="on">Stacked</button>
+        <button data-v="lines">Lines</button>
+      </div>
+      <div class="seg" id="netGranSeg" title="Interval">
+        <button data-v="auto" class="on">Auto</button>
+        <button data-v="day">Day</button>
+        <button data-v="week">Week</button>
+        <button data-v="month">Month</button>
+      </div>
+      <label class="hint" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" id="netOther" checked> include other
+      </label>
+    </div>
+    <div class="chart-wrap">
+      <svg id="netTrend" width="100%" height="300"></svg>
+      <div class="tooltip" id="netTT"></div>
+    </div>
+    <div class="legend" id="netLegend"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h3>Network share</h3>
+      <span class="hint">of volume in range · cross-network pairs split evenly between both networks</span>
+      <div class="spacer"></div>
+      <label class="hint" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" id="netShareOtherCb" checked> include other
+      </label>
+    </div>
+    <div class="share-flex">
+      <svg id="netDonut" width="200" height="200"></svg>
+      <div class="bars"><svg id="netBars" width="100%"></svg></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h3>Network detail</h3>
+      <span class="hint" id="netCount"></span>
+      <div class="spacer"></div>
+      <label class="hint" style="display:inline-flex;align-items:center;gap:6px">
+        rows per page
+        <select class="ps" id="netPageSize">
+          <option value="10" selected>10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+        </select>
+      </label>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="prov" id="netTable"></table>
+    </div>
+    <div class="pager" id="netPager"></div>
+  </div>
+
   <!-- ================= CURRENCY PAIRS ================= -->
   <div class="section-head">
     <h2>Currency pairs</h2>
@@ -361,11 +433,17 @@
   <div class="card">
     <div class="card-head">
       <h3>Volume by pair</h3>
-      <span class="hint">across selected providers</span>
+      <span class="hint">across selected providers · <span id="pairGranHint"></span></span>
       <div class="spacer"></div>
       <div class="seg" id="pairChartSeg">
         <button data-v="stacked" class="on">Stacked</button>
         <button data-v="lines">Lines</button>
+      </div>
+      <div class="seg" id="pairGranSeg" title="Interval">
+        <button data-v="auto" class="on">Auto</button>
+        <button data-v="day">Day</button>
+        <button data-v="week">Week</button>
+        <button data-v="month">Month</button>
       </div>
       <label class="hint" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
         <input type="checkbox" id="pairOther" checked> include other
@@ -527,9 +605,16 @@ function parsePair(n) {
   if (i < 0) return { left: parseAsset(n), right: parseAsset('') };
   return { left: parseAsset(n.slice(0, i)), right: parseAsset(n.slice(i + 1)) };
 }
+// Network names whose pluginId does not read as a name when capitalized.
+const NETWORK_DISPLAY = {
+  arbitrum: 'Arbitrum One', avalanche: 'Avalanche C-Chain', binancesmartchain: 'BNB Smart Chain',
+  bitcoincash: 'Bitcoin Cash', bitcoinsv: 'Bitcoin SV', ethereumclassic: 'Ethereum Classic',
+  ethereumpow: 'EthereumPoW', fantom: 'Fantom', hedera: 'Hedera', optimism: 'OP Mainnet',
+  polygon: 'Polygon', ripple: 'XRP Ledger', thorchainrune: 'THORChain', zksync: 'zkSync Era',
+};
 function formatAsset(asset) {
   if (asset.chain == null || asset.chain === '') return asset.code;
-  return asset.code + ' · ' + displayName(asset.chain);
+  return asset.code + ' · ' + formatChain(asset.chain);
 }
 function formatPair(n) {
   if (n === 'Other') return n;
@@ -544,10 +629,18 @@ function pairChainIds(n) {
   return ids;
 }
 function formatChain(id) {
-  return id === CHAIN_NONE ? 'No chain' : displayName(id);
+  return id === CHAIN_NONE ? 'Unknown network' : NETWORK_DISPLAY[id] || displayName(id);
+}
+// The networks a pair counts toward. A leg with no network (fiat, or an order
+// stored before chain ids) yields to the leg that has one, so only a pair with
+// no network on either leg is "Unknown network". The filter, the network
+// ranking and the Networks section all attribute pairs through this.
+function pairNetworks(n) {
+  const ids = [...new Set(pairChainIds(n).filter(id => id !== CHAIN_NONE))];
+  return ids.length === 0 ? [CHAIN_NONE] : ids;
 }
 function pairMatchesChain(n) {
-  return pairChainIds(n).some(id => state.enabledChains.has(id));
+  return pairNetworks(n).some(id => state.enabledChains.has(id));
 }
 function pairIsEnabled(n) {
   return state.enabledPairs.has(n) && pairMatchesChain(n);
@@ -632,7 +725,7 @@ function initDerived() {
   const chainTotals = {};
   for (const n of ALL_PAIR_NAMES) {
     const vol = pairTotals[n] || 0;
-    for (const chain of pairChainIds(n)) {
+    for (const chain of pairNetworks(n)) {
       chainTotals[chain] = (chainTotals[chain] || 0) + vol;
     }
   }
@@ -661,6 +754,17 @@ const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov
 const fmtDate = (d, gran) =>
   gran === 'month' ? MONTHS[d.getUTCMonth()] + ' ’' + String(d.getUTCFullYear()).slice(2)
   : MONTHS[d.getUTCMonth()] + ' ' + d.getUTCDate();
+// Tooltip heading for one bucket: names the whole bucket, and says so when the
+// range cuts a week or month short (its bar covers fewer days than its peers).
+function fmtBucket(b, gran) {
+  const d = b.t;
+  let label;
+  if (gran === 'month') label = MONTHS[d.getUTCMonth()] + ' ' + d.getUTCFullYear();
+  else if (gran === 'week') label = 'Week of ' + fmtDate(d, 'day') + ', ' + d.getUTCFullYear();
+  else label = fmtDate(d, 'day') + ', ' + d.getUTCFullYear();
+  if (b.days < b.fullDays) label += ' · partial (' + b.days + ' of ' + b.fullDays + ' days)';
+  return label;
+}
 
 /* ---------------- state ---------------- */
 // Days elapsed in the current UTC quarter, today included. A fixed window would
@@ -673,17 +777,22 @@ const quarterToDateDays = () => {
   return Math.floor((TODAY.getTime() - quarterStart) / DAY) + 1;
 };
 const PRESETS = [
-  { id:'7d',  label:'Last 7 days',   days:7,   gran:'day' },
-  { id:'30d', label:'Last 30 days',  days:30,  gran:'day' },
-  { id:'90d', label:'Last 90 days',  days:90,  gran:'day' },
-  { id:'qtd', label:'This quarter',  days:quarterToDateDays, gran:'day' },
-  { id:'12m', label:'Last 12 months',days:365, gran:'month' },
-  { id:'24m', label:'Last 24 months',days:730, gran:'month' },
+  { id:'7d',  label:'Last 7 days',   days:7 },
+  { id:'30d', label:'Last 30 days',  days:30 },
+  { id:'90d', label:'Last 90 days',  days:90 },
+  { id:'qtd', label:'This quarter',  days:quarterToDateDays },
+  { id:'12m', label:'Last 12 months',days:365 },
+  { id:'24m', label:'Last 24 months',days:730 },
 ];
+// Default interval for a span of days, aiming for roughly 7 to 31 bars:
+// daily up to a month, weekly up to half a year, monthly beyond.
+const autoGran = span => span <= 31 ? 'day' : span <= 180 ? 'week' : 'month';
 const state = {
   preset: '30d', custom: null,
   metric: 'volume', type: 'all',
-  provChart: 'stacked', pairChart: 'stacked',
+  provChart: 'stacked', pairChart: 'stacked', netChart: 'stacked',
+  // per-chart interval: 'auto' follows the range (autoGran), else fixed
+  gran: { prov: 'auto', pair: 'auto', net: 'auto' },
   enabled: new Set(),      // filled in boot() once providers load
   enabledPairs: new Set(), // filled in boot() once pairs load
   enabledChains: new Set(),
@@ -691,8 +800,10 @@ const state = {
   sortBy: 'vol', sortDir: -1,
   pairSortBy: 'vol', pairSortDir: -1,
   pairPage: 0, pairPageSize: 10,
-  provShowOther: true, pairShowOther: true,
-  provShareOther: true, pairShareOther: true,
+  netSortBy: 'vol', netSortDir: -1,
+  netPage: 0, netPageSize: 10,
+  provShowOther: true, pairShowOther: true, netShowOther: true,
+  provShareOther: true, pairShareOther: true, netShareOther: true,
   provSearch: '', pairSearch: '', chainSearch: '',
 };
 
@@ -701,11 +812,49 @@ function rangeDays() {
   if (state.custom) {
     const s = Math.max(0, Math.floor((TODAY - state.custom[0]) / DAY));
     const e = Math.max(0, Math.floor((TODAY - state.custom[1]) / DAY));
-    return { from: s, to: e, gran: (s - e) > 120 ? 'month' : 'day' };
+    return { from: s, to: e, gran: autoGran(s - e + 1) };
   }
   const p = PRESETS.find(p => p.id === state.preset);
   const days = typeof p.days === 'function' ? p.days() : p.days;
-  return { from: days - 1, to: 0, gran: p.gran };
+  return { from: days - 1, to: 0, gran: autoGran(days) };
+}
+// The range with one chart's interval applied (its own choice, or the range's
+// auto default).
+function chartRange(chart) {
+  const db = rangeDays();
+  const g = state.gran[chart];
+  return g === 'auto' ? db : { ...db, gran: g };
+}
+// Start of the bucket holding UTC day t: the day itself, its ISO week's Monday,
+// or the first of its month.
+function bucketStart(t, gran) {
+  if (gran === 'month') return new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), 1));
+  if (gran === 'week') return new Date(t.getTime() - ((t.getUTCDay() + 6) % 7) * DAY);
+  return t;
+}
+function bucketFullDays(start, gran) {
+  if (gran === 'month') return new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 0)).getUTCDate();
+  return gran === 'week' ? 7 : 1;
+}
+// Walk the window oldest to newest, grouping days into buckets of the window's
+// interval, and let addDay(slot, dayIndex) accumulate each day into its bucket.
+// Each slot records how many of its days fall inside the window so edge buckets
+// can be marked partial.
+function timeBuckets(daysBack, addDay) {
+  const { from, to, gran } = daysBack;
+  const out = [];
+  let slot = null;
+  for (let d = from; d >= to; d--) {
+    const t = new Date(TODAY.getTime() - d * DAY);
+    const start = bucketStart(t, gran);
+    if (slot == null || slot.t.getTime() !== start.getTime()) {
+      slot = { t: start, vals: {}, days: 0, fullDays: bucketFullDays(start, gran) };
+      out.push(slot);
+    }
+    slot.days++;
+    addDay(slot, DAYS - 1 - d);
+  }
+  return { out, gran };
 }
 const typeMatch = p => state.type === 'all' || p.type === state.type;
 
@@ -734,26 +883,15 @@ function providerRows(daysBack) { // per-provider aggregates over the window (ty
   });
 }
 function provBuckets(daysBack) { // time buckets per enabled provider
-  const { from, to, gran } = daysBack;
   const provs = PROVIDERS.filter(p => p.active && typeMatch(p) && state.enabled.has(p.name));
-  const out = [], seen = {};
-  for (let d = from; d >= to; d--) {
-    const t = new Date(TODAY.getTime() - d * DAY);
-    let slot;
-    if (gran === 'day') { slot = { t, vals: {} }; out.push(slot); }
-    else {
-      const key = t.getUTCFullYear() + '-' + t.getUTCMonth();
-      if (!seen[key]) { seen[key] = { t: new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), 1)), vals: {} }; out.push(seen[key]); }
-      slot = seen[key];
-    }
+  return timeBuckets(daysBack, (slot, idx) => {
     for (const p of provs) {
-      const b = daily[p.i][DAYS - 1 - d]; if (!b) continue;
+      const b = daily[p.i][idx]; if (!b) continue;
       const s = bucketSlice(b);
       const v = slot.vals[p.name] || (slot.vals[p.name] = { usd: 0, txs: 0, rev: 0 });
       v.usd += s.vol; v.txs += s.txs; v.rev += revOf(p, s);
     }
-  }
-  return { out, gran };
+  });
 }
 function pairAgg(daysBack) { // per-pair totals over the window (cascades from provider selection)
   const { from, to } = daysBack;
@@ -770,27 +908,60 @@ function pairAgg(daysBack) { // per-pair totals over the window (cascades from p
   return agg;
 }
 function pairBuckets(daysBack) { // time buckets per enabled pair (cascades from provider selection)
-  const { from, to, gran } = daysBack;
   const provs = PROVIDERS.filter(p => p.active && typeMatch(p) && state.enabled.has(p.name));
-  const out = [], seen = {};
-  for (let d = from; d >= to; d--) {
-    const t = new Date(TODAY.getTime() - d * DAY);
-    let slot;
-    if (gran === 'day') { slot = { t, vals: {} }; out.push(slot); }
-    else {
-      const key = t.getUTCFullYear() + '-' + t.getUTCMonth();
-      if (!seen[key]) { seen[key] = { t: new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), 1)), vals: {} }; out.push(seen[key]); }
-      slot = seen[key];
-    }
+  return timeBuckets(daysBack, (slot, idx) => {
     for (const p of provs) {
-      const b = daily[p.i][DAYS - 1 - d]; if (!b) continue;
+      const b = daily[p.i][idx]; if (!b) continue;
       for (const k in b.pairs) {
         if (!pairIsEnabled(k)) continue;
         slot.vals[k] = (slot.vals[k] || 0) + b.pairs[k];
       }
     }
+  });
+}
+// A pair's volume attributed to networks: all of it to its network when both
+// legs share one, else half to each leg's network. The split keeps network
+// totals equal to pair totals (a cross-network swap is not counted twice).
+// A fiat buy counts fully toward the network bought on (see pairNetworks).
+// Legs on a network outside the filter are dropped.
+function netContrib(k) {
+  const ids = pairNetworks(k);
+  return ids.filter(id => state.enabledChains.has(id)).map(id => [id, 1 / ids.length]);
+}
+function netBuckets(daysBack) { // time buckets per enabled network (cascades from provider selection)
+  const provs = PROVIDERS.filter(p => p.active && typeMatch(p) && state.enabled.has(p.name));
+  return timeBuckets(daysBack, (slot, idx) => {
+    for (const p of provs) {
+      const b = daily[p.i][idx]; if (!b) continue;
+      for (const k in b.pairs) {
+        if (!pairIsEnabled(k)) continue;
+        for (const [id, w] of netContrib(k)) slot.vals[id] = (slot.vals[id] || 0) + b.pairs[k] * w;
+      }
+    }
+  });
+}
+function netDetailRows(daysBack) {
+  const { from, to } = daysBack;
+  const agg = {};
+  for (const p of PROVIDERS.filter(p => p.active && typeMatch(p) && state.enabled.has(p.name))) {
+    for (let d = from; d >= to; d--) {
+      const b = daily[p.i][DAYS - 1 - d]; if (!b) continue;
+      let tot = 0; for (const k in b.pairs) tot += b.pairs[k];
+      for (const k in b.pairs) {
+        if (!pairIsEnabled(k)) continue;
+        // revenue follows the pair (same proportional rule as pairDetailRows),
+        // then the same network split as its volume
+        const pairRev = p.reported ? (tot > 0 ? b.rev * b.pairs[k] / tot : 0) : b.pairs[k] * p.rr;
+        for (const [id, w] of netContrib(k)) {
+          const a = agg[id] || (agg[id] = { vol: 0, rev: 0, pairs: new Set(), provs: new Set() });
+          a.vol += b.pairs[k] * w;
+          a.rev += pairRev * w;
+          if (b.pairs[k] > 0) { a.pairs.add(k); a.provs.add(p.name); }
+        }
+      }
+    }
   }
-  return { out, gran };
+  return Object.entries(agg).map(([n, a]) => ({ n, vol: a.vol, rev: a.rev, pairs: a.pairs.size, provs: a.provs.size }));
 }
 const metricOf = (v, m) => m === 'volume' ? v.usd : m === 'revenue' ? v.rev : v.txs;
 const fmtMetric = (v, m) => m === 'txs' ? fmtNum(v) : fmtMoney(v);
@@ -799,9 +970,10 @@ const fmtMetricFull = (v, m) => m === 'txs' ? Math.round(v).toLocaleString('en-U
 /* color slots per group: top 8 of the CURRENT view (range, type, provider and pair
    selection, and the selected metric for providers). Slots re-rank when the view
    changes so the chart, share card and detail table always agree on who is "Other". */
-let SLOT = {}, PAIRSLOT = {};
+let SLOT = {}, PAIRSLOT = {}, NETSLOT = {};
 const colorOf = name => SLOT[name] ? `var(--s${SLOT[name]})` : 'var(--other)';
 const colorOfPair = name => PAIRSLOT[name] ? `var(--s${PAIRSLOT[name]})` : 'var(--other)';
+const colorOfNet = id => NETSLOT[id] ? `var(--s${NETSLOT[id]})` : 'var(--other)';
 function computeSlots() {
   const db = rangeDays();
   const rows = providerRows(db).filter(r => state.enabled.has(r.p.name))
@@ -810,6 +982,8 @@ function computeSlots() {
   SLOT = {}; rows.slice(0, 8).forEach((r, i) => SLOT[r.n] = i + 1);
   const prs = Object.entries(pairAgg(db)).sort((a, b) => b[1] - a[1]);
   PAIRSLOT = {}; prs.slice(0, 8).forEach((e, i) => PAIRSLOT[e[0]] = i + 1);
+  const nets = netDetailRows(db).sort((a, b) => b.vol - a.vol);
+  NETSLOT = {}; nets.slice(0, 8).forEach((r, i) => NETSLOT[r.n] = i + 1);
 }
 
 /* PAIR_RANKED (stable pair ordering for the filter dropdown) is computed in
@@ -961,17 +1135,25 @@ function drawTimeSeries(svg, ttEl, cfg) {
     const t = el('text', { x: M.l - 8, y: y(tv) + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--ink-3)' }, svg);
     t.textContent = fmtV(tv);
   }
+  // a day or week axis spanning most of a year repeats month-day labels, so
+  // carry the year (month labels already do)
+  const axisYear = gran !== 'month' && out.length > 1 && out[out.length - 1].t - out[0].t > 300 * DAY;
   const every = Math.ceil(out.length / Math.floor(plotW / 78));
   const lastRegular = Math.floor((out.length - 1) / every) * every;
   out.forEach((b, i) => {
     if (i % every !== 0 && i !== out.length - 1) return;
-    if (i === out.length - 1 && i % every !== 0 && (i - lastRegular) * plotW / out.length < 58) return;
-    const t = el('text', { x: x(i), y: H - 8, 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--ink-3)' }, svg);
-    t.textContent = fmtDate(b.t, gran);
+    if (i === out.length - 1 && i % every !== 0 && (i - lastRegular) * plotW / out.length < (axisYear ? 72 : 58)) return;
+    // a year-suffixed label is wider than the right margin: end-align the last one
+    const endAlign = axisYear && i === out.length - 1;
+    const t = el('text', { x: endAlign ? W - M.r : x(i), y: H - 8, 'text-anchor': endAlign ? 'end' : 'middle', 'font-size': 11, fill: 'var(--ink-3)' }, svg);
+    t.textContent = fmtDate(b.t, gran) + (axisYear ? ' ’' + String(b.t.getUTCFullYear()).slice(2) : '');
   });
 
   if (chartType === 'stacked') {
-    const bw = Math.min(24, Math.max(3, plotW / out.length - 2));
+    // leave a gap between bars while there is room, but never let a dense
+    // interval (daily over two years) overflow its slot
+    const slotW = plotW / out.length;
+    const bw = Math.min(24, Math.max(Math.min(3, slotW), slotW - Math.min(2, slotW / 4)));
     let peakI = 0, peakV = 0;
     stacksPer.forEach((s, i) => { const tot = s.reduce((a, r) => a + r.v, 0); if (tot > peakV) { peakV = tot; peakI = i; } });
     stacksPer.forEach((segs, i) => {
@@ -1029,7 +1211,7 @@ function drawTimeSeries(svg, ttEl, cfg) {
     const total = rowsAll.reduce((s, r) => s + r.v, 0);
     ttEl.textContent = '';
     const dt = document.createElement('div'); dt.className = 'tt-date';
-    dt.textContent = fmtDate(out[best].t, gran) + (gran === 'day' ? ', ' + out[best].t.getUTCFullYear() : '');
+    dt.textContent = fmtBucket(out[best], gran);
     ttEl.appendChild(dt);
     const tbl = document.createElement('table');
     for (const s of rowsAll.slice(0, 10)) {
@@ -1119,12 +1301,22 @@ function drawRankedBars(svg, rows, fmtV) {
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   const total = rows.reduce((s, r) => s + r.v, 0) || 1;
   const max = Math.max(...rows.map(r => r.v), 1e-9);
-  const lx = 108, vw = 118, bw = W - lx - vw;
+  // label column fits the widest label, capped so the bars keep room; longer labels ellipsize
+  const labelOf = r => r.label != null ? r.label : r.n;
+  const probe = el('text', { 'font-size': 12 }, svg);
+  const labelW = rows.map(r => { probe.textContent = labelOf(r); return probe.getComputedTextLength(); });
+  probe.remove();
+  const lx = Math.min(Math.round(W * 0.4), Math.max(108, Math.ceil(Math.max(0, ...labelW)) + 18)), vw = 118, bw = W - lx - vw;
   rows.forEach((r, i) => {
     const yy = i * lh + lh / 2 + 2;
     const g = el('g', { 'data-n': r.n }, svg);
     const t = el('text', { x: lx - 10, y: yy + 4, 'text-anchor': 'end', 'font-size': 12, fill: 'var(--ink-2)' }, g);
-    t.textContent = r.label != null ? r.label : r.n;
+    t.textContent = labelOf(r);
+    if (labelW[i] > lx - 14) {
+      el('title', {}, t).textContent = labelOf(r);
+      let s = labelOf(r);
+      while (s.length > 1 && t.getComputedTextLength() > lx - 14) { s = s.slice(0, -1); t.firstChild.nodeValue = s + '…'; }
+    }
     const w = Math.max(2, r.v / max * bw);
     el('path', { d: roundEndBarPath(lx, yy - 6, w, 12, Math.min(4, w / 2)), fill: r.color }, g);
     const tv = el('text', { x: lx + w + 8, y: yy + 4, 'font-size': 12, 'font-weight': 600, fill: 'var(--ink-2)' }, g);
@@ -1157,11 +1349,15 @@ function linkShare(donutSvg, barsSvg) {
 }
 
 /* ---------------- provider section ---------------- */
+// "auto: 13 weeks" / "30 days": the interval a trend chart is drawn at
+function renderGranHint(id, chart, out, gran) {
+  const n = out.length;
+  document.getElementById(id).textContent =
+    (state.gran[chart] === 'auto' ? 'auto: ' : '') + n + ' ' + gran + (n === 1 ? '' : 's');
+}
 function renderProvTrend() {
-  const db = rangeDays();
-  const { out, gran } = provBuckets(db);
-  document.getElementById('granHint').textContent =
-    out.length + (gran === 'month' ? ' monthly' : ' daily') + ' buckets';
+  const { out, gran } = provBuckets(chartRange('prov'));
+  renderGranHint('provGranHint', 'prov', out, gran);
   const m = state.metric;
   document.getElementById('provTrendTitle').textContent =
     (m === 'volume' ? 'Volume' : m === 'revenue' ? 'Estimated revenue' : 'Transactions') + ' by provider';
@@ -1279,8 +1475,8 @@ function renderTable() {
 
 /* ---------------- pairs section ---------------- */
 function renderPairTrend() {
-  const db = rangeDays();
-  const { out, gran } = pairBuckets(db);
+  const { out, gran } = pairBuckets(chartRange('pair'));
+  renderGranHint('pairGranHint', 'pair', out, gran);
   const present = [...new Set(out.flatMap(b => Object.keys(b.vals)))]
     .sort((a, b) => (PAIR_RANKED.indexOf(a) + 1 || 99) - (PAIR_RANKED.indexOf(b) + 1 || 99));
   const fold = foldSeries(present, PAIRSLOT);
@@ -1335,7 +1531,7 @@ function renderPairTable() {
   const db = rangeDays();
   const rows = pairDetailRows(db);
   const total = rows.reduce((s, r) => s + r.vol, 0) || 1;
-  const { out } = pairBuckets(db); // per-bucket per-pair volumes for sparklines/trend
+  const { out } = pairBuckets({ ...db, gran: 'day' }); // daily per-pair volumes for sparklines/trend
   rows.forEach(r => {
     r.share = r.vol / total;
     r.trendPts = trendPoints(out.map(b => b.vals[r.n] || 0), 12);
@@ -1393,18 +1589,118 @@ function renderPairTable() {
   }
 
   document.getElementById('pairCount').textContent = rows.length + ' pairs';
-  const pager = document.getElementById('pairPager');
+  renderPager('pairPager', state.pairPage, ps, rows.length, page => { state.pairPage = page; renderPairTable(); });
+}
+function renderPager(id, page, ps, count, onPage) {
+  const pages = Math.max(1, Math.ceil(count / ps));
+  const pager = document.getElementById(id);
   pager.textContent = '';
   const info = document.createElement('span');
-  const lo = rows.length ? state.pairPage * ps + 1 : 0;
-  info.textContent = lo + '–' + Math.min(rows.length, (state.pairPage + 1) * ps) + ' of ' + rows.length;
+  const lo = count ? page * ps + 1 : 0;
+  info.textContent = lo + '–' + Math.min(count, (page + 1) * ps) + ' of ' + count;
   const prev = document.createElement('button'); prev.className = 'btn'; prev.textContent = '‹ Prev';
   const next = document.createElement('button'); next.className = 'btn'; next.textContent = 'Next ›';
-  prev.disabled = state.pairPage === 0;
-  next.disabled = state.pairPage >= pages - 1;
-  prev.onclick = () => { if (state.pairPage > 0) { state.pairPage--; renderPairTable(); } };
-  next.onclick = () => { if (state.pairPage < pages - 1) { state.pairPage++; renderPairTable(); } };
+  prev.disabled = page === 0;
+  next.disabled = page >= pages - 1;
+  prev.onclick = () => { if (page > 0) onPage(page - 1); };
+  next.onclick = () => { if (page < pages - 1) onPage(page + 1); };
   pager.append(info, prev, next);
+}
+
+/* ---------------- networks section ---------------- */
+function renderNetTrend() {
+  const { out, gran } = netBuckets(chartRange('net'));
+  renderGranHint('netGranHint', 'net', out, gran);
+  const present = [...new Set(out.flatMap(b => Object.keys(b.vals)))]
+    .sort((a, b) => (CHAIN_RANKED.indexOf(a) + 1 || 999) - (CHAIN_RANKED.indexOf(b) + 1 || 999));
+  const fold = foldSeries(present, NETSLOT);
+  const othersTitle = fold.others.map(formatChain).join(', ');
+  if (!state.netShowOther) fold.others = []; // card-local: hide the Other series here only
+  drawTimeSeries(document.getElementById('netTrend'), document.getElementById('netTT'), {
+    out, gran, chartType: state.netChart,
+    valueOf: (n, b) => b.vals[n] || 0,
+    colorFn: colorOfNet,
+    fmtV: fmtMoney, fmtVFull: fmtMoneyFull,
+    seriesFold: fold,
+    labelOf: n => n === 'Other' ? n : formatChain(n),
+  });
+  const names = fold.others.length ? [...fold.tops, 'Other'] : fold.tops;
+  renderChips('netLegend', names, colorOfNet, othersTitle, 'netTrend', n => n === 'Other' ? n : formatChain(n));
+}
+function renderNetShare() {
+  const rows = netDetailRows(rangeDays()).map(r => ({ n: r.n, v: r.vol })).sort((a, b) => b.v - a.v);
+  // parity with the trend chart: the same top 8 series + Other, in ring AND bars
+  const shown = rows.slice(0, 8).map(r => ({ ...r, color: colorOfNet(r.n), label: formatChain(r.n) }));
+  const rest = rows.slice(8).reduce((s, r) => s + r.v, 0);
+  if (state.netShareOther && rest > 0) shown.push({ n: 'Other', v: rest, color: 'var(--other)' });
+  drawDonut(document.getElementById('netDonut'), 100, 100, 82, shown, fmtMoney, 'total volume');
+  drawRankedBars(document.getElementById('netBars'), shown, fmtMoney);
+  linkShare(document.getElementById('netDonut'), document.getElementById('netBars'));
+}
+function renderNetTable() {
+  const db = rangeDays();
+  const rows = netDetailRows(db);
+  const total = rows.reduce((s, r) => s + r.vol, 0) || 1;
+  const { out } = netBuckets({ ...db, gran: 'day' }); // daily per-network volumes for sparklines/trend
+  rows.forEach(r => {
+    r.share = r.vol / total;
+    r.trendPts = trendPoints(out.map(b => b.vals[r.n] || 0), 12);
+    r.trend = trendDeltaOf(r.trendPts);
+  });
+  const key = { name: r => formatChain(r.n).toLowerCase(), vol: r => r.vol, share: r => r.share, rev: r => r.rev, pairs: r => r.pairs, provs: r => r.provs, trend: r => r.trend };
+  rows.sort((a, b) => {
+    const ka = key[state.netSortBy](a), kb = key[state.netSortBy](b);
+    return (ka < kb ? -1 : ka > kb ? 1 : 0) * state.netSortDir;
+  });
+  const ps = state.netPageSize;
+  const pages = Math.max(1, Math.ceil(rows.length / ps));
+  state.netPage = Math.min(state.netPage, pages - 1);
+  const pageRows = rows.slice(state.netPage * ps, (state.netPage + 1) * ps);
+
+  const tbl = document.getElementById('netTable');
+  tbl.textContent = '';
+  const thr = document.createElement('tr');
+  const cols = [['name','Network'],['vol','Volume'],['share','Share'],['rev','Est. revenue'],['pairs','Pairs'],['provs','Providers'],['trend','Trend']];
+  for (const [id, label] of cols) {
+    const th = document.createElement('th');
+    th.textContent = label + (state.netSortBy === id ? (state.netSortDir < 0 ? ' ▼' : ' ▲') : '');
+    th.onclick = () => {
+      if (state.netSortBy === id) state.netSortDir *= -1;
+      else { state.netSortBy = id; state.netSortDir = id === 'name' ? 1 : -1; }
+      state.netPage = 0;
+      renderNetTable();
+    };
+    thr.appendChild(th);
+  }
+  tbl.appendChild(thr);
+  for (const r of pageRows) {
+    const tr = document.createElement('tr');
+    const td0 = document.createElement('td');
+    const nm = document.createElement('span'); nm.className = 'pname';
+    const sw = document.createElement('span'); sw.className = 'sw';
+    sw.style.background = colorOfNet(r.n);
+    nm.append(sw, document.createTextNode(formatChain(r.n)));
+    td0.appendChild(nm);
+    tr.appendChild(td0);
+    let td = document.createElement('td'); td.textContent = fmtMoney(r.vol); td.title = fmtMoneyFull(r.vol); tr.appendChild(td);
+    td = document.createElement('td');
+    const sc = document.createElement('span'); sc.className = 'share-cell';
+    const sb = document.createElement('span'); sb.className = 'share-bar';
+    const fi = document.createElement('i'); fi.style.width = Math.min(100, r.share * 250) + '%';
+    sb.appendChild(fi);
+    const pt = document.createElement('span'); pt.textContent = (r.share * 100).toFixed(1) + '%';
+    sc.append(sb, pt); td.appendChild(sc); tr.appendChild(td);
+    td = document.createElement('td'); td.textContent = fmtMoney(r.rev); tr.appendChild(td);
+    td = document.createElement('td'); td.textContent = r.pairs; tr.appendChild(td);
+    td = document.createElement('td'); td.textContent = r.provs; tr.appendChild(td);
+    td = document.createElement('td');
+    td.appendChild(sparkline(r.trendPts, 90, 24, colorOfNet(r.n)));
+    tr.appendChild(td);
+    tbl.appendChild(tr);
+  }
+
+  document.getElementById('netCount').textContent = rows.length + (rows.length === 1 ? ' network' : ' networks');
+  renderPager('netPager', state.netPage, ps, rows.length, page => { state.netPage = page; renderNetTable(); });
 }
 
 /* ---------------- filter UI ---------------- */
@@ -1457,7 +1753,13 @@ function filteredChains() {
 }
 function updateSelectAllLabel(btnId, search) {
   document.getElementById(btnId).textContent =
-    search.trim() !== '' ? 'Select all (filtered)' : 'Select all';
+    search.trim() !== '' ? 'Select filtered' : 'Select all';
+}
+// With a search, the selection becomes exactly the matching rows.
+// Without one, the matching rows are added to the selection.
+function selectMatching(selected, matching, search) {
+  if (search.trim() !== '') selected.clear();
+  matching.forEach(x => selected.add(x));
 }
 function renderProvList() {
   const list = document.getElementById('provList');
@@ -1519,7 +1821,7 @@ function renderChainList() {
     const c = document.createElement('span'); c.className = 'check';
     c.textContent = state.enabledChains.has(id) ? '✓' : '';
     const sw = document.createElement('span'); sw.className = 'sw';
-    sw.style.background = 'var(--ink-3)';
+    sw.style.background = colorOfNet(id);
     b.append(c, sw, document.createTextNode(formatChain(id)));
     b.onclick = () => {
       state.enabledChains.has(id) ? state.enabledChains.delete(id) : state.enabledChains.add(id);
@@ -1532,7 +1834,7 @@ function updateChainBtn() {
   const total = CHAIN_RANKED.length;
   const n = state.enabledChains.size;
   document.getElementById('chainBtn').textContent =
-    (n === total ? 'All chains' : n + '/' + total + ' chains') + ' ▾';
+    (n === total ? 'All networks' : n + '/' + total + ' networks') + ' ▾';
 }
 function closeDD() { document.querySelectorAll('.dd.open').forEach(d => d.classList.remove('open')); }
 
@@ -1547,6 +1849,10 @@ function seg(id, onPick) {
 seg('metricSeg', v => { state.metric = v; renderAll(); });
 seg('provChartSeg', v => { state.provChart = v; renderProvTrend(); });
 seg('pairChartSeg', v => { state.pairChart = v; renderPairTrend(); });
+seg('netChartSeg', v => { state.netChart = v; renderNetTrend(); });
+seg('provGranSeg', v => { state.gran.prov = v; renderProvTrend(); });
+seg('pairGranSeg', v => { state.gran.pair = v; renderPairTrend(); });
+seg('netGranSeg', v => { state.gran.net = v; renderNetTrend(); });
 seg('typeSeg', v => { state.type = v; renderAll(); });
 function toggleDD(ddId) {
   return e => {
@@ -1565,11 +1871,11 @@ document.addEventListener('click', closeDD);
 document.getElementById('provSearch').oninput = e => { state.provSearch = e.target.value; renderProvList(); };
 document.getElementById('pairSearch').oninput = e => { state.pairSearch = e.target.value; renderPairList(); };
 document.getElementById('chainSearch').oninput = e => { state.chainSearch = e.target.value; renderChainList(); };
-document.getElementById('provAll').onclick = () => { filteredActiveProviders().forEach(p => state.enabled.add(p.name)); updateProvBtn(); renderProvList(); renderAll(); };
+document.getElementById('provAll').onclick = () => { selectMatching(state.enabled, filteredActiveProviders().map(p => p.name), state.provSearch); updateProvBtn(); renderProvList(); renderAll(); };
 document.getElementById('provNone').onclick = () => { state.enabled.clear(); updateProvBtn(); renderProvList(); renderAll(); };
-document.getElementById('pairAll').onclick = () => { filteredPairs().forEach(n => state.enabledPairs.add(n)); updatePairBtn(); renderPairList(); renderAll(); };
+document.getElementById('pairAll').onclick = () => { selectMatching(state.enabledPairs, filteredPairs(), state.pairSearch); updatePairBtn(); renderPairList(); renderAll(); };
 document.getElementById('pairNone').onclick = () => { state.enabledPairs.clear(); updatePairBtn(); renderPairList(); renderAll(); };
-document.getElementById('chainAll').onclick = () => { filteredChains().forEach(id => state.enabledChains.add(id)); updateChainBtn(); renderChainList(); renderPairList(); renderAll(); };
+document.getElementById('chainAll').onclick = () => { selectMatching(state.enabledChains, filteredChains(), state.chainSearch); updateChainBtn(); renderChainList(); renderPairList(); renderAll(); };
 document.getElementById('chainNone').onclick = () => { state.enabledChains.clear(); updateChainBtn(); renderChainList(); renderPairList(); renderAll(); };
 document.getElementById('showInactive').onchange = e => { state.showInactive = e.target.checked; renderTable(); };
 document.getElementById('provOther').onchange = e => { state.provShowOther = e.target.checked; renderProvTrend(); };
@@ -1577,6 +1883,9 @@ document.getElementById('pairOther').onchange = e => { state.pairShowOther = e.t
 document.getElementById('provShareOtherCb').onchange = e => { state.provShareOther = e.target.checked; renderProvShare(); };
 document.getElementById('pairShareOtherCb').onchange = e => { state.pairShareOther = e.target.checked; renderPairShare(); };
 document.getElementById('pairPageSize').onchange = e => { state.pairPageSize = +e.target.value; state.pairPage = 0; renderPairTable(); };
+document.getElementById('netOther').onchange = e => { state.netShowOther = e.target.checked; renderNetTrend(); };
+document.getElementById('netShareOtherCb').onchange = e => { state.netShareOther = e.target.checked; renderNetShare(); };
+document.getElementById('netPageSize').onchange = e => { state.netPageSize = +e.target.value; state.netPage = 0; renderNetTable(); };
 document.getElementById('themeBtn').onclick = () => {
   const r = document.documentElement;
   const dark = matchMedia('(prefers-color-scheme: dark)').matches;
@@ -1586,8 +1895,9 @@ document.getElementById('themeBtn').onclick = () => {
 };
 
 function renderProviders() { renderProvTrend(); renderProvShare(); renderTable(); }
+function renderNetworks() { renderNetTrend(); renderNetShare(); renderNetTable(); }
 function renderPairs() { renderPairTrend(); renderPairShare(); renderPairTable(); }
-function renderAll() { computeSlots(); renderSummary(); renderProviders(); renderPairs(); }
+function renderAll() { computeSlots(); renderSummary(); renderProviders(); renderNetworks(); renderPairs(); }
 
 /* ---------------- boot / auth ---------------- */
 const API_KEY_COOKIE = 'apiKey';

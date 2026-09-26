@@ -17,6 +17,7 @@ export const EVM_CHAIN_IDS: Record<string, number> = {
   opbnb: 204,
   polygon: 137,
   pulsechain: 369,
+  robinhood: 4663,
   rsk: 30,
   sonic: 146,
   zksync: 324

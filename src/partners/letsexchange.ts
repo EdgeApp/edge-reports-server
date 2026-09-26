@@ -179,6 +179,7 @@ const LETSEXCHANGE_NETWORK_TO_PLUGIN_ID: Record<string, string> = {
   QTUM: 'qtum',
   PLS: 'pulsechain',
   POL: 'polygon',
+  ROBINHOOD: 'robinhood',
   RSK: 'rsk',
   RUNE: 'thorchainrune',
   RVN: 'ravencoin',
@@ -339,16 +340,23 @@ async function fetchCoinCache(apiKey: string, log: ScopedLog): Promise<void> {
     throw new Error(`Failed to fetch LetsExchange coins: ${text}`)
   }
 
-  const result = await response.json()
-  const coins = asLetsExchangeCoinsResult(result)
+  setLetsExchangeCoins(apiKey, await response.json())
+  log(`Cached ${coinCache?.size ?? 0} coins`)
+}
 
-  coinCache = new Map()
+/**
+ * Seed the coin cache for an API key from a /v1/coins response. Split out of
+ * fetchCoinCache so tests can seed the cache without the network.
+ */
+export function setLetsExchangeCoins(apiKey: string, response: unknown): void {
+  const coins = asLetsExchangeCoinsResult(response)
+  const newCache = new Map<string, CoinInfo>()
   for (const rawCoin of coins) {
     try {
       const coin = asLetsExchangeCoin(rawCoin)
       // Create key from code and network_code (both lowercase)
       const key = `${coin.code.toLowerCase()}_${coin.network_code.toLowerCase()}`
-      coinCache.set(key, {
+      newCache.set(key, {
         contractAddress: coin.contract_address,
         chainId: coin.chain_id
       })
@@ -357,9 +365,9 @@ async function fetchCoinCache(apiKey: string, log: ScopedLog): Promise<void> {
     }
   }
 
+  coinCache = newCache
   coinCacheApiKey = apiKey
   coinCacheTimestamp = Date.now()
-  log(`Cached ${coinCache.size} coins`)
 }
 
 interface AssetInfo {

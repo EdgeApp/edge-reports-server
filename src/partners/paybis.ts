@@ -22,7 +22,12 @@ import {
   StandardTx,
   Status
 } from '../types'
-import { retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
+import {
+  describeRawTx,
+  retryFetch,
+  smartIsoDateFromTimestamp,
+  snooze
+} from '../util'
 import { ChainNameToPluginIdMapping, EdgeTokenId } from '../util/asEdgeTokenId'
 import { EVM_CHAIN_IDS } from '../util/chainIds'
 
@@ -70,6 +75,7 @@ export const PAYBIS_BLOCKCHAIN_TO_PLUGIN_ID: ChainNameToPluginIdMapping = {
   polygon: 'polygon',
   ripple: 'ripple',
   solana: 'solana',
+  ton: 'ton',
   tron: 'tron'
 }
 
@@ -188,6 +194,7 @@ export async function queryPaybis(
 
   const standardTxs: StandardTx[] = []
   let retry = 0
+  let skipped = 0
   let startTime = lastCheckedTimestamp
 
   while (true) {
@@ -226,7 +233,21 @@ export async function queryPaybis(
         const txs = asTransactions(jsonObj)
         cursor = txs.meta.nextCursor
         for (const rawTx of txs.data) {
-          const standardTx = processPaybisTx(rawTx)
+          // An unprocessable order is logged and dropped rather than thrown:
+          // a throw retries the same window, gives up, and every later run
+          // dies on the same order, so no newer order is ever recorded.
+          let standardTx: StandardTx
+          try {
+            standardTx = processPaybisTx(rawTx)
+          } catch (e) {
+            skipped++
+            log.error(
+              `Paybis: skipping unprocessable order, ingestion continues: ${String(
+                e
+              )}: ${describeRawTx(rawTx)}`
+            )
+            continue
+          }
           standardTxs.push(standardTx)
           if (standardTx.isoDate > latestIsoDate) {
             latestIsoDate = standardTx.isoDate
@@ -259,6 +280,12 @@ export async function queryPaybis(
       }
     }
     await snooze(1000)
+  }
+
+  if (skipped > 0) {
+    log.warn(
+      `Paybis: ${skipped} order(s) skipped as unprocessable this run; each is logged above and needs a mapping fix plus a backfill`
+    )
   }
 
   const out = {
