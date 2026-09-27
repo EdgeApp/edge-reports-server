@@ -2,6 +2,8 @@ import { makeConfig } from 'cleaner-config'
 import { asArray, asNumber, asObject, asOptional, asString } from 'cleaners'
 import { asCouchCredentials } from 'edge-server-tools'
 
+import { asHealthCheckConfig } from './healthCheck/healthCheckTypes'
+
 export const asConfig = asObject({
   couchDbFullpath: asOptional(
     asString,
@@ -20,7 +22,10 @@ export const asConfig = asObject({
   couchMainCluster: asOptional(asString, 'wusa'),
   couchUris: asOptional(asCouchCredentials, {
     wusa: 'http://username:password@localhost:5984'
-  })
+  }),
+
+  /** Thresholds and output settings for the daily health check */
+  healthCheck: asOptional(asHealthCheckConfig, () => asHealthCheckConfig({}))
 })
 
 export const config = makeConfig(asConfig, 'config.json')

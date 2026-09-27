@@ -99,6 +99,9 @@ const dayDatabaseSetup: DatabaseSetup = {
   options: { partitioned: true },
   documents: cacheIndexes
 }
+const statusDatabaseSetup: DatabaseSetup = {
+  name: 'reports_status'
+}
 const monthDatabaseSetup: DatabaseSetup = {
   name: 'reports_month',
   options: { partitioned: true },
@@ -112,7 +115,8 @@ const databases = [
   progressCacheDatabaseSetup,
   hourDatabaseSetup,
   dayDatabaseSetup,
-  monthDatabaseSetup
+  monthDatabaseSetup,
+  statusDatabaseSetup
 ]
 
 export const reportsReplication = syncedDocument(

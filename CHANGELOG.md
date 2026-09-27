@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- added: Daily health check for missing providers, missing volume, query errors and quiet chains
 - changed: Update sideshift plugin with new optional API fields
 - changed: Query both old and new Sideshift affiliate accounts and merge completed orders to preserve full shift history across an affiliate-account rotation
 - changed: Add signature header support to Exolix
