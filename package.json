@@ -14,6 +14,7 @@
     "clean": "rimraf lib dist .parcel-cache",
     "configure": "configure",
     "fix": "npm run lint -- --fix",
+    "health": "node -r sucrase/register src/bin/healthCheck.ts",
     "fio:promo": "node -r sucrase/register src/bin/fioPromo/fioPromo.ts",
     "lifi": "node -r sucrase/register src/bin/lifiReporter.ts",
     "precommit": "lint-staged && npm run prepare",

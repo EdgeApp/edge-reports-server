@@ -1,0 +1,1514 @@
+{
+  "nowIsoDate": "2026-09-01T00:00:00.000Z",
+  "apps": [
+    {
+      "appId": "edge",
+      "partnerIds": {
+        "alpha": {},
+        "beta": {},
+        "banxa": {
+          "pluginId": "banxa"
+        }
+      }
+    }
+  ],
+  "disablePartnerQuery": {
+    "plugins": {
+      "banxa": true
+    },
+    "appPartners": {}
+  },
+  "soloAppIds": null,
+  "soloPartnerIds": null,
+  "transactions": {
+    "edge_alpha": [
+      {
+        "isoDate": "2026-08-29T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-29T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-28T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-28T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-27T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-27T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-26T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-26T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-25T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-25T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-24T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-24T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-23T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-23T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-22T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-22T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-21T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-21T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-20T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-20T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-19T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-19T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-18T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-18T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-17T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-17T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-16T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-16T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-15T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-15T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-14T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-14T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-13T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-13T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-12T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-12T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-11T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-11T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-10T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-10T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-09T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-09T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-08T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-08T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-07T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-07T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-06T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-06T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-05T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-05T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-04T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-04T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-03T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-03T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-02T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-02T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-01T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-08-01T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-31T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-31T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-30T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-30T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-29T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-29T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-28T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-28T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-27T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-27T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-26T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-26T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-25T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-25T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-24T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-24T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-23T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-23T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-22T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-22T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-21T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-21T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-20T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-20T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-19T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-19T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-18T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-18T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-17T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-17T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-16T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-16T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-15T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-15T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-14T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-14T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-13T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-13T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-12T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-12T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-11T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-11T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-10T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-10T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-09T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-09T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-08T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-08T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-07T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-07T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-06T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-06T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-05T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-05T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-04T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-04T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-03T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-03T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-02T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-02T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-01T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      },
+      {
+        "isoDate": "2026-07-01T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "bitcoin"
+      }
+    ],
+    "edge_beta": [
+      {
+        "isoDate": "2026-08-31T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-31T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-30T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-30T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-29T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-29T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-28T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-28T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-27T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-27T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-26T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-26T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-25T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-25T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-24T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-24T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-23T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-23T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-22T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-22T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-21T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-21T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-20T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-20T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-19T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-19T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-18T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-18T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-17T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-17T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-16T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-16T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-15T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-15T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-14T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-14T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-13T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-13T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-12T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-12T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-11T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-11T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-10T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-10T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-09T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-09T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-08T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-08T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-07T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-07T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-06T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-06T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-05T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-05T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-04T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-04T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-03T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-03T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-02T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-02T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-01T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-08-01T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-31T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-31T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-30T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-30T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-29T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-29T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-28T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-28T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-27T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-27T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-26T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-26T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-25T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-25T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-24T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-24T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-23T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-23T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-22T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-22T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-21T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-21T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-20T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-20T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-19T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-19T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-18T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-18T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-17T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-17T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-16T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-16T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-15T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-15T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-14T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-14T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-13T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-13T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-12T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-12T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-11T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-11T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-10T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-10T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-09T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-09T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-08T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-08T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-07T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-07T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-06T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-06T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-05T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-05T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-04T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-04T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-03T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-03T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-02T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-02T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-01T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-07-01T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-06-30T18:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      },
+      {
+        "isoDate": "2026-06-30T06:00:00.000Z",
+        "status": "complete",
+        "usdValue": 100,
+        "depositChainPluginId": "ethereum"
+      }
+    ]
+  },
+  "statusHistory": {
+    "edge_beta": [
+      {
+        "isoDate": "2026-08-31T23:00:00.000Z",
+        "result": "success",
+        "status": "[runPlugin] beta Successful update in 3 seconds."
+      }
+    ]
+  }
+}
