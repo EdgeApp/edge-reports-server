@@ -3,6 +3,7 @@ import nano from 'nano'
 
 import { config } from './config'
 import { pagination } from './dbutils'
+import { recordPartnerStatus } from './healthCheck/statusHistory'
 import { banxa } from './partners/banxa'
 import { bitaccess } from './partners/bitaccess'
 import { bitrefill } from './partners/bitrefill'
@@ -95,6 +96,7 @@ const snooze: Function = async (ms: number) =>
 
 const dbProgress = nanoDb.db.use('reports_progresscache')
 const dbApps = nanoDb.db.use('reports_apps')
+const dbStatus: nano.DocumentScope<unknown> = nanoDb.db.use('reports_status')
 const dbSettings: nano.DocumentScope<unknown> = nanoDb.db.use(
   'reports_settings'
 )
@@ -158,8 +160,14 @@ export async function queryEngine(): Promise<void> {
       for (const runPluginParams of runPlugins) {
         await semaphore.acquire()
         const promise = runPlugin(runPluginParams)
-          .then(status => {
+          .then(async status => {
             partnerStatus = [...partnerStatus, status]
+            await recordPartnerStatus(
+              dbStatus,
+              `${app.appId}_${runPluginParams.partnerId}`,
+              status,
+              config.healthCheck.statusHistoryLength
+            )
           })
           .finally(() => {
             semaphore.release()
