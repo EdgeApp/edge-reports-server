@@ -490,6 +490,107 @@
     </div>
     <div class="pager" id="pairPager"></div>
   </div>
+
+  <!-- ================= CAMPAIGNS ================= -->
+  <div class="section-head">
+    <h2>Campaigns</h2>
+    <div class="rule"></div>
+  </div>
+
+  <!-- section filters: the campaign dimension and which campaigns to show -->
+  <div class="filters">
+    <div class="seg" id="campDimSeg">
+      <button data-v="installer" class="on">Installer</button>
+      <button data-v="promo">Promotion</button>
+    </div>
+    <div class="dd" id="campDD">
+      <button class="btn" id="campBtn">All installers ▾</button>
+      <div class="dd-panel" style="min-width:250px">
+        <div class="dd-search"><input id="campSearch" placeholder="Search campaigns…"></div>
+        <div class="dd-actions">
+          <button class="btn" id="campAll">Select all</button>
+          <button class="btn" id="campNone">Clear</button>
+        </div>
+        <div class="dd-list" id="campList"></div>
+      </div>
+    </div>
+    <span class="hint" id="campScope"></span>
+  </div>
+
+  <div class="card empty" id="campMsg" hidden></div>
+
+  <div id="campBody" hidden>
+    <div class="card">
+      <div class="card-head">
+        <h3 id="campTrendTitle">Settled volume by installer</h3>
+        <span class="hint">orders joined to a logged conversion · <span id="campGranHint"></span></span>
+        <div class="spacer"></div>
+        <div class="seg" id="campChartSeg">
+          <button data-v="stacked" class="on">Stacked</button>
+          <button data-v="lines">Lines</button>
+        </div>
+        <div class="seg" id="campGranSeg" title="Interval">
+          <button data-v="auto" class="on">Auto</button>
+          <button data-v="day">Day</button>
+          <button data-v="week">Week</button>
+          <button data-v="month">Month</button>
+        </div>
+        <label class="hint" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="checkbox" id="campOther" checked> include other
+        </label>
+      </div>
+      <div class="chart-wrap">
+        <svg id="campTrend" width="100%" height="300"></svg>
+        <div class="tooltip" id="campTT"></div>
+      </div>
+      <div class="legend" id="campLegend"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3 id="campShareTitle">Installer share</h3>
+        <span class="hint">in range · same top 8 + other as the chart above</span>
+        <div class="spacer"></div>
+        <label class="hint" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="checkbox" id="campShareOtherCb" checked> include other
+        </label>
+      </div>
+      <div class="share-flex">
+        <svg id="campDonut" width="200" height="200"></svg>
+        <div class="bars"><svg id="campBars" width="100%"></svg></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3 id="campTableTitle">Installer detail</h3>
+        <span class="hint" id="campCount"></span>
+        <div class="spacer"></div>
+        <label class="hint" style="display:inline-flex;align-items:center;gap:6px">
+          rows per page
+          <select class="ps" id="campPageSize">
+            <option value="10" selected>10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+          </select>
+        </label>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="prov" id="campTable"></table>
+      </div>
+      <div class="pager" id="campPager"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>Conversion join rate</h3>
+        <span class="hint">every conversion the app logged in range, by the provider id it logged, before filters</span>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="prov" id="joinTable"></table>
+      </div>
+    </div>
+  </div>
 </div>
 </div><!-- /#app -->
 
@@ -574,6 +675,20 @@ async function apiAnalytics(apiKey, pluginIds, startIso, endIso) {
   });
   if (res.status === 401 || res.status === 400) throw new AuthError('Invalid API key');
   if (!res.ok) throw new Error('Failed to load analytics (' + res.status + ')');
+  return res.json();
+}
+// A server without a referral feed configured answers 503, and one whose feed
+// belongs to another app answers 403: the campaigns section says so instead of
+// failing the whole dashboard.
+class CampaignsUnavailable extends Error {}
+async function apiGetCampaigns(apiKey, startIso, endIso) {
+  const q = '?apiKey=' + encodeURIComponent(apiKey) +
+    '&start=' + encodeURIComponent(startIso) + '&end=' + encodeURIComponent(endIso);
+  const res = await fetch(API_BASE + '/v2/campaigns/' + q);
+  if (res.status === 401) throw new AuthError('Invalid API key');
+  if (res.status === 503) throw new CampaignsUnavailable('Campaign data is not configured on this server.');
+  if (res.status === 403) throw new CampaignsUnavailable('Campaign data is not available for this app.');
+  if (!res.ok) throw new Error('Failed to load campaigns (' + res.status + ')');
   return res.json();
 }
 
@@ -790,9 +905,9 @@ const autoGran = span => span <= 31 ? 'day' : span <= 180 ? 'week' : 'month';
 const state = {
   preset: '30d', custom: null,
   metric: 'volume', type: 'all',
-  provChart: 'stacked', pairChart: 'stacked', netChart: 'stacked',
+  provChart: 'stacked', pairChart: 'stacked', netChart: 'stacked', campChart: 'stacked',
   // per-chart interval: 'auto' follows the range (autoGran), else fixed
-  gran: { prov: 'auto', pair: 'auto', net: 'auto' },
+  gran: { prov: 'auto', pair: 'auto', net: 'auto', camp: 'auto' },
   enabled: new Set(),      // filled in boot() once providers load
   enabledPairs: new Set(), // filled in boot() once pairs load
   enabledChains: new Set(),
@@ -805,6 +920,14 @@ const state = {
   provShowOther: true, pairShowOther: true, netShowOther: true,
   provShareOther: true, pairShareOther: true, netShareOther: true,
   provSearch: '', pairSearch: '', chainSearch: '',
+  // campaigns section: which dimension slices it, and the campaigns hidden per
+  // dimension (a hide list, since the campaign set changes with the range)
+  campDim: 'installer',
+  campHidden: { installer: new Set(), promo: new Set() },
+  campSortBy: 'vol', campSortDir: -1,
+  campPage: 0, campPageSize: 10,
+  campShowOther: true, campShareOther: true,
+  campSearch: '',
 };
 
 /* ---------------- data slicing ---------------- */
@@ -1270,7 +1393,8 @@ function renderChips(rootId, names, colorFn, otherTitle, svgId, labelFn) {
 /* ---------------- donut + ranked bars (share cards) ---------------- */
 function drawDonut(svg, cx, cy, R, data, fmtV, centerLbl) {
   svg.textContent = '';
-  const total = data.reduce((s, d) => s + d.v, 0) || 1;
+  const sum = data.reduce((s, d) => s + d.v, 0);
+  const total = sum || 1; // divisor only; the center label shows the real sum
   let a0 = -Math.PI / 2;
   const r0 = R * .62;
   for (const d of data) {
@@ -1288,7 +1412,7 @@ function drawDonut(svg, cx, cy, R, data, fmtV, centerLbl) {
     a0 = a1;
   }
   const t1 = el('text', { x: cx, y: cy - 2, 'text-anchor': 'middle', 'font-size': 21, 'font-weight': 650, fill: 'var(--ink-1)' }, svg);
-  t1.textContent = fmtV(total);
+  t1.textContent = fmtV(sum);
   const t2 = el('text', { x: cx, y: cy + 16, 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--ink-3)' }, svg);
   t2.textContent = centerLbl;
 }
@@ -1703,6 +1827,275 @@ function renderNetTable() {
   renderPager('netPager', state.netPage, ps, rows.length, page => { state.netPage = page; renderNetTable(); });
 }
 
+/* ---------------- campaigns section ---------------- */
+// Settled partner USD by the installer campaign or promotion each order is
+// credited to, from GET /v2/campaigns. The server joins the app's logged
+// conversion events to partner orders, so this counts only orders the app
+// logged a conversion for. Rows carry a provider but no pair, so the range,
+// type and provider filters apply here and the pair and network filters do not.
+const CAMPAIGN_MAX_DAYS = 400; // the server's per-request cap
+const CAMP = { apiKey: null, status: 'idle', message: '', rows: [], joins: [], fetchKey: null, seq: 0 };
+let campDaily = []; // day index -> the campaign rows settled that day
+let CAMPSLOT = {};
+const colorOfCamp = n => CAMPSLOT[n] ? `var(--s${CAMPSLOT[n]})` : 'var(--other)';
+const campKeyOf = r => state.campDim === 'installer' ? r.installer : r.promo;
+const campHiddenSet = () => state.campHidden[state.campDim];
+const campNoun = (n = 2) => (state.campDim === 'installer' ? 'installer' : 'promotion') + (n === 1 ? '' : 's');
+function campLabel(n) {
+  if (state.campDim === 'installer' && n === 'organic') return 'Organic (no referral)';
+  if (state.campDim === 'promo' && n === 'none') return 'No promotion';
+  return n;
+}
+// The range, clipped to its most recent CAMPAIGN_MAX_DAYS, with the campaign
+// chart's interval applied.
+function campRange() {
+  const db = rangeDays();
+  const span = Math.min(db.from - db.to + 1, CAMPAIGN_MAX_DAYS);
+  const g = state.gran.camp;
+  return { from: db.to + span - 1, to: db.to, gran: g === 'auto' ? autoGran(span) : g, clipped: span < db.from - db.to + 1 };
+}
+const campProvider = pluginId => PROVIDERS.find(p => p.id === pluginId);
+function campRowShown(r) {
+  if (campHiddenSet().has(campKeyOf(r))) return false;
+  const p = campProvider(r.pluginId);
+  // A partner with no analytics volume is outside every provider selection
+  // but still belongs to "All".
+  if (p == null || !p.active) return state.type === 'all';
+  return typeMatch(p) && state.enabled.has(p.name);
+}
+function campMetric(r) {
+  if (state.metric === 'txs') return r.count;
+  if (state.metric === 'revenue') { const p = campProvider(r.pluginId); return r.usdValue * (p ? p.rr : 0); }
+  return r.usdValue;
+}
+function indexCampaignRows() {
+  campDaily = [];
+  const base = TODAY_DAY_INDEX - (DAYS - 1);
+  for (const r of CAMP.rows) {
+    const idx = utcDayIndex(Date.parse(r.date + 'T00:00:00Z')) - base;
+    if (idx < 0 || idx >= DAYS) continue;
+    (campDaily[idx] || (campDaily[idx] = [])).push(r);
+  }
+}
+// Fetch the campaign report for the current range, once per range. A stale
+// response (the range changed while it was in flight) is dropped. A failed
+// fetch clears its key after showing the error, so the next render retries;
+// an unconfigured server keeps its key, since retrying cannot change it.
+function ensureCampaigns() {
+  const r = campRange();
+  const key = r.from + ':' + r.to;
+  if (CAMP.fetchKey === key || CAMP.apiKey == null) return;
+  CAMP.fetchKey = key;
+  CAMP.status = 'loading';
+  const seq = ++CAMP.seq;
+  const startIso = new Date(TODAY.getTime() - r.from * DAY).toISOString();
+  const endIso = new Date(TODAY.getTime() - (r.to - 1) * DAY).toISOString();
+  apiGetCampaigns(CAMP.apiKey, startIso, endIso).then(report => {
+    if (seq !== CAMP.seq) return;
+    CAMP.status = 'ready';
+    CAMP.rows = report.rows || [];
+    CAMP.joins = report.joins || [];
+    indexCampaignRows();
+    renderCampaigns();
+  }, err => {
+    if (seq !== CAMP.seq) return;
+    CAMP.status = 'error';
+    CAMP.message = err instanceof CampaignsUnavailable ? err.message
+      : 'Could not load campaign data: ' + (err && err.message ? err.message : 'unknown error');
+    renderCampaigns();
+    if (!(err instanceof CampaignsUnavailable)) CAMP.fetchKey = null;
+  });
+}
+// Per-campaign totals over the window, filtered.
+function campAgg(daysBack) {
+  const agg = {};
+  for (let d = daysBack.from; d >= daysBack.to; d--) {
+    for (const r of campDaily[DAYS - 1 - d] || []) {
+      if (!campRowShown(r)) continue;
+      const k = campKeyOf(r);
+      const p = campProvider(r.pluginId);
+      const a = agg[k] || (agg[k] = { vol: 0, txs: 0, rev: 0, provs: new Set() });
+      a.vol += r.usdValue; a.txs += r.count; a.rev += r.usdValue * (p ? p.rr : 0);
+      a.provs.add(r.pluginId);
+    }
+  }
+  return agg;
+}
+const campAggMetric = a => metricOf({ usd: a.vol, rev: a.rev, txs: a.txs }, state.metric);
+function computeCampSlots() {
+  const ranked = Object.entries(campAgg(campRange())).sort((a, b) => campAggMetric(b[1]) - campAggMetric(a[1]));
+  CAMPSLOT = {}; ranked.slice(0, 8).forEach((e, i) => CAMPSLOT[e[0]] = i + 1);
+}
+function renderCampTrend() {
+  const range = campRange();
+  const { out, gran } = timeBuckets(range, (slot, idx) => {
+    for (const r of campDaily[idx] || []) {
+      if (!campRowShown(r)) continue;
+      const k = campKeyOf(r);
+      slot.vals[k] = (slot.vals[k] || 0) + campMetric(r);
+    }
+  });
+  renderGranHint('campGranHint', 'camp', out, gran);
+  const m = state.metric;
+  document.getElementById('campTrendTitle').textContent =
+    (m === 'volume' ? 'Settled volume' : m === 'revenue' ? 'Estimated revenue' : 'Settled orders') + ' by ' + campNoun(1);
+  const totals = {};
+  for (const b of out) for (const k in b.vals) totals[k] = (totals[k] || 0) + b.vals[k];
+  const present = Object.keys(totals).sort((a, b) => totals[b] - totals[a]);
+  const fold = foldSeries(present, CAMPSLOT);
+  const othersTitle = fold.others.map(campLabel).join(', ');
+  if (!state.campShowOther) fold.others = [];
+  drawTimeSeries(document.getElementById('campTrend'), document.getElementById('campTT'), {
+    out, gran, chartType: state.campChart,
+    valueOf: (n, b) => b.vals[n] || 0,
+    colorFn: colorOfCamp,
+    fmtV: v => fmtMetric(v, m), fmtVFull: v => fmtMetricFull(v, m),
+    seriesFold: fold,
+    labelOf: campLabel,
+  });
+  const names = fold.others.length ? [...fold.tops, 'Other'] : fold.tops;
+  renderChips('campLegend', names, colorOfCamp, othersTitle, 'campTrend', campLabel);
+}
+function renderCampShare() {
+  const m = state.metric;
+  const rows = Object.entries(campAgg(campRange()))
+    .map(([n, a]) => ({ n, v: campAggMetric(a) })).sort((a, b) => b.v - a.v);
+  const shown = rows.slice(0, 8).map(r => ({ ...r, color: colorOfCamp(r.n), label: campLabel(r.n) }));
+  const rest = rows.slice(8).reduce((s, r) => s + r.v, 0);
+  if (state.campShareOther && rest > 0) shown.push({ n: 'Other', v: rest, color: 'var(--other)' });
+  const noun = campNoun(1);
+  document.getElementById('campShareTitle').textContent = noun.charAt(0).toUpperCase() + noun.slice(1) + ' share';
+  const center = m === 'txs' ? 'settled orders' : m === 'revenue' ? 'est. revenue' : 'settled volume';
+  drawDonut(document.getElementById('campDonut'), 100, 100, 82, shown, v => fmtMetric(v, m), center);
+  drawRankedBars(document.getElementById('campBars'), shown, v => fmtMetric(v, m));
+  linkShare(document.getElementById('campDonut'), document.getElementById('campBars'));
+}
+function renderCampTable() {
+  const range = campRange();
+  const rows = Object.entries(campAgg(range)).map(([n, a]) => ({ n, vol: a.vol, txs: a.txs, rev: a.rev, provs: a.provs.size }));
+  const total = rows.reduce((s, r) => s + r.vol, 0) || 1;
+  const days = range.from - range.to + 1;
+  const series = {};
+  for (let d = range.from; d >= range.to; d--) {
+    const i = range.from - d;
+    for (const r of campDaily[DAYS - 1 - d] || []) {
+      if (!campRowShown(r)) continue;
+      const k = campKeyOf(r);
+      (series[k] || (series[k] = new Array(days).fill(0)))[i] += r.usdValue;
+    }
+  }
+  rows.forEach(r => {
+    r.share = r.vol / total;
+    r.trendPts = trendPoints(series[r.n] || [], 12);
+    r.trend = trendDeltaOf(r.trendPts);
+  });
+  const key = { name: r => campLabel(r.n).toLowerCase(), vol: r => r.vol, txs: r => r.txs, share: r => r.share, rev: r => r.rev, provs: r => r.provs, trend: r => r.trend };
+  rows.sort((a, b) => {
+    const ka = key[state.campSortBy](a), kb = key[state.campSortBy](b);
+    return (ka < kb ? -1 : ka > kb ? 1 : 0) * state.campSortDir;
+  });
+  const ps = state.campPageSize;
+  const pages = Math.max(1, Math.ceil(rows.length / ps));
+  state.campPage = Math.min(state.campPage, pages - 1);
+  const pageRows = rows.slice(state.campPage * ps, (state.campPage + 1) * ps);
+
+  const noun = campNoun(1);
+  document.getElementById('campTableTitle').textContent = noun.charAt(0).toUpperCase() + noun.slice(1) + ' detail';
+  const tbl = document.getElementById('campTable');
+  tbl.textContent = '';
+  const thr = document.createElement('tr');
+  const cols = [['name', noun.charAt(0).toUpperCase() + noun.slice(1)], ['vol', 'Settled volume'], ['txs', 'Orders'], ['share', 'Share'], ['rev', 'Est. revenue'], ['provs', 'Providers'], ['trend', 'Trend']];
+  for (const [id, label] of cols) {
+    const th = document.createElement('th');
+    th.textContent = label + (state.campSortBy === id ? (state.campSortDir < 0 ? ' ▼' : ' ▲') : '');
+    th.onclick = () => {
+      if (state.campSortBy === id) state.campSortDir *= -1;
+      else { state.campSortBy = id; state.campSortDir = id === 'name' ? 1 : -1; }
+      state.campPage = 0;
+      renderCampTable();
+    };
+    thr.appendChild(th);
+  }
+  tbl.appendChild(thr);
+  for (const r of pageRows) {
+    const tr = document.createElement('tr');
+    const td0 = document.createElement('td');
+    const nm = document.createElement('span'); nm.className = 'pname';
+    const sw = document.createElement('span'); sw.className = 'sw';
+    sw.style.background = colorOfCamp(r.n);
+    nm.append(sw, document.createTextNode(campLabel(r.n)));
+    td0.appendChild(nm);
+    tr.appendChild(td0);
+    let td = document.createElement('td'); td.textContent = fmtMoney(r.vol); td.title = fmtMoneyFull(r.vol); tr.appendChild(td);
+    td = document.createElement('td'); td.textContent = fmtNum(r.txs); tr.appendChild(td);
+    td = document.createElement('td');
+    const sc = document.createElement('span'); sc.className = 'share-cell';
+    const sb = document.createElement('span'); sb.className = 'share-bar';
+    const fi = document.createElement('i'); fi.style.width = Math.min(100, r.share * 250) + '%';
+    sb.appendChild(fi);
+    const pt = document.createElement('span'); pt.textContent = (r.share * 100).toFixed(1) + '%';
+    sc.append(sb, pt); td.appendChild(sc); tr.appendChild(td);
+    td = document.createElement('td'); td.textContent = fmtMoney(r.rev); tr.appendChild(td);
+    td = document.createElement('td'); td.textContent = r.provs; tr.appendChild(td);
+    td = document.createElement('td');
+    td.appendChild(sparkline(r.trendPts, 90, 24, colorOfCamp(r.n)));
+    tr.appendChild(td);
+    tbl.appendChild(tr);
+  }
+
+  document.getElementById('campCount').textContent = rows.length + ' ' + campNoun(rows.length);
+  renderPager('campPager', state.campPage, ps, rows.length, page => { state.campPage = page; renderCampTable(); });
+}
+// How many logged conversions per provider joined a partner order: the health
+// of the order id the app logs, per provider. Low match rates name the
+// providers whose logged id differs from the one the partner reports.
+function renderJoinTable() {
+  const tbl = document.getElementById('joinTable');
+  tbl.textContent = '';
+  const thr = document.createElement('tr');
+  for (const label of ['Provider (as logged)', 'Conversions', 'Matched', 'Settled', 'Match rate']) {
+    const th = document.createElement('th'); th.textContent = label; th.style.cursor = 'default';
+    thr.appendChild(th);
+  }
+  tbl.appendChild(thr);
+  for (const j of CAMP.joins) {
+    const tr = document.createElement('tr');
+    let td = document.createElement('td'); td.textContent = displayName(j.pluginId); td.title = j.pluginId; tr.appendChild(td);
+    for (const v of [j.events, j.matched, j.settled]) {
+      td = document.createElement('td'); td.textContent = fmtNum(v); tr.appendChild(td);
+    }
+    const rate = j.events > 0 ? j.matched / j.events : 0;
+    td = document.createElement('td');
+    const sc = document.createElement('span'); sc.className = 'share-cell';
+    const sb = document.createElement('span'); sb.className = 'share-bar';
+    const fi = document.createElement('i'); fi.style.width = (rate * 100) + '%';
+    sb.appendChild(fi);
+    const pt = document.createElement('span'); pt.textContent = (rate * 100).toFixed(0) + '%';
+    sc.append(sb, pt); td.appendChild(sc); tr.appendChild(td);
+    tbl.appendChild(tr);
+  }
+}
+function renderCampaigns() {
+  ensureCampaigns();
+  const range = campRange();
+  const scope = document.getElementById('campScope');
+  scope.textContent = 'pair and network filters do not apply' +
+    (range.clipped ? ' · showing the latest ' + CAMPAIGN_MAX_DAYS + ' days of the range' : '');
+  const msg = document.getElementById('campMsg');
+  const body = document.getElementById('campBody');
+  let text = null;
+  if (CAMP.status === 'loading') text = 'Loading campaign data…';
+  else if (CAMP.status === 'error') text = CAMP.message;
+  else if (CAMP.status === 'ready' && CAMP.joins.length === 0) text = 'No conversions were logged in this range.';
+  // before the filter list, whose swatches read the slots
+  computeCampSlots();
+  renderCampList(); updateCampBtn();
+  msg.hidden = text == null; body.hidden = text != null;
+  if (text != null) { msg.textContent = text; return; }
+  // after unhiding, so the charts measure their real width
+  renderCampTrend(); renderCampShare(); renderCampTable(); renderJoinTable();
+}
+
 /* ---------------- filter UI ---------------- */
 function renderRangePanel() {
   const panel = document.getElementById('rangePanel');
@@ -1836,6 +2229,43 @@ function updateChainBtn() {
   document.getElementById('chainBtn').textContent =
     (n === total ? 'All networks' : n + '/' + total + ' networks') + ' ▾';
 }
+// Every campaign in the loaded report for the current dimension, by volume.
+function campNames() {
+  const tot = {};
+  for (const r of CAMP.rows) { const k = campKeyOf(r); tot[k] = (tot[k] || 0) + r.usdValue; }
+  return Object.keys(tot).sort((a, b) => tot[b] - tot[a]);
+}
+function filteredCamps() {
+  const q = state.campSearch.toLowerCase();
+  return campNames().filter(n => q === '' || n.toLowerCase().includes(q) || campLabel(n).toLowerCase().includes(q));
+}
+function renderCampList() {
+  const list = document.getElementById('campList');
+  list.textContent = '';
+  updateSelectAllLabel('campAll', state.campSearch);
+  const hidden = campHiddenSet();
+  for (const n of filteredCamps()) {
+    const b = document.createElement('button'); b.className = 'dd-row';
+    const c = document.createElement('span'); c.className = 'check';
+    c.textContent = hidden.has(n) ? '' : '✓';
+    const sw = document.createElement('span'); sw.className = 'sw';
+    sw.style.background = colorOfCamp(n);
+    b.append(c, sw, document.createTextNode(campLabel(n)));
+    b.onclick = () => {
+      hidden.has(n) ? hidden.delete(n) : hidden.add(n);
+      state.campPage = 0;
+      renderCampaigns();
+    };
+    list.appendChild(b);
+  }
+}
+function updateCampBtn() {
+  const names = campNames();
+  const hidden = campHiddenSet();
+  const n = names.filter(x => !hidden.has(x)).length;
+  document.getElementById('campBtn').textContent =
+    (n === names.length ? 'All ' + campNoun() : n + '/' + names.length + ' ' + campNoun(names.length)) + ' ▾';
+}
 function closeDD() { document.querySelectorAll('.dd.open').forEach(d => d.classList.remove('open')); }
 
 /* ---------------- wiring ---------------- */
@@ -1854,6 +2284,9 @@ seg('provGranSeg', v => { state.gran.prov = v; renderProvTrend(); });
 seg('pairGranSeg', v => { state.gran.pair = v; renderPairTrend(); });
 seg('netGranSeg', v => { state.gran.net = v; renderNetTrend(); });
 seg('typeSeg', v => { state.type = v; renderAll(); });
+seg('campChartSeg', v => { state.campChart = v; renderCampTrend(); });
+seg('campGranSeg', v => { state.gran.camp = v; renderCampTrend(); });
+seg('campDimSeg', v => { state.campDim = v; state.campPage = 0; renderCampaigns(); });
 function toggleDD(ddId) {
   return e => {
     e.stopPropagation();
@@ -1866,6 +2299,7 @@ document.getElementById('rangeBtn').onclick = toggleDD('rangeDD');
 document.getElementById('provBtn').onclick = toggleDD('provDD');
 document.getElementById('pairBtn').onclick = toggleDD('pairDD');
 document.getElementById('chainBtn').onclick = toggleDD('chainDD');
+document.getElementById('campBtn').onclick = toggleDD('campDD');
 document.querySelectorAll('.dd-panel').forEach(p => p.onclick = e => e.stopPropagation());
 document.addEventListener('click', closeDD);
 document.getElementById('provSearch').oninput = e => { state.provSearch = e.target.value; renderProvList(); };
@@ -1886,6 +2320,23 @@ document.getElementById('pairPageSize').onchange = e => { state.pairPageSize = +
 document.getElementById('netOther').onchange = e => { state.netShowOther = e.target.checked; renderNetTrend(); };
 document.getElementById('netShareOtherCb').onchange = e => { state.netShareOther = e.target.checked; renderNetShare(); };
 document.getElementById('netPageSize').onchange = e => { state.netPageSize = +e.target.value; state.netPage = 0; renderNetTable(); };
+document.getElementById('campSearch').oninput = e => { state.campSearch = e.target.value; renderCampList(); };
+// Mirrors selectMatching over the hide list: with a search, show exactly the
+// matching campaigns; without one, show every campaign.
+document.getElementById('campAll').onclick = () => {
+  const hidden = campHiddenSet();
+  if (state.campSearch.trim() !== '') campNames().forEach(n => hidden.add(n));
+  filteredCamps().forEach(n => hidden.delete(n));
+  state.campPage = 0; renderCampaigns();
+};
+document.getElementById('campNone').onclick = () => {
+  const hidden = campHiddenSet();
+  campNames().forEach(n => hidden.add(n));
+  state.campPage = 0; renderCampaigns();
+};
+document.getElementById('campOther').onchange = e => { state.campShowOther = e.target.checked; renderCampTrend(); };
+document.getElementById('campShareOtherCb').onchange = e => { state.campShareOther = e.target.checked; renderCampShare(); };
+document.getElementById('campPageSize').onchange = e => { state.campPageSize = +e.target.value; state.campPage = 0; renderCampTable(); };
 document.getElementById('themeBtn').onclick = () => {
   const r = document.documentElement;
   const dark = matchMedia('(prefers-color-scheme: dark)').matches;
@@ -1897,7 +2348,7 @@ document.getElementById('themeBtn').onclick = () => {
 function renderProviders() { renderProvTrend(); renderProvShare(); renderTable(); }
 function renderNetworks() { renderNetTrend(); renderNetShare(); renderNetTable(); }
 function renderPairs() { renderPairTrend(); renderPairShare(); renderPairTable(); }
-function renderAll() { computeSlots(); renderSummary(); renderProviders(); renderNetworks(); renderPairs(); }
+function renderAll() { computeSlots(); renderSummary(); renderProviders(); renderNetworks(); renderPairs(); renderCampaigns(); }
 
 /* ---------------- boot / auth ---------------- */
 const API_KEY_COOKIE = 'apiKey';
@@ -1937,6 +2388,9 @@ async function enter(apiKey) {
     await apiGetAppId(apiKey);        // validates the key (redirect on failure)
     setCookie(API_KEY_COOKIE, apiKey);
     await loadData(apiKey);
+    // campaigns load per range, from renderAll
+    Object.assign(CAMP, { apiKey, status: 'idle', rows: [], joins: [], fetchKey: null });
+    campDaily = [];
     boot.classList.add('hide');
     document.getElementById('app').classList.add('ready');
     renderDashboard();

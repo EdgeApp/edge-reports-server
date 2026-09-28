@@ -9,10 +9,11 @@ refactoring anything v1 depends on.
 ## What it is
 
 The full rendering and interaction engine is ported from the design prototype:
-one summary card, then Providers, Networks and Currency pairs sections, each with
-a trend chart (stacked bars or lines), a share card (donut + ranked bars, hover
-linked), and a detail table (the network and pair tables paginated). Global
-filters (range, type, providers, networks, pairs) scope every card. Top-8-plus-
+one summary card, then Providers, Networks, Currency pairs and Campaigns
+sections, each with a trend chart (stacked bars or lines), a share card (donut +
+ranked bars, hover linked), and a detail table (the network, pair and campaign
+tables paginated). Global filters (range, type, providers, networks, pairs)
+scope every card (Campaigns takes the range, type and provider filters). Top-8-plus-
 Other color rules keep the chart, share card and table in agreement.
 
 Each trend chart has its own interval control (Auto, Day, Week, Month). Auto
@@ -33,6 +34,46 @@ filter matches pairs the same way.
 The only thing that changed from the prototype is the data source: the baked-in
 sample generator is replaced by the real `/v1` reporting API.
 
+## Campaigns
+
+The Campaigns section slices settled partner volume by the Edge campaign each
+order is credited to. A dimension switch picks the slice:
+
+- **Installer**: the referral the account was created under, else the one the
+  device was installed under (`refAccountInstallerId`, `refDeviceInstallerId`,
+  `installerId`, then `aid`). Orders with none are "Organic (no referral)".
+- **Promotion**: the first active promotion id at conversion time. Orders with
+  none are "No promotion".
+
+It has a trend chart, a share card and a paginated detail table, like the other
+sections, plus a join-rate table: per provider id the app logged, how many
+conversions it logged, how many joined a partner order, and how many of those
+settled. A low match rate names a provider whose logged order id differs from
+the one the partner reports.
+
+Only orders the app logged a conversion event for are counted, so campaign
+totals sit below the provider totals. The range, type and provider filters
+apply; the pair and network filters do not, since campaign rows carry no pair.
+A campaign filter in the section hides individual installers or promotions.
+Revenue under the Est. revenue metric is `volume * revShareRate`.
+
+The data comes from `GET /v2/campaigns?apiKey=&start=&end=` (at most 400 days;
+longer ranges show their latest 400 days). The server reads the conversion
+events from the referral server's feed and joins each one to
+`reports_transactions` by the order id the app logged, trying the id forms a
+partner may store it under (see `src/util/conversionKeys.ts`). The feed is
+configured in `config.json`:
+
+```json
+"referralServer": { "url": "...", "masterKey": "...", "appId": "edge" }
+```
+
+`appId` names the app whose events the feed holds; the route answers 403 to
+any other app's key. Without the config the route answers 503. Either way the
+section says campaign data is unavailable and the rest of the dashboard is
+unaffected. Responses are cached in
+memory for 10 minutes per key and range.
+
 ## Data flow
 
 - `GET /v1/getAppId?apiKey=`: validates the key. Returns plain text on a bad
@@ -43,6 +84,8 @@ sample generator is replaced by the real `/v1` reporting API.
 - `GET /v1/getPluginIds?apiKey=`: the app's registered providers.
 - `POST /v1/analytics`: one call for all providers, `timePeriod: "day"`, last
   24 months. v2 rebuckets to day, week or month client-side, per chart.
+- `GET /v2/campaigns?apiKey=&start=&end=`: settled volume by campaign and the
+  per-provider join rates, fetched per range (see Campaigns).
 
 Auth reuses v1's simple apiKey model: the key lives in the `apiKey` cookie (a
 `?apiKey=` query param also seeds it). No new auth system.

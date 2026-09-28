@@ -12,6 +12,7 @@
 - added: v2 dashboard chain filter, using chained pair keys (CODE@pluginId) in the analytics cache
 - added: v2 dashboard Networks section and a per-chart Day/Week/Month interval with range-based defaults
 - added: rewindProgress script to rewind partner query cursors for a backfill
+- added: v2 dashboard Campaigns section: settled volume by installer campaign or promotion, with per-provider join rates
 - changed: Update sideshift plugin with new optional API fields
 - changed: Query both old and new Sideshift affiliate accounts and merge completed orders to preserve full shift history across an affiliate-account rotation
 - changed: Add signature header support to Exolix
@@ -35,6 +36,7 @@
 - fixed: Map Moonpay sepa_open_banking_payment to SEPA and skip unprocessable Moonpay orders
 - fixed: Store chain and token ids on Changelly orders
 - fixed: Map the Paybis TON blockchain and skip unprocessable Paybis orders instead of stalling Paybis ingestion
+- fixed: checkTxs finds orders stored under an aliased or numbered partner id, a 0x-less hash, or Paybis's own id
 
 ## 0.2.0
 
