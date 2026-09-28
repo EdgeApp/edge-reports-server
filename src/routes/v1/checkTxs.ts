@@ -2,7 +2,8 @@ import { asArray, asObject, asOptional, asString, asValue } from 'cleaners'
 import Router from 'express-promise-router'
 
 import { reportsApps, reportsTransactions } from '../../indexApi'
-import { asApps, asDbTx, StandardTx } from '../../types'
+import { asApps, StandardTx } from '../../types'
+import { makeTxStore, resolveTxs } from '../../util/resolveConversions'
 
 interface CheckTxsSuccessResponse
   extends Omit<StandardTx, 'rawTx' | 'usdValue'> {
@@ -30,14 +31,6 @@ type CheckTxsResponse =
 const asCheckTxsParams = asObject({
   info: asOptional(asValue('all'))
 })
-
-const asCheckTxsFetch = asArray(
-  asObject({
-    key: asString,
-    doc: asOptional(asDbTx),
-    error: asOptional(asString)
-  })
-)
 
 const asCheckTxsReq = asObject({
   apiKey: asString,
@@ -77,38 +70,41 @@ checkTxsRouter.post('/', async function(req, res) {
   if (typeof searchedAppId === 'undefined') {
     return res.status(400).send(`API Key has no match.`)
   }
-  const { appId } = searchedAppId
-  const keys = queryResult.data.map(tx => {
-    return `${appId}_${tx.pluginId}:${tx.orderId}`.toLowerCase()
-  })
+  const { appId, partnerIds } = searchedAppId
   try {
-    const dbResult = await reportsTransactions.fetch({ keys })
-    const cleanedResult = asCheckTxsFetch(dbResult.rows)
-    const data: CheckTxsResponse[] = cleanedResult.map((result, index) => {
-      const { doc } = result
-      if (result.error != null || doc == null) {
+    const resolved = await resolveTxs(
+      makeTxStore(reportsTransactions),
+      appId,
+      Object.keys(partnerIds),
+      queryResult.data
+    )
+    const data: CheckTxsResponse[] = resolved.map((tx, index) => {
+      const { pluginId, orderId } = queryResult.data[index]
+      if (tx == null) {
+        const key = `${appId}_${pluginId}:${orderId}`.toLowerCase()
         const txError: CheckTxsFailureResponse = {
-          pluginId: queryResult.data[index].pluginId,
-          orderId: queryResult.data[index].orderId,
-          error: `Could not find transaction: ${result.key}`
+          pluginId,
+          orderId,
+          error: `Could not find transaction: ${key}`
         }
         return txError
       }
+      const { doc } = tx
       const usdValue = doc.usdValue >= 0 ? doc.usdValue : undefined
       if (params.info === 'all') {
-        const tx: CheckTxsSuccessResponse = {
-          pluginId: queryResult.data[index].pluginId,
+        const fullTx: CheckTxsSuccessResponse = {
+          pluginId,
           ...doc
         }
-        tx.usdValue = usdValue
-        return tx
+        fullTx.usdValue = usdValue
+        return fullTx
       }
-      const tx: CheckTxsPartialSuccessResponse = {
-        pluginId: queryResult.data[index].pluginId,
-        orderId: queryResult.data[index].orderId,
+      const partialTx: CheckTxsPartialSuccessResponse = {
+        pluginId,
+        orderId,
         usdValue
       }
-      return tx
+      return partialTx
     })
     res.json({ appId, data })
   } catch (e) {

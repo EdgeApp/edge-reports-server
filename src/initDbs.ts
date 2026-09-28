@@ -63,7 +63,14 @@ const transactionIndexes: DesignDocumentMap = {
   ...fieldsToDesignDocs(['payoutAddress'], { noPartitionVariant: true }),
   ...fieldsToDesignDocs(['payoutAddress', 'isoDate'], {
     noPartitionVariant: true
-  })
+  }),
+  // Joins app conversion events to partners that key orders by their own id
+  // (see REQUEST_ID_PARTNERS), always within one partition:
+  '_design/rawtx-request-id-p': makeMangoIndex(
+    'rawtx-request-id-p',
+    ['rawTx.request.id'],
+    { partitioned: true }
+  )
 }
 
 const cacheIndexes: DesignDocumentMap = {
