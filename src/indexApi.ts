@@ -10,6 +10,7 @@ import { getAppIdRouter } from './routes/v1/getAppId'
 import { getPluginIdsRouter } from './routes/v1/getPluginIds'
 // Disabled on deploy: not private enough and is scrapable.
 // import { getTxInfoRouter } from './routes/v1/getTxInfo'
+import { getCampaignsRouter } from './routes/v2/getCampaigns'
 import { getConfigRouter } from './routes/v2/getConfig'
 import { HttpError } from './util/httpErrors'
 
@@ -37,6 +38,7 @@ async function main(): Promise<void> {
   // above serves the built /v2/ bundle from dist; this API path falls through
   // it because no matching file exists in dist.
   app.use('/v2/config/', getConfigRouter)
+  app.use('/v2/campaigns/', getCampaignsRouter)
 
   // Error router
   app.use(function(err, _req, res, _next) {

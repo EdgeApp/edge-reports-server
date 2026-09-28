@@ -18,6 +18,13 @@ export const asConfig = asObject({
   timeoutOverrideMins: asOptional(asNumber, 1200),
   cacheLookbackMonths: asOptional(asNumber, 24),
   couchMainCluster: asOptional(asString, 'wusa'),
+  /**
+   * Conversion event feed for the v2 dashboard's campaign section. The feed
+   * carries one app's events, so only that app's keys may read it.
+   */
+  referralServer: asOptional(
+    asObject({ url: asString, masterKey: asString, appId: asString })
+  ),
   couchUris: asOptional(asCouchCredentials, {
     wusa: 'http://username:password@localhost:5984'
   })
