@@ -11,6 +11,7 @@ export type TokenType =
   | 'xrpl'
   | 'colon-delimited'
   | 'lowercase'
+  | 'hypercore'
   | null
 
 export const tokenTypes: Record<string, TokenType> = {
@@ -48,6 +49,7 @@ export const tokenTypes: Record<string, TokenType> = {
   fio: null,
   groestlcoin: null,
   hedera: null,
+  hypercore: 'hypercore',
   hyperevm: 'evm',
   liberland: 'simple',
   litecoin: null,
@@ -156,6 +158,14 @@ export const createTokenId = (
 
     case 'lowercase': {
       return contractAddress.toLowerCase()
+    }
+
+    // HyperCore token ids are 16 bytes. Some partners pad them to 20 bytes
+    // with trailing zeros, to look like EVM addresses:
+    case 'hypercore': {
+      const hex = contractAddress.toLowerCase().replace(/^0x/, '')
+      if (/^[0-9a-f]{32}(00000000)?$/.test(hex)) return hex.slice(0, 32)
+      throw new Error('Invalid HyperCore token id')
     }
 
     default: {

@@ -127,7 +127,7 @@ const EXOLIX_NETWORK_TO_PLUGIN_ID: Record<string, string> = {
   FIO: 'fio',
   FTM: 'fantom',
   HBAR: 'hedera',
-  HYPE: 'hyperevm',
+  HYPE: 'hypercore',
   LTC: 'litecoin',
   MATIC: 'polygon',
   OPTIMISM: 'optimism',

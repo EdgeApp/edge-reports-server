@@ -170,6 +170,7 @@ const LETSEXCHANGE_NETWORK_TO_PLUGIN_ID: Record<string, string> = {
   FTM: 'fantom',
   GRS: 'groestlcoin',
   HBAR: 'hedera',
+  HYPE: 'hypercore',
   HYPEEVM: 'hyperevm',
   LTC: 'litecoin',
   MATIC: 'polygon',
@@ -206,6 +207,7 @@ const LETSEXCHANGE_NETWORK_TO_PLUGIN_ID: Record<string, string> = {
 const NATIVE_TOKEN_ADDRESSES = new Set([
   '0', // Native token placeholder
   '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', // Common EVM native placeholder
+  '0x0d01dc56dcaaca66ad901c959b4011ec', // HyperCore HYPE token id
   'so11111111111111111111111111111111111111111', // Wrapped SOL (treat as native)
   'arbieth',
   'cchain',
