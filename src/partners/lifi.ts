@@ -227,12 +227,14 @@ export function processLifiTx(
       : undefined
 
   // Determine the chain plugin id and token id.
-  // Try using the gas token code first, then chain id if we have one.
+  // Try using the chain id first, then the gas token code.
   const depositChainPluginId =
     REVERSE_EVM_CHAIN_IDS[depositEvmChainId ?? 0] ??
+    NON_EVM_CHAIN_IDS[depositToken.chainId ?? 0] ??
     MAINNET_CODE_TRANSCRIPTION[depositChainCode]
   const payoutChainPluginId =
     REVERSE_EVM_CHAIN_IDS[payoutEvmChainId ?? 0] ??
+    NON_EVM_CHAIN_IDS[payoutToken.chainId ?? 0] ??
     MAINNET_CODE_TRANSCRIPTION[payoutChainCode]
 
   if (depositChainPluginId == null || payoutChainPluginId == null) {
@@ -313,6 +315,12 @@ export function processLifiTx(
     log.error(String(e))
     throw e
   }
+}
+
+// LI.FI chain ids for non-EVM chains whose gas token code is ambiguous.
+// HyperCore and HyperEVM both pay gas in HYPE:
+const NON_EVM_CHAIN_IDS: Record<number, string> = {
+  1337: 'hypercore'
 }
 
 const MAINNET_CODE_TRANSCRIPTION: Record<string, string> = {
