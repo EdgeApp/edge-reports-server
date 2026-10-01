@@ -37,6 +37,8 @@
 - fixed: Store chain and token ids on Changelly orders
 - fixed: Map the Paybis TON blockchain and skip unprocessable Paybis orders instead of stalling Paybis ingestion
 - fixed: checkTxs finds orders stored under an aliased or numbered partner id, a 0x-less hash, or Paybis's own id
+- fixed: v2 dashboard custom range inputs show the active range instead of resetting to fixed dates
+- fixed: v2 dashboard Share column bars line up across rows
 
 ## 0.2.0
 

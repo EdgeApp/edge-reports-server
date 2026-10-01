@@ -160,7 +160,9 @@
   table.prov tr:hover td { background: var(--wash); }
   .pname { display: inline-flex; align-items: center; gap: 8px; color: var(--ink-1); }
   .share-cell { display: inline-flex; align-items: center; gap: 8px; justify-content: flex-end; }
-  .share-bar { width: 84px; height: 5px; border-radius: 3px; background: var(--grid); overflow: hidden; }
+  .share-bar { flex: none; width: 84px; height: 5px; border-radius: 3px; background: var(--grid); overflow: hidden; }
+  /* fixed-width percent text (fits "100.0%"), so the bars line up down the column */
+  .share-cell > span:last-child { flex: none; width: 6.5ch; text-align: right; }
   .share-bar i { display: block; height: 100%; border-radius: 3px; background: var(--accent); }
   .muted { color: var(--ink-3); }
   .dim td { opacity: .5; }
@@ -2114,8 +2116,13 @@ function renderRangePanel() {
   }
   const foot = document.createElement('div'); foot.className = 'dd-foot';
   const l1 = document.createElement('label'); l1.textContent = 'Custom range';
-  const i1 = document.createElement('input'); i1.type = 'date'; i1.value = '2026-06-01';
-  const i2 = document.createElement('input'); i2.type = 'date'; i2.value = '2026-07-30'; i2.style.marginTop = '4px';
+  // The inputs show the range in effect: the applied custom dates, else the
+  // selected preset's first and last day.
+  const r = rangeDays();
+  const [from, to] = state.custom || [r.from, r.to].map(d => new Date(TODAY.getTime() - d * DAY));
+  const isoDate = d => d.toISOString().slice(0, 10);
+  const i1 = document.createElement('input'); i1.type = 'date'; i1.value = isoDate(from);
+  const i2 = document.createElement('input'); i2.type = 'date'; i2.value = isoDate(to); i2.style.marginTop = '4px';
   const go = document.createElement('button'); go.className = 'btn'; go.textContent = 'Apply';
   go.onclick = () => {
     const a = new Date(i1.value), b = new Date(i2.value);
