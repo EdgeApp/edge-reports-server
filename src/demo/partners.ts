@@ -97,6 +97,10 @@ export default {
     type: 'fiat',
     color: '#7214F5'
   },
+  mptrade: {
+    type: 'swap',
+    color: '#A259FF'
+  },
   nexchange: {
     type: 'swap',
     color: '#1D31B6'

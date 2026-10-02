@@ -6,6 +6,7 @@
 - added: Add Revolut fiat payment provider
 - added: Add Swapter reporting
 - added: Add NYM Swap (nymswap) reporting
+- added: Add MoonPay Trade (mptrade) reporting
 - added: Isolated v2 reports dashboard at /v2/ (real /v1 API data, apiKey auth with redirect on a bad key)
 - added: Partner-reported revenue (revenueUsd/revenueSource) on StandardTx, summed through the analytics cache; Revolut reports it, and the v2 dashboard uses reported figures where present with volume x revShareRate as the estimate elsewhere
 - added: Document the verified reporting-API status and unblock path for nexchange, Simplex and Bridgeless
