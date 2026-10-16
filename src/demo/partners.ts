@@ -65,6 +65,10 @@ export default {
     type: 'swap',
     color: '#F8F852'
   },
+  houdini: {
+    type: 'swap',
+    color: '#6C3CF4'
+  },
   ioniagiftcards: {
     type: 'fiat',
     color: '#2D2450'

@@ -15,6 +15,7 @@ import { exolix } from './partners/exolix'
 import { foxExchange } from './partners/foxExchange'
 import { gebo } from './partners/gebo'
 import { godex } from './partners/godex'
+import { houdini } from './partners/houdini'
 import { ioniaGiftCards } from './partners/ioniagiftcard'
 import { ioniaVisaRewards } from './partners/ioniavisarewards'
 import { kado } from './partners/kado'
@@ -72,6 +73,7 @@ const plugins = [
   foxExchange,
   gebo,
   godex,
+  houdini,
   ioniaVisaRewards,
   ioniaGiftCards,
   kado,
