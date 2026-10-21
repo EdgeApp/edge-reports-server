@@ -8,6 +8,7 @@ import { bitaccess } from './partners/bitaccess'
 import { bitrefill } from './partners/bitrefill'
 import { bitsofgold } from './partners/bitsofgold'
 import { bity } from './partners/bity'
+import { bridgeless } from './partners/bridgeless'
 import { changehero } from './partners/changehero'
 import { changelly } from './partners/changelly'
 import { changenow } from './partners/changenow'
@@ -66,6 +67,7 @@ const plugins = [
   bitsofgold,
   bity,
   bitrefill,
+  bridgeless,
   changelly,
   changenow,
   changehero,

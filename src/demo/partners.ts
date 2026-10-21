@@ -29,6 +29,10 @@ export default {
     type: 'fiat',
     color: '#EA332E'
   },
+  bridgeless: {
+    type: 'swap',
+    color: '#6E3BFF'
+  },
   changehero: {
     type: 'swap',
     color: '#4D90EF'

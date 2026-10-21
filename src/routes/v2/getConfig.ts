@@ -52,15 +52,7 @@ const getRevShareRates = async (
  *
  * Unknown pluginIds still default to 'swap' on the client.
  */
-const extraProviderTypes: { [pluginId: string]: 'fiat' | 'swap' } = {
-  // Registered in edge-exchange-plugins but absent from the v1 registry, having
-  // never reported a transaction here.
-  bridgeless: 'swap'
-}
-
-const providerTypes: { [pluginId: string]: 'fiat' | 'swap' } = {
-  ...extraProviderTypes
-}
+const providerTypes: { [pluginId: string]: 'fiat' | 'swap' } = {}
 for (const pluginId of Object.keys(partners)) {
   providerTypes[pluginId] = partners[pluginId].type
 }

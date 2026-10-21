@@ -1,8 +1,10 @@
 # Blocked partner reporting APIs
 
-Three partners have no working reporting plugin, and none of them is blocked on
-work this repo can do alone. This records what each one actually needs, with the
-evidence, so the next person does not repeat the investigation.
+Two partners have no working reporting plugin, and neither is blocked on work
+this repo can do alone. Bridgeless has no partner API either, but a chain scan
+replaces it; its section records what that scan relies on. This records what
+each one actually needs, with the evidence, so that the next person does not
+repeat the investigation.
 
 Everything below was established by a live request against the partner's own
 API, not from documentation. Requests were read-only and used the credentials
@@ -17,14 +19,12 @@ Last verified 2026-07-31.
 | --- | --- | --- | --- |
 | nexchange | Ships here, but unverifiable | API key lacks the reporting scope | nexchange support |
 | Simplex | `src/partners/simplex.ts`, wrong host and auth | A server-side reporting key that does not exist yet | Simplex partner support |
-| Bridgeless | No plugin | The partner API cannot express an incremental report | Bridgeless engineering |
 
 ## nexchange
 
 The plugin ships in this branch, descended from
-[#217](https://github.com/EdgeApp/edge-reports-server/pull/217). Two ports of it
-existed for a while; this branch carries one copy, so there is nothing left to
-deduplicate.
+[#217](https://github.com/EdgeApp/edge-reports-server/pull/217). It was ported
+twice; this branch carries one copy and there is nothing left to deduplicate.
 
 Two fixes found while porting are applied here, and are worth carrying into any
 other surviving copy:
@@ -51,8 +51,8 @@ missing. There is no self-serve key console.
 **Ask:** email support@n.exchange or the account manager for a reporting-scoped
 key, and ask them to confirm the exact header and path for audit-orders. The
 public v1/v2 OpenAPI specs document `Authorization: ApiKey <key>` and do not
-mention `x-api-key` at all, while the ported plugin sends `x-api-key`, so the
-header is worth confirming in the same message.
+mention `x-api-key` at all, while the ported plugin sends `x-api-key`. Confirm
+the header in the same message.
 
 ## Simplex
 
@@ -103,42 +103,42 @@ Simplex reporting disabled in the first place.
 
 ## Bridgeless
 
-Bridgeless is a public Cosmos-SDK L1, so there is no key to obtain. The
-unauthenticated LCD at `https://rpc-api.node0.mainnet.bridgeless.com` does carry
-Edge's attribution: Edge is referral 2 (`BRIDGELESS_INIT.referralId` in
-`env.json`), and the module confirms it:
+Reported by `src/partners/bridgeless.ts` since 2026-10-21, with no partner API
+and no key. Bridgeless is a public Cosmos-SDK L1 and Edge is referral 2
+(`BRIDGELESS_INIT.referralId` in `env.json`, confirmed by
+`GET /cosmos/bridge/referrals/2` on the LCD).
+
+The LCD's `/cosmos/bridge/transactions` list cannot drive a report. It has no
+referral filter, no timestamp and no cursor, and it is hash-ordered: every run
+would rescan 100,000+ records. The chain's own transactions can, though. Every
+deposit is recorded on chain by a
+`/core.bridge.MsgSubmitTransactions` transaction (one per validator) carrying
+the full bridge record, `referral_id` included, and the archive node's
+Tendermint RPC can find those by height:
 
 ```
-GET /cosmos/bridge/referrals/2
--> {"referral":{"id":2,"withdrawal_address":"bridge1rcu…","commission_rate":"0.66"}}
-
-GET /cosmos/bridge/referrals/rewards/2
--> accrued commission per token, currently 4 tokens with a non-zero to_claim
+GET https://rpc.node0.mainnet.bridgeless.com/tx_search
+  ?query="message.action='/core.bridge.MsgSubmitTransactions' AND tx.height>=A AND tx.height<B"
 ```
 
-So aggregate commission is readable today. Per-order reporting is not, for three
-reasons that compound:
+The plugin builds the report from three reads:
 
-- **No timestamp.** A bridge transaction record carries `deposit_block` and
-  `deposit_chain_id` but no time of any kind. `StandardTx` requires `isoDate` and
-  `timestamp`, so every record would need a block lookup on its own origin chain
-  to be datable. The Cosmos tx index cannot supply it either: bridge state does
-  not move through user transactions, and sampled blocks contain none.
-- **No referral filter.** `/cosmos/bridge/transactions` returns the whole set
-  (100,210 records) with no server-side filter, so attribution means scanning
-  everything and filtering `referral_id == 2` client-side.
-- **No incremental cursor.** The store is hash-ordered, not append-ordered:
-  offsets 0, 50,000 and 100,000 return interleaved chains and unrelated block
-  heights. There is no watermark to resume from, so every run is a full rescan.
+- **Find.** Scan height windows from the last run's height, decode each
+  transaction's protobuf locally and keep `referral_id == 2`. Event attributes
+  do not carry the referral id, which leaves the filter to the client. Height
+  6,400,000 (2026-06-20) predates Edge's referral id, and the first run starts
+  there. A 200,000 block window takes about 3 seconds; the first run reads the
+  whole history in under two minutes.
+- **Date.** The block time of the Submit transaction, from `/blockchain`.
+- **Status.** The bridge state record,
+  `GET /cosmos/bridge/transactions/{chain}/{hash}/{index}` on the LCD. A
+  withdrawal hash is a finished payout; a signature without one is a payout
+  approved but not yet claimed. Unfinished orders are re-read every run.
 
-Together those make a plugin infeasible rather than merely expensive. A 20,000
-record sample (20% of the store) contained exactly **one** record with
-`referral_id == 2`, so the current shape would rescan 100,000+ untyped records
-per cycle to recover a handful of Edge orders, and still could not date them.
+A full scan of the bridge store on 2026-10-21 found 49 records with
+`referral_id == 2`, and the plugin's first run reported the same 49.
 
-**Ask:** ask Bridgeless engineering for any one of these, in preference order:
-a `referral_id` filter plus a timestamp on `/cosmos/bridge/transactions`; an
-append-ordered or height-keyed cursor so the scan can resume; or an off-chain
-partner reporting endpoint. Also worth asking why on-chain `referral_id == 2` is
-so rare while `/referrals/rewards/2` shows real accrued commission, since that
-gap suggests attribution is recorded somewhere this endpoint does not expose.
+Commission is not reported per order. The record's `commission_amount` is the
+bridge's fee in payout token units, and the referral's `commission_rate` sets
+Edge's share of it. The dashboard estimates revenue from the app's
+`revShareRate`, as for any other partner.
