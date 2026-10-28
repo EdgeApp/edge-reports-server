@@ -99,6 +99,13 @@ interface BlockResult {
  */
 type BlockOutcome = BlockResult | 'failed' | 'overflow'
 
+/**
+ * Which of the app's two MoonPay Trade swap plugins an order went through.
+ * Both share one API key, so one feed carries both and each order is
+ * classified by its route.
+ */
+export type MptradeRoute = 'centralized' | 'defi'
+
 interface EdgeAsset {
   chainPluginId: string | undefined
   evmChainId: number | undefined
@@ -199,6 +206,7 @@ const MPTRADE_CHAIN_IDS: Record<number, string> = {
 
 export const queryMptrade = async (
   pluginParams: PluginParams,
+  route: MptradeRoute,
   fetchPage: FetchMptradePage = defaultFetchMptradePage
 ): Promise<PluginResult> => {
   const { log } = pluginParams
@@ -260,6 +268,7 @@ export const queryMptrade = async (
     }
 
     for (const standardTx of block.standardTxs) {
+      if (getMptradeRoute(standardTx) !== route) continue
       standardTxs.set(standardTx.orderId, standardTx)
     }
     skipped += block.skipped
@@ -281,9 +290,28 @@ export const queryMptrade = async (
 }
 
 export const mptrade: PartnerPlugin = {
-  queryFunc: async pluginParams => await queryMptrade(pluginParams),
-  pluginName: 'MoonPay Trade',
+  queryFunc: async pluginParams =>
+    await queryMptrade(pluginParams, 'centralized'),
+  pluginName: 'MoonPay Trade (Centralized)',
   pluginId: 'mptrade'
+}
+
+export const mptradedefi: PartnerPlugin = {
+  queryFunc: async pluginParams => await queryMptrade(pluginParams, 'defi'),
+  pluginName: 'MoonPay Trade (DeFi)',
+  pluginId: 'mptradedefi'
+}
+
+/**
+ * The app sends a Solana-to-Solana swap through its `mptradedefi` plugin and
+ * every other route through `mptrade` (isSolanaSameChainRoute in
+ * edge-exchange-plugins), so the same rule recovers which one placed an order.
+ */
+export function getMptradeRoute(tx: StandardTx): MptradeRoute {
+  return tx.depositChainPluginId === 'solana' &&
+    tx.payoutChainPluginId === 'solana'
+    ? 'defi'
+    : 'centralized'
 }
 
 /**
