@@ -73,6 +73,18 @@ export default {
     type: 'swap',
     color: '#6C3CF4'
   },
+  houdinisend: {
+    type: 'swap',
+    color: '#9A7BF7'
+  },
+  houdinistealth: {
+    type: 'swap',
+    color: '#3D1F9E'
+  },
+  houdinistealthsend: {
+    type: 'swap',
+    color: '#C7B6FA'
+  },
   ioniagiftcards: {
     type: 'fiat',
     color: '#2D2450'
