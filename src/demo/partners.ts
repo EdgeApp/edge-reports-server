@@ -109,6 +109,10 @@ export default {
     type: 'swap',
     color: '#A259FF'
   },
+  mptradedefi: {
+    type: 'swap',
+    color: '#5E2BB8'
+  },
   nexchange: {
     type: 'swap',
     color: '#1D31B6'
