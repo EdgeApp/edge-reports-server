@@ -1,7 +1,10 @@
 import { expect } from 'chai'
-import { describe, it } from 'mocha'
+import { createServer, Server } from 'http'
+import { after, before, beforeEach, describe, it } from 'mocha'
+import { AddressInfo } from 'net'
 import { Response } from 'node-fetch'
 
+import { config } from '../src/config'
 import { BanxaIo, queryBanxa } from '../src/partners/banxa'
 import { PluginParams, ScopedLog } from '../src/types'
 
@@ -126,6 +129,7 @@ describe('queryBanxa', () => {
     const result = await queryBanxa(makeParams(latestIsoDate), io)
 
     expect(result.settings.latestIsoDate).to.equal(latestIsoDate)
+    expect(result.error).to.include('401 - unauthorized')
   })
 
   it('does not move latestIsoDate back when it is in the future', async () => {
@@ -151,6 +155,7 @@ describe('queryBanxa', () => {
       new Date(latestIsoDate).getTime() + 14 * DAY
     ).toISOString()
     expect(result.settings.latestIsoDate).to.equal(expected)
+    expect(result.error).to.include('401 - unauthorized')
     expect(result.transactions.map(tx => tx.orderId)).to.deep.equal([
       'order0',
       'order1',
@@ -204,5 +209,140 @@ describe('queryBanxa', () => {
     const result = await queryBanxa(makeParams(daysAgo(30)), io)
 
     expect(result.settings.latestIsoDate >= before).to.equal(true)
+    expect(result.error).to.equal(undefined)
+  })
+})
+
+describe('runPlugin with the Banxa plugin', () => {
+  const realCouchDbFullpath = config.couchDbFullpath
+  let runPlugin: typeof import('../src/queryEngine').runPlugin
+  let server: Server
+  let serverUrl: string
+
+  // Stands in for both Couch and Banxa, since runPlugin talks to them directly
+  let progressDoc: { progressCache: { latestIsoDate: string } } | undefined
+  let progressSaves: number
+  let orderRequests: number
+  let orderStatus: (requestIndex: number) => number
+
+  before(async function() {
+    this.timeout(60000)
+    server = createServer((request, response) => {
+      const send = (status: number, body: unknown): void => {
+        response.writeHead(status, {
+          Connection: 'close',
+          'Content-Type': 'application/json'
+        })
+        response.end(JSON.stringify(body))
+      }
+      const url = request.url ?? ''
+      if (!url.startsWith('/reports_progresscache')) {
+        const status = orderStatus(orderRequests++)
+        send(status, status === 200 ? { data: { orders: [] } } : 'denied')
+      } else if (request.method === 'GET') {
+        if (progressDoc == null) send(404, { error: 'not_found' })
+        else send(200, progressDoc)
+      } else {
+        let body = ''
+        request.on('data', chunk => {
+          body += String(chunk)
+        })
+        request.on('end', () => {
+          progressDoc = JSON.parse(body)
+          progressSaves++
+          send(201, { ok: true, id: 'progress', rev: `${progressSaves}-rev` })
+        })
+      }
+    })
+    await new Promise<void>(resolve => {
+      server.listen(0, '127.0.0.1', resolve)
+    })
+    const { port } = server.address() as AddressInfo
+    serverUrl = `http://127.0.0.1:${port}`
+
+    // The engine binds its database connection to this value when it loads
+    config.couchDbFullpath = serverUrl
+    ;({ runPlugin } = await import('../src/queryEngine'))
+  })
+
+  after(done => {
+    config.couchDbFullpath = realCouchDbFullpath
+    server.close(done)
+  })
+
+  beforeEach(() => {
+    progressSaves = 0
+    orderRequests = 0
+  })
+
+  const runBanxa = async (): Promise<string> =>
+    await runPlugin({
+      app: {
+        _id: 'edge',
+        _rev: '1-rev',
+        appId: 'edge',
+        appName: 'Edge',
+        partnerIds: {
+          banxa: {
+            pluginId: 'banxa',
+            revShareRate: undefined,
+            apiKeys: {
+              apiKey: 'key',
+              apiKeyV2: 'keyV2',
+              partnerId: 'edge',
+              partnerUrl: serverUrl,
+              secret: 'secret'
+            }
+          }
+        }
+      },
+      partnerId: 'banxa',
+      pluginId: 'banxa'
+    })
+
+  const startProgressAt = (latestIsoDate: string): void => {
+    progressDoc = { progressCache: { latestIsoDate } }
+  }
+
+  it('reports repeated 401s as failures and keeps progress', async () => {
+    const latestIsoDate = daysAgo(30)
+    startProgressAt(latestIsoDate)
+    orderStatus = () => 401
+
+    for (let run = 1; run <= 3; run++) {
+      const status = await runBanxa()
+
+      expect(status).to.include('banxa Error:')
+      expect(status).to.include('401')
+      expect(status).to.not.include('Successful')
+      expect(progressDoc?.progressCache.latestIsoDate).to.equal(latestIsoDate)
+    }
+    expect(orderRequests).to.equal(3)
+  })
+
+  it('saves completed windows and then reports the failure', async () => {
+    const latestIsoDate = daysAgo(30)
+    startProgressAt(latestIsoDate)
+    orderStatus = requestIndex => (requestIndex < 3 ? 200 : 401)
+
+    const status = await runBanxa()
+
+    expect(status).to.include('banxa Error:')
+    expect(progressSaves).to.equal(1)
+    expect(progressDoc?.progressCache.latestIsoDate).to.equal(
+      new Date(new Date(latestIsoDate).getTime() + 14 * DAY).toISOString()
+    )
+  })
+
+  it('reports success when every window completes', async () => {
+    const latestIsoDate = daysAgo(30)
+    startProgressAt(latestIsoDate)
+    orderStatus = () => 200
+
+    const status = await runBanxa()
+
+    expect(status).to.include('Successful update')
+    const savedDate = progressDoc?.progressCache.latestIsoDate ?? ''
+    expect(savedDate > latestIsoDate).to.equal(true)
   })
 })

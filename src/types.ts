@@ -33,6 +33,9 @@ export interface PluginResult {
   // copy the type from standardtx from reports
   transactions: StandardTx[]
   settings: any
+  // Set when the query failed partway. The transactions and settings still hold
+  // the completed work, so the runner saves them and then reports this failure.
+  error?: string
 }
 
 export interface PartnerPlugin {

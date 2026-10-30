@@ -356,6 +356,7 @@ export async function queryBanxa(
   // Each query re-reads the rollback window, so its start is not progress. Only
   // a completed window moves this, and never earlier than where the run started.
   let progress = latestIsoDate
+  let queryError: string | undefined
   while (startDate < today) {
     let endDate = new Date(
       new Date(startDate).getTime() + ROLLBACK
@@ -402,7 +403,8 @@ export async function queryBanxa(
       }
       startDate = endDate
     } catch (e) {
-      log.error(String(e))
+      queryError = String(e)
+      log.error(queryError)
 
       // We can safely save our progress since we go from oldest to newest.
       break
@@ -411,7 +413,8 @@ export async function queryBanxa(
 
   const out: PluginResult = {
     settings: { latestIsoDate: progress },
-    transactions: ssFormatTxs
+    transactions: ssFormatTxs,
+    error: queryError
   }
   return out
 }

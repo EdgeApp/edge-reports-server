@@ -324,7 +324,7 @@ interface RunPluginParams {
   pluginId: string
 }
 
-async function runPlugin(params: RunPluginParams): Promise<string> {
+export async function runPlugin(params: RunPluginParams): Promise<string> {
   const { app, partnerId, pluginId } = params
   const start = Date.now()
   const log = createScopedLog(app.appId, partnerId)
@@ -377,7 +377,9 @@ async function runPlugin(params: RunPluginParams): Promise<string> {
       }),
       log
     )
-    log(`[runPlugin] Successful query`)
+    if (result.error == null) {
+      log(`[runPlugin] Successful query`)
+    }
 
     await promiseTimeout(
       'insertTransactions',
@@ -413,6 +415,12 @@ async function runPlugin(params: RunPluginParams): Promise<string> {
         throw new Error(`Error inserting progress: ${String(e)}`)
       }
     }
+    if (result.error != null) {
+      errorText = `[runPlugin] ${partnerId} Error: ${result.error}`
+      log.error(errorText)
+      return errorText
+    }
+
     // Returning a successful completion message
     const completionTime = (Date.now() - start) / 1000
     const successfulCompletionMessage = `[runPlugin] ${partnerId} Successful update in ${completionTime} seconds.`
