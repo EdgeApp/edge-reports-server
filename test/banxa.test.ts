@@ -6,7 +6,7 @@ import { Response } from 'node-fetch'
 
 import { config } from '../src/config'
 import { BanxaIo, queryBanxa } from '../src/partners/banxa'
-import { PluginParams, ScopedLog } from '../src/types'
+import { PluginParams, ScopedLog, StandardTx } from '../src/types'
 
 const DAY = 1000 * 60 * 60 * 24
 
@@ -226,6 +226,40 @@ describe('queryBanxa', () => {
     expect(params.warnings).to.deep.equal([
       'Unknown payment method: Mystery Pay for unmapped'
     ])
+  })
+
+  const queryOneOrder = async (overrides: {
+    [key: string]: unknown
+  }): Promise<StandardTx> => {
+    const io = makeIo(() => ordersResponse([makeOrder(overrides)]))
+    const result = await queryBanxa(makeParams(daysAgo(1)), io)
+    return result.transactions[0]
+  }
+
+  it('sets payoutTxid from tx_hash on a complete buy', async () => {
+    const tx = await queryOneOrder({ tx_hash: 'hash1' })
+
+    expect(tx.payoutTxid).to.equal('hash1')
+    expect(tx.depositTxid).to.equal(undefined)
+  })
+
+  it('sets depositTxid from tx_hash on a sell', async () => {
+    const tx = await queryOneOrder({
+      order_type: 'CRYPTO-SELL',
+      tx_hash: 'hash1'
+    })
+
+    expect(tx.depositTxid).to.equal('hash1')
+    expect(tx.payoutTxid).to.equal(undefined)
+  })
+
+  it('accepts a null or missing tx_hash', async () => {
+    for (const overrides of [{ tx_hash: null }, {}]) {
+      const tx = await queryOneOrder(overrides)
+
+      expect(tx.orderId).to.equal('order1')
+      expect(tx.payoutTxid).to.equal(undefined)
+    }
   })
 
   it('finishes at the current time when every window succeeds', async () => {

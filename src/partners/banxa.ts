@@ -299,6 +299,7 @@ const asBanxaTx = asObject({
   order_type: asString,
   payment_type: asString,
   wallet_address: asMaybe(asString, ''),
+  tx_hash: asMaybe(asString),
   blockchain: asObject({
     code: asString,
     description: asString
@@ -588,7 +589,8 @@ export async function processBanxaTx(
     status: statusMap[banxaTx.status],
     orderId: banxaTx.id,
     countryCode: banxaTx.country,
-    depositTxid: undefined,
+    // A buy's hash is Banxa's crypto payout, and a sell's is the customer's send
+    depositTxid: direction === 'sell' ? banxaTx.tx_hash : undefined,
     depositAddress: undefined,
     depositCurrency: inputCurrency,
     depositChainPluginId: depositAsset.chainPluginId,
@@ -598,7 +600,7 @@ export async function processBanxaTx(
     direction,
     exchangeType: 'fiat',
     paymentType,
-    payoutTxid: undefined,
+    payoutTxid: direction === 'buy' ? banxaTx.tx_hash : undefined,
     payoutAddress,
     payoutCurrency: outputCurrency,
     payoutChainPluginId: payoutAsset.chainPluginId,
