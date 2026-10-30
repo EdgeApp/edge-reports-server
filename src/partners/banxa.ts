@@ -124,7 +124,8 @@ const BANXA_HISTORICAL_COINS: Record<string, CachedAssetInfo> = {
 async function fetchBanxaCoins(
   partnerId: string,
   apiKeyV2: string,
-  log: ScopedLog
+  log: ScopedLog,
+  io: BanxaIo
 ): Promise<Map<string, CachedAssetInfo>> {
   if (
     banxaCoinsCache != null &&
@@ -138,7 +139,7 @@ async function fetchBanxaCoins(
   // Fetch both buy and sell to get all coins
   for (const orderType of ['buy', 'sell']) {
     const url = `https://api.banxa.com/${partnerId}/v2/crypto/${orderType}`
-    const response = await retryFetch(url, {
+    const response = await io.fetch(url, {
       headers: {
         'x-api-key': apiKeyV2,
         Accept: 'application/json'
@@ -316,6 +317,14 @@ const PAGE_LIMIT = 200
 const ONE_DAY_MS = 1000 * 60 * 60 * 24
 const ROLLBACK = ONE_DAY_MS * 7 // 7 days
 
+/** The network and timer calls the plugin makes, so tests can replace them. */
+export interface BanxaIo {
+  fetch: typeof retryFetch
+  snooze: typeof snooze
+}
+
+const defaultBanxaIo: BanxaIo = { fetch: retryFetch, snooze }
+
 const statusMap: { [key in BanxaStatus]: Status } = {
   complete: 'complete',
   expired: 'expired',
@@ -327,7 +336,8 @@ const statusMap: { [key in BanxaStatus]: Status } = {
 }
 
 export async function queryBanxa(
-  pluginParams: PluginParams
+  pluginParams: PluginParams,
+  io: BanxaIo = defaultBanxaIo
 ): Promise<PluginResult> {
   const { log } = pluginParams
   const ssFormatTxs: StandardTx[] = []
@@ -365,7 +375,8 @@ export async function queryBanxa(
           PAGE_LIMIT,
           page,
           apiKey,
-          secret
+          secret,
+          io
         )
 
         // Handle the situation where the API is rate limiting the requests
@@ -376,7 +387,7 @@ export async function queryBanxa(
             `Response code ${response.status}. Retrying after ${delay /
               1000} second snooze...`
           )
-          await snooze(delay)
+          await io.snooze(delay)
           if (attempt === MAX_ATTEMPTS) {
             log.error(`Retry Limit reached for date ${startDate}.`)
 
@@ -389,7 +400,7 @@ export async function queryBanxa(
         const reply = await response.json()
         const jsonObj = asBanxaResult(reply)
         const txs = jsonObj.data.orders
-        await processBanxaOrders(txs, ssFormatTxs, pluginParams, log)
+        await processBanxaOrders(txs, ssFormatTxs, pluginParams, log, io)
         if (txs.length < PAGE_LIMIT) {
           break
         }
@@ -415,7 +426,7 @@ export async function queryBanxa(
 
 export const banxa: PartnerPlugin = {
   // queryFunc will take PluginSettings as arg and return PluginResult
-  queryFunc: queryBanxa,
+  queryFunc: async pluginParams => await queryBanxa(pluginParams),
   // results in a PluginResult
   pluginName: 'Banxa',
   pluginId: 'banxa'
@@ -428,7 +439,8 @@ async function fetchBanxaAPI(
   pageLimit: number,
   page: number,
   apiKey: string,
-  secret: string
+  secret: string,
+  io: BanxaIo
 ): Promise<Response> {
   const nonce = Math.floor(new Date().getTime() / 1000)
 
@@ -446,14 +458,15 @@ async function fetchBanxaAPI(
     'Content-Type': 'application/json'
   }
 
-  return await retryFetch(`${partnerUrl}${apiQuery}`, { headers: headers })
+  return await io.fetch(`${partnerUrl}${apiQuery}`, { headers: headers })
 }
 
 async function processBanxaOrders(
   rawtxs: unknown[],
   ssFormatTxs: StandardTx[],
   pluginParams: PluginParams,
-  log: ScopedLog
+  log: ScopedLog,
+  io: BanxaIo
 ): Promise<void> {
   let numComplete = 0
   let newestIsoDate = new Date(0).toISOString()
@@ -461,7 +474,7 @@ async function processBanxaOrders(
   for (const rawTx of rawtxs) {
     let standardTx: StandardTx
     try {
-      standardTx = await processBanxaTx(rawTx, pluginParams)
+      standardTx = await processBanxaTx(rawTx, pluginParams, io)
     } catch (e) {
       log.error(String(e))
       throw e
@@ -495,7 +508,8 @@ async function processBanxaOrders(
 
 export async function processBanxaTx(
   rawTx: unknown,
-  pluginParams: PluginParams
+  pluginParams: PluginParams,
+  io: BanxaIo = defaultBanxaIo
 ): Promise<StandardTx> {
   const { log } = pluginParams
   const banxaTx: BanxaTx = asBanxaTx(rawTx)
@@ -528,7 +542,7 @@ export async function processBanxaTx(
   const blockchainCode = banxaTx.blockchain.code
   const coinCode = banxaTx.coin_code
 
-  const coinsCache = await fetchBanxaCoins(partnerId, apiKeyV2, log)
+  const coinsCache = await fetchBanxaCoins(partnerId, apiKeyV2, log, io)
 
   const cryptoAssetInfo = getAssetInfo(coinsCache, blockchainCode, coinCode)
 
