@@ -354,9 +354,13 @@ export async function queryBanxa(
     new Date(latestIsoDate).getTime() - ROLLBACK
   ).toISOString()
 
-  let endDate = startDate
+  // Each query re-reads the rollback window, so its start is not progress. Only
+  // a completed window moves this, and never earlier than where the run started.
+  let progress = latestIsoDate
   while (startDate < today) {
-    endDate = new Date(new Date(startDate).getTime() + ROLLBACK).toISOString()
+    let endDate = new Date(
+      new Date(startDate).getTime() + ROLLBACK
+    ).toISOString()
     if (endDate > today) {
       endDate = today
     }
@@ -406,11 +410,12 @@ export async function queryBanxa(
         }
         page++
       }
-      const newStartTs = new Date(endDate).getTime()
-      startDate = new Date(newStartTs).toISOString()
+      if (endDate > progress) {
+        progress = endDate
+      }
+      startDate = endDate
     } catch (e) {
       log.error(String(e))
-      endDate = startDate
 
       // We can safely save our progress since we go from oldest to newest.
       break
@@ -418,7 +423,7 @@ export async function queryBanxa(
   }
 
   const out: PluginResult = {
-    settings: { latestIsoDate: endDate },
+    settings: { latestIsoDate: progress },
     transactions: ssFormatTxs
   }
   return out

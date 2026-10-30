@@ -99,4 +99,50 @@ describe('queryBanxa', () => {
     expect(tx.paymentType).to.equal('credit')
     expect(tx.payoutChainPluginId).to.equal('bitcoin')
   })
+
+  it('leaves latestIsoDate unchanged when the first window fails', async () => {
+    const latestIsoDate = daysAgo(30)
+    const io = makeIo(() => new Response('unauthorized', { status: 401 }))
+    const result = await queryBanxa(makeParams(latestIsoDate), io)
+
+    expect(result.settings.latestIsoDate).to.equal(latestIsoDate)
+  })
+
+  it('does not move latestIsoDate back when it is in the future', async () => {
+    const latestIsoDate = new Date(Date.now() + 30 * DAY).toISOString()
+    const io = makeIo(() => ordersResponse())
+    const result = await queryBanxa(makeParams(latestIsoDate), io)
+
+    expect(io.orderUrls).to.have.length(0)
+    expect(result.settings.latestIsoDate).to.equal(latestIsoDate)
+  })
+
+  it('keeps earlier windows when a later window fails', async () => {
+    const latestIsoDate = daysAgo(30)
+    // The first window only re-reads the rollback, the second and third advance
+    const io = makeIo(requestIndex =>
+      requestIndex < 3
+        ? ordersResponse([makeOrder({ id: `order${requestIndex}` })])
+        : new Response('unauthorized', { status: 401 })
+    )
+    const result = await queryBanxa(makeParams(latestIsoDate), io)
+
+    const expected = new Date(
+      new Date(latestIsoDate).getTime() + 14 * DAY
+    ).toISOString()
+    expect(result.settings.latestIsoDate).to.equal(expected)
+    expect(result.transactions.map(tx => tx.orderId)).to.deep.equal([
+      'order0',
+      'order1',
+      'order2'
+    ])
+  })
+
+  it('finishes at the current time when every window succeeds', async () => {
+    const before = new Date().toISOString()
+    const io = makeIo(() => ordersResponse())
+    const result = await queryBanxa(makeParams(daysAgo(30)), io)
+
+    expect(result.settings.latestIsoDate >= before).to.equal(true)
+  })
 })
