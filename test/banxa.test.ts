@@ -203,6 +203,31 @@ describe('queryBanxa', () => {
     })
   }
 
+  it('keeps an order with an unmapped payment type', async () => {
+    const io = makeIo(requestIndex =>
+      requestIndex === 0
+        ? ordersResponse([
+            makeOrder({ id: 'unmapped', payment_type: 'Mystery Pay' }),
+            makeOrder({ id: 'mapped' })
+          ])
+        : ordersResponse()
+    )
+    const before = new Date().toISOString()
+    const params = makeParams(daysAgo(1))
+    const result = await queryBanxa(params, io)
+
+    expect(result.transactions.map(tx => tx.paymentType)).to.deep.equal([
+      null,
+      'credit'
+    ])
+    expect(result.transactions[0].orderId).to.equal('unmapped')
+    expect(result.error).to.equal(undefined)
+    expect(result.settings.latestIsoDate >= before).to.equal(true)
+    expect(params.warnings).to.deep.equal([
+      'Unknown payment method: Mystery Pay for unmapped'
+    ])
+  })
+
   it('finishes at the current time when every window succeeds', async () => {
     const before = new Date().toISOString()
     const io = makeIo(() => ordersResponse())

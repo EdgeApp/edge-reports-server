@@ -560,7 +560,7 @@ export async function processBanxaTx(
 
   const direction = banxaTx.order_type === 'CRYPTO-SELL' ? 'sell' : 'buy'
 
-  const paymentType = getFiatPaymentType(banxaTx)
+  const paymentType = getFiatPaymentType(banxaTx, log)
 
   // Get asset info for the crypto side
   // For buy: payout is crypto
@@ -614,7 +614,10 @@ export async function processBanxaTx(
   return standardTx
 }
 
-function getFiatPaymentType(tx: BanxaTx): FiatPaymentType {
+function getFiatPaymentType(
+  tx: BanxaTx,
+  log: ScopedLog
+): FiatPaymentType | null {
   switch (tx.payment_type) {
     case 'AusPost Retail':
       return 'auspost'
@@ -674,6 +677,9 @@ function getFiatPaymentType(tx: BanxaTx): FiatPaymentType {
     case 'DLocal South Africa IO':
       return 'ozow'
     default:
-      throw new Error(`Unknown payment method: ${tx.payment_type} for ${tx.id}`)
+      // One unmapped order must not stop all Banxa reporting. The order's volume
+      // still counts, so keep it and log the gap to get the type mapped.
+      log.warn(`Unknown payment method: ${tx.payment_type} for ${tx.id}`)
+      return null
   }
 }
