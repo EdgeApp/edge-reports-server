@@ -139,19 +139,18 @@ async function fetchBanxaCoins(
   // Fetch both buy and sell to get all coins
   for (const orderType of ['buy', 'sell']) {
     const url = `https://api.banxa.com/${partnerId}/v2/crypto/${orderType}`
-    const response = await io.fetch(url, {
-      headers: {
-        'x-api-key': apiKeyV2,
-        Accept: 'application/json'
-      }
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(
-        `Failed to fetch Banxa ${orderType} coins: ${response.status} - ${errorText}`
-      )
-    }
+    const response = await fetchWithBackoff(
+      async () =>
+        await io.fetch(url, {
+          headers: {
+            'x-api-key': apiKeyV2,
+            Accept: 'application/json'
+          }
+        }),
+      `Failed to fetch Banxa ${orderType} coins`,
+      log,
+      io
+    )
 
     const rawCoins = await response.json()
     const coins = asBanxaCryptoResponse(rawCoins)
@@ -312,7 +311,7 @@ const asBanxaResult = asObject({
   })
 })
 
-const MAX_ATTEMPTS = 1
+const MAX_ATTEMPTS = 5
 const PAGE_LIMIT = 200
 const ONE_DAY_MS = 1000 * 60 * 60 * 24
 const ROLLBACK = ONE_DAY_MS * 7 // 7 days
@@ -366,40 +365,28 @@ export async function queryBanxa(
     }
 
     let page = 1
-    let attempt = 0
     try {
       while (true) {
         log(
-          `Querying ${startDate}->${endDate}, limit=${PAGE_LIMIT} page=${page} attempt=${attempt}`
+          `Querying ${startDate}->${endDate}, limit=${PAGE_LIMIT} page=${page}`
         )
-        const response = await fetchBanxaAPI(
-          partnerUrl,
-          startDate,
-          endDate,
-          PAGE_LIMIT,
-          page,
-          apiKey,
-          secret,
+        const currentPage = page
+        const response = await fetchWithBackoff(
+          async () =>
+            await fetchBanxaAPI(
+              partnerUrl,
+              startDate,
+              endDate,
+              PAGE_LIMIT,
+              currentPage,
+              apiKey,
+              secret,
+              io
+            ),
+          `Failed to fetch Banxa orders from ${startDate}`,
+          log,
           io
         )
-
-        // Handle the situation where the API is rate limiting the requests
-        if (!response.ok) {
-          attempt++
-          const delay = 2000 * attempt
-          log.warn(
-            `Response code ${response.status}. Retrying after ${delay /
-              1000} second snooze...`
-          )
-          await io.snooze(delay)
-          if (attempt === MAX_ATTEMPTS) {
-            log.error(`Retry Limit reached for date ${startDate}.`)
-
-            const text = await response.text()
-            throw new Error(text)
-          }
-          continue
-        }
 
         const reply = await response.json()
         const jsonObj = asBanxaResult(reply)
@@ -435,6 +422,37 @@ export const banxa: PartnerPlugin = {
   // results in a PluginResult
   pluginName: 'Banxa',
   pluginId: 'banxa'
+}
+
+/**
+ * Retries rate limiting and server errors, calling `makeRequest` again for each
+ * attempt. Any other failed response, such as a 401 or 403, throws right away.
+ */
+async function fetchWithBackoff(
+  makeRequest: () => Promise<Response>,
+  errorPrefix: string,
+  log: ScopedLog,
+  io: BanxaIo
+): Promise<Response> {
+  let attempt = 0
+  while (true) {
+    attempt++
+    const response = await makeRequest()
+    if (response.ok) return response
+
+    const isTransient = response.status === 429 || response.status >= 500
+    if (!isTransient || attempt === MAX_ATTEMPTS) {
+      const text = await response.text()
+      throw new Error(`${errorPrefix}: ${response.status} - ${text}`)
+    }
+
+    const delay = 2000 * attempt
+    log.warn(
+      `Response code ${response.status}. Retrying after ${delay /
+        1000} second snooze...`
+    )
+    await io.snooze(delay)
+  }
 }
 
 async function fetchBanxaAPI(

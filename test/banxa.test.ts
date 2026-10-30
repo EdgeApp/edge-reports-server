@@ -64,20 +64,25 @@ const coinCatalog = [{ id: 'BTC', blockchains: [{ id: 'BTC' }] }]
 
 /**
  * Answers the orders endpoint from `respondToOrders`, called with the zero-based
- * request count, and the coin catalog with a fixed list. Snoozes return at once
- * and are recorded rather than slept.
+ * request count, and the coin catalog from `respondToCatalog`. Snoozes return at
+ * once and are recorded rather than slept.
  */
 const makeIo = (
-  respondToOrders: (requestIndex: number) => Response
+  respondToOrders: (requestIndex: number) => Response,
+  respondToCatalog: (requestIndex: number) => Response = () =>
+    jsonResponse(coinCatalog)
 ): BanxaIo & { orderUrls: string[]; snoozes: number[] } => {
   const orderUrls: string[] = []
   const snoozes: number[] = []
+  let catalogRequests = 0
   return {
     orderUrls,
     snoozes,
     fetch: async request => {
       const url = String(request)
-      if (url.includes('/v2/crypto/')) return jsonResponse(coinCatalog)
+      if (url.includes('/v2/crypto/')) {
+        return respondToCatalog(catalogRequests++)
+      }
       orderUrls.push(url)
       return respondToOrders(orderUrls.length - 1)
     },
@@ -88,6 +93,21 @@ const makeIo = (
 }
 
 describe('queryBanxa', () => {
+  // Stays first: the plugin caches the catalog for later tests once it loads
+  it('retries a transient coin catalog response', async () => {
+    const io = makeIo(
+      () => ordersResponse([makeOrder()]),
+      requestIndex =>
+        requestIndex === 0
+          ? new Response('unavailable', { status: 503 })
+          : jsonResponse(coinCatalog)
+    )
+    const result = await queryBanxa(makeParams(daysAgo(1)), io)
+
+    expect(result.transactions.length).to.be.greaterThan(0)
+    expect(io.snoozes).to.deep.equal([2000])
+  })
+
   it('turns a complete order into a transaction', async () => {
     const io = makeIo(() => ordersResponse([makeOrder()]))
     const result = await queryBanxa(makeParams(daysAgo(1)), io)
@@ -137,6 +157,46 @@ describe('queryBanxa', () => {
       'order2'
     ])
   })
+
+  it('retries a 429 with backoff and then succeeds', async () => {
+    const io = makeIo(requestIndex =>
+      requestIndex === 0
+        ? new Response('rate limited', { status: 429 })
+        : ordersResponse([makeOrder()])
+    )
+    const params = makeParams(daysAgo(1))
+    const result = await queryBanxa(params, io)
+
+    expect(io.snoozes).to.deep.equal([2000])
+    expect(io.orderUrls[0]).to.equal(io.orderUrls[1])
+    expect(result.transactions.length).to.be.greaterThan(0)
+    expect(params.errors).to.deep.equal([])
+    expect(params.warnings).to.have.length(1)
+  })
+
+  it('gives up on a persistent 5xx after the retry limit', async () => {
+    const latestIsoDate = daysAgo(1)
+    const io = makeIo(() => new Response('down', { status: 500 }))
+    const params = makeParams(latestIsoDate)
+    const result = await queryBanxa(params, io)
+
+    expect(io.orderUrls).to.have.length(5)
+    expect(io.snoozes).to.deep.equal([2000, 4000, 6000, 8000])
+    expect(result.settings.latestIsoDate).to.equal(latestIsoDate)
+    expect(params.errors[0]).to.include('500 - down')
+  })
+
+  for (const status of [401, 403]) {
+    it(`fails on a ${status} without retrying`, async () => {
+      const io = makeIo(() => new Response('denied', { status }))
+      const params = makeParams(daysAgo(1))
+      await queryBanxa(params, io)
+
+      expect(io.orderUrls).to.have.length(1)
+      expect(io.snoozes).to.deep.equal([])
+      expect(params.errors[0]).to.include(`${status} - denied`)
+    })
+  }
 
   it('finishes at the current time when every window succeeds', async () => {
     const before = new Date().toISOString()
