@@ -175,6 +175,39 @@ export const getStartOfMonthsFromNow = (
   return new Date(Date.UTC(year, month + months, 1, 0, 0, 0, 0))
 }
 
+const MAX_BACKOFF_ATTEMPTS = 5
+
+/**
+ * Retries rate limiting and server errors, calling `makeRequest` again for each
+ * attempt. Any other failed response, such as a 401 or 403, throws right away.
+ */
+export const fetchWithBackoff = async (
+  makeRequest: () => Promise<Response>,
+  errorPrefix: string,
+  log: ScopedLog,
+  pause: typeof snooze = snooze
+): Promise<Response> => {
+  let attempt = 0
+  while (true) {
+    attempt++
+    const response = await makeRequest()
+    if (response.ok) return response
+
+    const isTransient = response.status === 429 || response.status >= 500
+    if (!isTransient || attempt === MAX_BACKOFF_ATTEMPTS) {
+      const text = await response.text()
+      throw new Error(`${errorPrefix}: ${response.status} - ${text}`)
+    }
+
+    const delay = 2000 * attempt
+    log.warn(
+      `Response code ${response.status}. Retrying after ${delay /
+        1000} second snooze...`
+    )
+    await pause(delay)
+  }
+}
+
 /**
  * Parses number strings, treating blank inputs as 0
  */
