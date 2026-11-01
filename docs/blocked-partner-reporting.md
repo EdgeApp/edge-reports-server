@@ -7,18 +7,18 @@ each one actually needs, with the evidence, so that the next person does not
 repeat the investigation.
 
 Everything below was established by a live request against the partner's own
-API, not from documentation. Requests were read-only and used the credentials
-already in `edge-react-gui/env.json`. Every claim here is reproducible with the
-commands shown.
+API, not from documentation, unless a section names its source. Requests were
+read-only and used the credentials already in `edge-react-gui/env.json`. Every
+claim here is reproducible with the commands shown.
 
-Last verified 2026-07-31.
+Last verified 2026-07-31. The Simplex section was last verified 2026-10-31.
 
 ## Summary
 
 | Partner | Plugin state | Blocked on | Who unblocks it |
 | --- | --- | --- | --- |
 | nexchange | Ships here, but unverifiable | API key lacks the reporting scope | nexchange support |
-| Simplex | `src/partners/simplex.ts`, wrong host and auth | A server-side reporting key that does not exist yet | Simplex partner support |
+| Simplex | Ships here, unverified against real data | A server-side reporting key that does not exist yet | Simplex partner support |
 
 ## nexchange
 
@@ -56,12 +56,17 @@ the header in the same message.
 
 ## Simplex
 
-The shipped plugin is wrong in three independent ways, and only the first two can
-be fixed without a key.
+The plugin queries `/reporting/v1/payments`, and it has never run against real
+data. Its response schema comes from two sources, neither of them a live
+response from our own account: the
+[published API reference](https://integrations.simplex.com/reference/get_payments),
+and a sample response that Simplex (Nuvei) sent us in Slack on 2024-10-14, which
+also names the production host.
 
-**Host and path.** `turnkey.api.simplex.com/transactions` is not the reporting
-API any more. The current one is `/reporting/v1/payments`, and it is not on the
-turnkey host:
+**Host and path.** The production host is unconfirmed by a live request, because
+Cloudflare answers a plain `curl` from a dev machine with a 403 before any route
+is reached. The route itself is confirmed on the sandbox, and it does not exist
+on the turnkey host:
 
 ```
 GET https://turnkey.api.simplex.com/reporting/v1/payments
@@ -69,11 +74,17 @@ GET https://turnkey.api.simplex.com/reporting/v1/payments
 
 GET https://sandbox.test-simplexcc.com/reporting/v1/payments
 -> HTTP 401 {"message":"Authorization header is missing"}  # route exists, wants auth
+
+GET https://backend-wallet-api.simplexcc.com/reporting/v1/payments
+-> HTTP 403 from Cloudflare                                # says nothing about the route
 ```
 
-**Auth scheme.** The plugin sends `X-API-KEY`. The reporting API ignores that
-header entirely and wants `Authorization: ApiKey <key>`. The error text
-distinguishes the two cases exactly:
+The previous route, `turnkey.api.simplex.com/transactions`, answers
+`{"message":"Forbidden"}` rather than "Missing Authentication Token". It probably
+still exists, and the plugin does not use it.
+
+**Auth scheme.** The plugin sends `Authorization: ApiKey <key>`. The error text
+on the sandbox identifies that scheme exactly:
 
 ```
 -H 'x-api-key: <anything>'            -> 401 "Authorization header is missing"
@@ -91,15 +102,20 @@ plus the `jwtTokenProvider` flow). Reporting needs a separate server-side
 partner key that Simplex issues on request and locks to a source IP. There is no
 dashboard that mints one.
 
-The plugin is not rewritten here because the response body has never been seen.
-Writing cleaners for an unobserved payload would be inventing the schema, and a
-half-migrated plugin is worse than the current one.
+**What the first real run has to confirm.** The sample's `references.order_id` is
+the placeholder `"string"`. The plugin's assumption that it matches the order id
+on older documents is untested, and if it does not match, reprocessed payments
+get new documents instead of updating the old ones. The first run should also be
+checked for `skipping unprocessable payment` errors, because the API only
+guarantees `payment_id` on a row: a schema surprise shows up there.
 
-**Ask:** request a server-side reporting ApiKey from Simplex partner support,
-supply the reports-server egress IP for their allowlist, and ask for one sample
-`/reporting/v1/payments` response. The sample alone unblocks the rewrite; the key
-unblocks verification. The IP lock also answers the key-exposure concern that got
-Simplex reporting disabled in the first place.
+**Ask:** request a server-side reporting ApiKey from Simplex partner support and
+supply the reports-server egress IP for their allowlist. A person then sets it as
+`apiKeys.apiKey` under `partnerIds.simplex` in the production `reports_apps`
+document. The old `X-API-KEY` value will not work with this plugin. Until it is
+replaced, each run reports a 401 and holds its progress, and no data is lost. The
+IP lock also answers the key-exposure concern that got Simplex reporting disabled
+in the first place.
 
 ## Bridgeless
 

@@ -145,7 +145,7 @@ export const retryFetch = async (
       return response
     } catch (e) {
       err = e
-      if (err.code.includes('ETIMEDOUT') === false) {
+      if (err.code?.includes('ETIMEDOUT') !== true) {
         throw err
       }
       await snooze(5000 * retries)
