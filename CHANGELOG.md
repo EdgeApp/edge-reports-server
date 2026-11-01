@@ -16,6 +16,7 @@
 - added: v2 dashboard Networks section and a per-chart Day/Week/Month interval with range-based defaults
 - added: rewindProgress script to rewind partner query cursors for a backfill
 - added: v2 dashboard Campaigns section: settled volume by installer campaign or promotion, with per-provider join rates
+- changed: Query Simplex through its /reporting/v1/payments API, recording refunds as well as approved payments
 - changed: Update sideshift plugin with new optional API fields
 - changed: Query both old and new Sideshift affiliate accounts and merge completed orders to preserve full shift history across an affiliate-account rotation
 - changed: Add signature header support to Exolix

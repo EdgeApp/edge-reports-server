@@ -23,7 +23,12 @@ import {
   StandardTx,
   Status
 } from '../types'
-import { retryFetch, smartIsoDateFromTimestamp, snooze } from '../util'
+import {
+  fetchWithBackoff,
+  retryFetch,
+  smartIsoDateFromTimestamp,
+  snooze
+} from '../util'
 import {
   ChainNameToPluginIdMapping,
   createTokenId,
@@ -149,7 +154,7 @@ async function fetchBanxaCoins(
         }),
       `Failed to fetch Banxa ${orderType} coins`,
       log,
-      io
+      io.snooze
     )
 
     const rawCoins = await response.json()
@@ -312,7 +317,6 @@ const asBanxaResult = asObject({
   })
 })
 
-const MAX_ATTEMPTS = 5
 const PAGE_LIMIT = 200
 const ONE_DAY_MS = 1000 * 60 * 60 * 24
 const ROLLBACK = ONE_DAY_MS * 7 // 7 days
@@ -387,7 +391,7 @@ export async function queryBanxa(
             ),
           `Failed to fetch Banxa orders from ${startDate}`,
           log,
-          io
+          io.snooze
         )
 
         const reply = await response.json()
@@ -426,37 +430,6 @@ export const banxa: PartnerPlugin = {
   // results in a PluginResult
   pluginName: 'Banxa',
   pluginId: 'banxa'
-}
-
-/**
- * Retries rate limiting and server errors, calling `makeRequest` again for each
- * attempt. Any other failed response, such as a 401 or 403, throws right away.
- */
-async function fetchWithBackoff(
-  makeRequest: () => Promise<Response>,
-  errorPrefix: string,
-  log: ScopedLog,
-  io: BanxaIo
-): Promise<Response> {
-  let attempt = 0
-  while (true) {
-    attempt++
-    const response = await makeRequest()
-    if (response.ok) return response
-
-    const isTransient = response.status === 429 || response.status >= 500
-    if (!isTransient || attempt === MAX_ATTEMPTS) {
-      const text = await response.text()
-      throw new Error(`${errorPrefix}: ${response.status} - ${text}`)
-    }
-
-    const delay = 2000 * attempt
-    log.warn(
-      `Response code ${response.status}. Retrying after ${delay /
-        1000} second snooze...`
-    )
-    await io.snooze(delay)
-  }
 }
 
 async function fetchBanxaAPI(
