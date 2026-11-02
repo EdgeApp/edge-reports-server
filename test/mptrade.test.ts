@@ -3,6 +3,8 @@ import { describe, it } from 'mocha'
 
 import {
   FetchMptradePage,
+  getMptradeRoute,
+  MptradeRoute,
   processMptradeTx,
   processMptradeTxs,
   queryMptrade
@@ -64,6 +66,13 @@ const solanaUsdc: Token = {
   decimals: 6,
   chainId: 1399811149,
   isNative: false
+}
+const solana: Token = {
+  address: '11111111111111111111111111111111',
+  symbol: 'SOL',
+  decimals: 9,
+  chainId: 1399811149,
+  isNative: true
 }
 const hypercoreUsdc: Token = {
   address: '0x6d1e7cde53ba9467b783cb7c530ce054',
@@ -314,6 +323,35 @@ describe('processMptradeTxs', function() {
   })
 })
 
+describe('getMptradeRoute', function() {
+  const routeOf = (srcToken: Token, dstToken: Token): MptradeRoute =>
+    getMptradeRoute(
+      processMptradeTx(makeOrder({ srcToken, dstToken }), makeParams())
+    )
+
+  it('reads a Solana-to-Solana order as DeFi', function() {
+    expect(routeOf(solanaUsdc, solana)).to.equal('defi')
+    expect(routeOf(solana, solanaUsdc)).to.equal('defi')
+  })
+
+  it('reads an order that leaves or reaches another chain as centralized', function() {
+    expect(routeOf(solanaUsdc, bitcoin)).to.equal('centralized')
+    expect(routeOf(ethereumUsdt, solana)).to.equal('centralized')
+    expect(routeOf(ethereumUsdt, bitcoin)).to.equal('centralized')
+  })
+
+  it('classifies an unsettled order by its quoted payout', function() {
+    expect(
+      getMptradeRoute(
+        processMptradeTx(
+          makeOrder({ srcToken: solana, dstToken: solanaUsdc, settled: false }),
+          makeParams()
+        )
+      )
+    ).to.equal('defi')
+  })
+})
+
 describe('queryMptrade', function() {
   it('returns nothing without calling the API when no key is configured', async function() {
     let calls = 0
@@ -323,6 +361,7 @@ describe('queryMptrade', function() {
     }
     const result = await queryMptrade(
       makeParams({ apiKeys: { apiKey: '' } }),
+      'centralized',
       fetchPage
     )
 
@@ -360,6 +399,7 @@ describe('queryMptrade', function() {
     ).toISOString()
     const result = await queryMptrade(
       makeParams({ apiKeys: { apiKey: 'key' }, settings: { latestIsoDate } }),
+      'centralized',
       fetchPage
     )
 
@@ -388,6 +428,29 @@ describe('queryMptrade', function() {
     )
   })
 
+  it('keeps only the orders on the requested route', async function() {
+    const fetchPage: FetchMptradePage = async () => ({
+      txs: [
+        makeOrder({ txId: '0xcex' }),
+        makeOrder({ txId: '0xdefi', srcToken: solanaUsdc, dstToken: solana }),
+        makeOrder({ txId: '0xsolbtc', srcToken: solana, dstToken: bitcoin })
+      ],
+      cursor: { next: null }
+    })
+    const query = async (route: MptradeRoute): Promise<string[]> => {
+      const latestIsoDate = new Date().toISOString()
+      const result = await queryMptrade(
+        makeParams({ apiKeys: { apiKey: 'key' }, settings: { latestIsoDate } }),
+        route,
+        fetchPage
+      )
+      return result.transactions.map(tx => tx.orderId)
+    }
+
+    expect(await query('centralized')).to.deep.equal(['0xcex', '0xsolbtc'])
+    expect(await query('defi')).to.deep.equal(['0xdefi'])
+  })
+
   it('narrows a time block that overflows the page cap', async function() {
     const DAY = 60 * 60 * 24
     const spans: number[] = []
@@ -412,7 +475,7 @@ describe('queryMptrade', function() {
       apiKeys: { apiKey: 'key' },
       settings: { latestIsoDate: new Date(before).toISOString() }
     })
-    const result = await queryMptrade(params, fetchPage)
+    const result = await queryMptrade(params, 'centralized', fetchPage)
 
     // The five-day lookback is tried whole, halved twice, then read in four
     // blocks of at most 1.25 days.
@@ -436,7 +499,7 @@ describe('queryMptrade', function() {
       apiKeys: { apiKey: 'key' },
       settings: { latestIsoDate }
     })
-    const result = await queryMptrade(params, fetchPage)
+    const result = await queryMptrade(params, 'centralized', fetchPage)
 
     expect(calls).to.equal(1)
     expect(result.transactions).to.deep.equal([])

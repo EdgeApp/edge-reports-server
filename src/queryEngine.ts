@@ -24,7 +24,7 @@ import { letsexchange } from './partners/letsexchange'
 import { libertyx } from './partners/libertyx'
 import { lifi } from './partners/lifi'
 import { moonpay } from './partners/moonpay'
-import { mptrade } from './partners/mptrade'
+import { mptrade, mptradedefi } from './partners/mptrade'
 import { nexchange } from './partners/nexchange'
 import { nymswap } from './partners/nym'
 import { paybis } from './partners/paybis'
@@ -85,6 +85,7 @@ const plugins = [
   maya,
   moonpay,
   mptrade,
+  mptradedefi,
   nexchange,
   nymswap,
   paybis,

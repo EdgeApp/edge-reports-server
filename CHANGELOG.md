@@ -9,6 +9,8 @@
 - added: Add MoonPay Trade (mptrade) reporting
 - added: Add HoudiniSwap (houdini) reporting, including private swaps and stealth sends
 - added: Add Bridgeless (bridgeless) reporting
+- added: Report MoonPay Trade DeFi (mptradedefi) swaps apart from centralized MoonPay Trade
+- added: Dashboard colors for the Houdini send, stealth, and stealth send partner ids
 - added: Isolated v2 reports dashboard at /v2/ (real /v1 API data, apiKey auth with redirect on a bad key)
 - added: Partner-reported revenue (revenueUsd/revenueSource) on StandardTx, summed through the analytics cache; Revolut reports it, and the v2 dashboard uses reported figures where present with volume x revShareRate as the estimate elsewhere
 - added: Document the verified reporting-API status and unblock path for nexchange, Simplex and Bridgeless
