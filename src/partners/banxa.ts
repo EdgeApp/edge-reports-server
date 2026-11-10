@@ -114,7 +114,15 @@ const BANXA_HISTORICAL_COINS: Record<string, CachedAssetInfo> = {
     contractAddress: 'rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De',
     pluginId: 'ripple'
   },
-  // ZEC delisted from Banxa v2 catalog
+  // Delisted from the Banxa v2 catalog but present in order history
+  'DAI-ETH': {
+    contractAddress: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+    pluginId: 'ethereum'
+  },
+  'FIL-FIL': { contractAddress: null, pluginId: 'filecoin' },
+  // Native TON only; USDT on TON is still listed
+  'TON-TON': { contractAddress: null, pluginId: 'ton' },
+  'XTZ-XTZ': { contractAddress: null, pluginId: 'tezos' },
   'ZEC-ZEC': { contractAddress: null, pluginId: 'zcash' }
 }
 

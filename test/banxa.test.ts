@@ -262,6 +262,29 @@ describe('queryBanxa', () => {
     }
   })
 
+  it('maps coins the catalog no longer lists', async () => {
+    const cases = [
+      { coin: 'TON', chain: 'TON', pluginId: 'ton', tokenId: null },
+      { coin: 'FIL', chain: 'FIL', pluginId: 'filecoin', tokenId: null },
+      { coin: 'XTZ', chain: 'XTZ', pluginId: 'tezos', tokenId: null },
+      {
+        coin: 'DAI',
+        chain: 'ETH',
+        pluginId: 'ethereum',
+        tokenId: '6b175474e89094c44da98b954eedeac495271d0f'
+      }
+    ]
+    for (const { coin, chain, pluginId, tokenId } of cases) {
+      const tx = await queryOneOrder({
+        coin_code: coin,
+        blockchain: { code: chain, description: chain }
+      })
+
+      expect(tx.payoutChainPluginId).to.equal(pluginId)
+      expect(tx.payoutTokenId).to.equal(tokenId)
+    }
+  })
+
   it('finishes at the current time when every window succeeds', async () => {
     const before = new Date().toISOString()
     const io = makeIo(() => ordersResponse())
