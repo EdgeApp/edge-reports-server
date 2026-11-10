@@ -324,6 +324,9 @@ const MAX_ATTEMPTS = 5
 const PAGE_LIMIT = 200
 const ONE_DAY_MS = 1000 * 60 * 60 * 24
 const ROLLBACK = ONE_DAY_MS * 7 // 7 days
+// Bounds a catch-up run (about 3 months) so a long backlog saves progress in
+// steps instead of holding every order and the app's query cycle in one run.
+const MAX_WINDOWS_PER_RUN = 12
 
 /** The network and timer calls the plugin makes, so tests can replace them. */
 export interface BanxaIo {
@@ -366,7 +369,9 @@ export async function queryBanxa(
   // a completed window moves this, and never earlier than where the run started.
   let progress = latestIsoDate
   let queryError: string | undefined
-  while (startDate < today) {
+  let windows = 0
+  while (startDate < today && windows < MAX_WINDOWS_PER_RUN) {
+    windows++
     let endDate = new Date(
       new Date(startDate).getTime() + ROLLBACK
     ).toISOString()

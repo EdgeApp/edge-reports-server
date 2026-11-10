@@ -285,6 +285,20 @@ describe('queryBanxa', () => {
     }
   })
 
+  it('stops a long catch-up after 12 windows and saves where it got', async () => {
+    const latestIsoDate = daysAgo(365)
+    const io = makeIo(() => ordersResponse())
+    const result = await queryBanxa(makeParams(latestIsoDate), io)
+
+    // The first window re-reads the rollback, the other 11 advance
+    const expected = new Date(
+      new Date(latestIsoDate).getTime() + 11 * 7 * DAY
+    ).toISOString()
+    expect(io.orderUrls).to.have.length(12)
+    expect(result.settings.latestIsoDate).to.equal(expected)
+    expect(result.error).to.equal(undefined)
+  })
+
   it('finishes at the current time when every window succeeds', async () => {
     const before = new Date().toISOString()
     const io = makeIo(() => ordersResponse())
