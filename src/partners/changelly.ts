@@ -191,49 +191,68 @@ async function getTransactionsPromised(
   return promise
 }
 
+const CATALOG_ATTEMPTS = 2
+
 /**
- * Load the Changelly currency catalog. A failure degrades to an empty map
- * (orders are stored without chain ids, as before) and is logged, so a
- * catalog outage never stalls ingestion.
+ * Fetch the catalog once. An empty catalog, or one whose rows all fail the
+ * cleaner, leaves every order without chain ids, so it counts as a failure.
+ */
+async function fetchChangellyCurrencyMap(
+  changellySDK: any
+): Promise<ChangellyCurrencyMap> {
+  const response = await new Promise<unknown>((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error('getCurrenciesFull timed out')),
+      TIMEOUT
+    )
+    changellySDK._request(
+      'getCurrenciesFull',
+      {},
+      (err: unknown, data: unknown) => {
+        clearTimeout(timer)
+        if (err != null) reject(err)
+        else resolve(data)
+      }
+    )
+  })
+  const currencyMap = makeChangellyCurrencyMap(response)
+  if (currencyMap.size === 0) {
+    throw new Error('getCurrenciesFull returned 0 usable entries')
+  }
+  return currencyMap
+}
+
+/**
+ * Load the Changelly currency catalog, retrying once. A second failure
+ * degrades to an empty map (orders are stored without chain ids, which the
+ * update path never writes over a stored chain) and is logged, so a catalog
+ * outage never stalls ingestion.
  */
 export async function loadChangellyCurrencyMap(
   changellySDK: any,
   log: ScopedLog
 ): Promise<ChangellyCurrencyMap> {
-  try {
-    const response = await new Promise<unknown>((resolve, reject) => {
-      const timer = setTimeout(
-        () => reject(new Error('getCurrenciesFull timed out')),
-        TIMEOUT
-      )
-      changellySDK._request(
-        'getCurrenciesFull',
-        {},
-        (err: unknown, data: unknown) => {
-          clearTimeout(timer)
-          if (err != null) reject(err)
-          else resolve(data)
-        }
-      )
-    })
-    const currencyMap = makeChangellyCurrencyMap(response)
-    if (currencyMap.size === 0) {
-      // An empty catalog, or one whose rows all fail the cleaner, leaves every
-      // order without chain ids, so it is an error rather than a load.
-      log.error(
-        'Changelly: currency catalog loaded with 0 entries, storing orders without chain ids this run'
-      )
-    } else {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const currencyMap = await fetchChangellyCurrencyMap(changellySDK)
       log(`Changelly currency catalog loaded with ${currencyMap.size} entries`)
+      return currencyMap
+    } catch (e) {
+      if (attempt < CATALOG_ATTEMPTS) {
+        log.warn(
+          `Changelly: currency catalog attempt ${attempt} failed, retrying: ${String(
+            e
+          )}`
+        )
+        continue
+      }
+      log.error(
+        `Changelly: currency catalog failed to load, no chain ids this run: ${String(
+          e
+        )}`
+      )
+      return new Map()
     }
-    return currencyMap
-  } catch (e) {
-    log.error(
-      `Changelly: currency catalog failed to load, storing orders without chain ids this run: ${String(
-        e
-      )}`
-    )
-    return new Map()
   }
 }
 

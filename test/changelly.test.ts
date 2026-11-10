@@ -9,15 +9,22 @@ import {
 } from '../src/partners/changelly'
 import { ScopedLog } from '../src/types'
 
-const makeLog = (): { log: ScopedLog; errors: string[] } => {
+const makeLog = (): {
+  log: ScopedLog
+  errors: string[]
+  warnings: string[]
+} => {
   const errors: string[] = []
+  const warnings: string[] = []
   const log: ScopedLog = Object.assign(() => undefined, {
-    warn: () => undefined,
+    warn: (message: string) => {
+      warnings.push(message)
+    },
     error: (message: string) => {
       errors.push(message)
     }
   })
-  return { log, errors }
+  return { log, errors, warnings }
 }
 
 // A getCurrenciesFull response, trimmed to the fields ingestion reads.
@@ -283,20 +290,62 @@ describe('walkChangellyTxs', () => {
   })
 })
 
+// A fake SDK that answers getCurrenciesFull with each response in turn.
+const makeSdk = (
+  responses: Array<{ err?: unknown; data?: unknown }>
+): {
+  _request: (
+    method: string,
+    params: unknown,
+    callback: (err: unknown, data: unknown) => void
+  ) => void
+  calls: () => number
+} => {
+  let count = 0
+  return {
+    _request: (
+      _method: string,
+      _params: unknown,
+      callback: (err: unknown, data: unknown) => void
+    ) => {
+      const { err = null, data } = responses[count++]
+      callback(err, data)
+    },
+    calls: () => count
+  }
+}
+
+const btcCatalog = {
+  jsonrpc: '2.0',
+  id: 'test',
+  result: [
+    { name: 'btc', ticker: 'btc', blockchain: 'bitcoin', contractAddress: null }
+  ]
+}
+const emptyCatalog = { jsonrpc: '2.0', id: 'test', result: [] }
+
 describe('loadChangellyCurrencyMap', () => {
-  it('logs an empty catalog as an error', async () => {
-    const { log, errors } = makeLog()
-    const sdk = {
-      _request: (
-        _method: string,
-        _params: unknown,
-        callback: (err: unknown, data: unknown) => void
-      ) => callback(null, { jsonrpc: '2.0', id: 'test', result: [] })
-    }
+  it('retries once after a failed request', async () => {
+    const { log, errors, warnings } = makeLog()
+    const sdk = makeSdk([{ err: new Error('502') }, { data: btcCatalog }])
     const map = await loadChangellyCurrencyMap(sdk, log)
 
+    expect(sdk.calls()).to.equal(2)
+    expect(map.get('btc')?.blockchain).to.equal('bitcoin')
+    expect(warnings).to.have.length(1)
+    expect(warnings[0]).to.include('502')
+    expect(errors).to.deep.equal([])
+  })
+
+  it('degrades to an empty map after a second empty catalog', async () => {
+    const { log, errors, warnings } = makeLog()
+    const sdk = makeSdk([{ data: emptyCatalog }, { data: emptyCatalog }])
+    const map = await loadChangellyCurrencyMap(sdk, log)
+
+    expect(sdk.calls()).to.equal(2)
     expect(map.size).to.equal(0)
+    expect(warnings).to.have.length(1)
     expect(errors).to.have.length(1)
-    expect(errors[0]).to.include('0 entries')
+    expect(errors[0]).to.include('0 usable entries')
   })
 })
