@@ -58,7 +58,7 @@ import {
   promiseTimeout,
   standardizeNames
 } from './util'
-import { checkUpdateTx } from './util/updateTx'
+import { planTxUpdate } from './util/updateTx'
 
 const nanoDb = nano(config.couchDbFullpath)
 
@@ -240,11 +240,17 @@ const filterAddNewTxs = async (
       log(`[filterAddNewTxs] new doc id: ${newObj._id}`)
       newDocs.push(newObj)
     } else {
-      const changedFields = checkUpdateTx(queryResult.doc, tx)
+      // Chain fields this read left unknown keep their stored values, so a
+      // degraded run neither counts as a change nor erases a known chain.
+      const { tx: updatedTx, changedFields } = planTxUpdate(queryResult.doc, tx)
       if (changedFields.length > 0) {
         const oldStatus = queryResult.doc?.status
-        const newStatus = tx.status
-        const newObj = { _id: docId, _rev: queryResult.doc?._rev, ...tx }
+        const newStatus = updatedTx.status
+        const newObj = {
+          _id: docId,
+          _rev: queryResult.doc?._rev,
+          ...updatedTx
+        }
         newDocs.push(newObj)
         log(
           `[filterAddNewTxs] updated doc id: ${
