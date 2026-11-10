@@ -10,8 +10,15 @@ import {
   asUnknown
 } from 'cleaners'
 
-import { PartnerPlugin, PluginParams, PluginResult, StandardTx } from '../types'
+import {
+  PartnerPlugin,
+  PluginParams,
+  PluginResult,
+  ScopedLog,
+  StandardTx
+} from '../types'
 import { safeParseFloat } from '../util'
+import { getSimplexAsset } from './simplexCodes'
 
 const asSimplexTx = asObject({
   amount_usd: asString,
@@ -110,7 +117,7 @@ export async function querySimplex(
           done = true
           break
         }
-        const standardTx = processSimplexTx(rawTx)
+        const standardTx = processSimplexTx(rawTx, pluginParams.log)
         standardTxs.push(standardTx)
         if (standardTx.timestamp > newestTimestamp) {
           newestTimestamp = standardTx.timestamp
@@ -139,8 +146,14 @@ export const simplex: PartnerPlugin = {
   pluginId: 'simplex'
 }
 
-export function processSimplexTx(rawTx: unknown): StandardTx {
+export function processSimplexTx(rawTx: unknown, log?: ScopedLog): StandardTx {
   const tx = asSimplexTx(rawTx)
+  const asset = getSimplexAsset(tx.crypto_currency)
+  if (asset == null) {
+    log?.warn(
+      `Simplex: unmapped crypto_currency ${tx.crypto_currency}, order ${tx.order_id} stored without a payout chain`
+    )
+  }
 
   const standardTx: StandardTx = {
     status: 'complete',
@@ -159,9 +172,9 @@ export function processSimplexTx(rawTx: unknown): StandardTx {
     payoutTxid: undefined,
     payoutAddress: undefined,
     payoutCurrency: tx.crypto_currency,
-    payoutChainPluginId: undefined,
-    payoutEvmChainId: undefined,
-    payoutTokenId: undefined,
+    payoutChainPluginId: asset?.chainPluginId,
+    payoutEvmChainId: asset?.evmChainId,
+    payoutTokenId: asset?.tokenId,
     payoutAmount: safeParseFloat(tx.amount_crypto),
     timestamp: tx.created_at,
     isoDate: new Date(tx.created_at * 1000).toISOString(),
