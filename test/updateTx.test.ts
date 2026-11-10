@@ -2,7 +2,7 @@ import { expect } from 'chai'
 import { describe, it } from 'mocha'
 
 import { StandardTx } from '../src/types'
-import { planTxUpdate } from '../src/util/updateTx'
+import { missingChainFields, planTxUpdate } from '../src/util/updateTx'
 
 const storedTx: StandardTx = {
   status: 'complete',
@@ -134,5 +134,52 @@ describe('planTxUpdate', () => {
 
     expect(changedFields).to.deep.equal(['payoutTokenId'])
     expect(tx.payoutTokenId).to.equal(null)
+  })
+})
+
+describe('missingChainFields', () => {
+  it('fills only the chain fields a stored order is missing', () => {
+    const fill = missingChainFields(
+      {
+        ...storedTx,
+        payoutChainPluginId: undefined,
+        payoutEvmChainId: undefined,
+        payoutTokenId: undefined
+      },
+      storedTx
+    )
+
+    expect(fill).to.deep.equal({
+      payoutChainPluginId: 'ethereum',
+      payoutEvmChainId: 1,
+      payoutTokenId: 'dac17f958d2ee523a2206206994597c13d831ec7'
+    })
+  })
+
+  it('returns nothing when the reprocessed read knows no more', () => {
+    expect(missingChainFields(storedTx, degradedTx)).to.deep.equal({})
+    expect(missingChainFields(degradedTx, degradedTx)).to.deep.equal({})
+  })
+
+  it('never replaces a stored value', () => {
+    const fill = missingChainFields(
+      { ...storedTx, payoutTokenId: undefined },
+      { ...storedTx, payoutEvmChainId: 10, payoutTokenId: null }
+    )
+
+    expect(fill).to.deep.equal({ payoutTokenId: null })
+  })
+
+  it('skips a leg whose stored chain differs from the reprocessed one', () => {
+    const fill = missingChainFields(
+      { ...storedTx, payoutTokenId: undefined },
+      {
+        ...storedTx,
+        payoutChainPluginId: 'tron',
+        payoutTokenId: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'
+      }
+    )
+
+    expect(fill).to.deep.equal({})
   })
 })

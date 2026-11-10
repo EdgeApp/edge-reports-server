@@ -81,3 +81,42 @@ export function planTxUpdate<T extends StandardTx>(
   const tx = keepKnownChainFields(storedTx, newTx)
   return { tx, changedFields: checkUpdateTx(storedTx, tx) }
 }
+
+type ChainFields = Pick<
+  StandardTx,
+  | 'depositChainPluginId'
+  | 'depositEvmChainId'
+  | 'depositTokenId'
+  | 'payoutChainPluginId'
+  | 'payoutEvmChainId'
+  | 'payoutTokenId'
+>
+
+/**
+ * List the chain fields a stored order is missing that a reprocessed read of
+ * its rawTx now knows. Fields the stored order already has are never
+ * touched, and a leg whose stored chain differs from the reprocessed one is
+ * skipped whole, so a fill never mixes two chains in one leg.
+ */
+export function missingChainFields(
+  storedTx: StandardTx,
+  freshTx: StandardTx
+): Partial<ChainFields> {
+  const out: Partial<ChainFields> = {}
+  for (const leg of ['deposit', 'payout'] as const) {
+    const chainKey = `${leg}ChainPluginId` as const
+    const storedChain = storedTx[chainKey]
+    if (storedChain !== undefined && storedChain !== freshTx[chainKey]) continue
+    for (const key of [
+      chainKey,
+      `${leg}EvmChainId`,
+      `${leg}TokenId`
+    ] as const) {
+      if (storedTx[key] === undefined && freshTx[key] !== undefined) {
+        // The keys of one leg share a value type with the same keys of freshTx.
+        ;(out as Record<string, unknown>)[key] = freshTx[key]
+      }
+    }
+  }
+  return out
+}

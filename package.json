@@ -25,6 +25,7 @@
     "start.api": "node -r sucrase/register src/indexApi.ts",
     "start.destroyPartition": "node -r sucrase/register src/bin/destroyPartition.ts",
     "stats": "node -r sucrase/register src/bin/partitionStats.ts",
+    "backfillChainIds": "node -r sucrase/register src/bin/backfillChainIds.ts",
     "test": "mocha -r sucrase/register 'test/**/*.test.ts'",
     "demo": "parcel serve src/demo/index.html",
     "demo.v2": "parcel serve src/demoV2/index.html --dist-dir dist/v2 --public-url ./ -p 1235",
