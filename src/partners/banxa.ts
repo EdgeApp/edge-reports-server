@@ -219,18 +219,34 @@ async function fetchBanxaCoins(
 interface EdgeAssetInfo {
   chainPluginId: string | undefined
   evmChainId: number | undefined
-  tokenId: EdgeTokenId
+  tokenId: EdgeTokenId | undefined
+}
+
+// The fiat side of an order, and a crypto side we cannot resolve
+const NO_ASSET: EdgeAssetInfo = {
+  chainPluginId: undefined,
+  evmChainId: undefined,
+  tokenId: undefined
 }
 
 /**
  * Get Edge asset info from Banxa blockchain code and coin code
- * Uses cached data from v2 API
+ * Uses cached data from v2 API. An unresolved asset logs a warning and comes
+ * back empty, so the order is still recorded (as an unknown network) and the
+ * rest of the run continues.
  */
 function getAssetInfo(
   coinsCache: Map<string, CachedAssetInfo>,
   blockchainCode: string,
-  coinCode: string
+  coinCode: string,
+  orderId: string,
+  log: ScopedLog
 ): EdgeAssetInfo {
+  const unresolved = (reason: string): EdgeAssetInfo => {
+    log.warn(`${reason} for ${orderId}`)
+    return NO_ASSET
+  }
+
   const cacheKey = `${coinCode.toUpperCase()}-${blockchainCode.toUpperCase()}`
 
   // Try API cache first, then historical fallback
@@ -239,7 +255,7 @@ function getAssetInfo(
     cachedInfo = BANXA_HISTORICAL_COINS[cacheKey]
   }
   if (cachedInfo == null) {
-    throw new Error(
+    return unresolved(
       `Unknown Banxa coin/blockchain: ${coinCode} on ${blockchainCode}`
     )
   }
@@ -247,7 +263,7 @@ function getAssetInfo(
   const { contractAddress, pluginId: chainPluginId } = cachedInfo
 
   if (chainPluginId == null) {
-    throw new Error(`Unknown Banxa blockchain: ${blockchainCode}`)
+    return unresolved(`Unknown Banxa blockchain: ${blockchainCode}`)
   }
 
   // Get evmChainId if this is an EVM chain
@@ -258,7 +274,7 @@ function getAssetInfo(
   if (contractAddress != null) {
     const tokenType = tokenTypes[chainPluginId]
     if (tokenType == null) {
-      throw new Error(
+      return unresolved(
         `Unknown tokenType for chainPluginId ${chainPluginId} (coin: ${coinCode})`
       )
     }
@@ -584,19 +600,18 @@ export async function processBanxaTx(
 
   const coinsCache = await fetchBanxaCoins(partnerId, apiKeyV2, log, io)
 
-  const cryptoAssetInfo = getAssetInfo(coinsCache, blockchainCode, coinCode)
+  const cryptoAssetInfo = getAssetInfo(
+    coinsCache,
+    blockchainCode,
+    coinCode,
+    banxaTx.id,
+    log
+  )
 
   // For buy transactions: deposit is fiat (no crypto info), payout is crypto
   // For sell transactions: deposit is crypto, payout is fiat (no crypto info)
-  const depositAsset =
-    direction === 'sell'
-      ? cryptoAssetInfo
-      : { chainPluginId: undefined, evmChainId: undefined, tokenId: undefined }
-
-  const payoutAsset =
-    direction === 'buy'
-      ? cryptoAssetInfo
-      : { chainPluginId: undefined, evmChainId: undefined, tokenId: undefined }
+  const depositAsset = direction === 'sell' ? cryptoAssetInfo : NO_ASSET
+  const payoutAsset = direction === 'buy' ? cryptoAssetInfo : NO_ASSET
 
   const standardTx: StandardTx = {
     status: statusMap[banxaTx.status],

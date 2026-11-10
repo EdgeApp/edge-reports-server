@@ -228,6 +228,35 @@ describe('queryBanxa', () => {
     ])
   })
 
+  it('keeps an order with an unknown coin and finishes the run', async () => {
+    const io = makeIo(requestIndex =>
+      requestIndex === 0
+        ? ordersResponse([
+            makeOrder({
+              id: 'unknown',
+              coin_code: 'NOPE',
+              blockchain: { code: 'NOPE', description: 'Nope' }
+            }),
+            makeOrder({ id: 'known' })
+          ])
+        : ordersResponse()
+    )
+    const before = new Date().toISOString()
+    const params = makeParams(daysAgo(1))
+    const result = await queryBanxa(params, io)
+
+    const [unknown, known] = result.transactions
+    expect(unknown.orderId).to.equal('unknown')
+    expect(unknown.payoutChainPluginId).to.equal(undefined)
+    expect(unknown.payoutTokenId).to.equal(undefined)
+    expect(known.payoutChainPluginId).to.equal('bitcoin')
+    expect(result.error).to.equal(undefined)
+    expect(result.settings.latestIsoDate >= before).to.equal(true)
+    expect(params.warnings).to.deep.equal([
+      'Unknown Banxa coin/blockchain: NOPE on NOPE for unknown'
+    ])
+  })
+
   const queryOneOrder = async (overrides: {
     [key: string]: unknown
   }): Promise<StandardTx> => {

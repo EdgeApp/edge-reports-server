@@ -30,6 +30,7 @@
 - fixed: Show Simplex, LibertyX and Changelly volume under its real network in the v2 dashboard instead of "Unknown network"
 - fixed: Record Banxa orders for TON, FIL, XTZ and DAI on Ethereum
 - changed: Save Banxa backfill progress every 12 weeks of orders
+- fixed: Record Banxa orders for an unrecognized coin under an unknown network instead of halting the Banxa query
 - fixed: Classify banxa2, banxa3, gebo and Ionia gift cards as fiat in the v2 dashboard filter, by projecting the provider types from the v1 partner registry instead of a second hand-written copy
 - fixed: Quarantine an unprocessable partner transaction instead of halting ingestion behind it in ChangeNow, Rango and Xgram, so one bad row no longer stops every newer transaction from being recorded
 - fixed: Report LetsExchange orders whose network cannot be resolved instead of silently dropping their chain and token data
