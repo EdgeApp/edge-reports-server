@@ -55,6 +55,7 @@ const CHANGELLY_BLOCKCHAIN_TO_PLUGIN_ID: ChainNameToPluginIdMapping = {
   fio: 'fio',
   firo: 'zcoin',
   hedera: 'hedera',
+  hyperevm: 'hyperevm',
   litecoin: 'litecoin',
   monero: 'monero',
   optimism: 'optimism',
@@ -424,7 +425,8 @@ function getAssetInfo(
     return UNMAPPED_ASSET
   }
 
-  const blockchain = currency.blockchain ?? ''
+  // The catalog is not consistent about case ("BASE" next to "ethereum").
+  const blockchain = (currency.blockchain ?? '').toLowerCase()
   const chainPluginId = CHANGELLY_BLOCKCHAIN_TO_PLUGIN_ID[blockchain]
   if (chainPluginId == null) {
     log.error(

@@ -49,6 +49,19 @@ const currencyMap = makeChangellyCurrencyMap({
       blockchain: 'ethereum',
       contractAddress: ''
     },
+    // The live catalog sends some blockchain codes in upper case.
+    {
+      name: 'usdcbase',
+      ticker: 'usdcbase',
+      blockchain: 'BASE',
+      contractAddress: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
+    },
+    {
+      name: 'hype',
+      ticker: 'hype',
+      blockchain: 'hyperevm',
+      contractAddress: null
+    },
     {
       name: 'newcoin',
       ticker: 'newcoin',
@@ -114,6 +127,25 @@ describe('processChangellyTx', () => {
     expect(tx.depositTokenId).to.equal(null)
     expect(tx.payoutChainPluginId).to.equal('tron')
     expect(tx.payoutTokenId).to.equal('TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t')
+  })
+
+  it('matches blockchain codes without regard to case', () => {
+    const { log, errors } = makeLog()
+    const tx = processChangellyTx(
+      makeOrder('cl-5', 'usdcbase', 'hype'),
+      currencyMap,
+      log
+    )
+
+    expect(tx.depositChainPluginId).to.equal('base')
+    expect(tx.depositEvmChainId).to.equal(8453)
+    expect(tx.depositTokenId).to.equal(
+      '833589fcd6edb6e08f4c7c32d4f71b54bda02913'
+    )
+    expect(tx.payoutChainPluginId).to.equal('hyperevm')
+    expect(tx.payoutEvmChainId).to.equal(999)
+    expect(tx.payoutTokenId).to.equal(null)
+    expect(errors).to.deep.equal([])
   })
 
   it('keeps the order but leaves an unresolvable leg without a chain', () => {
