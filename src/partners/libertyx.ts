@@ -99,10 +99,11 @@ export function processLibertyxTx(rawTx: unknown): StandardTx {
     paymentType: null,
     payoutTxid: undefined,
     payoutAddress: undefined,
+    // LibertyX only sells bitcoin, so every payout is native BTC.
     payoutCurrency: 'BTC',
-    payoutChainPluginId: undefined,
+    payoutChainPluginId: 'bitcoin',
     payoutEvmChainId: undefined,
-    payoutTokenId: undefined,
+    payoutTokenId: null,
     payoutAmount: 0,
     timestamp: timestamp,
     isoDate: date.toISOString(),
