@@ -58,6 +58,7 @@ import {
   promiseTimeout,
   standardizeNames
 } from './util'
+import { checkUpdateTx } from './util/updateTx'
 
 const nanoDb = nano(config.couchDbFullpath)
 
@@ -198,31 +199,6 @@ export async function queryEngine(): Promise<void> {
     datelog(`Snoozing for ${QUERY_FREQ_MS} milliseconds`)
     await snooze(QUERY_FREQ_MS)
   }
-}
-
-const checkUpdateTx = (oldTx: StandardTx, newTx: StandardTx): string[] => {
-  const fields = [
-    'status',
-    'depositTxid',
-    'depositChainPluginId',
-    'depositEvmChainId',
-    'depositTokenId',
-    'payoutTxid',
-    'payoutChainPluginId',
-    'payoutEvmChainId',
-    'payoutTokenId',
-    // Partner-reported revenue arrives late: a partner can settle the fee after
-    // the order row already exists. Without these the engine sees no tracked
-    // change, skips the write, and the revenue never reaches Couch or the
-    // analytics cache.
-    'revenueUsd',
-    'revenueSource'
-  ] as const
-  const changedFields: string[] = []
-  for (const field of fields) {
-    if (oldTx[field] !== newTx[field]) changedFields.push(field)
-  }
-  return changedFields
 }
 
 const filterAddNewTxs = async (
