@@ -25,6 +25,14 @@ export const asConfig = asObject({
   referralServer: asOptional(
     asObject({ url: asString, masterKey: asString, appId: asString })
   ),
+  /**
+   * PostHog project the app logs swap events to. The Houdini partners read
+   * each order's swap mode from it; without it they split on Houdini's
+   * private-route flag alone.
+   */
+  posthog: asOptional(
+    asObject({ host: asString, projectId: asString, apiKey: asString })
+  ),
   couchUris: asOptional(asCouchCredentials, {
     wusa: 'http://username:password@localhost:5984'
   })

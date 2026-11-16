@@ -2,7 +2,27 @@ import { expect } from 'chai'
 import { describe, it } from 'mocha'
 
 import {
+  FetchHoudiniModes,
   FetchHoudiniPage,
+  getHeldOrderLossMs,
+  getHoudiniMode,
+  houdini,
+  HOUDINI_HOLD_ALARM_MS,
+  HOUDINI_MODE_LAG_MS,
+  HOUDINI_MODE_PARTNERS,
+  HOUDINI_MODE_SETTLE_MS,
+  HoudiniMode,
+  houdinisend,
+  houdinistealth,
+  houdinistealthsend,
+  houdinistealthswapsend,
+  HoudiniWalk,
+  isHoudiniModeSettled,
+  makeHoudiniModeQueries,
+  makeHoudiniWalkCache,
+  parseHoudiniModeRows,
+  POSTHOG_MAX_ROWS,
+  POSTHOG_ORDER_ID_BATCH,
   processHoudiniOrder,
   processHoudiniOrders,
   queryHoudini
@@ -35,6 +55,9 @@ const makeParams = (
 }
 
 const HOUR = 1000 * 60 * 60
+
+// No event source configured, so every order splits on its private-route flag
+const noModes: FetchHoudiniModes = async () => undefined
 
 interface Token {
   id: string
@@ -400,7 +423,12 @@ describe('queryHoudini', function() {
       { apiKey: 'key' },
       { apiKey: 'key', apiSecret: '' }
     ]) {
-      const result = await queryHoudini(makeParams({ apiKeys }), fetchPage)
+      const result = await queryHoudini(
+        makeParams({ apiKeys }),
+        'swap',
+        fetchPage,
+        noModes
+      )
       expect(result.transactions).to.deep.equal([])
     }
     expect(calls).to.equal(0)
@@ -436,7 +464,7 @@ describe('queryHoudini', function() {
       apiKeys: { apiKey: 'key', apiSecret: 'secret' },
       settings: { latestIsoDate: new Date(before - HOUR).toISOString() }
     })
-    const result = await queryHoudini(params, fetchPage)
+    const result = await queryHoudini(params, 'swap', fetchPage, noModes)
     const after = Date.now()
 
     expect(calls.map(call => call.page)).to.deep.equal([1, 2, 3])
@@ -480,7 +508,7 @@ describe('queryHoudini', function() {
       apiKeys: { apiKey: 'key', apiSecret: 'secret' },
       settings: { latestIsoDate: new Date(Date.now() - HOUR).toISOString() }
     })
-    const result = await queryHoudini(params, fetchPage)
+    const result = await queryHoudini(params, 'swap', fetchPage, noModes)
 
     expect(calls).to.deep.equal([1, 2])
     expect(result.transactions.length).to.equal(101)
@@ -499,7 +527,7 @@ describe('queryHoudini', function() {
       apiKeys: { apiKey: 'key', apiSecret: 'secret' },
       settings: { latestIsoDate }
     })
-    const result = await queryHoudini(params, fetchPage)
+    const result = await queryHoudini(params, 'swap', fetchPage, noModes)
 
     expect(params.errors.length).to.equal(1)
     expect(params.errors[0]).to.include(latestIsoDate)
@@ -516,7 +544,7 @@ describe('queryHoudini', function() {
       apiKeys: { apiKey: 'key', apiSecret: 'secret' },
       settings: { latestIsoDate: EDGE_APP_START_DATE }
     })
-    await queryHoudini(params, fetchPage)
+    await queryHoudini(params, 'swap', fetchPage, noModes)
 
     expect(params.errors).to.deep.equal([])
     expect(params.warnings.length).to.equal(1)
@@ -536,7 +564,7 @@ describe('queryHoudini', function() {
       apiKeys: { apiKey: 'key', apiSecret: 'secret' },
       settings: { latestIsoDate }
     })
-    const result = await queryHoudini(params, fetchPage)
+    const result = await queryHoudini(params, 'swap', fetchPage, noModes)
 
     expect(calls).to.equal(2)
     expect(result.transactions.map(tx => tx.orderId)).to.deep.equal(['a'])
@@ -544,5 +572,518 @@ describe('queryHoudini', function() {
     expect(params.errors.some(e => e.includes('unexpected response'))).to.equal(
       true
     )
+  })
+})
+
+describe('getHoudiniMode', function() {
+  const created = Date.parse('2026-11-16T12:00:00.000Z')
+
+  it('takes the mode the app logged', function() {
+    const event = { mode: 'swapSend' as const, receivedMs: created + 1000 }
+    expect(getHoudiniMode(true, created, event)).to.equal('swapSend')
+    expect(getHoudiniMode(false, created, event)).to.equal('swapSend')
+  })
+
+  it('falls back to the private-route flag without a logged mode', function() {
+    for (const event of [
+      undefined,
+      { mode: undefined, receivedMs: created + 1000 }
+    ]) {
+      expect(getHoudiniMode(true, created, event)).to.equal('stealthSwap')
+      expect(getHoudiniMode(false, created, event)).to.equal('swap')
+      expect(getHoudiniMode(undefined, created, event)).to.equal('swap')
+    }
+  })
+
+  it('ignores an event that arrived after the settle window', function() {
+    const onTime = {
+      mode: 'stealthSwapSend' as const,
+      receivedMs: created + HOUDINI_MODE_SETTLE_MS
+    }
+    const late = { ...onTime, receivedMs: onTime.receivedMs + 1 }
+    expect(getHoudiniMode(false, created, onTime)).to.equal('stealthSwapSend')
+    expect(getHoudiniMode(false, created, late)).to.equal('swap')
+  })
+})
+
+describe('parseHoudiniModeRows', function() {
+  it('reads each order id, mode and receive time', function() {
+    const events = parseHoudiniModeRows({
+      results: [
+        ['a', 'swapSend', '2026-11-12T07:42:07.192000Z'],
+        ['b', null, '2026-11-12T07:42:08.000000Z'],
+        ['c', 'somethingNew', '2026-11-12T07:42:09.000000Z'],
+        ['d', 'stealthSend', '2026-11-12T07:42:10.000000Z']
+      ]
+    })
+    expect([...events.entries()]).to.deep.equal([
+      [
+        'a',
+        { mode: 'swapSend', receivedMs: Date.parse('2026-11-12T07:42:07.192Z') }
+      ],
+      [
+        'b',
+        { mode: undefined, receivedMs: Date.parse('2026-11-12T07:42:08Z') }
+      ],
+      [
+        'c',
+        { mode: undefined, receivedMs: Date.parse('2026-11-12T07:42:09Z') }
+      ],
+      [
+        'd',
+        { mode: 'stealthSend', receivedMs: Date.parse('2026-11-12T07:42:10Z') }
+      ]
+    ])
+  })
+
+  it('throws rather than guess', function() {
+    expect(() => parseHoudiniModeRows({ error: 'nope' })).to.throw()
+    expect(() =>
+      parseHoudiniModeRows({ results: [['a', 'swap', 'not a time']] })
+    ).to.throw('Bad PostHog event time')
+    const full = Array.from({ length: POSTHOG_MAX_ROWS }, (_, i) => [
+      `o${i}`,
+      'swap',
+      '2026-11-12T07:42:07.192000Z'
+    ])
+    expect(() => parseHoudiniModeRows({ results: full })).to.throw('rows')
+  })
+})
+
+describe('queryHoudini modes', function() {
+  const iso = (ms: number): string => new Date(ms).toISOString()
+
+  const run = async (
+    mode: HoudiniMode,
+    fetchModes: FetchHoudiniModes
+  ): Promise<{
+    ids: string[]
+    params: ReturnType<typeof makeParams>
+    latestIsoDate: unknown
+  }> => {
+    const now = Date.now()
+    const old = iso(now - 3 * HOUR)
+    const orders = [
+      makeOrder({ houdiniId: 'plain', created: old, anonymous: false }),
+      makeOrder({ houdiniId: 'private', created: old, anonymous: true }),
+      makeOrder({ houdiniId: 'send', created: old, anonymous: false }),
+      makeOrder({ houdiniId: 'stealthSend', created: old, anonymous: true }),
+      makeOrder({
+        houdiniId: 'stealthSwapSend',
+        created: old,
+        anonymous: true
+      }),
+      // The best quote was a private route, but the user asked for a plain swap
+      makeOrder({ houdiniId: 'plainOnPrivate', created: old, anonymous: true }),
+      // Too young: its event may still be on the way
+      makeOrder({
+        houdiniId: 'young',
+        created: iso(now - HOUR / 2),
+        anonymous: false
+      })
+    ]
+    const fetchPage: FetchHoudiniPage = async () => ({
+      orders,
+      totalPages: 1
+    })
+    const params = makeParams({
+      apiKeys: { apiKey: 'key', apiSecret: 'secret' },
+      settings: { latestIsoDate: iso(now - HOUR) }
+    })
+    const result = await queryHoudini(params, mode, fetchPage, fetchModes)
+    return {
+      ids: result.transactions.map(tx => tx.orderId),
+      params,
+      latestIsoDate: result.settings.latestIsoDate
+    }
+  }
+
+  const fetchModes: FetchHoudiniModes = async () => {
+    const receivedMs = Date.now() - 3 * HOUR + 1000
+    return new Map([
+      // Keyed lowercase, as parseHoudiniModeRows keys them:
+      ['send', { mode: 'swapSend', receivedMs }],
+      ['stealthsend', { mode: 'stealthSend', receivedMs }],
+      ['stealthswapsend', { mode: 'stealthSwapSend', receivedMs }],
+      ['plainonprivate', { mode: 'swap', receivedMs }],
+      ['young', { mode: 'swapSend', receivedMs: Date.now() }]
+    ])
+  }
+
+  it('gives each order to exactly one mode partner', async function() {
+    expect((await run('swap', fetchModes)).ids).to.deep.equal([
+      'plain',
+      'plainOnPrivate'
+    ])
+    expect((await run('swapSend', fetchModes)).ids).to.deep.equal(['send'])
+    expect((await run('stealthSwap', fetchModes)).ids).to.deep.equal([
+      'private'
+    ])
+    expect((await run('stealthSwapSend', fetchModes)).ids).to.deep.equal([
+      'stealthSwapSend'
+    ])
+    expect((await run('stealthSend', fetchModes)).ids).to.deep.equal([
+      'stealthSend'
+    ])
+  })
+
+  it('splits on the private-route flag without an event source', async function() {
+    expect((await run('swap', noModes)).ids).to.deep.equal(['plain', 'send'])
+    expect((await run('stealthSwap', noModes)).ids).to.deep.equal([
+      'private',
+      'stealthSend',
+      'stealthSwapSend',
+      'plainOnPrivate'
+    ])
+    expect((await run('swapSend', noModes)).ids).to.deep.equal([])
+  })
+
+  it('reads events from the settle window before the 48 hours', async function() {
+    const calls: Array<[number, number]> = []
+    const before = Date.now()
+    await run('swap', async (fromMs, toMs) => {
+      calls.push([fromMs, toMs])
+      return undefined
+    })
+    const after = Date.now()
+    expect(calls.length).to.equal(1)
+    const [fromMs, toMs] = calls[0]
+    expect(toMs).to.be.within(before, after)
+    expect(toMs - fromMs).to.equal(48 * HOUR + HOUDINI_MODE_SETTLE_MS)
+  })
+
+  it('reports nothing and holds progress when the lookup fails', async function() {
+    const { ids, params, latestIsoDate } = await run('swap', async () => {
+      throw new Error('PostHog down')
+    })
+    expect(ids).to.deep.equal([])
+    expect(latestIsoDate).to.equal(params.settings.latestIsoDate)
+    expect(params.errors.length).to.equal(1)
+    expect(params.errors[0]).to.include('PostHog down')
+  })
+})
+
+describe('makeHoudiniWalkCache', function() {
+  const makeWalk = (nowMs: number): HoudiniWalk => ({
+    nowMs,
+    complete: true,
+    skipped: 0,
+    standardTxs: [],
+    events: undefined,
+    eventsError: undefined
+  })
+
+  it('shares a walk in flight and a recent one', async function() {
+    const cache = makeHoudiniWalkCache(HOUR)
+    let walks = 0
+    const walk = async (): Promise<HoudiniWalk> => {
+      walks++
+      return makeWalk(walks)
+    }
+    const [a, b] = await Promise.all([
+      cache.get('k', walk),
+      cache.get('k', walk)
+    ])
+    const c = await cache.get('k', walk)
+    expect(walks).to.equal(1)
+    expect(a).to.equal(b)
+    expect(c).to.equal(a)
+    // Another account walks on its own:
+    await cache.get('other', walk)
+    expect(walks).to.equal(2)
+  })
+
+  it('walks again once the shared walk is too old', async function() {
+    const cache = makeHoudiniWalkCache(0)
+    let walks = 0
+    const walk = async (): Promise<HoudiniWalk> => makeWalk(++walks)
+    await cache.get('k', walk)
+    await cache.get('k', walk)
+    expect(walks).to.equal(2)
+  })
+
+  it('shares a walk in flight however long it runs', async function() {
+    const cache = makeHoudiniWalkCache(0)
+    let walks = 0
+    let finish = (): void => {}
+    const slow = async (): Promise<HoudiniWalk> =>
+      await new Promise(resolve => {
+        walks++
+        finish = () => resolve(makeWalk(walks))
+      })
+    const first = cache.get('k', slow)
+    const second = cache.get('k', slow)
+    finish()
+    expect(await second).to.equal(await first)
+    expect(walks).to.equal(1)
+  })
+
+  it('times the shared window from when the walk finished', async function() {
+    // The walk outlasts the window, so timing it from the start would walk twice
+    const cache = makeHoudiniWalkCache(200)
+    let walks = 0
+    const slow = async (): Promise<HoudiniWalk> => {
+      walks++
+      await new Promise(resolve => setTimeout(resolve, 300))
+      return makeWalk(walks)
+    }
+    await cache.get('k', slow)
+    await cache.get('k', slow)
+    expect(walks).to.equal(1)
+  })
+
+  it('does not share a walk that threw', async function() {
+    const cache = makeHoudiniWalkCache(HOUR)
+    let walks = 0
+    const walk = async (): Promise<HoudiniWalk> => {
+      walks++
+      if (walks === 1) throw new Error('down')
+      return makeWalk(walks)
+    }
+    let error: unknown
+    await cache.get('k', walk).catch(e => {
+      error = e
+    })
+    expect(String(error)).to.contain('down')
+    expect((await cache.get('k', walk)).nowMs).to.equal(2)
+  })
+})
+
+describe('queryHoudini shared walk', function() {
+  it('reads the feed and the events once for every mode partner', async function() {
+    const created = new Date(Date.now() - 3 * HOUR).toISOString()
+    let pages = 0
+    let lookups = 0
+    const fetchPage: FetchHoudiniPage = async () => {
+      pages++
+      return {
+        orders: [
+          makeOrder({ houdiniId: 'plain', created, anonymous: false }),
+          makeOrder({ houdiniId: 'private', created, anonymous: true })
+        ],
+        totalPages: 1
+      }
+    }
+    const fetchModes: FetchHoudiniModes = async () => {
+      lookups++
+      return new Map()
+    }
+    const cache = makeHoudiniWalkCache(HOUR)
+    const ids: string[][] = []
+    for (const mode of ['swap', 'stealthSwap', 'swapSend'] as const) {
+      const params = makeParams({
+        apiKeys: { apiKey: 'key', apiSecret: 'secret' },
+        settings: { latestIsoDate: new Date(Date.now() - HOUR).toISOString() }
+      })
+      const result = await queryHoudini(
+        params,
+        mode,
+        fetchPage,
+        fetchModes,
+        cache
+      )
+      ids.push(result.transactions.map(tx => tx.orderId))
+    }
+    expect(pages).to.equal(1)
+    expect(lookups).to.equal(1)
+    expect(ids).to.deep.equal([['plain'], ['private'], []])
+  })
+
+  it('holds every partner when the shared event lookup failed', async function() {
+    const created = new Date(Date.now() - 3 * HOUR).toISOString()
+    const fetchPage: FetchHoudiniPage = async () => ({
+      orders: [makeOrder({ houdiniId: 'plain', created, anonymous: false })],
+      totalPages: 1
+    })
+    const fetchModes: FetchHoudiniModes = async () => {
+      throw new Error('PostHog error 503')
+    }
+    const cache = makeHoudiniWalkCache(HOUR)
+    const latestIsoDate = new Date(Date.now() - HOUR).toISOString()
+    for (const mode of ['swap', 'stealthSwap'] as const) {
+      const params = makeParams({
+        apiKeys: { apiKey: 'key', apiSecret: 'secret' },
+        settings: { latestIsoDate }
+      })
+      const result = await queryHoudini(
+        params,
+        mode,
+        fetchPage,
+        fetchModes,
+        cache
+      )
+      expect(result.transactions).to.deep.equal([])
+      expect(result.settings.latestIsoDate).to.equal(latestIsoDate)
+    }
+  })
+})
+
+describe('Houdini mode partners', function() {
+  it('register one partner id per mode', function() {
+    const ids = [
+      houdini,
+      houdinisend,
+      houdinistealth,
+      houdinistealthswapsend,
+      houdinistealthsend
+    ].map(plugin => plugin.pluginId)
+    expect(new Set(ids).size).to.equal(5)
+    const byName = (a: string, b: string): number => a.localeCompare(b)
+    expect([...ids].sort(byName)).to.deep.equal(
+      Object.values(HOUDINI_MODE_PARTNERS).sort(byName)
+    )
+  })
+
+  it('settles an order only past the window and its lag', function() {
+    const created = Date.parse('2026-11-16T12:00:00.000Z')
+    const edge = created + HOUDINI_MODE_SETTLE_MS + HOUDINI_MODE_LAG_MS
+    expect(isHoudiniModeSettled(created, edge - 1)).to.equal(false)
+    expect(isHoudiniModeSettled(created, edge)).to.equal(true)
+  })
+
+  it('throws when PostHog says it cut the result short', function() {
+    expect(() =>
+      parseHoudiniModeRows({
+        results: [['a', 'swap', '2026-11-12T07:42:07.192000Z']],
+        hasMore: true
+      })
+    ).to.throw('rows')
+  })
+
+  it('matches a mixed-case order id after an earlier partner stored it', async function() {
+    const created = new Date(Date.now() - 3 * HOUR).toISOString()
+    const fetchPage: FetchHoudiniPage = async () => ({
+      orders: [makeOrder({ houdiniId: 'AbCdEf12', created, anonymous: false })],
+      totalPages: 1
+    })
+    const fetchModes: FetchHoudiniModes = async () =>
+      parseHoudiniModeRows({
+        results: [
+          [
+            'AbCdEf12',
+            'swapSend',
+            new Date(Date.now() - 3 * HOUR + 1000).toISOString()
+          ]
+        ]
+      })
+    const cache = makeHoudiniWalkCache(HOUR)
+    const query = async (mode: HoudiniMode): Promise<string[]> => {
+      const params = makeParams({
+        apiKeys: { apiKey: 'key', apiSecret: 'secret' },
+        settings: { latestIsoDate: new Date(Date.now() - HOUR).toISOString() }
+      })
+      const result = await queryHoudini(
+        params,
+        mode,
+        fetchPage,
+        fetchModes,
+        cache
+      )
+      // What the query engine does to each transaction it stores:
+      for (const tx of result.transactions)
+        tx.orderId = tx.orderId.toLowerCase()
+      return result.transactions.map(tx => tx.orderId)
+    }
+    expect(await query('swapSend')).to.deep.equal(['abcdef12'])
+    expect(await query('swap')).to.deep.equal([])
+    expect(await query('swapSend')).to.deep.equal(['abcdef12'])
+  })
+})
+
+describe('makeHoudiniModeQueries', function() {
+  it('asks only about the given orders, lowercased and deduplicated', function() {
+    const [query, ...rest] = makeHoudiniModeQueries(0, 1000, [
+      'AbC1',
+      'abc1',
+      'x_y-2'
+    ])
+    expect(rest).to.deep.equal([])
+    expect(query).to.contain("lower(properties.orderId) IN ('abc1', 'x_y-2')")
+  })
+
+  it('leaves out an id that could change the query', function() {
+    const queries = makeHoudiniModeQueries(0, 1000, [
+      "a') OR 1=1 --",
+      'ok1',
+      ''
+    ])
+    expect(queries.length).to.equal(1)
+    expect(queries[0]).to.contain("IN ('ok1')")
+    expect(queries[0]).not.to.contain('OR 1=1')
+  })
+
+  it('splits the ids into batches and sends none for no orders', function() {
+    const ids = Array.from(
+      { length: POSTHOG_ORDER_ID_BATCH * 2 + 1 },
+      (_, i) => `o${i}`
+    )
+    expect(makeHoudiniModeQueries(0, 1000, ids).length).to.equal(3)
+    expect(makeHoudiniModeQueries(0, 1000, [])).to.deep.equal([])
+  })
+})
+
+describe('queryHoudini mode lookup', function() {
+  it('asks PostHog about the orders the walk read', async function() {
+    const created = new Date(Date.now() - 3 * HOUR).toISOString()
+    const fetchPage: FetchHoudiniPage = async () => ({
+      orders: [
+        makeOrder({ houdiniId: 'One1', created, anonymous: false }),
+        makeOrder({ houdiniId: 'two2', created, anonymous: true })
+      ],
+      totalPages: 1
+    })
+    const asked: string[][] = []
+    const fetchModes: FetchHoudiniModes = async (fromMs, toMs, orderIds) => {
+      asked.push(orderIds)
+      return new Map()
+    }
+    const params = makeParams({
+      apiKeys: { apiKey: 'key', apiSecret: 'secret' },
+      settings: { latestIsoDate: new Date(Date.now() - HOUR).toISOString() }
+    })
+    await queryHoudini(params, 'swap', fetchPage, fetchModes)
+    expect(asked).to.deep.equal([['One1', 'two2']])
+  })
+
+  it('raises an emergency when a hold nears the 48-hour edge', async function() {
+    const HOLD = 48 * HOUR
+    const run = async (ageMs: number): Promise<string[]> => {
+      const created = new Date(Date.now() - ageMs).toISOString()
+      const fetchPage: FetchHoudiniPage = async () => ({
+        orders: [makeOrder({ houdiniId: 'held', created, anonymous: false })],
+        totalPages: 1
+      })
+      const fetchModes: FetchHoudiniModes = async () => {
+        throw new Error('PostHog error 503')
+      }
+      const params = makeParams({
+        apiKeys: { apiKey: 'key', apiSecret: 'secret' },
+        settings: { latestIsoDate: new Date(Date.now() - HOUR).toISOString() }
+      })
+      await queryHoudini(params, 'swap', fetchPage, fetchModes)
+      return params.errors.filter(error => error.includes('EMERGENCY'))
+    }
+    expect(await run(3 * HOUR)).to.deep.equal([])
+    expect((await run(HOLD - HOUDINI_HOLD_ALARM_MS + HOUR)).length).to.equal(1)
+  })
+})
+
+describe('getHeldOrderLossMs', function() {
+  it('is when the oldest settled order leaves the window', function() {
+    const nowMs = Date.parse('2026-11-17T12:00:00.000Z')
+    const tx = (ageMs: number): { timestamp: number } => ({
+      timestamp: (nowMs - ageMs) / 1000
+    })
+    const txs = ([
+      tx(10 * HOUR),
+      tx(30 * HOUR),
+      tx(HOUR / 2)
+    ] as unknown) as Parameters<typeof getHeldOrderLossMs>[0]
+    expect(getHeldOrderLossMs(txs, nowMs)).to.equal(
+      nowMs - 30 * HOUR + 48 * HOUR
+    )
+    expect(
+      getHeldOrderLossMs(([tx(HOUR / 2)] as unknown) as typeof txs, nowMs)
+    ).to.equal(undefined)
   })
 })
