@@ -16,7 +16,13 @@ import { exolix } from './partners/exolix'
 import { foxExchange } from './partners/foxExchange'
 import { gebo } from './partners/gebo'
 import { godex } from './partners/godex'
-import { houdini } from './partners/houdini'
+import {
+  houdini,
+  houdinisend,
+  houdinistealth,
+  houdinistealthsend,
+  houdinistealthswapsend
+} from './partners/houdini'
 import { ioniaGiftCards } from './partners/ioniagiftcard'
 import { ioniaVisaRewards } from './partners/ioniavisarewards'
 import { kado } from './partners/kado'
@@ -24,7 +30,7 @@ import { letsexchange } from './partners/letsexchange'
 import { libertyx } from './partners/libertyx'
 import { lifi } from './partners/lifi'
 import { moonpay } from './partners/moonpay'
-import { mptrade } from './partners/mptrade'
+import { mptrade, mptradedefi } from './partners/mptrade'
 import { nexchange } from './partners/nexchange'
 import { nymswap } from './partners/nym'
 import { paybis } from './partners/paybis'
@@ -77,6 +83,10 @@ const plugins = [
   gebo,
   godex,
   houdini,
+  houdinisend,
+  houdinistealth,
+  houdinistealthsend,
+  houdinistealthswapsend,
   ioniaVisaRewards,
   ioniaGiftCards,
   kado,
@@ -86,6 +96,7 @@ const plugins = [
   maya,
   moonpay,
   mptrade,
+  mptradedefi,
   nexchange,
   nymswap,
   paybis,

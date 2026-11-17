@@ -12,6 +12,19 @@ export const PLUGIN_ID_ALIASES: { [appPluginId: string]: string } = {
 }
 
 /**
+ * App provider ids whose orders the reports server files under more than one
+ * partner, one per app flow (Houdini reports each swap mode separately).
+ */
+export const PLUGIN_ID_SPLITS: { [appPluginId: string]: string[] } = {
+  houdini: [
+    'houdinisend',
+    'houdinistealth',
+    'houdinistealthsend',
+    'houdinistealthswapsend'
+  ]
+}
+
+/**
  * Reports partners that key orders by their own id, while the app logs the
  * request id the partner stores on `rawTx.request.id`.
  */
@@ -19,15 +32,16 @@ export const REQUEST_ID_PARTNERS = ['paybis']
 
 /**
  * The reports partner ids an app provider id may be stored under, most likely
- * first: its alias, itself, then numbered app partner variants (`banxa3` for
- * `banxa`), which an app adds when it re-onboards a partner under new keys.
+ * first: its alias, itself, the partners it splits into, then numbered app
+ * partner variants (`banxa3` for `banxa`), which an app adds when it
+ * re-onboards a partner under new keys.
  */
 export function candidatePluginIds(
   pluginId: string,
   appPartnerIds: string[]
 ): string[] {
   const id = pluginId.toLowerCase()
-  const out = [PLUGIN_ID_ALIASES[id] ?? id, id]
+  const out = [PLUGIN_ID_ALIASES[id] ?? id, id, ...(PLUGIN_ID_SPLITS[id] ?? [])]
   for (const partnerId of appPartnerIds) {
     const lower = partnerId.toLowerCase()
     if (lower.startsWith(id) && /^\d+$/.test(lower.slice(id.length))) {

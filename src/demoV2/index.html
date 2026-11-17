@@ -705,7 +705,13 @@ let CHAIN_RANKED = [];    // chain pluginIds (and CHAIN_NONE), ranked by volume
 let ALL_CHAIN_IDS = [];
 const CHAIN_NONE = '__none__';
 
-const PROVIDER_DISPLAY = { lifi: 'LI.FI', btcx: 'BTCx', nymswap: 'NYM', changenow: 'ChangeNOW' };
+const PROVIDER_DISPLAY = {
+  lifi: 'LI.FI', btcx: 'BTCx', nymswap: 'NYM', changenow: 'ChangeNOW',
+  houdini: 'Houdini Swap', houdinisend: 'Houdini Swap & Send',
+  houdinistealth: 'Houdini Stealth Swap', houdinistealthswapsend: 'Houdini Stealth Swap & Send',
+  houdinistealthsend: 'Houdini Stealth Send',
+  mptrade: 'MoonPay Trade', mptradedefi: 'MoonPay Trade DeFi',
+};
 function displayName(pluginId) {
   if (PROVIDER_DISPLAY[pluginId]) return PROVIDER_DISPLAY[pluginId];
   return pluginId.charAt(0).toUpperCase() + pluginId.slice(1);

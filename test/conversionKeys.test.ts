@@ -20,6 +20,16 @@ describe('conversion keys', function() {
     ).deep.equals(['banxa', 'banxa3'])
   })
 
+  it('adds the partners an app provider id splits into', function() {
+    expect(candidatePluginIds('houdini', [])).deep.equals([
+      'houdini',
+      'houdinisend',
+      'houdinistealth',
+      'houdinistealthsend',
+      'houdinistealthswapsend'
+    ])
+  })
+
   it('tries the order id without its 0x prefix', function() {
     expect(candidateKeys('edge', 'thorchain', '0xABC', [])).deep.equals([
       'edge_thorchain:0xabc',
